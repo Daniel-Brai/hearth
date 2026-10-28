@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help setup seed install-deps clean dev dev.api dev.api.observe dev.web observe observe.down format lint test coverage check up up.dev down k8s.lint k8s.render k8s.apply
+.PHONY: help setup seed install-deps clean dev dev.api dev.api.observe dev.web observe observe.down gen.api format lint test coverage check up up.dev down k8s.lint k8s.render k8s.apply
 
 # Lists every target with the first sentence of the comment above it
 help:
@@ -57,6 +57,11 @@ dev.api.observe:
 # Runs the web app against the local API
 dev.web:
 	cd web && VITE_API_URL=http://localhost:4000 pnpm dev --port 5174 --strictPort
+
+# Writes the API's OpenAPI file and regenerates the web app's client from it
+gen.api:
+	cd apps/hearth_web && mix api.spec
+	cd web && pnpm gen:api
 
 # Formats the Elixir code and the web app in place
 format:

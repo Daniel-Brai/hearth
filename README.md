@@ -76,6 +76,14 @@ the content. For a production build run `pnpm build` and then `pnpm start`,
 with `PUBLIC_URL` set to the site's address and `API_INTERNAL_URL` to the API's.
 
 Run `make test` for every test in both apps, `make format` to format both, `make lint` for Credo and oxlint, and `make check` before you push. It runs formatting, compiler warnings, Credo, Sobelow, the Elixir tests and the web app's own check. `make coverage` writes a coverage report for the Elixir apps and fails under the minimum in `coveralls.json`. `make clean` removes build output and keeps dependencies.
+
+After changing an endpoint, run `make gen.api`. It writes the API's OpenAPI file
+again and regenerates the web app's client from it.
+
+To watch the API while you work, `make observe` starts Grafana with
+Prometheus, Tempo and Loki at http://localhost:3000. Then `make dev.api.observe`
+runs the API with its metrics, traces and logs going there.
+
 [docs/CONVENTIONS.md](docs/CONVENTIONS.md) describes how the code is laid out.
 
 ### Run it with Docker
