@@ -1,0 +1,52 @@
+# Pin the image tags to the release you deploy
+publicUrl: https://hearth.example.com
+
+images:
+  api:
+    tag: "0.1.0"
+  web:
+    tag: "0.1.0"
+
+config:
+  S3_ENDPOINT: https://s3.example.com
+  S3_BUCKET: hearth
+  MAIL_PROVIDER: postmark
+  MAIL_FROM: hearth@hearth.example.com
+  TURN_URL: turn:turn.hearth.example.com:3478
+
+secrets:
+  env: production
+
+pools:
+  web:
+    autoscaling:
+      minReplicas: 3
+      maxReplicas: 10
+  media:
+    replicas: 2
+  ai:
+    replicas: 1
+  rtc:
+    enabled: true
+    replicas: 2
+    nodeSelector:
+      hearth/voice: "true"
+
+web:
+  autoscaling:
+    minReplicas: 3
+    maxReplicas: 10
+
+coturn:
+  enabled: true
+  existingSecret: hearth-turn
+  nodeSelector:
+    hearth/voice: "true"
+
+ingress:
+  host: hearth.example.com
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    basicAuthSecret: hearth-metrics

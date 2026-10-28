@@ -1,0 +1,12 @@
+Hearth {{ .Chart.AppVersion }} is installed as {{ include "hearth.fullname" . }}.
+
+Pools running: {{ range $pool, $spec := .Values.pools }}{{ if $spec.enabled }}{{ $pool }} ({{ $spec.roles }}) {{ end }}{{ end }}
+Site: {{ .Values.publicUrl }}
+{{- if eq .Values.secrets.source "vault" }}
+
+Secrets come from Vault at {{ .Values.vault.address }} with the "{{ .Values.vault.role }}"
+role, under hearth/{{ .Values.secrets.env }}/. A missing one stops the API at boot with
+its name. Watch the first pods with
+
+  kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "hearth.fullname" . }}-api-web -c migrate
+{{- end }}

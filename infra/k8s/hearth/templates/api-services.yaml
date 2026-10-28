@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hearth.fullname" . }}-api
+  labels:
+    {{- include "hearth.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "hearth.selector" (dict "root" . "component" "api-web") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.api.port }}
+      targetPort: http
+---
+# Lists pods that aren't ready too, so a booting node can join the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hearth.fullname" . }}-cluster
+  labels:
+    {{- include "hearth.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: {{ include "hearth.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    hearth/cluster: {{ .Release.Name | quote }}
+  ports:
+    - name: epmd
+      port: 4369
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hearth.fullname" . }}-metrics
+  labels:
+    {{- include "hearth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+  {{- if .Values.metrics.annotations }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.api.metricsPort | quote }}
+    prometheus.io/path: /metrics
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ include "hearth.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    hearth/cluster: {{ .Release.Name | quote }}
+  ports:
+    - name: metrics
+      port: {{ .Values.api.metricsPort }}
+      targetPort: metrics

@@ -1,0 +1,15 @@
+@layer components {
+.compose-title { font-size: clamp(1.6rem, 4.5vw, 2.4rem); font-weight: 900; letter-spacing: -0.03ch; line-height: 1.12; text-align: center; }
+.compose-title::placeholder { color: var(--color-ink-light); }
+.save-state { font-size: var(--text-x-small); color: var(--color-ink-medium); display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+@media (min-width: 640px) {
+.show-mobile { display: none !important; } }
+.kind-option__lock { display: inline-grid; color: var(--color-ink-medium); }
+.kind-option__lock svg { block-size: 0.75rem; inline-size: 0.75rem; }
+.save-state.is-saving { animation: save-pulse 1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+.save-state.is-saving { animation: none; } } }
+
+/* A long community name is cut so the row stays on screen */
+.posting-in { max-inline-size: 100%; min-inline-size: 0; }
+.post-to { flex-shrink: 1; max-inline-size: min(18rem, 70vw); min-inline-size: 0; overflow: hidden; }

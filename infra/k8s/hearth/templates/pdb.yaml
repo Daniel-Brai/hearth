@@ -1,0 +1,25 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- $components := list }}
+{{- range $pool, $spec := .Values.pools }}
+{{- if and $spec.enabled (ne $pool "rtc") }}
+{{- $components = append $components (printf "api-%s" $pool) }}
+{{- end }}
+{{- end }}
+{{- if .Values.web.enabled }}
+{{- $components = append $components "web" }}
+{{- end }}
+{{- range $components }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "hearth.fullname" $ }}-{{ . }}
+  labels:
+    {{- include "hearth.labels" $ | nindent 4 }}
+spec:
+  maxUnavailable: {{ $.Values.podDisruptionBudget.maxUnavailable }}
+  selector:
+    matchLabels:
+      {{- include "hearth.selector" (dict "root" $ "component" .) | nindent 6 }}
+{{- end }}
+{{- end }}

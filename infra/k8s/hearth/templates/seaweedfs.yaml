@@ -1,0 +1,78 @@
+{{- with .Values.objectStorage.seaweedfs }}
+{{- if .enabled }}
+{{- $selector := dict "root" $ "component" "seaweedfs" }}
+# Point S3_ENDPOINT at http://<fullname>-s3:8333 and set S3_PATH_STYLE to true
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "hearth.fullname" $ }}-seaweedfs
+  labels:
+    {{- include "hearth.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: seaweedfs
+spec:
+  serviceName: {{ include "hearth.fullname" $ }}-s3
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "hearth.selector" $selector | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hearth.selector" $selector | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: seaweedfs
+          image: {{ .image }}
+          args: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+          ports:
+            - name: s3
+              containerPort: 8333
+          readinessProbe:
+            tcpSocket: { port: s3 }
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: s3-config
+              mountPath: /etc/seaweedfs
+              readOnly: true
+      volumes:
+        - name: s3-config
+          secret:
+            secretName: {{ required "objectStorage.seaweedfs.existingSecret holds its s3.json" .existingSecret }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .storageSize }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hearth.fullname" $ }}-s3
+  labels:
+    {{- include "hearth.labels" $ | nindent 4 }}
+spec:
+  selector:
+    {{- include "hearth.selector" $selector | nindent 4 }}
+  ports:
+    - name: s3
+      port: 8333
+      targetPort: s3
+{{- end }}
+{{- end }}

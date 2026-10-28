@@ -1,0 +1,249 @@
+# Secrets never go in values files, see ../README.md
+
+nameOverride: ""
+fullnameOverride: ""
+
+publicUrl: https://hearth.example.com
+
+images:
+  api:
+    repository: ghcr.io/daniel-brai/hearth-api
+    # Defaults to the chart's appVersion
+    tag: ""
+    pullPolicy: IfNotPresent
+  web:
+    repository: ghcr.io/daniel-brai/hearth-web
+    tag: ""
+    pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+serviceAccount:
+  # Vault's Kubernetes auth role is bound to this account's name and namespace.
+  create: true
+  name: ""
+  annotations: {}
+
+# Any non secret variable from .env.example, passed to every API pod
+config:
+  STORAGE: s3
+  S3_REGION: us-east-1
+  S3_PATH_STYLE: "false"
+  MAIL_PROVIDER: smtp
+  LOG_FORMAT: json
+  UPDATE_CHECK: "true"
+  # local runs on the ai pool, hosted sends content to OpenRouter, off skips it
+  MODERATION_SCREENER: local
+  TRANSCRIPTION: "off"
+
+# vault reads secrets at boot as mapped in files/secrets.yml
+# kubernetes turns every key of an existing Secret into a variable
+secrets:
+  source: vault
+  # Replaces {env} in files/secrets.yml
+  env: production
+  existingSecret: ""
+
+vault:
+  address: https://vault.example.com
+  # Vault Enterprise namespace
+  namespace: ""
+  auth: kubernetes
+  # Defaults to the auth method's name
+  authMount: ""
+  role: hearth
+
+# The Erlang cookie is made once and kept across upgrades
+# existingSecret brings your own under the key cookie
+cluster:
+  existingSecret: ""
+
+# One Deployment per pool, all from the same image, with roles as HEARTH_ROLES
+# The web pool also runs the migrations
+pools:
+  web:
+    enabled: true
+    roles: web
+    replicas: 2
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { memory: 1Gi }
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  # Image sizes, link previews, video and ZIP exports, apart since libvips and ffmpeg use every core
+  media:
+    enabled: true
+    roles: media
+    replicas: 1
+    resources:
+      requests: { cpu: 500m, memory: 1Gi }
+      limits: { memory: 2Gi }
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  # Local screening and transcription, about 3 GB of memory for the models
+  ai:
+    enabled: true
+    roles: ai
+    replicas: 1
+    resources:
+      requests: { cpu: "1", memory: 3584Mi }
+      limits: { memory: 4Gi }
+    # With more than one replica use a ReadWriteMany class, or emptyDir to download per pod
+    modelCache:
+      type: pvc
+      size: 10Gi
+      storageClassName: ""
+      accessModes: [ReadWriteOnce]
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  # Browsers send UDP straight to the node holding their peer connection, so
+  # these pods use the host network, one per node, and publish the port range there
+  # Set RTC_PUBLIC_IP in config when nodes don't know their public address
+  # A stopping pod keeps live sessions for up to two hours, which the grace period covers
+  rtc:
+    enabled: false
+    roles: rtc
+    replicas: 1
+    portRange: "50000-50199"
+    terminationGracePeriodSeconds: 7300
+    resources:
+      requests: { cpu: 500m, memory: 512Mi }
+      limits: { memory: 1Gi }
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+api:
+  port: 4000
+  metricsPort: 9568
+  podAnnotations: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile: { type: RuntimeDefault }
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: { drop: [ALL] }
+  # Scratch space for crash dumps, temporary files and libvips
+  tmpSize: 1Gi
+  terminationGracePeriodSeconds: 30
+  migrations:
+    # Runs bin/migrate as an init container of the web pool
+    enabled: true
+
+web:
+  enabled: true
+  port: 3000
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  podAnnotations: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile: { type: RuntimeDefault }
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: { drop: [ALL] }
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+# Paths the API answers, the rest goes to the web server
+apiPaths:
+  - /api
+  - /socket
+  - /webhooks
+  - /robots.txt
+  - /sitemap.xml
+  - /sitemaps
+  - /og
+  - /storage
+  - /healthz
+
+ingress:
+  enabled: true
+  className: nginx
+  host: hearth.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    # Uploads go straight to object storage, so request bodies stay small
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+  tls:
+    enabled: true
+    secretName: ""
+
+# Gateway API instead of Ingress
+httpRoute:
+  enabled: false
+  parentRefs: []
+  annotations: {}
+
+metrics:
+  # Adds prometheus.io annotations to the metrics Service
+  annotations: true
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+    # A Secret with username and password keys matching METRICS_USERNAME and METRICS_PASSWORD
+    basicAuthSecret: ""
+
+# The TURN relay, whose shared secret is the API's TURN_SECRET
+coturn:
+  enabled: false
+  image: coturn/coturn:4.18.0-debian
+  existingSecret: ""
+  secretKey: turn_secret
+  relayPorts: "49160-49200"
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { memory: 256Mi }
+  nodeSelector: {}
+
+# In-cluster Postgres as a CloudNativePG Cluster, needing the operator installed
+postgres:
+  cnpg:
+    enabled: false
+    instances: 2
+    storageSize: 20Gi
+    storageClassName: ""
+    imageName: ghcr.io/cloudnative-pg/postgresql:17
+
+# Single node SeaweedFS with an S3 gateway, using the API's S3 keys
+objectStorage:
+  seaweedfs:
+    enabled: false
+    image: chrislusf/seaweedfs:4.50
+    storageSize: 50Gi
+    storageClassName: ""
+    bucket: hearth
+    existingSecret: ""

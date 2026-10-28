@@ -1,0 +1,33 @@
+{
+	email {$ACME_EMAIL:admin@localhost}
+}
+
+{$PUBLIC_HOST:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		?X-Frame-Options DENY
+		-Server
+	}
+
+	# Uploads go straight to storage with signed URLs, so no request body here is large
+	@api path /api/* /socket /socket/* /webhooks/* /robots.txt /sitemap.xml /sitemaps/* /og/* /storage/* /healthz/*
+	handle @api {
+		reverse_proxy api:4000 {
+			health_uri /healthz/ready
+			health_interval 10s
+			health_timeout 3s
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000 {
+			health_uri /favicon.svg
+			health_interval 10s
+			health_timeout 3s
+		}
+	}
+}

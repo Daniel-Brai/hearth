@@ -1,0 +1,59 @@
+{{- if .Values.coturn.enabled }}
+# Runs on the node's own network since no Service publishes a UDP port range well
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hearth.fullname" . }}-coturn
+  labels:
+    {{- include "hearth.labels" . | nindent 4 }}
+    app.kubernetes.io/component: coturn
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "hearth.selector" (dict "root" . "component" "coturn") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hearth.selector" (dict "root" . "component" "coturn") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: coturn
+          image: {{ .Values.coturn.image }}
+          args:
+            - -n
+            - --log-file=stdout
+            - --listening-port=3478
+            - --min-port={{ index (splitList "-" .Values.coturn.relayPorts) 0 }}
+            - --max-port={{ index (splitList "-" .Values.coturn.relayPorts) 1 }}
+            - --use-auth-secret
+            - --static-auth-secret=$(TURN_SECRET)
+            - --realm={{ .Values.ingress.host }}
+            - --no-cli
+            - --fingerprint
+          env:
+            - name: TURN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "coturn.existingSecret holds TURN_SECRET for the relay" .Values.coturn.existingSecret }}
+                  key: {{ .Values.coturn.secretKey }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          resources:
+            {{- toYaml .Values.coturn.resources | nindent 12 }}
+      {{- with .Values.coturn.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

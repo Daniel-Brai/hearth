@@ -1,0 +1,41 @@
+publicUrl: https://staging.hearth.example.com
+
+config:
+  S3_ENDPOINT: https://s3.example.com
+  S3_BUCKET: hearth-staging
+  MAIL_PROVIDER: smtp
+  SMTP_HOST: smtp.example.com
+  SMTP_PORT: "587"
+  MAIL_FROM: hearth@staging.hearth.example.com
+
+secrets:
+  env: staging
+
+pools:
+  web:
+    replicas: 1
+    autoscaling:
+      enabled: false
+  media:
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { memory: 1Gi }
+  ai:
+    modelCache:
+      size: 5Gi
+
+web:
+  replicas: 1
+  autoscaling:
+    enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+ingress:
+  host: staging.hearth.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m

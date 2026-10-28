@@ -1,0 +1,10 @@
+@layer components {
+.public-communities { display: grid; gap: 0.5rem; }
+.public-community {
+  align-items: center; border: 1px solid var(--color-ink-lighter); border-radius: 0.9em; display: grid; gap: 0.9rem;
+  grid-template-columns: auto minmax(0, 1fr) auto; padding: 0.8rem 1rem; transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.public-community:hover { background: var(--color-ink-lightest); border-color: var(--color-ink-light); }
+.public-community:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+@media (max-width: 479px) { .public-community > :last-child { display: none; } }
+}

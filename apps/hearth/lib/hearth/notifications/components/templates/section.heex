@@ -1,0 +1,22 @@
+<mj-text padding="8px 0 12px" font-size="13px" font-weight="800" css-class="digest-heading">
+  <a
+    href={@url}
+    style="color: #6b7280; text-decoration: none; text-transform: uppercase; letter-spacing: 0.06em;"
+  >
+    {@heading}
+  </a>
+</mj-text>
+<mj-text :for={item <- @items} padding="0 0 16px" css-class="digest-item">
+  <a
+    href={item.url}
+    style="color: #1d2433; font-weight: 700; font-size: 17px; line-height: 1.35; text-decoration: none;"
+  >
+    {item.title}
+  </a>
+  <br />
+  <span style="color: #6b7280; font-size: 14px;">{item.meta}</span>
+</mj-text>
+<mj-text :if={@more} padding="0 0 8px" font-size="14px" css-class="digest-more">
+  <a href={elem(@more, 1)} style="color: #1d2433; font-weight: 600;">{elem(@more, 0)}</a>
+</mj-text>
+<mj-divider border-color="#e5e7eb" border-width="1px" padding="8px 0 24px" css-class="divider" />

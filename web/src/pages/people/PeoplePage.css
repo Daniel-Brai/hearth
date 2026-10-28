@@ -1,0 +1,17 @@
+@layer components {
+.people-search { display: flex; align-items: center; gap: 0.5rem; position: relative; flex-wrap: wrap; }
+.people-search__box { flex: 1 1 14rem; position: relative; display: grid; min-inline-size: 0; }
+.people-search .input { padding-inline-start: 2.4rem; inline-size: 100%; }
+.people-search__icon { position: absolute; inset-inline-start: 0.85rem; inset-block-start: 50%; translate: 0 -50%; color: var(--color-ink-dark); display: inline-grid; pointer-events: none; }
+.people-search__filter { flex: none; }
+.people-rows { display: grid; }
+.people-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 0.5rem; border-radius: 0.8rem; color: inherit; text-decoration: none; min-inline-size: 0; }
+.people-row + .people-row { border-block-start: 1px solid var(--color-ink-lightest); }
+.people-row:hover { background: var(--color-ink-lightest); }
+.people-row .avatar { position: relative; flex: none; }
+.people-row.unread .avatar { box-shadow: 0 0 0 2px var(--color-canvas), 0 0 0 4px var(--color-link); }
+.people-row__main { display: grid; flex: 1; min-inline-size: 0; color: inherit; text-decoration: none; }
+.people-row.unread .people-row__main strong { font-weight: 800; }
+.people-row__sub { display: flex; gap: 0.3em; min-inline-size: 0; }
+.people-row__meta { display: grid; justify-items: end; gap: 0.25rem; flex: none; }
+.people-row .avatar { --size: 2.6rem; } }

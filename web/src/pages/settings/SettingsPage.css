@@ -1,0 +1,6 @@
+@layer components {
+.sound-list { border-block-end: 1px solid var(--color-ink-lightest); padding-block: 0 0.8rem; }
+.sound-list summary { cursor: pointer; color: var(--color-ink-dark); font-weight: 600; padding-block: 0.2rem; inline-size: fit-content; }
+.sound-list summary:hover { color: var(--color-ink); }
+.sound-list__grid { display: flex; flex-wrap: wrap; gap: 0.4rem; padding-block-start: 0.6rem; }
+.sound-list__btn { font-weight: 500; } }

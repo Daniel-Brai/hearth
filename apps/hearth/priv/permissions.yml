@@ -1,0 +1,109 @@
+# Which roles hold each permission by default. A community can override these per role.
+# The permission string is resource.operation, with dots in the resource turned into dashes.
+# An owner holds every permission.
+#
+# author: true     the author of the thing may do it too
+# scope: instance  only instance admins hold it, no community role can
+
+# Posts, replies and chat
+
+- resource: post
+  operation: create
+  roles: [community.owner, community.moderator, community.member]
+
+- resource: reply
+  operation: create
+  roles: [community.owner, community.moderator, community.member]
+
+- resource: message
+  operation: create
+  roles: [community.owner, community.moderator, community.member]
+
+# Voice rooms
+
+- resource: voice.session
+  operation: create
+  roles: [community.owner, community.moderator]
+
+# Talk in Stage sessions without raising a hand.
+- resource: voice.session
+  operation: speak
+  roles: [community.owner, community.moderator]
+
+- resource: voice.recording
+  operation: create
+  roles: [community.owner, community.moderator]
+
+# Growing the community
+
+- resource: invite
+  operation: create
+  roles: [community.owner, community.moderator, community.member]
+
+# Reset the link, email invites and revoke them.
+- resource: invite
+  operation: update
+  roles: [community.owner, community.moderator]
+
+# Handing over ownership stays with the Owner.
+- resource: community
+  operation: update
+  roles: [community.owner]
+
+# Add, rename, archive and restore rooms.
+- resource: room
+  operation: update
+  roles: [community.owner, community.moderator]
+
+- resource: room
+  operation: delete
+  roles: [community.owner]
+
+# Manage anyone's events. Creators always manage their own.
+- resource: event
+  operation: create
+  roles: [community.owner, community.moderator]
+  author: true
+
+# Running the feed
+
+- resource: post
+  operation: pin
+  roles: [community.owner, community.moderator]
+
+# Authors can always mark the answer on their own question.
+- resource: post
+  operation: answer
+  roles: [community.owner, community.moderator]
+  author: true
+- resource: chat
+  operation: promote
+  roles: [community.owner, community.moderator]
+
+# Moderation
+
+# Remove and restore content, review the queue.
+- resource: content
+  operation: remove
+  roles: [community.owner, community.moderator]
+
+- resource: member
+  operation: ban
+  roles: [community.owner]
+
+# Roles can only be handed out below one's own.
+- resource: role
+  operation: update
+  roles: [community.owner]
+
+# Running the instance
+
+- resource: community.request
+  operation: decide
+  roles: [instance.admin]
+  scope: instance
+
+- resource: instance
+  operation: update
+  roles: [instance.admin]
+  scope: instance

@@ -1,0 +1,26 @@
+# Grafana with Prometheus, Tempo and Loki in one container, for watching the API locally
+# Grafana is at http://localhost:3000, and the API sends traces to http://localhost:4318
+# Prometheus scrapes the metrics port of an API running on this machine
+# Loki gets the API's logs from tmp/log, which make dev.api.observe writes
+
+name: hearth-observe
+
+services:
+  lgtm:
+    image: grafana/otel-lgtm:0.36.0
+    ports:
+      - "3000:3000"
+      - "4317:4317"
+      - "4318:4318"
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./observe/prometheus.yaml:/otel-lgtm/prometheus.yaml:ro,z
+      - ./observe/otelcol-config.yaml:/otel-lgtm/otelcol-config.yaml:ro,z
+      - ../tmp/log:/var/log/hearth:ro,z
+      - lgtm_data:/data
+    restart: unless-stopped
+
+volumes:
+  lgtm_data:

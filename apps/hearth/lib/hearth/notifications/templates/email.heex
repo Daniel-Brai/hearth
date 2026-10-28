@@ -1,0 +1,26 @@
+<Mail.layout
+  title={@subject}
+  preview={@preview}
+  brand={@brand}
+  icon={@icon}
+  url={@url}
+  host={!@action_text}
+>
+  <Mail.heading :if={@greeting}>{@greeting}</Mail.heading>
+  <Mail.line :for={line <- @intro_lines} line={line} />
+  <Mail.section
+    :for={section <- @sections}
+    heading={section.heading}
+    url={section.url}
+    items={section.items}
+    more={section.more}
+  />
+  <Mail.button :if={@action_text} url={@action_url} color={button_color(@level)}>
+    {@action_text}
+  </Mail.button>
+  <Mail.code :if={@code}>{@code}</Mail.code>
+  <Mail.line :for={line <- @outro_lines} line={line} />
+  <:footer>
+    <Mail.fallback :if={@action_text} url={@action_url} />
+  </:footer>
+</Mail.layout>

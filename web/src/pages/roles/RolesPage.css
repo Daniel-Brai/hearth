@@ -1,0 +1,8 @@
+@layer components {
+.chip--static { cursor: default; padding-inline: 0.3rem 0.5rem; }
+.roles-layout { display: grid; gap: 1.2rem; }
+@container main (min-width: 760px) {
+.roles-layout { grid-template-columns: 15rem minmax(0, 1fr); } }
+.role-link { align-items: center; display: flex; gap: 0.6rem; min-block-size: 2.4rem; padding: 0 0.8rem; border-radius: 0.5em; font-weight: 600; inline-size: 100%; background: none; border: 0; cursor: pointer; text-align: start; }
+.role-link:hover { background: var(--color-ink-lightest); }
+.role-link.is-on { background: var(--color-selected); } }

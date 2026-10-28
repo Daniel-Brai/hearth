@@ -1,0 +1,22 @@
+/_build/
+/.dexter
+/cover/
+apps/*/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+/tmp/
+
+/node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+/storage/
+.env
+
+# AppRole credentials for infra/compose.vault.yml
+infra/vault-role-id
+infra/vault-secret-id

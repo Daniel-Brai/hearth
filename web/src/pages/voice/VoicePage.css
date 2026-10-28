@@ -1,0 +1,158 @@
+@layer components {
+.speaker.is-speaking .avatar { box-shadow: 0 0 0 3px var(--color-canvas), 0 0 0 6px var(--hue-green); animation: speaking 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .speaker.is-speaking .avatar { animation: none; } }
+.speaker__hint { font-size: var(--text-xx-small); font-weight: 700; color: oklch(100% 0 0); background: var(--hue-red); border-radius: 99rem; padding: 0.1rem 0.5rem; animation: hint-in 160ms ease-out; }
+@keyframes hint-in { from { opacity: 0; transform: translateY(-2px); } }
+.speaker__name { font-weight: 700; font-size: var(--text-small); max-inline-size: 8rem; }
+.speaker__badges { position: absolute; inset: 3.7rem auto auto calc(50% + 1.5rem); display: flex; gap: 2px; }
+.mini-badge { background: var(--color-canvas); border-radius: 99rem; box-shadow: var(--shadow); display: inline-grid; place-items: center; font-size: 0.8rem; block-size: 1.5rem; min-inline-size: 1.5rem; padding: 0 0.25rem; line-height: 1; }
+.float-zone { position: relative; block-size: 0; }
+.float-emoji { position: absolute; font-size: 1.8rem; animation: float-up 1800ms ease-out forwards; pointer-events: none; }
+.live-lines { display: grid; gap: 0.7rem; max-block-size: 22rem; overflow-y: auto; padding-inline-end: 0.4rem; }
+.live-line { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 0.7rem; animation: slide-up-fade-in 300ms var(--ease-out-expo); }
+.live-line .t { font-family: var(--font-mono); font-size: var(--text-x-small); color: var(--color-ink-medium); padding-block-start: 0.15rem; }
+.rec-banner {
+  align-items: center; background: color-mix(in oklab, var(--hue-red) 14%, var(--color-canvas)); border: 1px solid color-mix(in oklab, var(--hue-red) 45%, transparent);
+  border-radius: 99rem; display: flex; gap: 0.7rem; justify-self: center; min-block-size: 2.2rem; padding: 0.3rem 1rem; font-size: var(--text-small); font-weight: 600;
+}
+.rec-banner:has(#voice-rec-stop) { padding-inline-end: 0.3rem; }
+.reconnect-pill {
+  align-items: center; background: var(--color-ink-lightest); border-radius: 99rem; display: inline-flex; gap: 0.5rem;
+  font-size: var(--text-x-small); font-weight: 600; justify-self: center; margin-block-start: 0.25rem; padding: 0.25rem 0.75rem;
+}
+.reconnect-pill__dot { animation: pulse 1.2s infinite; background: var(--hue-yellow); border-radius: 50%; block-size: 0.55rem; inline-size: 0.55rem; }
+.rec-dot { background: var(--hue-red); border-radius: 50%; block-size: 0.65rem; inline-size: 0.65rem; animation: pulse 1.2s infinite; flex-shrink: 0; }
+.share-tile { background: oklch(16% 0.01 260); border-radius: 0.9rem; overflow: hidden; position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center; }
+.share-tile video { inline-size: 100%; block-size: 100%; object-fit: contain; }
+.share-tile video { cursor: zoom-in; }
+.share-tile[data-layout='focus'] video { cursor: zoom-out; }
+.share-tile.is-full { aspect-ratio: auto; border-radius: 0; }
+.share-tile--expanded { position: fixed; inset: 0; z-index: 60; }
+.share-tile__bar {
+  position: absolute; inset: auto 0.6rem 0.6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem;
+  transition: opacity 150ms ease;
+}
+/* Everything laid over the shared screen sits on the same dark glass, so it reads on any content */
+.share-tile__reactions, .share-tile__tools, .share-tile__label, .share-tile__talkers {
+  background: oklch(14% 0.01 260 / 0.82); border: 1px solid oklch(100% 0 0 / 0.16); box-shadow: 0 4px 18px oklch(0% 0 0 / 0.45);
+  backdrop-filter: blur(10px) saturate(1.2); color: oklch(100% 0 0);
+}
+.share-tile__reactions, .share-tile__tools { display: flex; gap: 0.15rem; align-items: center; border-radius: 99rem; padding: 0.2rem; }
+.share-tile__tools .btn { color: inherit; }
+.share-tile__react { background: none; border: 0; border-radius: 99rem; cursor: pointer; font-size: 1.15rem; line-height: 1; padding: 0.3rem; transition: transform 120ms ease, background-color 120ms ease; }
+.share-tile__react:hover { background: oklch(100% 0 0 / 0.14); transform: translateY(-1px) scale(1.08); }
+.share-tile__react:focus-visible { outline: var(--focus-ring); outline-offset: 1px; }
+.share-tile__talkers { position: absolute; inset: 0.7rem 0.7rem auto auto; display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem; border-radius: 99rem; }
+.share-tile__more { font-size: var(--text-x-small); font-weight: 700; padding-inline: 0.35rem 0.5rem; font-variant-numeric: tabular-nums; }
+.speaker--mini .avatar { --size: 2.2rem; }
+.speaker--mini.is-speaking .avatar { box-shadow: 0 0 0 2px var(--color-canvas), 0 0 0 4px var(--hue-green); animation: none; }
+/* The shared screen takes the middle, and the people sit in a row under it */
+.voice-focus { display: grid; gap: 0.75rem; justify-items: center; }
+.voice-focus > .share-tile { inline-size: 100%; }
+.share-strip { display: flex; align-items: center; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
+.share-strip__people { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+.share-strip__more { background: none; border: 0; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 0.5rem; }
+.share-strip__more:hover { text-decoration: underline; }
+.float-zone--over { position: absolute; inset: auto 0 3.4rem; block-size: 0; pointer-events: none; }
+.float-emoji { display: grid; justify-items: center; }
+.float-emoji__by { --size: 1.25rem; margin-block-start: 0.1rem; box-shadow: 0 0 0 2px oklch(0% 0 0 / 0.35); }
+@media (prefers-reduced-motion: reduce) { .float-emoji { animation: none; transform: translateY(-2.5rem); } }
+.share-tile__label {
+  align-items: center; border-radius: 99rem; display: inline-flex; gap: 0.5rem;
+  font-size: var(--text-x-small); font-weight: 600; inset: 0.7rem auto auto 0.7rem; min-block-size: 1.9rem; padding: 0 0.8rem; position: absolute;
+}
+.share-tile__note {
+  background: color-mix(in oklab, oklch(15% 0.01 260) 82%, transparent); border-radius: 0.7em; color: oklch(92% 0.01 260); font-size: var(--text-x-small);
+  inset-block-end: 0.7rem; inset-inline: 0.7rem auto; line-height: 1.45; margin: 0; max-inline-size: 26rem; padding: 0.55rem 0.8rem; position: absolute; backdrop-filter: blur(6px);
+}
+.live-lines { mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent); -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent); padding-block-end: 1.5rem; }
+.mini-badge.is-locked { box-shadow: 0 0 0 2px var(--hue-red); }
+.mode-pill { display: inline-flex; align-items: center; gap: 0.35rem; font: inherit; font-size: var(--text-x-small); font-weight: 700; color: inherit;
+  border: 1px solid var(--color-ink-lighter); border-radius: 99rem; padding: 0.2rem 0.65rem; background: none; }
+.popup__item--rich { align-items: flex-start; text-align: start; white-space: normal; padding-block: 0.6rem; }
+.popup__item--rich + .popup__item--rich { margin-block-start: 0.15rem; }
+.popup__item--rich small { font-weight: 400; line-height: 1.35; }
+.speaker--more { background: none; border: 0; cursor: pointer; padding: 0; font: inherit; color: inherit; border-radius: 1rem; }
+.speaker--more:hover .avatar { filter: brightness(1.12); }
+.speaker--more:focus-visible { outline: var(--focus-ring); outline-offset: 4px; }
+.people-scroll { max-block-size: min(62vh, 38rem); overflow-y: auto; overscroll-behavior: none; padding-inline-end: 0.25rem; }
+.people-list { display: grid; }
+.people-list__row { align-items: center; display: flex; gap: 0.75rem; min-block-size: 3.1rem; padding-block: 0.3rem; border-block-start: 1px solid var(--color-ink-lightest); }
+.people-list__row:first-child { border-block-start: 0; }
+.people-list__name { display: grid; flex: 1; min-inline-size: 0; line-height: 1.25; }
+.people-list__name small { font-size: var(--text-x-small); }
+.voice-layout { display: grid; gap: 1.25rem; align-items: start; }
+/* On a narrow screen the chat comes up from the bottom as a sheet. It sits in the main column
+   rather than the window, so an open sidebar never covers it */
+.voice-chat {
+  background: var(--color-canvas); border-block-start: 1px solid var(--color-ink-lighter); border-radius: 1rem 1rem 0 0; display: flex; flex-direction: column; overflow: hidden;
+  position: absolute; inset: auto 0 0; block-size: min(78dvh, 40rem); z-index: 30; box-shadow: var(--shadow-float);
+  animation: voice-chat-sheet 320ms var(--ease-out-expo);
+}
+/* The room behind the sheet blurs a little so the chat reads as on top */
+.voice-layout__room { transition: filter 220ms ease; }
+.voice-layout.has-chat > .voice-layout__room { filter: blur(3px); }
+@media (prefers-reduced-motion: reduce) { .voice-layout__room { transition: none; } }
+.voice-chat__head { align-items: center; border-block-end: 1px solid var(--color-ink-lightest); display: flex; gap: 0.6rem; min-block-size: 3.2rem; padding: 0.35rem 0.5rem 0.35rem 1rem; }
+.voice-chat__head .icon-text { color: var(--color-ink-dark); }
+.voice-chat__title { display: grid; flex: 1; line-height: 1.2; min-inline-size: 0; }
+.voice-chat .chat__messages { padding-inline: 0.75rem; }
+.voice-chat .chat__composer { padding: 0.5rem 0.75rem 0.75rem; }
+.voice-chat .return-latest { inset-block-end: 5.5rem; }
+/* Messages read as plain rows rather than bubbles, and a row lights up under the pointer */
+.voice-chat .message { border-radius: 0.5em; padding-inline: 0.35rem; transition: background-color 120ms ease; }
+.voice-chat .message:hover { background: color-mix(in oklab, var(--color-ink-lightest) 55%, transparent); }
+.voice-chat .message__bubble, .voice-chat .message.is-me .message__bubble { animation: none; background: none; border-radius: 0; padding: 0; }
+/* The panel is narrow so message actions float over the corner */
+.voice-chat .message__body { position: relative; }
+.voice-chat .message__tools {
+  background: var(--color-canvas); border-radius: 0.6em; box-shadow: var(--shadow-float); inset: -1.2rem 0 auto auto; padding: 0.1rem; position: absolute; z-index: 2;
+}
+.voice-chat-dot { min-block-size: 0.7rem; min-inline-size: 0.7rem; padding: 0; inset: -0.15rem -0.15rem auto auto; animation: pop-in 220ms var(--ease-out-expo); }
+/* On a wide screen the chat docks along the right edge at full height, like a side column,
+   and the room scrolls on its own beside it */
+@media (min-width: 72rem) {
+  #main:has(.voice-layout.has-chat) { display: grid; overflow: hidden; padding: 0; }
+  .voice-layout.has-chat { block-size: 100%; gap: 0; grid-template-columns: minmax(0, 1fr) clamp(20rem, 28vw, 26rem); min-block-size: 0; }
+  .voice-layout.has-chat > .voice-layout__room {
+    filter: none; block-size: 100%; min-block-size: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding-block: var(--block-space) calc(var(--block-space) * 3); padding-inline: var(--gutter-left) 1.5rem;
+  }
+  .voice-chat {
+    animation: voice-chat-side 220ms var(--ease-out-expo); block-size: 100%; border: 0; border-inline-start: 1px solid var(--color-ink-lighter);
+    border-radius: 0; box-shadow: none; position: static; z-index: auto;
+  }
+}
+/* In a full screen share the chat floats on the right of the screen, under the people and above the controls */
+.share-tile .voice-chat {
+  animation: voice-chat-side 220ms var(--ease-out-expo); block-size: auto; border: 1px solid oklch(100% 0 0 / 0.16); border-radius: 0.9rem;
+  box-shadow: 0 8px 30px oklch(0% 0 0 / 0.5); inline-size: min(24rem, 42%); inset: 3.6rem 0.7rem 4.2rem auto; position: absolute; z-index: 4;
+}
+@keyframes voice-chat-sheet { from { translate: 0 100%; } to { translate: 0 0; } }
+@keyframes voice-chat-side { from { opacity: 0; translate: 1rem 0; } to { opacity: 1; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .voice-chat, .voice-chat-dot { animation: none; } } }
+@layer components {
+.idle-room { display: grid; gap: 1rem; }
+.idle-room__head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.9rem; }
+.idle-room__tile {
+  display: grid; place-items: center; inline-size: 3.25rem; block-size: 3.25rem; border-radius: 1rem; font-size: 1.4rem;
+  background: color-mix(in oklab, var(--tint) 18%, transparent); color: var(--tint);
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+.idle-room:hover .idle-room__tile { background: color-mix(in oklab, var(--tint) 26%, transparent); transform: rotate(-4deg); }
+.idle-room__meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.idle-room .online-dot { inline-size: 0.5rem; block-size: 0.5rem; border-radius: 50%; background: var(--hue-green); display: inline-block; }
+.idle-room__start {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem;
+  border-block-start: 1px solid var(--color-ink-lighter); padding-block-start: 1rem;
+}
+.idle-room__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-inline-start: auto; }
+.idle-room__mode-icon { display: inline-grid; }
+/* On a phone the start row stays one line, with Schedule as an icon */
+@container main (max-width: 40rem) {
+  .idle-room__start, .idle-room__actions { flex-wrap: nowrap; gap: 0.5rem; }
+  .idle-room__wide, .idle-room__mode-icon { display: none; }
+  #voice-schedule { aspect-ratio: 1; padding: 0; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .idle-room:hover .idle-room__tile { transform: none; } }
+}

@@ -1,0 +1,17 @@
+@layer components {
+.shortcut-groups { display: grid; gap: 1.2rem 2rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+.shortcut-group { display: grid; gap: 0.1rem; align-content: start; }
+.shortcut-group .label { padding-block-end: 0.35rem; }
+.shortcut-row { align-items: center; border-block-start: 1px solid var(--color-ink-lightest); display: flex; gap: 1rem; justify-content: space-between; min-block-size: 2.4rem; font-size: var(--text-small); }
+.shortcut-row.is-recording { background: color-mix(in oklab, var(--color-link) 10%, transparent); border-radius: 0.5em; }
+.shortcut-edit { align-items: center; display: inline-flex; gap: 0.2rem; }
+.shortcut-key { background: none; border: 1px dashed transparent; border-radius: 0.5em; color: inherit; cursor: pointer; font: inherit; padding: 0.15rem 0.3rem; }
+.shortcut-key:hover { border-color: var(--color-ink-light); }
+.shortcut-row.is-recording .shortcut-key { border-color: var(--color-link); }
+.shortcut-row.is-custom .shortcut-key kbd { border-color: color-mix(in oklab, var(--color-link) 55%, var(--color-ink-lighter)); }
+.shortcut-key__wait { color: var(--color-link); font-size: var(--text-x-small); font-weight: 700; animation: save-pulse 1s ease-in-out infinite; }
+.shortcut-fixed { opacity: 0.75; padding-inline-end: 0.3rem; }
+.dialog--shortcuts .dialog__body { gap: 0.9rem; }
+.dialog--shortcuts .shortcut-groups { display: block; columns: 3 16rem; column-gap: 2rem; }
+.dialog--shortcuts .shortcut-group { break-inside: avoid; margin-block-end: 1rem; }
+.dialog--shortcuts .shortcut-row { min-block-size: 2.05rem; } }

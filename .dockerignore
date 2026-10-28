@@ -1,0 +1,15 @@
+**/_build
+**/deps
+**/node_modules
+web/build
+web/dist
+storage
+erl_crash.dump
+.env
+.env.*
+!.env.example
+.git
+.claude
+**/*.ez
+apps/hearth_web/priv/static/assets
+apps/hearth_web/priv/static/cache_manifest.json

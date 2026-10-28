@@ -1,0 +1,197 @@
+{{- range $pool, $spec := .Values.pools }}
+{{- if $spec.enabled }}
+{{- $component := printf "api-%s" $pool }}
+{{- $selector := dict "root" $ "component" $component }}
+{{- $modelCache := and (eq $pool "ai") $spec.modelCache }}
+{{- /* Only web runs the public endpoint, other pools answer health on the metrics port */}}
+{{- $roles := splitList "," (nospace $spec.roles) }}
+{{- $probePort := ternary "http" "metrics" (has "web" $roles) }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hearth.fullname" $ }}-{{ $component }}
+  labels:
+    {{- include "hearth.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+    hearth/role: {{ $spec.roles | quote }}
+spec:
+  {{- if not (and (eq $pool "web") $spec.autoscaling $spec.autoscaling.enabled) }}
+  replicas: {{ $spec.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "hearth.selector" $selector | nindent 6 }}
+  strategy:
+    {{- if eq $pool "rtc" }}
+    # Host ports can't be shared by an old and a new pod, so the old one goes first
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    {{- else if and $modelCache (eq $modelCache.type "pvc") }}
+    # A volume only one pod can mount can't be shared by an old and a new pod
+    type: Recreate
+    {{- else }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "hearth.selector" $selector | nindent 8 }}
+        hearth/cluster: {{ $.Release.Name | quote }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+        {{- with $.Values.api.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "hearth.serviceAccountName" $ }}
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml $.Values.api.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ $spec.terminationGracePeriodSeconds | default $.Values.api.terminationGracePeriodSeconds }}
+      {{- if eq $pool "rtc" }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      {{- if and (eq $pool "web") $.Values.api.migrations.enabled }}
+      initContainers:
+        - name: migrate
+          image: {{ include "hearth.apiImage" $ }}
+          imagePullPolicy: {{ $.Values.images.api.pullPolicy }}
+          command: ["/app/bin/migrate"]
+          securityContext:
+            {{- toYaml $.Values.api.securityContext | nindent 12 }}
+          env:
+            {{- include "hearth.apiEnv" $ | nindent 12 }}
+            - name: HEARTH_ROLES
+              value: {{ $spec.roles | quote }}
+          envFrom:
+            {{- include "hearth.apiEnvFrom" $ | nindent 12 }}
+          volumeMounts:
+            {{- include "hearth.apiVolumeMounts" $ | nindent 12 }}
+          resources:
+            {{- toYaml $spec.resources | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: api
+          image: {{ include "hearth.apiImage" $ }}
+          imagePullPolicy: {{ $.Values.images.api.pullPolicy }}
+          securityContext:
+            {{- toYaml $.Values.api.securityContext | nindent 12 }}
+          env:
+            {{- include "hearth.apiEnv" $ | nindent 12 }}
+            - name: HEARTH_ROLES
+              value: {{ $spec.roles | quote }}
+            {{- if eq $pool "rtc" }}
+            - name: RTC_PORT_RANGE
+              value: {{ $spec.portRange | quote }}
+            {{- end }}
+            {{- if $modelCache }}
+            - name: BUMBLEBEE_CACHE_DIR
+              value: /models
+            {{- end }}
+          envFrom:
+            {{- include "hearth.apiEnvFrom" $ | nindent 12 }}
+          ports:
+            {{- if has "web" $roles }}
+            - name: http
+              containerPort: {{ $.Values.api.port }}
+            {{- end }}
+            - name: metrics
+              containerPort: {{ $.Values.api.metricsPort }}
+            - name: epmd
+              containerPort: 4369
+          startupProbe:
+            httpGet: { path: /healthz/live, port: {{ $probePort }} }
+            periodSeconds: 5
+            # Loading the screening models takes longer than a normal boot
+            failureThreshold: {{ if eq $pool "ai" }}120{{ else }}30{{ end }}
+          livenessProbe:
+            httpGet: { path: /healthz/live, port: {{ $probePort }} }
+            periodSeconds: 10
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet: { path: /healthz/ready, port: {{ $probePort }} }
+            periodSeconds: 10
+            timeoutSeconds: 3
+          volumeMounts:
+            {{- include "hearth.apiVolumeMounts" $ | nindent 12 }}
+            {{- if $modelCache }}
+            - name: models
+              mountPath: /models
+            {{- end }}
+          resources:
+            {{- toYaml $spec.resources | nindent 12 }}
+      volumes:
+        {{- include "hearth.apiVolumes" $ | nindent 8 }}
+        {{- if $modelCache }}
+        - name: models
+          {{- if eq $modelCache.type "pvc" }}
+          persistentVolumeClaim:
+            claimName: {{ include "hearth.fullname" $ }}-models
+          {{- else }}
+          emptyDir:
+            sizeLimit: {{ $modelCache.size }}
+          {{- end }}
+        {{- end }}
+      {{- with $spec.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $spec.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        {{- if $spec.affinity }}
+        {{- toYaml $spec.affinity | nindent 8 }}
+        {{- else if eq $pool "rtc" }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  {{- include "hearth.selector" $selector | nindent 18 }}
+        {{- else }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "hearth.selector" $selector | nindent 20 }}
+        {{- end }}
+{{- end }}
+{{- end }}
+{{- with .Values.pools.ai }}
+{{- if and .enabled .modelCache (eq .modelCache.type "pvc") }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "hearth.fullname" $ }}-models
+  labels:
+    {{- include "hearth.labels" $ | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    {{- toYaml .modelCache.accessModes | nindent 4 }}
+  {{- with .modelCache.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .modelCache.size }}
+{{- end }}
+{{- end }}

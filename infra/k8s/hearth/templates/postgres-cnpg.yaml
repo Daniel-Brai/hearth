@@ -1,0 +1,22 @@
+{{- if .Values.postgres.cnpg.enabled }}
+# The operator makes the <name>-postgres-app Secret with a uri key
+# Copy it into Vault as hearth/<env>/database url, or use secrets.source kubernetes
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "hearth.fullname" . }}-postgres
+  labels:
+    {{- include "hearth.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.postgres.cnpg.instances }}
+  imageName: {{ .Values.postgres.cnpg.imageName }}
+  bootstrap:
+    initdb:
+      database: hearth
+      owner: hearth
+  storage:
+    size: {{ .Values.postgres.cnpg.storageSize }}
+    {{- with .Values.postgres.cnpg.storageClassName }}
+    storageClass: {{ . }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,14 @@
+dist
+build
+.react-router
+node_modules
+pnpm-lock.yaml
+src/design-system/styles/components.css
+src/design-system/styles/tokens.css
+src/design-system/styles/base.css
+src/design-system/icons/icons.ts
+src/design-system/icons/illos.ts
+src/design-system/emoji/glyphs.json
+src/pages/**/*.css
+src/shell/**/*.css
+src/features/**/*.css

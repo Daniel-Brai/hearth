@@ -1,0 +1,14 @@
+@layer components {
+.transcript__line { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: 0.4rem 1.2rem; padding-block: 0.65rem; scroll-margin-top: 5rem; }
+.transcript__line .t { font-family: var(--font-mono); font-size: var(--text-x-small); color: var(--color-ink-medium); padding-block-start: 0.35rem; text-align: end; }
+.transcript__line .t a:hover { color: var(--color-link); }
+.transcript__line p { line-height: 1.6; hyphens: auto; text-wrap: pretty; }
+.transcript__line { border-radius: 0.6em; margin-inline: -0.6rem; padding-inline: 0.6rem; transition: background-color 0.2s ease; }
+.transcript__line[data-current] { background: var(--color-selected-light); }
+.transcript__line[data-current] .t { color: var(--color-link); font-weight: 600; }
+.transcript__editable { align-items: start; display: flex; gap: 0.4rem; }
+.transcript__editable > p { flex: 1; min-inline-size: 0; }
+.transcript__edit { opacity: 0; transition: opacity 0.15s ease; }
+.transcript__line:hover .transcript__edit, .transcript__edit:focus-visible { opacity: 1; }
+@media (hover: none) { .transcript__edit { opacity: 1; } }
+.transcript__form { display: grid; gap: 0.5rem; margin-block-start: 0.25rem; } }

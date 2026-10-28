@@ -1,0 +1,35 @@
+@layer components {
+.community-hero { border: 1px solid var(--color-ink-lighter); border-radius: 1.1em; overflow: hidden; background: var(--color-canvas); }
+.community-hero__banner { aspect-ratio: 4 / 1; background-position: center; background-size: cover; background-color: var(--color-ink-lightest); min-block-size: 6.5rem; max-block-size: 12rem; inline-size: 100%; }
+.community-hero__banner.is-default {
+  background-image:
+    radial-gradient(circle at 15% 30%, color-mix(in oklab, var(--tint) 55%, transparent), transparent 45%),
+    radial-gradient(circle at 85% 70%, color-mix(in oklab, var(--tint) 35%, var(--hue-pink)), transparent 50%),
+    linear-gradient(120deg, color-mix(in oklab, var(--tint) 30%, var(--color-canvas)), color-mix(in oklab, var(--tint) 12%, var(--color-canvas)));
+}
+.community-hero__body { display: grid; gap: 0.9rem; padding: 0 1.3rem 1.3rem; }
+.community-hero__top { align-items: end; display: flex; flex-wrap: wrap; gap: 0.8rem; justify-content: space-between; margin-block-start: -2.3rem; }
+.community-mark--hero { border: 4px solid var(--color-canvas); border-radius: 1.2rem; box-shadow: var(--shadow); font-size: 2rem; }
+.community-hero__actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-block-end: -0.7rem; }
+.community-hero__manage > svg:last-child { inline-size: 0.85rem; block-size: 0.85rem; color: var(--color-ink-dark); transition: rotate 160ms ease-out; }
+.community-hero__manage[aria-expanded="true"] > svg:last-child { rotate: 180deg; }
+.community-hero__title { margin-block-start: 0.6rem; }
+.community-hero__meta { align-items: center; display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
+.community-hero__meta strong { color: var(--color-ink); }
+.community-hero__intro { display: grid; gap: 0.3rem; justify-items: start; }
+.community-hero__intro .md { max-block-size: 4.7em; overflow: hidden; mask-image: linear-gradient(to bottom, #000 55%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent); }
+.community-hero__intro.is-open .md { max-block-size: none; mask-image: none; -webkit-mask-image: none; }
+.community-hero__intro .btn { margin-inline-start: -0.8em; }
+.event-date--add { --tint: var(--color-ink-medium); background: none; border-style: dashed; color: var(--color-ink-dark); }
+.event-mini--add { border-style: dashed; color: inherit; text-decoration: none; }
+.feed-tools { align-items: center; display: flex; gap: 0.5rem; }
+.feed-tools__layout { margin-inline-start: auto; }
+.feed-filter .select__button { min-inline-size: 9rem; }
+@media (max-width: 639px) {
+  .feed-tools { gap: 0.4rem; }
+  .feed-filter { flex: 1; min-inline-size: 0; }
+  .feed-filter .select { inline-size: 100%; }
+  .feed-filter .select__button { gap: 0.25rem; inline-size: 100%; min-inline-size: 0; padding-inline: 0.6rem; }
+}
+
+.community-hero__banner.is-default { background-image: none; background-color: color-mix(in oklab, var(--tint) 14%, var(--color-canvas)); } }

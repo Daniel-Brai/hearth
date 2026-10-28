@@ -1,0 +1,24 @@
+@layer components {
+.catchup-card { display: grid; gap: 0.9rem; padding: 1.2rem 1.3rem; border: 1px solid var(--color-ink-lighter); border-radius: 1em; }
+.catchup-card__head { align-items: center; display: flex; gap: 0.8rem; }
+.catchup-card__more {
+  align-items: center; border-radius: 99rem; color: var(--color-ink-dark); display: inline-flex; font-size: var(--text-small);
+  font-weight: 600; gap: 0.35rem; justify-self: start; padding: 0.3rem 0.7rem 0.3rem 0.2rem; text-decoration: none;
+  transition: color 120ms ease, background 120ms ease;
+}
+.catchup-card__more:hover { background: var(--color-ink-lightest); color: var(--color-ink); }
+.catchup-card__more svg { block-size: 1em; inline-size: 1em; transform: rotate(-90deg); transition: transform 120ms ease; }
+.catchup-card__more:hover svg { transform: translateX(2px) rotate(-90deg); }
+.start-card { display: grid; gap: 0.6rem; justify-items: start; padding: 1.4rem; }
+.start-card__mark { display: grid; place-items: center; inline-size: 2.6rem; block-size: 2.6rem; border-radius: 0.8rem; background: color-mix(in oklab, var(--color-link) 16%, transparent); color: var(--color-link); }
+.start-card__title { font-size: var(--text-large); font-weight: 900; margin: 0; }
+.start-card p { margin: 0; max-inline-size: 38rem; line-height: 1.5; }
+.join-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 0.8rem; border-radius: 0.8rem; }
+.join-row:hover { background: var(--color-ink-lightest, rgb(127 127 127 / 0.08)); }
+@media (max-width: 479px) {
+.greet-date { display: none; }
+.header__eyebrow:has(.greet-date) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-inline-size: 100%; } }
+.greet-short { display: none; }
+@media (max-width: 400px) {
+.greet-long { display: none; }
+.greet-short { display: inline; } } }

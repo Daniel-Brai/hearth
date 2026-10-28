@@ -1,0 +1,12 @@
+<%= case @line do %>
+  <% {:link, before, text, url} -> %>
+    <mj-text>
+      {before}<a
+        href={url}
+        class="link"
+        style="color: #1d4ed8; text-decoration: underline; font-weight: 600;"
+      >{text}</a>.
+    </mj-text>
+  <% line -> %>
+    <mj-text>{line}</mj-text>
+<% end %>

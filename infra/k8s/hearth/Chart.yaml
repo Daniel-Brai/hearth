@@ -1,0 +1,14 @@
+apiVersion: v2
+name: hearth
+description: Hearth on Kubernetes. The API release split into pools by role, the web server, and optional coturn, Postgres and object storage.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/daniel-brai/hearth
+sources:
+  - https://github.com/daniel-brai/hearth
+keywords:
+  - community
+  - forum
+  - chat
+  - phoenix

@@ -1,0 +1,35 @@
+# Line endings. Text is stored with LF and checked out with LF everywhere,
+# so formatters and shell scripts behave the same on every machine.
+* text=auto eol=lf
+# Windows release scripts need CRLF to run.
+*.bat text eol=crlf
+
+# Better hunk headers in diffs.
+*.ex diff=elixir
+*.exs diff=elixir
+*.heex diff=html
+*.md diff=markdown
+*.css diff=css
+
+# Written by tools, not people, so collapsed in reviews and left out of
+# language stats. Regenerate them instead of editing (`mix api.spec`,
+# `pnpm gen:api`).
+apps/hearth_web/priv/openapi.json linguist-generated
+web/src/generated/** linguist-generated
+mix.lock linguist-generated -diff
+web/pnpm-lock.yaml linguist-generated -diff
+
+# Binary files are never diffed or given line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.pdf binary
+*.mp4 binary
+*.webm binary
+*.woff binary
+*.woff2 binary
+*.pem -diff

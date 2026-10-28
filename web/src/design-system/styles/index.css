@@ -1,0 +1,69 @@
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@import './tokens.css';
+@import './base.css';
+@import './components.css';
+
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  --text-xx-small: var(--text-xx-small);
+  --text-x-small: var(--text-x-small);
+  --text-small: var(--text-small);
+  --text-normal: var(--text-normal);
+  --text-medium: var(--text-medium);
+  --text-large: var(--text-large);
+  --text-x-large: var(--text-x-large);
+  --text-xx-large: var(--text-xx-large);
+
+  --color-canvas: var(--color-canvas);
+  --color-ink: var(--color-ink);
+  --color-ink-darker: var(--color-ink-darker);
+  --color-ink-dark: var(--color-ink-dark);
+  --color-ink-medium: var(--color-ink-medium);
+  --color-ink-light: var(--color-ink-light);
+  --color-ink-lighter: var(--color-ink-lighter);
+  --color-ink-lightest: var(--color-ink-lightest);
+  --color-ink-inverted: var(--color-ink-inverted);
+  --color-link: var(--color-link);
+  --color-selected: var(--color-selected);
+  --color-selected-light: var(--color-selected-light);
+  --color-negative: var(--color-negative);
+  --color-positive: var(--color-positive);
+  --color-highlight: var(--color-highlight);
+  --color-glass: var(--color-glass);
+  --color-terminal: var(--color-terminal);
+  --color-backdrop: var(--color-backdrop);
+  --color-hue-ink: var(--hue-ink);
+  --color-hue-blue: var(--hue-blue);
+  --color-hue-violet: var(--hue-violet);
+  --color-hue-purple: var(--hue-purple);
+  --color-hue-pink: var(--hue-pink);
+  --color-hue-red: var(--hue-red);
+  --color-hue-orange: var(--hue-orange);
+  --color-hue-yellow: var(--hue-yellow);
+  --color-hue-green: var(--hue-green);
+  --color-hue-aqua: var(--hue-aqua);
+
+  --shadow-lift: var(--shadow);
+  --shadow-float: var(--shadow-float);
+  --ease-out-expo: var(--ease-out-expo);
+  --ease-out-overshoot: var(--ease-out-overshoot);
+  --ease-out-overshoot-subtle: var(--ease-out-overshoot-subtle);
+}

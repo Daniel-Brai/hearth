@@ -1,0 +1,20 @@
+# Reads the API's secrets from Vault with an AppRole, whose role id and
+# secret id files sit beside this one (see k8s/README.md)
+# Settings that aren't secret still come from .env
+
+x-vault: &vault
+  environment:
+    SECRETS_FILE: /run/hearth/secrets.yml
+    SECRETS_ENV: ${SECRETS_ENV:-production}
+    VAULT_ADDR: ${VAULT_ADDR:?set VAULT_ADDR in .env}
+    VAULT_AUTH: approle
+    VAULT_ROLE_ID_FILE: /run/hearth/vault-role-id
+    VAULT_SECRET_ID_FILE: /run/hearth/vault-secret-id
+  volumes:
+    - ./k8s/hearth/files/secrets.yml:/run/hearth/secrets.yml:ro,z
+    - ./vault-role-id:/run/hearth/vault-role-id:ro,z
+    - ./vault-secret-id:/run/hearth/vault-secret-id:ro,z
+
+services:
+  setup: *vault
+  api: *vault

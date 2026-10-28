@@ -1,0 +1,21 @@
+@layer components {
+.post-files .file-video { inline-size: min(100%, calc(28rem * var(--ratio))); }
+.post-files .file-video .vp:not(.vp--expanded) video { max-block-size: 28rem; }
+.post-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding-block: 0.9rem; border-block: 1px solid var(--color-ink-lightest); margin-block: 1.4rem 0.6rem; }
+.byline { display: inline-flex; align-items: center; gap: 0.5rem; font-size: var(--text-small); }
+.reply--child { padding-block: 0.6rem; }
+.thread__more--top { margin-block: 0.4rem 1rem; }
+.reply__meta { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; font-size: var(--text-small); min-block-size: 1.9rem; padding-inline-end: 2.5rem; }
+.reply__author { font-weight: 700; }
+.reply__actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-block-start: 0.6rem; }
+.reply > .reply__menu { position: absolute; inset: 0.85rem 0 auto auto; opacity: 0; transition: opacity 150ms ease 120ms; }
+.reply:hover > .reply__menu, .reply:focus-within > .reply__menu, .reply__menu:has([aria-expanded="true"]) { opacity: 1; }
+@media (any-hover: none) {
+.reply__menu { opacity: 0.7; } }
+.post-edit { display: grid; gap: 0.9rem; justify-items: center; padding-block: 1rem 1.4rem; }
+.post-edit .count-wrap { inline-size: 100%; }
+.post-edit__title { inline-size: 100%; text-align: center; resize: none; field-sizing: content; }
+.post-edit__body { inline-size: 100%; }
+.post-edit__bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: flex-end; inline-size: 100%; }
+.post-edit__bar > :first-child { margin-inline-end: auto; }
+}

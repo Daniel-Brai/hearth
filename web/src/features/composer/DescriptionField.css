@@ -1,0 +1,3 @@
+@layer components {
+.description-preview { min-block-size: calc(6lh + 1.2rem); }
+.description-preview p { margin: 0; } }

@@ -1,0 +1,7 @@
+@layer components {
+.request-card { display: grid; gap: 0.8rem; }
+.request-card__head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.8rem; align-items: center; }
+.request-card__name { font-size: var(--text-medium, 1.1rem); font-weight: 800; }
+.request-card__facts { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: var(--text-small); color: var(--color-ink-dark); }
+.request-card__note { margin: 0; padding: 0.6rem 0.8rem; border-inline-start: 3px solid var(--color-ink-lighter); background: color-mix(in oklab, var(--color-ink) 5%, transparent); border-radius: 0 0.5rem 0.5rem 0; font-size: var(--text-small); }
+.request-card__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; padding-block-start: 0.7rem; border-block-start: 1px solid var(--color-ink-lightest); } }

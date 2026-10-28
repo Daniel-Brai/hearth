@@ -1,0 +1,6 @@
+@layer components {
+.code-boxes { display: flex; gap: 0.5rem; justify-content: center; }
+.code-box { inline-size: 3rem; block-size: 3.4rem; padding: 0; text-align: center; font-family: var(--font-mono); font-size: var(--text-large); font-weight: 900; caret-color: var(--color-link); }
+.code-boxes .code-box:nth-of-type(3) { margin-inline-end: 0.6rem; }
+@media (max-width: 380px) {
+.code-box { inline-size: 2.5rem; block-size: 3rem; } } }

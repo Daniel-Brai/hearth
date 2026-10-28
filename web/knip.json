@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "rules": {
+    "binaries": "warn",
+    "dependencies": "error",
+    "devDependencies": "error",
+    "duplicates": "warn",
+    "enumMembers": "warn",
+    "exports": "warn",
+    "files": "error",
+    "optionalPeerDependencies": "warn",
+    "types": "warn",
+    "unlisted": "warn",
+    "unresolved": "warn"
+  },
+  "entry": ["scripts/*.mjs"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.mjs"],
+  "ignore": ["src/generated/**"],
+  "ignoreDependencies": ["isbot", "tailwindcss"]
+}

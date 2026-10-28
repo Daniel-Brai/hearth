@@ -1,0 +1,48 @@
+@layer components {
+.email-chips { align-items: center; border: 1px solid var(--color-ink-light); border-radius: 0.7em; display: flex; flex-wrap: wrap; gap: 0.4rem; min-block-size: 2.9rem; padding: 0.4rem 0.5rem; cursor: text; min-inline-size: 0; }
+.email-chips:focus-within { outline: var(--focus-ring); outline-offset: -1px; border-color: transparent; }
+.email-chips input { background: transparent; border: 0; flex: 1; font-size: max(16px, 1rem); min-inline-size: 12rem; padding: 0.3rem; color: var(--color-ink); }
+.email-chips input:focus { outline: none; }
+.email-chip {
+  align-items: center; background: var(--color-selected); border-radius: 99rem; display: inline-flex; gap: 0.15rem; font-size: var(--text-small); font-weight: 600;
+  max-inline-size: 100%; min-block-size: 2rem; padding: 0 0.2rem 0 0.75rem; animation: pop-in 180ms var(--ease-out-overshoot-subtle);
+}
+.email-chip.is-bad { background: color-mix(in oklab, var(--color-negative) 14%, var(--color-canvas)); color: var(--color-negative); text-decoration: wavy underline; text-underline-offset: 0.2em; }
+.email-chip__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-inline-size: 0; }
+.email-chip__remove {
+  align-items: center; background: none; border: 0; border-radius: 50%; color: inherit; cursor: pointer; display: inline-grid; block-size: 1.6rem; inline-size: 1.6rem; justify-content: center; padding: 0; flex-shrink: 0;
+}
+.email-chip__remove:hover { background: color-mix(in oklab, var(--color-ink) 10%, transparent); }
+.email-chip__remove svg[aria-hidden] { inline-size: 0.85rem; block-size: 0.85rem; }
+.link-box { align-items: center; background: var(--color-ink-lightest); border-radius: 0.7em; display: flex; gap: 0.5rem; min-block-size: 3rem; min-inline-size: 0; max-inline-size: 100%; padding: 0.35rem 0.35rem 0.35rem 0.9rem; }
+.link-box code { flex: 1 1 0; min-inline-size: 0; font-family: var(--font-mono); font-size: var(--text-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
+.link-facts { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); }
+.meter { background: var(--color-ink-lighter); border-radius: 99rem; block-size: 0.3rem; display: block; inline-size: 100%; min-inline-size: 6rem; overflow: hidden; }
+.meter > span { background: var(--color-link); border-radius: inherit; display: block; block-size: 100%; }
+.link-count {
+  align-items: center; background: var(--color-canvas); border: 1px solid var(--color-ink-lighter); border-radius: 99rem; cursor: default; color: var(--color-ink-dark);
+  display: inline-flex; flex: none; font-size: var(--text-x-small); font-variant-numeric: tabular-nums; font-weight: 700; gap: 0.35rem; min-block-size: 2rem; padding: 0 0.7rem 0 0.45rem; position: relative;
+}
+.link-count:focus-visible { outline: var(--focus-ring); }
+.link-count__ring { block-size: 1rem; inline-size: 1rem; rotate: -90deg; }
+.link-count__ring circle { fill: none; stroke-width: 3; stroke: var(--color-ink-lighter); }
+.link-count__ring circle + circle { stroke: var(--color-positive, var(--hue-green)); stroke-linecap: round; transition: stroke-dasharray 300ms ease; }
+.link-count.is-full .link-count__ring circle + circle { stroke: var(--color-negative); }
+.link-count__pop {
+  background: var(--color-canvas); border: 1px solid var(--color-ink-lighter); border-radius: 0.8em; box-shadow: var(--shadow-lg, var(--shadow)); color: var(--color-ink);
+  display: grid; font-weight: 400; gap: 0.4rem; inline-size: 16rem; inset-block-start: calc(100% + 0.5rem); inset-inline-end: -4.5rem; line-height: 1.45; opacity: 0;
+  padding: 0.75rem 0.9rem; pointer-events: none; position: absolute; translate: 0 -0.25rem; transition: opacity 140ms ease, translate 140ms ease; z-index: 30; white-space: normal;
+}
+.link-count__pop strong { font-size: var(--text-small); }
+.link-count:hover .link-count__pop, .link-count:focus-visible .link-count__pop { opacity: 1; translate: 0 0; }
+@media (max-width: 40rem) {
+.link-count__pop { inset-inline-end: -5.5rem; inline-size: min(16rem, 80vw); } }
+.panel:has(.link-count:hover, .link-count:focus-visible) { position: relative; z-index: 5; }
+.invite-row__menu { flex: none; inline-size: 2.25rem; display: flex; justify-content: flex-end; }
+@container main (max-width: 40rem) {
+.invite-row__menu { grid-column: 3; grid-row: 1; } }
+.one-line-row { flex-wrap: nowrap; min-inline-size: 0; }
+.one-line-row > * { min-inline-size: 0; }
+.one-line-row .subtle { white-space: nowrap; }
+.one-line-row .select { flex: none; }
+.one-line-row > .btn { flex: none; } }
