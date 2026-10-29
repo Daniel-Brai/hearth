@@ -32,6 +32,9 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 }
 
 // jsdom lays nothing out, so scrolling an element does nothing
-if (typeof Element !== 'undefined') Element.prototype.scrollTo ??= () => undefined;
+if (typeof Element !== 'undefined') {
+  Element.prototype.scrollTo ??= () => undefined;
+  Element.prototype.scrollIntoView ??= () => undefined;
+}
 
 afterEach(() => cleanup());

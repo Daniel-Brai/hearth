@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import { Badge, cn, Dialog, EmptyState, Icon, Keys, Link } from '@/design-system';
+import { Badge, Button, cn, Dialog, EmptyState, Icon, Keys, Link } from '@/design-system';
 import { useAppState } from '@/data/store';
 import type { AppState } from '@/domain/app-state';
 import {
@@ -331,7 +331,7 @@ export function JumpDialog() {
           className="jump__input"
           id="jump-input"
           type="search"
-          placeholder="Communities, rooms, posts, people, #tags"
+          placeholder="Jump to anything"
           aria-label="Jump to anything"
           autoComplete="off"
           value={query}
@@ -353,7 +353,10 @@ export function JumpDialog() {
             }
           }}
         />
-        <Keys combo="esc" />
+        <Keys combo="esc" className="kb-only" />
+        <Button size="small" variant="borderless" className="jump__cancel" onClick={close}>
+          Cancel
+        </Button>
       </div>
 
       <div className="jump__results" ref={list}>

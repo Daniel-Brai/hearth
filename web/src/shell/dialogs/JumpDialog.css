@@ -13,5 +13,17 @@
 .jump__count { margin-inline-start: auto; }
 .jump__foot { border-block-start: 1px solid var(--color-ink-lighter); color: var(--color-ink-dark); display: flex; gap: 1.2rem; font-size: var(--text-x-small); padding: 0.55rem 1.2rem; }
 .jump__foot > span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.jump__cancel { display: none; }
 @media (max-width: 639px), (any-hover: none) {
-.kb-only.jump__hint { display: none !important; } } }
+.kb-only.jump__hint { display: none !important; }
+.jump__cancel { display: inline-flex; margin-inline-end: -0.5rem; } }
+@media (max-width: 639px) {
+.dialog--jump { --dialog-width: calc(100vw - 1rem); margin-block-start: 0.5rem; max-block-size: calc(100dvh - 1rem); }
+.dialog--jump[open] { display: flex; flex-direction: column; }
+.jump__field { padding: 0.35rem 0.75rem 0.35rem 1rem; }
+.jump__results { flex: 1; max-block-size: none; min-block-size: 0; } }
+/* Touch has no pointer to follow, so a row lights up only while it is pressed */
+@media (any-hover: none) {
+.jump__item { min-block-size: 2.75rem; }
+.jump__item[aria-selected="true"] { background: none; }
+.jump__item:active { background: var(--color-selected); } } }
