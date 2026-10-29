@@ -1,14 +1,5 @@
 import { useMemo } from 'react';
-import {
-  ButtonLink,
-  EmptyState,
-  Icon,
-  Label,
-  OriginNote,
-  Segmented,
-  Select,
-  cn,
-} from '@/design-system';
+import { ButtonLink, EmptyState, Icon, OriginNote, Segmented, Select, cn } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { plural } from '@/domain/format';
 import type { FeedSort, feedEmpty } from '@/domain/selectors';
@@ -146,7 +137,7 @@ export function PinnedFeed({
 }) {
   return (
     <section className="grid gap-2">
-      <Label>Pinned</Label>
+      <h2 className="label">Pinned</h2>
       <div className={cn('feed', compact && 'feed--compact')}>
         {pinned.map((p) => (
           <PostRow key={p.id} post={p} />
@@ -174,7 +165,7 @@ export function MainFeed({
   return (
     <section className="grid gap-2">
       <div className="flex items-center justify-between">
-        <Label>{SORT_LABEL[sort]}</Label>
+        <h2 className="label">{SORT_LABEL[sort]}</h2>
       </div>
 
       <div className={cn('feed', view.compact && 'feed--compact')}>
