@@ -55,6 +55,12 @@ defmodule HearthWeb.ConnCase do
     token
   end
 
+  def unsigned_token(claims) do
+    Enum.map_join([%{"alg" => "none", "typ" => "JWT"}, claims], ".", fn part ->
+      part |> Jason.encode!() |> Base.url_encode64(padding: false)
+    end)
+  end
+
   def access_claims(user, extra \\ %{}) do
     now = System.os_time(:second)
 

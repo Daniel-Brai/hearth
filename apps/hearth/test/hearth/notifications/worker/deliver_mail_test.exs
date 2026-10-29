@@ -13,7 +13,7 @@ defmodule Hearth.Notifications.Worker.DeliverMailTest do
   describe "enqueue/2" do
     test "keeps mail out of job args" do
       email = Internet.email()
-      code = "#{Enum.random(100_000..999_999)}"
+      code = "#{Faker.random_between(100_000, 999_999)}"
       mail = %{to: [nil, email], subject: "#{code} is your code", html: code, text: code}
 
       assert {:ok, _job} =

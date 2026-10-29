@@ -1,10 +1,15 @@
 defmodule Hearth.Storage.S3Test do
   use ExUnit.Case, async: true
 
+  import Req.Test
+
   alias Hearth.Storage.Object
   alias Hearth.Storage.S3
   alias Plug.Conn
 
+  @path "/hearth-test/media/x/original"
+
+  setup {Req.Test, :set_req_test_from_context}
   setup {Req.Test, :verify_on_exit!}
 
   describe "put_url/3" do
@@ -39,7 +44,7 @@ defmodule Hearth.Storage.S3Test do
                S3.get_url("media/x/w640.webp", hour, 7_200, nil)
     end
 
-    test "asks the bucket to send a download under its name" do
+    test "signs download under its name" do
       url = S3.get_url("media/x/original", ~U[2026-10-25 11:00:00Z], 7_200, "Talk.mp4")
       query = url |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
 
@@ -50,15 +55,15 @@ defmodule Hearth.Storage.S3Test do
 
   describe "head/1" do
     test "fails if nothing is stored" do
-      Req.Test.expect(S3, &Conn.send_resp(&1, 404, ""))
+      stub(S3, fn %Conn{method: "HEAD", request_path: @path} = conn ->
+        Conn.send_resp(conn, 404, "")
+      end)
 
       assert {:error, :not_found} = S3.head("media/x/original")
     end
 
     test "head" do
-      Req.Test.expect(S3, fn conn ->
-        assert conn.method == "HEAD"
-
+      stub(S3, fn %Conn{method: "HEAD", request_path: @path} = conn ->
         conn
         |> Conn.put_resp_header("content-length", "2048")
         |> Conn.put_resp_header("content-type", "image/png")
@@ -73,10 +78,7 @@ defmodule Hearth.Storage.S3Test do
 
   describe "start_multipart/2" do
     test "start multipart" do
-      Req.Test.expect(S3, fn conn ->
-        assert conn.method == "POST"
-        assert conn.query_string =~ "uploads"
-
+      stub(S3, fn %Conn{method: "POST", request_path: @path, query_string: "uploads=1"} = conn ->
         Conn.send_resp(conn, 200, """
         <InitiateMultipartUploadResult>
           <Bucket>hearth-test</Bucket><Key>media/x/original</Key><UploadId>up-1</UploadId>
@@ -99,7 +101,7 @@ defmodule Hearth.Storage.S3Test do
 
   describe "list_parts/2" do
     test "list parts" do
-      Req.Test.expect(S3, fn conn ->
+      stub(S3, fn %Conn{method: "GET", request_path: @path, query_string: "uploadId=up-1"} = conn ->
         Conn.send_resp(conn, 200, """
         <ListPartsResult>
           <Part><PartNumber>1</PartNumber><ETag>"e1"</ETag><Size>10485760</Size></Part>
@@ -116,17 +118,20 @@ defmodule Hearth.Storage.S3Test do
 
   describe "complete_multipart/3" do
     test "fails if the store refuses" do
-      Req.Test.expect(S3, &Conn.send_resp(&1, 400, "<Error><Code>InvalidPart</Code></Error>"))
+      stub(S3, fn %Conn{method: "POST", request_path: @path, query_string: "uploadId=up-1"} = conn ->
+        Conn.send_resp(conn, 400, "<Error><Code>InvalidPart</Code></Error>")
+      end)
 
       assert {:error, {:http_error, 400, _response}} =
                S3.complete_multipart("media/x/original", "up-1", [{1, "e1"}])
     end
 
     test "complete multipart" do
-      Req.Test.expect(S3, fn conn ->
-        {:ok, body, conn} = Conn.read_body(conn)
-        assert body =~ "<PartNumber>1</PartNumber>"
-        assert body =~ "e1"
+      parts = "<Part><PartNumber>1</PartNumber><ETag>e1</ETag></Part>"
+
+      stub(S3, fn %Conn{method: "POST", request_path: @path, query_string: "uploadId=up-1"} = conn ->
+        {:ok, "<CompleteMultipartUpload>" <> ^parts <> "</CompleteMultipartUpload>", conn} =
+          Conn.read_body(conn)
 
         Conn.send_resp(conn, 200, "<CompleteMultipartUploadResult/>")
       end)

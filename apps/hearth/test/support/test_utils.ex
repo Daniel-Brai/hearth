@@ -21,6 +21,7 @@ defmodule Hearth.TestUtils do
   alias Hearth.Forum
   alias Hearth.Media
   alias Hearth.Notifications
+  alias Hearth.Notifications.Channel.Mail
   alias Hearth.Notifications.Notification
   alias Hearth.Notifications.Worker.DeliverMail
   alias Hearth.RateLimit
@@ -456,6 +457,43 @@ defmodule Hearth.TestUtils do
     {^count, _rows} = Repo.insert_all(Notification, rows)
 
     :ok
+  end
+
+  def pluck(items, field), do: Enum.map(items, &Map.fetch!(&1, field))
+
+  def out_of_order(values) do
+    values
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.reject(fn [before, next] -> before <= next end)
+  end
+
+  def out_of_order(items, field), do: items |> pluck(field) |> out_of_order()
+
+  def long_silences(silences, min_ms) do
+    Enum.filter(silences, fn {from, to} -> is_integer(to) and to - from >= min_ms end)
+  end
+
+  def start_servings!(servings) do
+    for {module, serving} <- servings do
+      start_supervised!({Nx.Serving, serving: serving, name: module, batch_size: 1})
+    end
+  end
+
+  def spoken_text(segments), do: segments |> pluck(:text) |> Enum.join(" ") |> String.downcase()
+
+  def stored(items), do: Enum.filter(items, &match?({:ok, _object}, Storage.head(&1.key)))
+
+  # The messages whose mail writes out a web address outside the button and its fallback line
+  def mails_with_addresses(messages, to) do
+    for %module{} = message <- messages,
+        mail = module.to_mail(message, to),
+        {:ok, html} = Mail.render(mail, mail.subject),
+        html
+        |> String.replace(~r{<head>.*</head>}s, "")
+        |> String.replace(~r{If the button doesn't work.*?</span>}s, "")
+        |> String.replace(~r{<[^>]*>}, " ")
+        |> String.contains?("http"),
+        do: module
   end
 
   def child_names(children) do

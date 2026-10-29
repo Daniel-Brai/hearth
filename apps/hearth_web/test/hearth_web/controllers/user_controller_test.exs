@@ -4,6 +4,7 @@ defmodule HearthWeb.UserControllerTest do
   alias Faker.Lorem
   alias Hearth.Accounts
   alias Hearth.Forum
+  alias Hearth.Forum.Kind
   alias Hearth.TestUtils
 
   describe "index" do
@@ -101,7 +102,7 @@ defmodule HearthWeb.UserControllerTest do
     test "gives each reply with the post it answers", %{conn: conn} do
       owner = TestUtils.register_random_user!()
       community = TestUtils.create_random_forum!(owner)
-      question = community.id |> Forum.list_kinds() |> Enum.find(& &1.answers)
+      question = Kind.get(community_id: community.id, key: "question")
       post = TestUtils.create_random_post!(owner, community, kind_id: question.id)
       author = TestUtils.join_random_member!(community)
       {:ok, reply} = Forum.reply(author, post, %{body: Lorem.sentence()})

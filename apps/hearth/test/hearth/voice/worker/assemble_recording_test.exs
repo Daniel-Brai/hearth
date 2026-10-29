@@ -81,11 +81,10 @@ defmodule Hearth.Voice.Worker.AssembleRecordingTest do
       assert ready.processing_ms > 0
       assert [%Speaker{}, %Speaker{}] = ready.speakers
 
-      assert Enum.sort([host_id, speaker_id]) ==
-               ready.speakers |> Enum.map(& &1.user_id) |> Enum.sort()
+      assert ready.speakers |> TestUtils.pluck(:user_id) |> MapSet.new() ==
+               MapSet.new([host_id, speaker_id])
 
-      for track <- ready.tracks,
-          do: assert({:error, :not_found} = Storage.download(track.key, "/dev/null"))
+      assert TestUtils.stored(ready.tracks) == []
 
       assert {:ok, %{video_codec: "h264", audio_codec: "aac", width: 1_280, height: 720}} =
                TempFile.run(fn path ->

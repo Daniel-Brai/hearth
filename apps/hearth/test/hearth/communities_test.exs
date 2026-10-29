@@ -23,6 +23,7 @@ defmodule Hearth.CommunitiesTest do
   alias Hearth.Events.Event
   alias Hearth.IAM
   alias Hearth.IAM.Membership
+  alias Hearth.IAM.Role
   alias Hearth.TestUtils
 
   setup do
@@ -76,7 +77,7 @@ defmodule Hearth.CommunitiesTest do
       assert Communities.slug_for(name) == first.slug <> "-3"
     end
 
-    test "starts a name with no latin letters from community" do
+    test "uses community for non latin names" do
       assert Communities.slug_for("读书会") == "community"
     end
   end
@@ -178,13 +179,14 @@ defmodule Hearth.CommunitiesTest do
     end
 
     test "lists public communities with rooms" do
-      %{id: id} = TestUtils.create_random_community!(nil, visibility: :public_indexed)
+      %{id: second_id} =
+        TestUtils.create_random_community!(nil, name: "Birch Club", visibility: :public_indexed)
 
-      communities = Communities.list_public()
-      names = Enum.map(communities, & &1.name)
+      %{id: first_id} =
+        TestUtils.create_random_community!(nil, name: "Alder Club", visibility: :public_indexed)
 
-      assert names == Enum.sort(names)
-      assert %{rooms: [_room | _rooms]} = Enum.find(communities, &(&1.id == id))
+      assert [%{id: ^first_id, rooms: [_room | _rooms]}, %{id: ^second_id} | _others] =
+               Communities.list_public()
     end
   end
 
@@ -348,13 +350,13 @@ defmodule Hearth.CommunitiesTest do
 
   describe "update_role/3" do
     test "fails for the Owner role", %{owner: owner, community: community} do
-      role = community.id |> IAM.list_roles() |> Enum.find(&(&1.key == "owner"))
+      role = Role.get(community_id: community.id, key: "owner")
 
       assert {:error, :forbidden} = Communities.update_role(owner, role, %{name: "Boss"})
     end
 
     test "fails to change role key", %{owner: owner, community: community} do
-      role = community.id |> IAM.list_roles() |> Enum.find(&(&1.key == "moderator"))
+      role = Role.get(community_id: community.id, key: "moderator")
 
       assert {:ok, %{name: "Stewards", key: "moderator"}} =
                Communities.update_role(owner, role, %{name: "Stewards", key: "stewards"})
@@ -363,7 +365,7 @@ defmodule Hearth.CommunitiesTest do
 
   describe "delete_role/2" do
     test "fails for the Owner role", %{owner: owner, community: community} do
-      role = community.id |> IAM.list_roles() |> Enum.find(&(&1.key == "owner"))
+      role = Role.get(community_id: community.id, key: "owner")
 
       assert {:error, :system_role} = Communities.delete_role(owner, role)
     end
@@ -372,7 +374,7 @@ defmodule Hearth.CommunitiesTest do
       {:ok, role} = Communities.create_role(owner, community, %{key: "helpers", name: "Helpers"})
 
       assert {:ok, _role} = Communities.delete_role(owner, role)
-      refute community.id |> IAM.list_roles() |> Enum.any?(&(&1.key == "helpers"))
+      refute Role.exists?(community_id: community.id, key: "helpers")
     end
   end
 

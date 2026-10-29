@@ -39,14 +39,15 @@ defmodule Hearth.Notifications.Listener.ModerationTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    for user <- [owner, helper] do
-      assert %Page{data: [%Notification{kind: :report, actor_id: nil}]} =
-               Notifications.list_notifications(user)
-    end
+    assert %Page{data: [%Notification{kind: :report, actor_id: nil}]} =
+             Notifications.list_notifications(owner)
 
-    for user <- [reporter, author, bystander] do
-      assert %Page{data: []} = Notifications.list_notifications(user)
-    end
+    assert %Page{data: [%Notification{kind: :report, actor_id: nil}]} =
+             Notifications.list_notifications(helper)
+
+    assert %Page{data: []} = Notifications.list_notifications(reporter)
+    assert %Page{data: []} = Notifications.list_notifications(author)
+    assert %Page{data: []} = Notifications.list_notifications(bystander)
   end
 
   test "tells admins about direct message", %{author: author, reporter: reporter} do

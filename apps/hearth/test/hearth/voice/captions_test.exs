@@ -15,7 +15,7 @@ defmodule Hearth.Voice.CaptionsTest do
   end
 
   describe "caption/3" do
-    test "skips a stretch when as many are already running", %{session_id: s, user_id: u} do
+    test "skips a stretch at the limit", %{session_id: s, user_id: u} do
       TestUtils.put_voice(caption_limit: 0)
 
       assert :busy = Captions.caption(s, u, TestUtils.opus_packets(25))

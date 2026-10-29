@@ -135,7 +135,7 @@ defmodule Hearth.StorageTest do
   end
 
   describe "disposition/1" do
-    test "keeps quotes and other characters out of the plain name" do
+    test "strips quotes from the plain name" do
       assert Storage.disposition(~s(Café "night".mp4)) ==
                ~s(attachment; filename="Caf_ _night_.mp4"; filename*=UTF-8''Caf%C3%A9%20%22night%22.mp4)
     end

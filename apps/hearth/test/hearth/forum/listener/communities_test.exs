@@ -21,7 +21,12 @@ defmodule Hearth.Forum.Listener.CommunitiesTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    assert ~w[discussion question photo meetup announcement] ==
-             community.id |> Forum.list_kinds() |> Enum.map(& &1.key)
+    assert [
+             %{key: "discussion"},
+             %{key: "question"},
+             %{key: "photo"},
+             %{key: "meetup"},
+             %{key: "announcement"}
+           ] = Forum.list_kinds(community.id)
   end
 end

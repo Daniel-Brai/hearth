@@ -180,7 +180,7 @@ defmodule Hearth.VoiceTest do
                %{user_id: ^owner_id, role: :host},
                %{user_id: ^member_id, role: :listener},
                %{user_id: ^speaker_id, role: :speaker}
-             ] = Enum.sort_by(snapshot.participants, &Atom.to_string(&1.role))
+             ] = snapshot.participants
 
       assert_receive %VoiceParticipantChanged{user_id: ^member_id, role: :listener, left: false}
       session_id = session.id
@@ -236,7 +236,7 @@ defmodule Hearth.VoiceTest do
       assert %Session{ended_at: %DateTime{}} = Session.get(id: id)
     end
 
-    test "stays live while its event's time runs, even when empty", %{
+    test "stays live during its event", %{
       owner: owner,
       member: member,
       community: community

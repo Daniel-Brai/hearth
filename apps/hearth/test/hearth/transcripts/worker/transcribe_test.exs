@@ -55,18 +55,13 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
 
       assert {:snooze, 60} = perform_job(Transcribe, %{recording_id: recording.id})
 
-      file = Enum.find(recording.speakers, &(&1.user_id == speaker.id))
+      [_host_file, file] = recording.speakers
       :ok = Storage.put(file.key, "2000 3000 Second", "audio/mp4")
 
       assert :ok = perform_job(Transcribe, %{recording_id: recording.id})
 
-      transcript = Transcript.get(recording_id: recording.id)
-
-      assert ~w[First Second] =
-               [transcript_id: transcript.id]
-               |> Segment.all()
-               |> Enum.sort_by(& &1.start_ms)
-               |> Enum.map(& &1.text)
+      assert %Transcript{segments: [%{text: "First"}, %{text: "Second"}]} =
+               Transcript.latest(recording_id: recording.id)
     end
 
     test "transcribe recording", %{session: session, speaker: speaker} do
@@ -86,11 +81,14 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
       assert %Transcript{status: :ready, duration_ms: 60_000, engine: "local"} = transcript
       assert [_host, _speaker] = transcript.speakers
 
-      assert ["Welcome everyone", "Thanks for having me", "Any questions"] =
-               Enum.map(transcript.segments, & &1.text)
+      assert [
+               %{text: "Welcome everyone"},
+               %{text: "Thanks for having me"},
+               %{text: "Any questions"}
+             ] = transcript.segments
 
-      assert [{7_500, 10_000}, {12_000, 60_000}] =
-               Enum.map(transcript.audio_marks, &{&1.start_ms, &1.end_ms})
+      assert [%{start_ms: 7_500, end_ms: 10_000}, %{start_ms: 12_000, end_ms: 60_000}] =
+               transcript.audio_marks
 
       assert :ok = perform_job(Transcribe, %{recording_id: id})
       assert 3 = length(Segment.all(transcript_id: transcript.id))

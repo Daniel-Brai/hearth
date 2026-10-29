@@ -4,6 +4,7 @@ defmodule Hearth.Forum.AuthoredTest do
   alias Faker.Lorem
   alias Hearth.Communities
   alias Hearth.Forum
+  alias Hearth.Forum.Kind
   alias Hearth.Forum.Post
   alias Hearth.Forum.Reply
   alias Hearth.Repo.Page
@@ -14,7 +15,7 @@ defmodule Hearth.Forum.AuthoredTest do
     community = TestUtils.create_random_forum!(owner)
     author = TestUtils.join_random_member!(community)
     reader = TestUtils.join_random_member!(community)
-    question = community.id |> Forum.list_kinds() |> Enum.find(& &1.answers)
+    question = Kind.get(community_id: community.id, key: "question")
 
     {:ok, binding()}
   end

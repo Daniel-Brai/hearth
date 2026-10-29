@@ -79,7 +79,7 @@ defmodule Hearth.Media.Worker.ProcessImageTest do
       assert {:ok, %{content_type: "image/webp"}} = Storage.head(largest.key)
     end
 
-    test "stores the original upright and without its metadata", %{user: user} do
+    test "rotates original and strips metadata", %{user: user} do
       photo = TestUtils.photo_with_metadata!(400, 200)
       media = TestUtils.upload_random_file!(user, photo, "image/jpeg")
 

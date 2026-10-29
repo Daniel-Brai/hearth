@@ -27,10 +27,7 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
     end
 
     test "fails for a token with no signature", %{conn: conn, user: user} do
-      parts = [%{"alg" => "none", "typ" => "JWT"}, access_claims(user)]
-
-      unsigned =
-        Enum.map_join(parts, ".", &(&1 |> Jason.encode!() |> Base.url_encode64(padding: false)))
+      unsigned = unsigned_token(access_claims(user))
 
       assert %{"code" => "invalid_token"} =
                conn

@@ -77,22 +77,20 @@ defmodule Hearth.Notifications.WebPushTest do
     test "ends up successful" do
       subscription = Map.put(@subscription_keys, :endpoint, Internet.url())
 
-      keys = WebPush.generate_vapid_keys()
+      %{public: public} = keys = WebPush.generate_vapid_keys()
       opts = [vapid_keys: keys]
 
       # Push services refuse a request without these, while the stub would take anything
       expect(WebPush, fn %Conn{method: "POST"} = conn ->
-        assert ["vapid t=" <> vapid] = Conn.get_req_header(conn, "authorization")
-        assert String.ends_with?(vapid, ",k=" <> keys.public)
+        ["vapid t=" <> vapid] = Conn.get_req_header(conn, "authorization")
+        [_jwt, ^public] = String.split(vapid, ",k=")
+        ["application/octet-stream"] = Conn.get_req_header(conn, "content-type")
+        ["86400"] = Conn.get_req_header(conn, "ttl")
+
         # Req.Test takes content-encoding off as if the body were compressed,
         # so the aes128gcm header block stands in for it here
-        {:ok, body, conn} = Conn.read_body(conn)
-
-        assert <<_salt::binary-size(16), _record_size::32, 65, _key::binary-size(65),
-                 _rest::binary>> = body
-
-        assert ["application/octet-stream"] = Conn.get_req_header(conn, "content-type")
-        assert ["86400"] = Conn.get_req_header(conn, "ttl")
+        {:ok, <<_salt::binary-size(16), _size::32, 65, _key::binary-size(65), _rest::binary>>,
+         conn} = Conn.read_body(conn)
 
         text(conn, "")
       end)

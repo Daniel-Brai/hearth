@@ -30,8 +30,9 @@ defmodule Hearth.AccountsTest do
 
   describe "list_people/4" do
     test "puts online people first unless they hide it" do
-      users = Stream.repeatedly(&TestUtils.register_random_user!/0)
-      [hidden, online, offline] = Enum.take(users, 3)
+      hidden = TestUtils.register_random_user!()
+      online = TestUtils.register_random_user!()
+      offline = TestUtils.register_random_user!()
 
       {:ok, _privacy} = Accounts.update_privacy(hidden, %{presence: :nobody})
       ids = [hidden.id, online.id, offline.id]

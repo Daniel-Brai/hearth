@@ -10,6 +10,8 @@ defmodule Hearth.InstanceTest do
   alias Hearth.TestUtils
   alias Plug.Conn
 
+  @latest "/repos/daniel-brai/hearth/releases/latest"
+
   setup {Req.Test, :set_req_test_from_context}
   setup {Req.Test, :verify_on_exit!}
 
@@ -36,20 +38,26 @@ defmodule Hearth.InstanceTest do
     end
 
     test "fails when GitHub doesn't answer" do
-      stub(Releases, &Conn.send_resp(&1, 500, ""))
+      stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
+        Conn.send_resp(conn, 500, "")
+      end)
 
       assert {:error, %GitHubError{status: 500}} = Instance.check_for_update()
     end
 
     test "finds nothing new before the first release" do
-      stub(Releases, &Conn.send_resp(&1, 404, ""))
+      stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
+        Conn.send_resp(conn, 404, "")
+      end)
 
       assert {:ok, %{latest_version: nil, update_available: false, checked_at: %DateTime{}}} =
                Instance.check_for_update()
     end
 
     test "finds nothing if up to date" do
-      stub(Releases, &json(&1, TestUtils.random_github_release("v0.1.0")))
+      stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
+        json(conn, TestUtils.random_github_release("v0.1.0"))
+      end)
 
       assert {:ok, %{latest_version: "0.1.0", update_available: false}} =
                Instance.check_for_update()
@@ -58,7 +66,7 @@ defmodule Hearth.InstanceTest do
     test "finds a newer release" do
       notes = Lorem.paragraph()
 
-      stub(Releases, fn %Conn{request_path: "/repos/daniel-brai/hearth/releases/latest"} = conn ->
+      stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
         json(conn, %{TestUtils.random_github_release("v0.2.0") | "body" => notes})
       end)
 

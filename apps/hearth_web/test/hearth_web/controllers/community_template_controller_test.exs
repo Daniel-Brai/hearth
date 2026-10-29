@@ -8,9 +8,16 @@ defmodule HearthWeb.CommunityTemplateControllerTest do
 
       assert get_resp_header(conn, "cache-control") == ["public, max-age=3600"]
 
-      assert Enum.map(templates, & &1["id"]) == ~w[club local creator class support oss blank]
+      assert [
+               %{"id" => "club"},
+               %{"id" => "local"},
+               %{"id" => "creator"},
+               %{"id" => "class"},
+               %{"id" => "support"},
+               %{"id" => "oss"} = oss,
+               %{"id" => "blank"} = blank
+             ] = templates
 
-      assert [_club, _local, _creator, _class, _support, oss, blank] = templates
       assert "bug" in oss["kinds"]
       assert %{"title" => "Office hours", "repeat" => "weekly"} = oss["event"]
       assert %{"event" => nil, "voice" => nil} = blank

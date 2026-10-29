@@ -12,6 +12,8 @@ defmodule Hearth.Moderation.ScreenerTest do
   alias Hearth.TestUtils
   alias Plug.Conn
 
+  @completions "/api/v1/chat/completions"
+
   setup {Req.Test, :set_req_test_from_context}
   setup {Req.Test, :verify_on_exit!}
 
@@ -67,7 +69,7 @@ defmodule Hearth.Moderation.ScreenerTest do
 
   describe "Hosted.screen_text/2" do
     test "fails when the provider refuses" do
-      stub(Hosted, fn conn ->
+      stub(Hosted, fn %Conn{method: "POST", request_path: @completions} = conn ->
         conn
         |> Conn.put_status(401)
         |> json(%{"error" => %{"message" => "No auth credentials found"}})
@@ -78,13 +80,17 @@ defmodule Hearth.Moderation.ScreenerTest do
     end
 
     test "fails for answer outside schema" do
-      stub(Hosted, &json(&1, TestUtils.chat_completion(%{"verdict" => "bad", "score" => 2})))
+      stub(Hosted, fn %Conn{method: "POST", request_path: @completions} = conn ->
+        json(conn, TestUtils.chat_completion(%{"verdict" => "bad", "score" => 2}))
+      end)
 
       assert {:error, :malformed} = Hosted.screen_text(Lorem.sentence(), [])
     end
 
     test "fails for an answer that isn't JSON" do
-      stub(Hosted, &json(&1, %{"choices" => [%{"message" => %{"content" => "unsafe!"}}]}))
+      stub(Hosted, fn %Conn{method: "POST", request_path: @completions} = conn ->
+        json(conn, %{"choices" => [%{"message" => %{"content" => "unsafe!"}}]})
+      end)
 
       assert {:error, :malformed} = Hosted.screen_text(Lorem.sentence(), [])
     end
@@ -92,15 +98,16 @@ defmodule Hearth.Moderation.ScreenerTest do
     test "asks for structured output" do
       guidelines = Lorem.sentence()
 
-      stub(Hosted, fn %Conn{request_path: "/api/v1/chat/completions"} = conn ->
-        {:ok, body, conn} = Conn.read_body(conn)
-        request = Jason.decode!(body)
+      # The reply carries the guidelines back so the test can check they reached the prompt
+      stub(Hosted, fn %Conn{method: "POST", request_path: @completions} = conn ->
+        %{
+          params: %{
+            "response_format" => %{"type" => "json_schema", "json_schema" => %{"strict" => true}},
+            "messages" => [%{"role" => "system", "content" => system} | _user]
+          }
+        } = conn
 
-        assert %{"type" => "json_schema", "json_schema" => %{"strict" => true}} =
-                 request["response_format"]
-
-        assert [%{"role" => "system", "content" => system} | _user] = request["messages"]
-        assert system =~ guidelines
+        [_rules, given] = String.split(system, "This community's own guidelines:\n")
 
         json(
           conn,
@@ -108,13 +115,15 @@ defmodule Hearth.Moderation.ScreenerTest do
             "verdict" => "unsafe",
             "score" => 0.9,
             "categories" => ["Hate"],
-            "reason" => "Slurs"
+            "reason" => given
           })
         )
       end)
 
-      assert {:ok, %Verdict{verdict: :unsafe, score: 0.9, categories: ["Hate"]}} =
+      assert {:ok, %Verdict{verdict: :unsafe, score: 0.9, categories: ["Hate"]} = verdict} =
                Hosted.screen_text(Lorem.sentence(), guidelines: guidelines)
+
+      assert verdict.reason == guidelines
     end
   end
 end

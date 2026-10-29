@@ -120,9 +120,13 @@ defmodule HearthWeb.VoiceChannelTest do
       {:ok, _reply, socket} =
         member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
 
-      for _n <- 1..7, do: push(socket, "react", %{"emoji" => ":tada:"})
+      :ok = push_times(socket, "react", %{"emoji" => ":tada:"}, 7)
 
-      for _n <- 1..5, do: assert_broadcast("VoiceReaction", %{emoji: ":tada:"}, 1_000)
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
       refute_broadcast "VoiceReaction", _payload, 200
     end
 

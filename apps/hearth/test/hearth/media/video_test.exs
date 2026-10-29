@@ -71,7 +71,7 @@ defmodule Hearth.Media.VideoTest do
                  |> Video.silences()
                end)
 
-      assert Enum.any?(silences, fn {from, to} -> is_integer(to) and to - from >= 1_500 end)
+      assert [_silence | _silences] = TestUtils.long_silences(silences, 1_500)
     end
   end
 end

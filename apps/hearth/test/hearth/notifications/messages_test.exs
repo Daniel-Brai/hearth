@@ -108,19 +108,12 @@ defmodule Hearth.Notifications.MessagesTest do
     community = %{id: Common.new_id(), name: "Night Owls", slug: "night-owls"}
     author = %Hearth.Accounts.User{username: "ada", display_name: "Ada"}
 
-    posts =
-      for title <- ["Moths at dusk", "Best red torch"] do
-        %{
-          post: %{
-            id: Common.new_id(),
-            title: title,
-            pinned_at: nil,
-            reply_count: 4,
-            helpful_count: 1
-          },
-          author: author
-        }
-      end
+    post = %{id: Common.new_id(), pinned_at: nil, reply_count: 4, helpful_count: 1}
+
+    posts = [
+      %{post: Map.put(post, :title, "Moths at dusk"), author: author},
+      %{post: Map.merge(post, %{id: Common.new_id(), title: "Best red torch"}), author: author}
+    ]
 
     message = %CatchUp{
       period: :weekly,
@@ -166,17 +159,6 @@ defmodule Hearth.Notifications.MessagesTest do
       }
     ]
 
-    for %module{} = message <- messages do
-      mail = module.to_mail(message, to)
-      {:ok, html} = Mail.render(mail, mail.subject)
-
-      words =
-        html
-        |> String.replace(~r{<head>.*</head>}s, "")
-        |> String.replace(~r{If the button doesn't work.*?</span>}s, "")
-        |> String.replace(~r{<[^>]*>}, " ")
-
-      refute words =~ "http", "#{inspect(module)} writes out an address"
-    end
+    assert TestUtils.mails_with_addresses(messages, to) == []
   end
 end

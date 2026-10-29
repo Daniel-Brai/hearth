@@ -51,11 +51,10 @@ defmodule Hearth.AI.WhisperTest do
 
         assert {:ok, segments} = Whisper.transcribe(path)
 
-        starts = Enum.map(segments, & &1.start_ms)
-
-        assert List.last(starts) >= 28_000
-        assert starts == Enum.sort(starts)
-        assert segments |> Enum.map_join(" ", & &1.text) |> String.downcase() =~ "database"
+        assert %{start_ms: last_start} = List.last(segments)
+        assert last_start >= 28_000
+        assert TestUtils.out_of_order(segments, :start_ms) == []
+        assert TestUtils.spoken_text(segments) =~ "database"
       end)
     end
   end

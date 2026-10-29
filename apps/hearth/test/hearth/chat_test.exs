@@ -277,7 +277,7 @@ defmodule Hearth.ChatTest do
       assert_receive %RoomActivity{room_id: ^room_id, community_id: ^community_id}
     end
 
-    test "counts since joining before the room was opened", %{
+    test "counts from joining if never opened", %{
       owner: owner,
       room: room,
       community: community
@@ -287,7 +287,7 @@ defmodule Hearth.ChatTest do
       newcomer = TestUtils.join_random_member!(community)
 
       assert %{rooms: rooms} = Chat.unread_counts(newcomer)
-      refute Enum.any?(rooms, &(&1.room_id == room_id))
+      refute room_id in TestUtils.pluck(rooms, :room_id)
     end
 
     test "counts a conversation's unread messages", %{owner: owner, member: member} do
@@ -302,7 +302,7 @@ defmodule Hearth.ChatTest do
   end
 
   describe "list_reactions/2" do
-    test "returns nothing for messages nobody reacted to", %{member: member, room: room} do
+    test "returns nothing if no reactions", %{member: member, room: room} do
       {:ok, message} = Chat.send_message(member, room, %{body: Lorem.sentence()})
 
       assert %{} == Chat.list_reactions(member, [message])

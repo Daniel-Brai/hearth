@@ -7,6 +7,8 @@ defmodule HearthWeb.InstanceControllerTest do
   alias Hearth.TestUtils
   alias Plug.Conn
 
+  @latest "/repos/daniel-brai/hearth/releases/latest"
+
   setup {Req.Test, :set_req_test_from_context}
   setup {Req.Test, :verify_on_exit!}
 
@@ -88,7 +90,9 @@ defmodule HearthWeb.InstanceControllerTest do
     end
 
     test "fails when GitHub doesn't answer", %{conn: conn} do
-      stub(Releases, &Conn.send_resp(&1, 502, ""))
+      stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
+        Conn.send_resp(conn, 502, "")
+      end)
 
       assert %{"code" => "github_unreachable"} =
                conn
@@ -98,7 +102,9 @@ defmodule HearthWeb.InstanceControllerTest do
     end
 
     test "finds a newer release", %{conn: conn} do
-      stub(Releases, &json(&1, TestUtils.random_github_release("v0.2.0")))
+      stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
+        json(conn, TestUtils.random_github_release("v0.2.0"))
+      end)
 
       assert %{"latest_version" => "0.2.0", "update_available" => true} =
                conn

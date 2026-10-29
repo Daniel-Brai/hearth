@@ -144,7 +144,9 @@ defmodule HearthWeb.PostControllerTest do
                |> post(~p"/api/communities/#{community.id}/posts", body)
                |> valid_response(201)
 
-      assert Enum.map(attachments, & &1["id"]) == [second.id, first.id]
+      assert [%{"id" => second_id}, %{"id" => first_id}] = attachments
+      assert second_id == second.id
+      assert first_id == first.id
     end
 
     test "writes a post", %{conn: conn, member: member, community: community, kind: kind} do

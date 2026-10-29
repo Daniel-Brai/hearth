@@ -45,8 +45,16 @@ defmodule Hearth.ForumTest do
     end
 
     test "create default kinds", %{kinds: kinds} do
-      assert ~w[announcement bug discussion idea question show] ==
-               kinds |> Map.keys() |> Enum.sort()
+      assert %{
+               "announcement" => %Kind{},
+               "bug" => %Kind{},
+               "discussion" => %Kind{},
+               "idea" => %Kind{},
+               "question" => %Kind{},
+               "show" => %Kind{}
+             } = kinds
+
+      assert map_size(kinds) == 6
 
       assert %Kind{answers: true} = kinds["question"]
       assert %Kind{postable: false} = kinds["announcement"]
@@ -173,13 +181,10 @@ defmodule Hearth.ForumTest do
       assert post.source_message_count == 3
       assert {:ok, %Post{reply_count: 2}} = Forum.get_post(id: post.id)
 
-      assert %Page{data: replies} = Forum.list_replies(post)
-
-      assert replies |> Enum.map(& &1.author_id) |> Enum.sort() ==
-               Enum.sort([owner_id, member_id])
+      assert %Page{data: [%{author_id: ^owner_id}, %{author_id: ^member_id} = files_reply]} =
+               Forum.list_replies(post)
 
       file_id = file.id
-      [files_reply] = Enum.filter(replies, &(&1.author_id == member_id))
 
       assert [%{media_id: ^file_id}] =
                Media.list_attachments(:reply, [files_reply.id])[files_reply.id]
@@ -541,7 +546,7 @@ defmodule Hearth.ForumTest do
   end
 
   describe "mark_all_seen/2" do
-    test "fails for a private community someone isn't in", %{owner: owner} do
+    test "fails if not in private community", %{owner: owner} do
       private = TestUtils.create_random_community!(owner, visibility: :private)
 
       assert {:error, :not_found} =
@@ -549,8 +554,8 @@ defmodule Hearth.ForumTest do
     end
 
     test "mark a community seen", %{owner: owner, member: member, community: community} do
-      posts = Stream.repeatedly(fn -> TestUtils.create_random_post!(member, community) end)
-      [first, second] = Enum.take(posts, 2)
+      first = TestUtils.create_random_post!(member, community)
+      second = TestUtils.create_random_post!(member, community)
 
       assert :ok = Forum.mark_all_seen(owner, community)
       assert MapSet.new([first.id, second.id]) == Forum.seen(owner, [first, second])

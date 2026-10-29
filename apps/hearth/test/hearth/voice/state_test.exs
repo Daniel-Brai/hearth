@@ -188,7 +188,9 @@ defmodule Hearth.Voice.StateTest do
     } do
       routes = State.routes(state)
 
-      assert Enum.sort(routes[listener].receive) == Enum.sort([{host, :audio}, {speaker, :audio}])
+      assert MapSet.new(routes[listener].receive) ==
+               MapSet.new([{host, :audio}, {speaker, :audio}])
+
       assert routes[host].receive == [{speaker, :audio}]
       assert routes[host].send_audio
     end

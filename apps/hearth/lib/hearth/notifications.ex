@@ -3,7 +3,7 @@ defmodule Hearth.Notifications do
 
   exports =
     case Mix.env() do
-      :test -> default ++ [Delivery, PushSubscription, Worker.DeliverMail]
+      :test -> default ++ [Channel.Mail, Delivery, PushSubscription, Worker.DeliverMail]
       _env -> default
     end
 

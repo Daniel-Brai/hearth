@@ -86,10 +86,12 @@ defmodule Hearth.MediaTest do
 
       assert :ok = Media.put_attachments(user, :post, post.id, [second.id, first.id])
 
-      post_id = post.id
+      %{id: post_id} = post
+      %{id: first_id} = first
+      %{id: second_id} = second
 
-      assert %{^post_id => attachments} = Media.list_attachments(:post, [post.id])
-      assert [second.id, first.id] == Enum.map(attachments, & &1.media.id)
+      assert %{^post_id => [%{media: %{id: ^second_id}}, %{media: %{id: ^first_id}}]} =
+               Media.list_attachments(:post, [post.id])
     end
 
     test "replaces the files it had", %{user: user, post: post} do

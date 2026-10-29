@@ -41,7 +41,7 @@ defmodule HearthWeb.Access.VisibilityTest do
     test "leaves it out of public lists", %{conn: conn, private: private} do
       public = conn |> get(~p"/api/public/communities") |> json_response(200)
 
-      refute private.id in Enum.map(public, & &1["id"])
+      refute private.id in TestUtils.pluck(public, "id")
       assert conn |> get(~p"/og/communities/#{private.slug}") |> response(404)
       assert conn |> get("/sitemaps/#{private.slug}.xml") |> response(404)
       refute conn |> get(~p"/sitemap.xml") |> response(200) =~ private.slug
@@ -51,7 +51,7 @@ defmodule HearthWeb.Access.VisibilityTest do
       %{"data" => posts} =
         conn |> get(~p"/api/users/#{owner.username}/posts") |> json_response(200)
 
-      refute post.id in Enum.map(posts, & &1["id"])
+      refute post.id in TestUtils.pluck(posts, "id")
     end
   end
 
@@ -168,7 +168,7 @@ defmodule HearthWeb.Access.VisibilityTest do
       assert conn |> get(~p"/api/communities/#{unlisted.id}/posts") |> json_response(200)
 
       public = conn |> get(~p"/api/public/communities") |> json_response(200)
-      assert unlisted.id in Enum.map(public, & &1["id"])
+      assert unlisted.id in TestUtils.pluck(public, "id")
     end
 
     test "stays out of the sitemap", %{conn: conn, unlisted: unlisted} do

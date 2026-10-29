@@ -1,6 +1,8 @@
 defmodule Hearth.Notifications.Worker.DeliverWebPushTest do
   use Hearth.DataCase, async: true
 
+  import Req.Test
+
   alias Faker.Lorem
   alias Hearth.Notifications.PushSubscription
   alias Hearth.Notifications.SealedArgs
@@ -9,6 +11,7 @@ defmodule Hearth.Notifications.Worker.DeliverWebPushTest do
   alias Hearth.TestUtils
   alias Plug.Conn
 
+  setup {Req.Test, :set_req_test_from_context}
   setup {Req.Test, :verify_on_exit!}
 
   setup do
@@ -41,7 +44,7 @@ defmodule Hearth.Notifications.Worker.DeliverWebPushTest do
     end
 
     test "deletes expired subscription", %{subscription: subscription} do
-      Req.Test.expect(WebPush, &Conn.send_resp(&1, 410, ""))
+      expect(WebPush, fn %Conn{method: "POST"} = conn -> Conn.send_resp(conn, 410, "") end)
 
       assert :ok =
                perform_job(DeliverWebPush, %{
@@ -53,7 +56,7 @@ defmodule Hearth.Notifications.Worker.DeliverWebPushTest do
     end
 
     test "cancels payload that is too large", %{subscription: subscription} do
-      Req.Test.expect(WebPush, &Conn.send_resp(&1, 413, ""))
+      expect(WebPush, fn %Conn{method: "POST"} = conn -> Conn.send_resp(conn, 413, "") end)
 
       assert {:cancel, :payload_too_large} =
                perform_job(DeliverWebPush, %{
@@ -63,7 +66,7 @@ defmodule Hearth.Notifications.Worker.DeliverWebPushTest do
     end
 
     test "send push", %{subscription: subscription} do
-      Req.Test.expect(WebPush, &Conn.send_resp(&1, 201, ""))
+      expect(WebPush, fn %Conn{method: "POST"} = conn -> Conn.send_resp(conn, 201, "") end)
 
       args = %{
         subscription_id: subscription.id,

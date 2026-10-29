@@ -93,7 +93,7 @@ defmodule Hearth.Notifications.Listener.ChatTest do
     assert data["room_slug"] == room.slug
   end
 
-  test "links a mention in a voice room's chat to the room", %{
+  test "links voice chat mention to the room", %{
     owner: owner,
     member: member,
     community: community

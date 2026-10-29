@@ -23,7 +23,7 @@ defmodule Hearth.IAMTest do
   end
 
   describe "co_members/2" do
-    test "lists people sharing a community with which ones" do
+    test "lists shared communities per person" do
       %{id: owner_id} = owner = TestUtils.register_random_user!()
       first = TestUtils.create_random_community!(owner)
       second = TestUtils.create_random_community!(owner)
@@ -32,7 +32,7 @@ defmodule Hearth.IAMTest do
       _stranger = TestUtils.join_random_member!(TestUtils.create_random_community!())
 
       assert %{^member_id => shared} = IAM.co_members(owner)
-      assert Enum.sort(shared) == Enum.sort([first.id, second.id])
+      assert MapSet.new(shared) == MapSet.new([first.id, second.id])
       assert %{^member_id => [_only]} = IAM.co_members(owner, first.id)
       assert %{^owner_id => _shared} = IAM.co_members(member)
       assert map_size(IAM.co_members(owner)) == 1
@@ -155,7 +155,8 @@ defmodule Hearth.IAMTest do
       user = TestUtils.register_random_user!()
 
       assert {:ok, %Membership{roles: []} = membership} = IAM.join(user, community_id)
-      assert membership.permissions == Enum.sort(roles["member"].permissions)
+      assert MapSet.new(membership.permissions) == MapSet.new(roles["member"].permissions)
+      assert TestUtils.out_of_order(membership.permissions) == []
     end
 
     test "joins with roles", %{community_id: community_id} do

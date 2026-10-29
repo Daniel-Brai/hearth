@@ -14,10 +14,10 @@ defmodule Hearth.Moderation.Screener.LocalTest do
   setup_all do
     config = Application.fetch_env!(:hearth, Local)
 
-    for {module, key} <- [{TextModel, :text_model}, {ImageModel, :image_model}] do
-      serving = module.serving(config[key], 1)
-      start_supervised!({Nx.Serving, serving: serving, name: module, batch_size: 1})
-    end
+    TestUtils.start_servings!([
+      {TextModel, TextModel.serving(config[:text_model], 1)},
+      {ImageModel, ImageModel.serving(config[:image_model], 1)}
+    ])
 
     :ok
   end

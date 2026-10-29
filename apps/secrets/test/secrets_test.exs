@@ -41,7 +41,7 @@ defmodule SecretsTest do
     @describetag :tmp_dir
 
     test "fails when Vault refuses the sign in" do
-      stub(HashiCorp, fn conn ->
+      stub(HashiCorp, fn %Conn{method: "POST", request_path: "/v1/auth/kubernetes/login"} = conn ->
         conn |> Conn.put_status(403) |> json(%{errors: ["permission denied"]})
       end)
 
@@ -55,7 +55,7 @@ defmodule SecretsTest do
         %Conn{method: "POST"} = conn ->
           json(conn, %{auth: %{client_token: "s.token", lease_duration: 60}})
 
-        conn ->
+        %Conn{method: "GET"} = conn ->
           conn |> Conn.put_status(404) |> json(%{errors: []})
       end)
 
@@ -91,14 +91,15 @@ defmodule SecretsTest do
 
     test "reads each secret once" do
       expect(HashiCorp, 4, fn
-        %Conn{method: "POST", request_path: "/v1/auth/kubernetes/login"} = conn ->
-          {:ok, body, conn} = Conn.read_body(conn)
-          assert %{"role" => "hearth", "jwt" => "service-account-jwt"} = Jason.decode!(body)
-
+        %Conn{
+          method: "POST",
+          request_path: "/v1/auth/kubernetes/login",
+          params: %{"role" => "hearth", "jwt" => "service-account-jwt"}
+        } = conn ->
           json(conn, %{auth: %{client_token: "s.token", lease_duration: 60}})
 
         %Conn{method: "GET", request_path: "/v1/hearth/data/staging/database"} = conn ->
-          assert Conn.get_req_header(conn, "x-vault-token") == ["s.token"]
+          ["s.token"] = Conn.get_req_header(conn, "x-vault-token")
 
           data = %{"url" => "ecto://db", "pool_size" => "20"}
           json(conn, %{data: %{data: data, metadata: %{version: 3}}})
@@ -136,13 +137,14 @@ defmodule SecretsTest do
       )
 
       stub(HashiCorp, fn
-        %Conn{method: "POST", request_path: "/v1/auth/approle/login"} = conn ->
-          {:ok, body, conn} = Conn.read_body(conn)
-          assert %{"role_id" => "role", "secret_id" => "secret"} = Jason.decode!(body)
-
+        %Conn{
+          method: "POST",
+          request_path: "/v1/auth/approle/login",
+          params: %{"role_id" => "role", "secret_id" => "secret"}
+        } = conn ->
           json(conn, %{auth: %{client_token: "s.token", lease_duration: 60}})
 
-        conn ->
+        %Conn{method: "GET"} = conn ->
           data = %{"url" => "u", "pool_size" => "1", "api_key" => "k", "previous_keys" => "p"}
           json(conn, %{data: %{data: data, metadata: %{version: 1}}})
       end)
@@ -160,7 +162,7 @@ defmodule SecretsTest do
       )
 
       stub(HashiCorp, fn %Conn{method: "GET"} = conn ->
-        assert Conn.get_req_header(conn, "x-vault-token") == ["s.root"]
+        ["s.root"] = Conn.get_req_header(conn, "x-vault-token")
 
         data = %{"url" => "u", "pool_size" => "1", "api_key" => "k"}
         json(conn, %{data: %{data: data, metadata: %{version: 1}}})

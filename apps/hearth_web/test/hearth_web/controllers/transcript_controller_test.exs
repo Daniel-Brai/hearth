@@ -59,7 +59,7 @@ defmodule HearthWeb.TranscriptControllerTest do
       assert %{"text" => "Welcome", "editable" => false} = welcome
       assert %{"text" => "Thanks", "editable" => true} = thanks
       assert [_owner, _member] = response["people"]
-      assert Enum.any?(speakers, &match?(%{"user_id" => ^member_id}, &1))
+      assert member_id in TestUtils.pluck(speakers, "user_id")
     end
   end
 
