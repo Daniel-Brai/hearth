@@ -92,7 +92,7 @@ export function PostReplies({ post, view }: PostProps) {
 }
 
 export function ReplyFooter({ post, view }: PostProps) {
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
 
   if (post.locked) {
     return (
@@ -107,7 +107,9 @@ export function ReplyFooter({ post, view }: PostProps) {
     );
   }
 
-  if (guest) {
+  if (viewer === 'unknown') return <span className="skel skel--block mt-5" aria-hidden="true" />;
+
+  if (viewer === 'guest') {
     return (
       <OriginNote id="guest-reply-note" className="mt-5">
         <span>

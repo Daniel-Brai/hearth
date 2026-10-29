@@ -32,7 +32,7 @@ export function PostHeaderBar({
   readonly view: PostViewData;
   readonly onEdit: () => void;
 }) {
-  const { guest } = useGuest();
+  const { viewer } = useGuest();
   const indexed = useAppState((state) => indexable(state, post.c));
   const jsonLd = useStructuredData((state, origin) => postGraph(state, post.id, origin));
 
@@ -56,7 +56,8 @@ export function PostHeaderBar({
             text={plainText(post.body).slice(0, 160) || null}
             label="Share post"
           />
-          {guest ? null : <WatchButton post={post} />}
+          {viewer === 'member' ? <WatchButton post={post} /> : null}
+          {viewer === 'unknown' ? <span className="skel skel--avatar" aria-hidden="true" /> : null}
           <PostMenu post={post} view={view} onEdit={onEdit} />
         </>
       }
@@ -103,22 +104,22 @@ function WatchButton({ post }: { readonly post: Post }) {
 }
 
 function useMenuItems(post: Post, view: PostViewData) {
-  const { guest } = useGuest();
+  const { viewer } = useGuest();
   const shareable = useShareable(post.c);
 
-  return menuItems(post, view, guest, shareable);
+  return menuItems(post, view, viewer === 'member', shareable);
 }
 
-function menuItems(post: Post, view: PostViewData, guest: boolean, shareable: boolean) {
+function menuItems(post: Post, view: PostViewData, member: boolean, shareable: boolean) {
   const mine = post.author === view.me;
 
   const items = {
     mine,
     copyLink: !shareable,
     share: shareable,
-    watch: !guest,
+    watch: member,
     edit: mine && !post.removed,
-    reportable: !mine && view.reports && !guest && !post.removed,
+    reportable: !mine && view.reports && member && !post.removed,
     removable: (mine || view.mod) && !post.removed,
     lockable: view.mod && !post.removed,
     restorable: view.mod && !!post.moderated,

@@ -51,7 +51,7 @@ export function PublicShell() {
         </Button>
       </header>
 
-      <div className="main-col">
+      <div className="main-col" data-popup-fence>
         <Suspense fallback={<RouteSkeleton />}>
           <Outlet />
         </Suspense>

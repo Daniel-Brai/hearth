@@ -17,8 +17,8 @@ import type { Post } from '@/domain/types';
 import { ShareButton } from '@/features/share/ShareButton';
 import { routes } from '@/runtime/routes';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
-import { GuestWall } from '@/shell/GuestWall';
-import { useGuest, useGuestBlocked } from '@/shell/use-guest';
+import { GateScreen } from '@/shell/GuestWall';
+import { useGate, useGuest } from '@/shell/use-guest';
 import { communityGraph, indexable, useStructuredData } from '@/app/structured-data';
 import { PageHeader } from '@/shell/PageHeader';
 import { shareImage } from '@/app/share-image';
@@ -41,17 +41,15 @@ export function CommunityPage() {
   );
 
   const exists = useAppState((state) => !!cid && !!community(state, cid));
-  const blocked = useGuestBlocked(cid);
+  const gate = useGate(cid);
 
   if (!cid || !exists) return <ErrorPage code={404} />;
-  if (blocked) return <GuestWall />;
+  if (gate !== 'open') return <GateScreen gate={gate} />;
 
   return <CommunityView cid={cid} tag={tag?.toLowerCase() ?? null} />;
 }
 
 function CommunityView({ cid, tag }: { readonly cid: string; readonly tag: string | null }) {
-  const { guest } = useGuest();
-
   const view = useCommunityView(cid);
   const indexed = useAppState((state) => indexable(state, cid));
   const jsonLd = useStructuredData((state, origin) => communityGraph(state, cid, origin));
@@ -68,9 +66,7 @@ function CommunityView({ cid, tag }: { readonly cid: string; readonly tag: strin
         image={shareImage(`/og/communities/${cid}`, view.banner ?? view.logo)}
         noindex={!indexed || !!tag}
         jsonLd={jsonLd}
-        actions={
-          guest || view.locked ? null : <WriteActions cid={cid} generalRoom={view.generalRoom} />
-        }
+        actions={<HeaderActions cid={cid} view={view} />}
         endActions={
           <ShareButton
             id="community-share"
@@ -94,7 +90,7 @@ function CommunityView({ cid, tag }: { readonly cid: string; readonly tag: strin
               text="You need an invite to see its posts, rooms and events. Ask someone inside for a link."
             />
           ) : (
-            <CommunityContent cid={cid} tag={tag} view={view} guest={guest} />
+            <CommunityContent cid={cid} tag={tag} view={view} />
           )}
         </Measure>
       </main>
@@ -106,12 +102,10 @@ function CommunityContent({
   cid,
   tag,
   view,
-  guest,
 }: {
   readonly cid: string;
   readonly tag: string | null;
   readonly view: CommunityViewData;
-  readonly guest: boolean;
 }) {
   const [sort, setSort] = useState<FeedSort>('active');
   const [kind, setKind] = useState('all');
@@ -132,7 +126,9 @@ function CommunityContent({
         <CommunityEventsStrip cid={cid} events={events} canSchedule={view.canEvents} />
       ) : null}
 
-      {!view.joined ? <GuestNote guest={guest} /> : null}
+      {view.viewer !== 'unknown' && !view.joined ? (
+        <GuestNote guest={view.viewer === 'guest'} />
+      ) : null}
 
       {tag ? <TagNote cid={cid} tag={tag} count={posts.length} /> : null}
 
@@ -152,6 +148,14 @@ function CommunityContent({
       <MainFeed cid={cid} view={view} sort={sort} posts={posts} selected={selected} empty={empty} />
     </>
   );
+}
+
+function HeaderActions({ cid, view }: { readonly cid: string; readonly view: CommunityViewData }) {
+  if (view.locked) return null;
+  if (view.viewer === 'unknown') return <span className="skel skel--avatar" aria-hidden="true" />;
+  if (view.viewer === 'guest') return null;
+
+  return <WriteActions cid={cid} generalRoom={view.generalRoom} />;
 }
 
 function WriteActions({
@@ -195,7 +199,7 @@ function useFeedKeys(
 ) {
   const gateway = useGateway();
   const navigate = useNavigate();
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
   const settle = useFlashFailure();
 
   const keys = useMemo(
@@ -208,11 +212,11 @@ function useFeedKeys(
       },
       feed_helpful: () => {
         const p = posts[selected];
-        if (p && guest) signIn();
-        else if (p) settle(gateway.posts.toggleHelpful(p.id));
+        if (p && viewer === 'guest') signIn();
+        else if (p && viewer === 'member') settle(gateway.posts.toggleHelpful(p.id));
       },
     }),
-    [posts, selected, setSelected, navigate, gateway, guest, signIn, settle],
+    [posts, selected, setSelected, navigate, gateway, viewer, signIn, settle],
   );
 
   usePageKeys(keys);

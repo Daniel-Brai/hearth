@@ -14,7 +14,7 @@ import {
   Menu,
   MenuItem,
 } from '@/design-system';
-import { fmt, plural } from '@/domain/format';
+import { fmt, noun, plural } from '@/domain/format';
 import { linkIcon, linkText } from '@/domain/links';
 import { Markdown } from '@/features/markdown/Markdown';
 import { routes } from '@/runtime/routes';
@@ -88,13 +88,25 @@ function HeroActions({ cid, view, onToggleJoin }: HeroProps) {
           Invite
         </ButtonLink>
       ) : null}
-      {view.locked ? null : (
-        <Button size="small" variant={view.joined ? 'default' : 'reversed'} onClick={onToggleJoin}>
-          {view.joined ? <Icon name="check" /> : null}
-          <span>{view.joined ? 'Joined' : 'Join'}</span>
-        </Button>
-      )}
+      {view.locked ? null : <JoinButton view={view} onToggleJoin={onToggleJoin} />}
     </div>
+  );
+}
+
+function JoinButton({
+  view,
+  onToggleJoin,
+}: {
+  readonly view: CommunityViewData;
+  readonly onToggleJoin: () => void;
+}) {
+  if (view.viewer === 'unknown') return <span className="skel skel--btn" aria-hidden="true" />;
+
+  return (
+    <Button size="small" variant={view.joined ? 'default' : 'reversed'} onClick={onToggleJoin}>
+      {view.joined ? <Icon name="check" /> : null}
+      <span>{view.joined ? 'Joined' : 'Join'}</span>
+    </Button>
   );
 }
 
@@ -145,31 +157,38 @@ function ManageMenu({ cid, view }: { readonly cid: string; readonly view: Commun
 
 function HeroMeta({ view }: { readonly view: CommunityViewData }) {
   return (
-    <div className="community-hero__meta small subtle">
-      <span className="icon-text">
-        <Icon name="users" />
-        <span className="tabular">
-          <strong>{fmt(view.members)}</strong> members
+    <div className="community-hero__facts small subtle">
+      <div className="community-hero__meta">
+        <span className="icon-text">
+          <Icon name="users" />
+          <span className="tabular">
+            <strong>{fmt(view.members)}</strong> {noun(view.members, 'member')}
+          </span>
         </span>
-      </span>
-      <span className="icon-text">
-        <Dot green />
-        <span className="tabular">{view.online} online</span>
-      </span>
-      <span className="icon-text">
-        <Icon name={view.visibility === 'public' ? 'globe' : 'lock'} />
-        <span>{AUDIENCE_LABEL[view.audience]}</span>
-      </span>
-      {view.notModerated ? (
-        <span className="icon-text" data-tip="No automatic checks and no reporting">
-          <Icon name="shield" />
-          <span>Not moderated</span>
+        <span className="icon-text">
+          <Dot green />
+          <span className="tabular">{view.online} online</span>
         </span>
-      ) : null}
-      <Link to={routes.profile(view.maintainerUsername)} className="icon-text">
-        <PersonAvatar id={view.maintainer} size="xs" />
-        <span>Run by {view.maintainerName}</span>
-      </Link>
+        <span className="icon-text">
+          <Icon name={view.visibility === 'public' ? 'globe' : 'lock'} />
+          <span>{AUDIENCE_LABEL[view.audience]}</span>
+        </span>
+      </div>
+      <div className="community-hero__about x-small">
+        {view.notModerated ? (
+          <>
+            <span className="icon-text" data-tip="No automatic checks and no reporting">
+              <Icon name="shield" />
+              <span>Not moderated</span>
+            </span>
+            <span aria-hidden="true">·</span>
+          </>
+        ) : null}
+        <Link to={routes.profile(view.maintainerUsername)} className="icon-text">
+          <PersonAvatar id={view.maintainer} size="xs" />
+          <span>Run by {view.maintainerName}</span>
+        </Link>
+      </div>
     </div>
   );
 }

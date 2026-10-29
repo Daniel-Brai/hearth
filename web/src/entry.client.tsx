@@ -39,6 +39,7 @@ startTransition(() => {
         request={{
           origin: hydration?.origin ?? window.location.origin,
           zone: hydration?.zone ?? 'UTC',
+          signedIn: hydration?.signedIn ?? false,
           setStatus: () => undefined,
         }}
       >

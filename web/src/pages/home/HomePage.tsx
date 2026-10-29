@@ -17,7 +17,7 @@ import { useGateway } from '@/app/gateway-context';
 import { useDisplayZone } from '@/app/request-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
-import { fmt, plural, todayIn } from '@/domain/format';
+import { fmt, noun, plural, todayIn } from '@/domain/format';
 import {
   canRequestCommunity,
   canStartCommunity,
@@ -269,7 +269,7 @@ function FirstRun({
                     {c.name}
                   </Link>
                   <span className="x-small subtle truncate">
-                    {c.tagline} · {fmt(c.members)} members
+                    {c.tagline} · {fmt(c.members)} {noun(c.members, 'member')}
                   </span>
                 </div>
                 <Button size="small" onClick={() => join(c.cid)}>

@@ -5,6 +5,7 @@ export type Hydration = {
   readonly loaded: readonly string[];
   readonly origin: string;
   readonly zone: string;
+  readonly signedIn: boolean;
 };
 
 export const HYDRATION_KEY = '__HEARTH__';

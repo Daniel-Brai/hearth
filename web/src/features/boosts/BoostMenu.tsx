@@ -76,10 +76,12 @@ function BoostPicker({ onPick }: { readonly onPick: (key: string) => void }) {
 export function Boosts({
   boosts,
   onToggle,
+  disabled,
   className,
 }: {
   readonly boosts: readonly Boost[];
   readonly onToggle: (key: string) => void;
+  readonly disabled?: boolean | undefined;
   readonly className?: string | undefined;
 }) {
   if (!boosts.length) return null;
@@ -91,6 +93,7 @@ export function Boosts({
           key={b.e}
           type="button"
           className={cn('boost', b.mine && 'mine')}
+          disabled={disabled}
           onClick={() => onToggle(b.e)}
           aria-pressed={b.mine}
         >

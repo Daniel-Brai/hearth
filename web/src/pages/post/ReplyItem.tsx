@@ -70,7 +70,7 @@ export function ReplyItem({
 
       <div className="grid gap-2 min-w-0">
         <div className="reply__meta">
-          <PersonLink id={reply.who} className="reply__author" />
+          <PersonLink id={reply.who} className="reply__author" you />
           {isAuthor ? <Pill>Author</Pill> : null}
           {view.admin ? <Pill tint="violet">Admin</Pill> : null}
           {answers ? <ReplyingTo who={answers.who} target={'reply-' + answers.id} /> : null}
@@ -193,8 +193,9 @@ function ReplyActions({
   const gateway = useGateway();
   const settle = useFlashFailure();
   const flash = useUi((s) => s.flash);
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
   const mine = useAppState((state) => state.me === reply.who);
+  const member = viewer === 'member';
 
   return (
     <div className="reply__actions">
@@ -207,11 +208,12 @@ function ReplyActions({
       ) : (
         <Button
           className="helpful-btn"
-          on={!guest && reply.helpfulMine}
+          on={member && reply.helpfulMine}
+          disabled={viewer === 'unknown'}
           onClick={
-            guest ? signIn : () => settle(gateway.posts.toggleReplyHelpful(post.id, reply.id))
+            member ? () => settle(gateway.posts.toggleReplyHelpful(post.id, reply.id)) : signIn
           }
-          aria-pressed={!guest && reply.helpfulMine}
+          aria-pressed={member && reply.helpfulMine}
         >
           <Icon name="helpful" />
           <span>{reply.helpful}</span>
@@ -219,7 +221,12 @@ function ReplyActions({
         </Button>
       )}
       {post.locked ? null : (
-        <Button size="tiny" variant="borderless" onClick={guest ? signIn : onReplyTo}>
+        <Button
+          size="tiny"
+          variant="borderless"
+          disabled={viewer === 'unknown'}
+          onClick={member ? onReplyTo : signIn}
+        >
           <Icon name="reply" />
           Reply
         </Button>
@@ -252,7 +259,7 @@ function ReplyMenu({
   const gateway = useGateway();
   const flash = useUi((s) => s.flash);
   const ask = useUi((s) => s.ask);
-  const { guest } = useGuest();
+  const { viewer } = useGuest();
 
   const moderation = useModerationActions();
   const ref = { c: post.c, kind: 'Reply' as const, id: reply.id, postId: post.id };
@@ -336,7 +343,7 @@ function ReplyMenu({
           Edit
         </MenuItem>
       ) : null}
-      {!mine && view.reports && !guest ? (
+      {!mine && view.reports && viewer === 'member' ? (
         <MenuItem icon="flag" onSelect={report}>
           Report
         </MenuItem>

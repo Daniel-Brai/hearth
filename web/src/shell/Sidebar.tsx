@@ -39,10 +39,17 @@ import { useUi } from '@/runtime/ui-store';
 import { brandFor } from '@/runtime/brand';
 import { AccountMenu } from './AccountMenu';
 import { PersonAvatar } from './people';
+import { SidebarSkeleton } from './SidebarSkeleton';
 import { useRouteContext } from './use-route-context';
 import { PrivateLock } from '@/features/rooms/PrivateLock';
 
 export function Sidebar() {
+  const ready = useAppState((state) => state.session === 'ready');
+
+  return ready ? <LoadedSidebar /> : <SidebarSkeleton />;
+}
+
+function LoadedSidebar() {
   const openDialog = useUi((s) => s.openDialog);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
   const { community: currentCid } = useRouteContext();

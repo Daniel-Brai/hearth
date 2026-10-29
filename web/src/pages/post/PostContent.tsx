@@ -173,7 +173,7 @@ export function PostBody({ post }: { readonly post: Post }) {
   const gateway = useGateway();
   const settle = useFlashFailure();
   const openImage = useUi((s) => s.openImage);
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
 
   const looseFiles = (post.files ?? []).filter(
     (f) => !post.body.join('\n').includes(`attachment:${f.id}`),
@@ -210,7 +210,10 @@ export function PostBody({ post }: { readonly post: Post }) {
       <Boosts
         className="mt-4"
         boosts={post.boosts}
-        onToggle={guest ? signIn : (key) => settle(gateway.posts.toggleBoost(post.id, key))}
+        disabled={viewer === 'unknown'}
+        onToggle={
+          viewer === 'member' ? (key) => settle(gateway.posts.toggleBoost(post.id, key)) : signIn
+        }
       />
     </>
   );

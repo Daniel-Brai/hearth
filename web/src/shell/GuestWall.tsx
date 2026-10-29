@@ -1,8 +1,24 @@
 import { Button, EmptyState, Measure } from '@/design-system';
 import { PageHeader } from './PageHeader';
-import { useGuest } from './use-guest';
+import { PageMeta } from './PageMeta';
+import { RouteSkeleton } from './RouteSkeleton';
+import { useGuest, type Gate } from './use-guest';
 
-export function GuestWall() {
+/** The wall for a guest, or the route skeleton while the viewer is still unknown */
+export function GateScreen({ gate }: { readonly gate: Exclude<Gate, 'open'> }) {
+  if (gate === 'pending') {
+    return (
+      <>
+        <PageMeta title={[]} noindex />
+        <RouteSkeleton />
+      </>
+    );
+  }
+
+  return <GuestWall />;
+}
+
+function GuestWall() {
   const { signIn } = useGuest();
 
   return (

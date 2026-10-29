@@ -14,7 +14,9 @@
 .community-hero__manage > svg:last-child { inline-size: 0.85rem; block-size: 0.85rem; color: var(--color-ink-dark); transition: rotate 160ms ease-out; }
 .community-hero__manage[aria-expanded="true"] > svg:last-child { rotate: 180deg; }
 .community-hero__title { margin-block-start: 0.6rem; }
+.community-hero__facts { display: grid; gap: 0.45rem; }
 .community-hero__meta { align-items: center; display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; }
+.community-hero__about { align-items: center; display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; }
 .community-hero__meta strong { color: var(--color-ink); }
 .community-hero__intro { display: grid; gap: 0.3rem; justify-items: start; }
 .community-hero__intro .md { max-block-size: 4.7em; overflow: hidden; mask-image: linear-gradient(to bottom, #000 55%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent); }
@@ -31,10 +33,8 @@
   .community-hero__body { gap: 0.8rem; padding: 0 1rem 1rem; }
   .community-hero__top { flex-wrap: nowrap; margin-block: -1.8rem 0.35rem; }
   .community-mark--hero { --mark-size: 3.75rem; border-width: 3px; border-radius: 1rem; font-size: 1.6rem; }
-  .community-hero__actions { flex-wrap: nowrap; margin-block-end: 0.15rem; min-inline-size: 0; }
-  .community-hero__meta { display: grid; gap: 0.5rem 0.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .community-hero__meta > * { align-items: start; min-inline-size: 0; }
-  .community-hero__meta .dot { margin-block-start: 0.5em; }
+  .community-hero__actions { flex-wrap: nowrap; margin-block-end: 0.15rem; min-inline-size: 0; padding-block-start: 2.3rem; }
+  .community-hero__meta { gap: 0.4rem 0.9rem; }
   .feed-tools { gap: 0.4rem; }
   .feed-filter { flex: 1; min-inline-size: 0; }
   .feed-filter .select { inline-size: 100%; }

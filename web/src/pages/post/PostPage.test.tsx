@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { GatewayContext } from '@/app/gateway-context';
+import { RequestContext } from '@/app/request-context';
 import { Store, StoreContext } from '@/data/store';
 import { LoadCache, LoadCacheContext } from '@/data/use-load';
 import { MockGateway } from '@/mocks/gateway';
@@ -43,6 +44,42 @@ async function show(
   );
 
   return store;
+}
+
+async function showAsGuest(hint: boolean) {
+  const store = new Store(createSeedState());
+
+  store.set((state) => {
+    state.me = null;
+    state.session = 'pending';
+  });
+
+  const request = {
+    origin: 'https://hearth.example',
+    zone: 'UTC',
+    signedIn: hint,
+    setStatus: () => {},
+  };
+
+  const router = createMemoryRouter([{ path: '/c/:community/p/:post', element: <PostPage /> }], {
+    initialEntries: [routes.post('elixir', 'p1')],
+  });
+
+  await act(async () =>
+    render(
+      <RequestContext value={request}>
+        <LoadCacheContext value={new LoadCache()}>
+          <StoreContext value={store}>
+            <GatewayContext value={new MockGateway(store)}>
+              <Suspense fallback={null}>
+                <RouterProvider router={router} />
+              </Suspense>
+            </GatewayContext>
+          </StoreContext>
+        </LoadCacheContext>
+      </RequestContext>,
+    ),
+  );
 }
 
 const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Post options' }));
@@ -197,5 +234,22 @@ describe('PostPage', () => {
     await show('elixir', 'p1');
 
     expect(screen.getByRole('link', { name: 'Transcript' })).toBeTruthy();
+  });
+
+  it('offers a guest the sign in prompts without the hint', async () => {
+    await showAsGuest(false);
+
+    expect(document.getElementById('guest-reply-note')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /Helpful/ })).toBeInTheDocument();
+  });
+
+  it('shows no sign in prompt while the viewer is unknown', async () => {
+    await showAsGuest(true);
+
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(document.getElementById('guest-reply-note')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Helpful ·/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 });

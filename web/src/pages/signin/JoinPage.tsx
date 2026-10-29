@@ -4,13 +4,14 @@ import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { ok } from '@/data/gateway';
 import { useLoad } from '@/data/use-load';
-import { fmt } from '@/domain/format';
+import { fmt, noun } from '@/domain/format';
 import { community, displayName, roleName } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar } from '@/shell/people';
 import { AuthLogo } from '@/pages/signin/AuthLogo';
 import { PageMeta } from '@/shell/PageMeta';
+import { useViewer } from '@/shell/use-guest';
 import { useSignedIn } from '@/shell/use-signed-in';
 
 export function JoinPage() {
@@ -68,11 +69,14 @@ function JoinInvite({ code }: { readonly code: string | null }) {
     };
   });
 
-  const faces = useAppState((state) =>
-    Object.keys(state.people)
-      .filter((id) => id !== state.me)
-      .slice(0, 4),
-  );
+  /** Only the owner and whoever sent the link are known members before joining */
+  const faces = useAppState((state) => {
+    const c = link ? community(state, link.c) : null;
+
+    return [...new Set([c?.maintainer, link?.by])].filter(
+      (id): id is string => !!id && id !== state.me,
+    );
+  });
 
   const accept = async () => {
     if (!view) return;
@@ -139,7 +143,7 @@ function JoinInvite({ code }: { readonly code: string | null }) {
                 ))}
               </div>
               <span>
-                {fmt(view.members)} members · {view.online} online
+                {fmt(view.members)} {noun(view.members, 'member')} · {view.online} online
               </span>
             </div>
 
@@ -166,6 +170,8 @@ type JoinActionsProps = {
 };
 
 function JoinActions({ view, preview, onAccept }: JoinActionsProps) {
+  const viewer = useViewer();
+
   if (preview) {
     return (
       <div className="grid gap-2" style={{ inlineSize: '100%' }}>
@@ -182,6 +188,9 @@ function JoinActions({ view, preview, onAccept }: JoinActionsProps) {
       </div>
     );
   }
+
+  if (viewer === 'unknown')
+    return <span className="skel skel--btn" style={{ inlineSize: '100%' }} aria-hidden="true" />;
 
   if (view.joined) {
     return (

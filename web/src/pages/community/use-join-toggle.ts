@@ -7,13 +7,15 @@ export function useJoinToggle(cid: string, name: string, joined: boolean) {
   const flash = useUi((s) => s.flash);
   const ask = useUi((s) => s.ask);
   const openDialog = useUi((s) => s.openDialog);
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
 
   return () => {
-    if (guest) {
+    if (viewer === 'guest') {
       signIn();
       return;
     }
+
+    if (viewer === 'unknown') return;
 
     if (joined) {
       ask({

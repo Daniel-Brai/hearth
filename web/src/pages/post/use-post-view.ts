@@ -1,8 +1,8 @@
 import { useAppState } from '@/data/store';
 import {
+  authorName,
   canDo,
   community,
-  displayName,
   isMod,
   kindInfo,
   liveOnPost,
@@ -46,7 +46,7 @@ export function usePostView(id: string) {
         takesAnswers(state, p) && (p.author === state.me || canDo(state, p.c, 'post.answer')),
       replyKey: keyOf('post_reply', state.settings.keys),
       authorShort: shortName(state, p.author),
-      authorName: displayName(state, p.author),
+      authorName: authorName(state, p.author),
     };
   });
 }

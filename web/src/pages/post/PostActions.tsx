@@ -9,9 +9,11 @@ import { usePostActions } from './use-post-actions';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
 
 export function PostActions({ post, view }: { readonly post: Post; readonly view: PostViewData }) {
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
 
-  if (guest) {
+  if (viewer === 'unknown') return <ActionsPlaceholder />;
+
+  if (viewer === 'guest') {
     return (
       <GuestActions
         helpful={post.helpful}
@@ -23,6 +25,15 @@ export function PostActions({ post, view }: { readonly post: Post; readonly view
   }
 
   return <MemberActions post={post} view={view} />;
+}
+
+function ActionsPlaceholder() {
+  return (
+    <div className="post-actions" aria-hidden="true">
+      <span className="skel skel--btn" />
+      <span className="skel skel--btn" />
+    </div>
+  );
 }
 
 function MemberActions({ post, view }: { readonly post: Post; readonly view: PostViewData }) {

@@ -6,8 +6,8 @@ import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
 import { post as selectPost } from '@/domain/selectors';
 import { idFromSegment } from '@/runtime/routes';
-import { GuestWall } from '@/shell/GuestWall';
-import { useGuestBlocked } from '@/shell/use-guest';
+import { GateScreen } from '@/shell/GuestWall';
+import { useGate } from '@/shell/use-guest';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { PostActions } from './PostActions';
 import { PostBody, PostHeading, PostOrigins } from './PostContent';
@@ -30,10 +30,10 @@ export function PostPage() {
 
   const exists = useAppState((state) => !!id && !!selectPost(state, id));
   const cid = useAppState((state) => (id ? selectPost(state, id)?.c : null));
-  const blocked = useGuestBlocked(cid);
+  const gate = useGate(cid);
 
   if (!id || !exists) return <ErrorPage code={410} />;
-  if (blocked) return <GuestWall />;
+  if (gate !== 'open') return <GateScreen gate={gate} />;
 
   return <PostView id={id} />;
 }

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { CommunityMark, Icon, Link } from '@/design-system';
-import { fmt, plural } from '@/domain/format';
+import { fmt, noun, plural } from '@/domain/format';
 import { routes } from '@/runtime/routes';
 import type { profileCommunities } from './profile-data';
 import type { ProfileViewData } from './use-profile-view';
@@ -79,7 +79,9 @@ function CommunityCard({ membership: m }: { readonly membership: Membership }) {
             <span className="comm-card__dot" />
             <span>{m.role}</span>
           </span>
-          <span className="subtle">{fmt(m.members)} members</span>
+          <span className="subtle">
+            {fmt(m.members)} {noun(m.members, 'member')}
+          </span>
         </span>
       </span>
       {m.shared ? (

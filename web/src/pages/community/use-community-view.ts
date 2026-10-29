@@ -1,4 +1,5 @@
 import { audienceOf } from '@/domain/audience';
+import { useSignedInHint } from '@/app/request-context';
 import { useAppState } from '@/data/store';
 import {
   canDo,
@@ -10,8 +11,11 @@ import {
   queueCountIn,
   shortName,
 } from '@/domain/selectors';
+import { viewerOf } from '@/shell/use-guest';
 
 export function useCommunityView(cid: string) {
+  const hint = useSignedInHint();
+
   return useAppState((state) => {
     const c = community(state, cid)!;
     return {
@@ -27,6 +31,7 @@ export function useCommunityView(cid: string) {
       online: c.online,
       visibility: c.visibility,
       audience: audienceOf(c),
+      viewer: viewerOf(state, hint),
       joined: c.joined && state.me !== null,
       locked: c.visibility === 'invite' && !(c.joined && state.me !== null),
       maintainer: c.maintainer,

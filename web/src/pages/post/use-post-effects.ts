@@ -5,15 +5,20 @@ import { useGuest } from '@/shell/use-guest';
 import { usePageKeys } from '@/shell/key-actions';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
 
+const noop = () => undefined;
+
 export function usePostEffects(id: string) {
   const gateway = useGateway();
   const [search] = useSearchParams();
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
   const settle = useFlashFailure();
 
+  const member = viewer === 'member';
+  const prompt = viewer === 'guest' ? signIn : noop;
+
   useEffect(() => {
-    if (!guest) void gateway.posts.markSeen(id);
-  }, [gateway, id, guest]);
+    if (viewer === 'member') void gateway.posts.markSeen(id);
+  }, [gateway, id, viewer]);
 
   useEffect(() => {
     if (search.get('reply')) document.getElementById('reply-box')?.focus();
@@ -21,10 +26,10 @@ export function usePostEffects(id: string) {
 
   const keys = useMemo(
     () => ({
-      post_helpful: guest ? signIn : () => settle(gateway.posts.toggleHelpful(id)),
-      post_reply: guest ? signIn : () => document.getElementById('reply-box')?.focus(),
+      post_helpful: member ? () => settle(gateway.posts.toggleHelpful(id)) : prompt,
+      post_reply: member ? () => document.getElementById('reply-box')?.focus() : prompt,
     }),
-    [gateway, id, guest, signIn, settle],
+    [gateway, id, member, prompt, settle],
   );
 
   usePageKeys(keys);

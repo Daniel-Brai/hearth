@@ -123,13 +123,15 @@ function ProfileActions({ id, view }: { readonly id: string; readonly view: Prof
   const gateway = useGateway();
   const navigate = useNavigate();
   const flash = useUi((s) => s.flash);
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
 
   const message = () => {
-    if (guest) {
+    if (viewer === 'guest') {
       signIn();
       return;
     }
+
+    if (viewer === 'unknown') return;
 
     gateway.chat.openDm(id);
     void navigate(routes.dm(view.username));
@@ -141,6 +143,14 @@ function ProfileActions({ id, view }: { readonly id: string; readonly view: Prof
       () => flash('Could not copy the username'),
     );
   };
+
+  if (viewer === 'unknown')
+    return (
+      <div className="flex items-center gap-2 flex-wrap justify-center" aria-hidden="true">
+        <span className="skel skel--btn" />
+        <span className="skel skel--btn" />
+      </div>
+    );
 
   return (
     <div className="flex items-center gap-2 flex-wrap justify-center">

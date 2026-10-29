@@ -2,7 +2,7 @@ import { CommunityMark, EmptyState, Link, Measure } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState, shallowEqual } from '@/data/store';
 import { useLoad } from '@/data/use-load';
-import { fmt } from '@/domain/format';
+import { fmt, noun } from '@/domain/format';
 import { brandFor } from '@/runtime/brand';
 import { routes } from '@/runtime/routes';
 import { siteGraph, useStructuredData } from '@/app/structured-data';
@@ -82,7 +82,9 @@ function PublicCommunityCard({ id }: { readonly id: string }) {
         <strong className="truncate">{c.name}</strong>
         <span className="small subtle truncate">{c.tagline}</span>
       </span>
-      <span className="x-small subtle tabular whitespace-nowrap">{fmt(c.members)} members</span>
+      <span className="x-small subtle tabular whitespace-nowrap">
+        {fmt(c.members)} {noun(c.members, 'member')}
+      </span>
     </Link>
   );
 }

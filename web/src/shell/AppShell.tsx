@@ -42,7 +42,7 @@ export function AppShell() {
       </a>
 
       <div className="shell">
-        <div className="main-col">
+        <div className="main-col" data-popup-fence>
           {admin && hydrated ? (
             <Suspense fallback={null}>
               <UpdateBanner />

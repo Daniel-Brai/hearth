@@ -6,7 +6,7 @@ import { OUTAGES } from '@/api/gateway/context';
 import { AppProviders } from '@/app/AppProviders';
 import { hydrationScript } from '@/app/hydration';
 import { RENDER_OPTIONS } from '@/app/render-options';
-import { zoneFromCookies } from '@/app/request-context';
+import { signedInFromCookies, zoneFromCookies } from '@/app/request-context';
 import { createRuntime } from '@/app/runtime';
 import { LoadCache } from '@/data/use-load';
 import { setMarkdownWindow } from '@/features/markdown/markdown';
@@ -35,9 +35,12 @@ export default async function handleRequest(
   const loads = new LoadCache();
   let responseStatus = status;
 
+  const cookies = request.headers.get('cookie');
+
   const info = {
     origin: originOf(request),
-    zone: zoneFromCookies(request.headers.get('cookie')),
+    zone: zoneFromCookies(cookies),
+    signedIn: signedInFromCookies(cookies),
     setStatus: (next: number) => (responseStatus = next),
   };
 
@@ -71,6 +74,7 @@ export default async function handleRequest(
     loaded: loads.readyKeys(),
     origin: info.origin,
     zone: info.zone,
+    signedIn: info.signedIn,
   });
 
   headers.set('Content-Type', 'text/html; charset=utf-8');
