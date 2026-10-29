@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { Icon, IconButton, Link, Menu, MenuTitle, useMenu } from '@/design-system';
+import { ButtonLink, Icon, IconButton, Link, Menu, MenuTitle, useMenu } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import {
@@ -25,7 +25,6 @@ type ChatHeaderProps = {
   readonly selectMode: boolean;
   readonly canPromote: boolean;
   readonly onToggleSelect: () => void;
-  readonly onOpenSettings: () => void;
 };
 
 export function ChatHeader({
@@ -34,7 +33,6 @@ export function ChatHeader({
   selectMode,
   canPromote,
   onToggleSelect,
-  onOpenSettings,
 }: ChatHeaderProps) {
   const view = useAppState((state) => {
     const settings = roomSettings(state, target.key);
@@ -90,14 +88,16 @@ export function ChatHeader({
             </Link>
           ) : null}
 
-          {target.dm === null && view.canRooms ? (
-            <IconButton
-              onClick={onOpenSettings}
+          {target.cid && target.room && view.canRooms ? (
+            <ButtonLink
+              circle
+              size="small"
+              to={routes.roomSettings(target.cid, target.room)}
               aria-label="Room settings"
               data-tip="Room settings"
             >
               <Icon name="sliders" />
-            </IconButton>
+            </ButtonLink>
           ) : null}
         </>
       }

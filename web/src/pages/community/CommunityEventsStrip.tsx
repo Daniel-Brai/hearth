@@ -29,7 +29,7 @@ export function CommunityEventsStrip({
           <EventMini key={e.id} event={e} />
         ))}
         {!events.length && canSchedule ? (
-          <Link className="event-mini event-mini--add" to={routes.communityEvents(cid) + '?new=1'}>
+          <Link className="event-mini event-mini--add" to={routes.eventNew(cid)}>
             <span className="event-date event-date--add">
               <Icon name="plus" />
             </span>

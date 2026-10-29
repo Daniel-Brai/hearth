@@ -28,6 +28,9 @@ export default [
     ]),
     layout(at('protected'), [
       route(patterns.chat, at('chat'), { id: 'chat' }),
+      route(patterns.roomSettings, at('room-settings')),
+      route(patterns.eventNew, at('schedule-event'), { id: 'event-new' }),
+      route(patterns.eventEdit, at('schedule-event'), { id: 'event-edit' }),
       route(patterns.dm, at('chat'), { id: 'dm' }),
       route(patterns.voice, at('voice')),
       route(patterns.session, at('transcript')),

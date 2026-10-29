@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Button, Icon, Label, Segmented } from '@/design-system';
+import { Button, ButtonLink, Icon, Label, Segmented } from '@/design-system';
 import { useAppState } from '@/data/store';
 import { tintStyle } from '@/domain/format';
 import { canDo, community, displayName, nextVoiceEvent } from '@/domain/selectors';
 import type { VoiceMode } from '@/domain/types';
-import { ScheduleDialog } from '@/pages/events/ScheduleDialog';
+import { routes } from '@/runtime/routes';
 import { EventMini } from '@/pages/shared/EventMini';
 import { useVoiceActions } from './use-voice-actions';
 import { startNotice } from './voice-copy';
@@ -14,7 +14,6 @@ type IdleRoomCardProps = { readonly cid: string; readonly rid: string };
 
 export function IdleRoomCard({ cid, rid }: IdleRoomCardProps) {
   const actions = useVoiceActions(cid, rid);
-  const [scheduling, setScheduling] = useState(false);
 
   const view = useAppState((state) => {
     const c = community(state, cid)!;
@@ -96,15 +95,15 @@ export function IdleRoomCard({ cid, rid }: IdleRoomCardProps) {
           />
           <div className="idle-room__actions">
             {view.canSchedule ? (
-              <Button
+              <ButtonLink
                 id="voice-schedule"
-                onClick={() => setScheduling(true)}
+                to={routes.eventNew(cid)}
                 aria-label="Schedule it"
                 data-tip="Schedule it"
               >
                 <Icon name="calendar" />
                 <span className="idle-room__wide">Schedule it</span>
-              </Button>
+              </ButtonLink>
             ) : null}
             <Button id="voice-start" variant="reversed" onClick={() => actions.start(mode)}>
               <Icon name="mic" />
@@ -120,10 +119,6 @@ export function IdleRoomCard({ cid, rid }: IdleRoomCardProps) {
           Join {view.communityName} to hear when it starts
         </Button>
       )}
-
-      {scheduling ? (
-        <ScheduleDialog cid={cid} event={null} onClose={() => setScheduling(false)} />
-      ) : null}
     </section>
   );
 }

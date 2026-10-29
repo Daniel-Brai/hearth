@@ -21,7 +21,6 @@ import { ChatHeader } from './ChatHeader';
 import { MessageBox, SelectBar } from './ChatComposerBar';
 import { MessageItem } from './MessageItem';
 import { PromoteDialog } from './PromoteDialog';
-import { RoomSettingsDialog } from './RoomSettingsDialog';
 import {
   chatThreads,
   roomTitle,
@@ -69,7 +68,6 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
   });
 
   const [promoting, setPromoting] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useMarkRead(target, messages);
 
@@ -179,7 +177,6 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
         selectMode={selectMode}
         canPromote={view.promote}
         onToggleSelect={() => (selectMode ? cancelSelect() : startSelect(null))}
-        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <main id="main" className="flush">
@@ -187,15 +184,6 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
       </main>
 
       {promote}
-
-      {settingsOpen && target.cid && target.room ? (
-        <RoomSettingsDialog
-          cid={target.cid}
-          room={target.room}
-          title={view.title}
-          onClose={() => setSettingsOpen(false)}
-        />
-      ) : null}
     </>
   );
 }

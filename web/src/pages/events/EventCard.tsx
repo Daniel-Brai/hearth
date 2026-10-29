@@ -6,6 +6,7 @@ import { canManageEvent, displayName, isInterested } from '@/domain/selectors';
 import type { Community, CommunityEvent } from '@/domain/types';
 import { EventDate } from '@/pages/shared/EventMini';
 import { PersonAvatar } from '@/shell/people';
+import { useViewer } from '@/shell/use-guest';
 import { EventManageItems } from './EventManageItems';
 import { JoinButton, PlaceLink } from './Place';
 import { eventFile, eventIcs, interestedText, voiceModeInfo } from './event-utils';
@@ -167,13 +168,18 @@ function EventCardActions({
 }) {
   const actions = useEventActions();
   const origin = useOrigin();
+  const viewer = useViewer();
   const active = !event.cancelled && phase !== 'past';
 
   return (
     <div className="event-card__actions">
       {phase === 'live' ? <JoinButton place={view.place} small /> : null}
 
-      {active ? (
+      {active && viewer === 'unknown' ? (
+        <span className="skel skel--btn" aria-hidden="true" />
+      ) : null}
+
+      {active && viewer !== 'unknown' ? (
         <Button
           size="small"
           className={cn('interest-btn', view.interested && 'is-on')}

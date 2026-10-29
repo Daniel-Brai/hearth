@@ -45,13 +45,15 @@ export function useEventActions(onRemoved?: (() => void) | undefined) {
   const gateway = useGateway();
   const ask = useUi((s) => s.ask);
   const flash = useUi((s) => s.flash);
-  const { guest, signIn } = useGuest();
+  const { viewer, signIn } = useGuest();
 
   const toggleInterest = (e: CommunityEvent, interested: boolean) => {
-    if (guest) {
+    if (viewer === 'guest') {
       signIn();
       return;
     }
+
+    if (viewer === 'unknown') return;
 
     gateway.events.toggleInterest(e.id);
     flash(interestMessage(e, interested));

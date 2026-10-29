@@ -9,7 +9,15 @@ import { PageMeta } from '@/shell/PageMeta';
 export type ErrorCode = 403 | 404 | 410 | 500 | 'offline';
 
 export type Forbidden =
-  'private' | 'moderators' | 'editors' | 'creators' | 'invites' | 'roles' | 'admins';
+  | 'private'
+  | 'moderators'
+  | 'editors'
+  | 'creators'
+  | 'invites'
+  | 'roles'
+  | 'rooms'
+  | 'events'
+  | 'admins';
 
 type Copy = { art: IlloName; title: string; text: string };
 
@@ -43,6 +51,16 @@ const FORBIDDEN: Record<Forbidden, Copy> = {
     art: 'lock',
     title: "You can't manage roles here",
     text: 'Your role here does not include changing who can do what. Ask someone who can, such as its owner.',
+  },
+  rooms: {
+    art: 'lock',
+    title: "You can't change this room",
+    text: 'Your role here does not include changing rooms. Ask a moderator or the owner.',
+  },
+  events: {
+    art: 'lock',
+    title: "You can't schedule events here",
+    text: 'Your role here does not include scheduling or changing events. Ask a moderator or the owner.',
   },
   admins: {
     art: 'lock',

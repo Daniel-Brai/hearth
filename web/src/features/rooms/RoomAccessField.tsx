@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Chip, Field, Icon, Segmented } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
@@ -18,24 +19,12 @@ const OPTIONS = [
 ] satisfies { value: RoomAccess; label: string }[];
 
 export function RoomAccessField({ cid, access, roleIds, onChange }: RoomAccessFieldProps) {
-  const gateway = useGateway();
-
-  useLoad(() => gateway.load.roles(cid), 'roles:' + cid);
-
-  const roles = useAppState((state) => rolesOf(state, cid).filter((r) => !r.locked));
-  const chosen = new Set(roleIds);
-
-  const toggle = (ref: string) =>
-    onChange(access, chosen.has(ref) ? roleIds.filter((id) => id !== ref) : [...roleIds, ref]);
-
   return (
     <Field
       as="div"
       label="Who can see it?"
       hint={
-        access === 'roles'
-          ? 'Only people with these roles see the room. The owner and people who manage rooms always do.'
-          : 'Every member can see and open the room.'
+        access === 'roles' ? 'Only these roles and room managers see it.' : 'Every member sees it.'
       }
     >
       <Segmented
@@ -48,19 +37,56 @@ export function RoomAccessField({ cid, access, roleIds, onChange }: RoomAccessFi
       />
 
       {access === 'roles' ? (
-        <div className="chips" role="group" aria-label="Roles that can see the room">
-          {roles.map((r) => {
-            const on = chosen.has(roleRef(r));
-
-            return (
-              <Chip key={r.id} on={on} onClick={() => toggle(roleRef(r))}>
-                {on ? <Icon name="check" /> : null}
-                <span>{r.name}</span>
-              </Chip>
-            );
-          })}
-        </div>
+        <Suspense fallback={<RoleChipsLoading />}>
+          <RoleChips cid={cid} roleIds={roleIds} onChange={(ids) => onChange(access, ids)} />
+        </Suspense>
       ) : null}
     </Field>
+  );
+}
+
+/** The roles load here, under their own fallback, so opening a dialog never suspends the screen behind it */
+function RoleChips({
+  cid,
+  roleIds,
+  onChange,
+}: {
+  readonly cid: string;
+  readonly roleIds: readonly string[];
+  readonly onChange: (roleIds: string[]) => void;
+}) {
+  const gateway = useGateway();
+
+  useLoad(() => gateway.load.roles(cid), 'roles:' + cid);
+
+  const roles = useAppState((state) => rolesOf(state, cid).filter((r) => !r.locked));
+  const chosen = new Set(roleIds);
+
+  const toggle = (ref: string) =>
+    onChange(chosen.has(ref) ? roleIds.filter((id) => id !== ref) : [...roleIds, ref]);
+
+  return (
+    <div className="chips" role="group" aria-label="Roles that can see the room">
+      {roles.map((r) => {
+        const on = chosen.has(roleRef(r));
+
+        return (
+          <Chip key={r.id} on={on} onClick={() => toggle(roleRef(r))}>
+            {on ? <Icon name="check" /> : null}
+            <span>{r.name}</span>
+          </Chip>
+        );
+      })}
+    </div>
+  );
+}
+
+function RoleChipsLoading() {
+  return (
+    <div className="chips" aria-busy="true" aria-label="Loading roles">
+      <span className="skel skel--pill" />
+      <span className="skel skel--pill" />
+      <span className="skel skel--pill" />
+    </div>
   );
 }

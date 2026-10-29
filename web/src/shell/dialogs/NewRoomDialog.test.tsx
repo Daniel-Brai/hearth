@@ -48,7 +48,7 @@ describe('NewRoomDialog', () => {
     fireEvent.change(screen.getByPlaceholderText('release-planning'), {
       target: { value: 'core' },
     });
-    fireEvent.click(screen.getByRole('radio', { name: 'Only some roles' }));
+    await act(async () => fireEvent.click(screen.getByRole('radio', { name: 'Only some roles' })));
     fireEvent.click(screen.getByRole('button', { name: 'Moderator' }));
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Add room' })));
 

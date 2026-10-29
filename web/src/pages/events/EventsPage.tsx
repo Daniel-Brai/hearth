@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { EmptyState, Label, Measure } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
@@ -15,13 +15,10 @@ import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { EventCard } from './EventCard';
 import { EventDialog } from './EventDialog';
 import { EventsToolbar, type EventsTab } from './EventsToolbar';
-import { ScheduleDialog } from './ScheduleDialog';
 import { alwaysChanged, groupEvents, snapshot } from './event-utils';
-import { GuestWall } from '@/shell/GuestWall';
-import { useGuestBlocked } from '@/shell/use-guest';
+import { GateScreen } from '@/shell/GuestWall';
+import { useGate } from '@/shell/use-guest';
 import './EventsPage.css';
-
-type Schedule = { cid: string; event: CommunityEvent | null };
 
 export function EventsPage() {
   const { community: param, event: eventSegment } = useParams();
@@ -34,7 +31,7 @@ export function EventsPage() {
 
   const name = useAppState((state) => community(state, cid)?.name ?? null);
   const exists = useAppState((state) => !cid || !!community(state, cid));
-  const blocked = useGuestBlocked(cid);
+  const gate = useGate(cid);
 
   const eventExists = useAppState(
     (state) => !routeEvent || state.events.some((e) => e.id === routeEvent),
@@ -43,7 +40,7 @@ export function EventsPage() {
   const eyebrow = cid ? name : 'Your communities';
 
   if (!exists || !eventExists) return <ErrorPage code={404} />;
-  if (blocked) return <GuestWall />;
+  if (gate !== 'open') return <GateScreen gate={gate} />;
 
   return <EventsView cid={cid} routeEvent={routeEvent} eyebrow={eyebrow} />;
 }
@@ -126,18 +123,13 @@ function EventsView({
   readonly eyebrow: string | null;
 }) {
   const navigate = useNavigate();
-  const [search] = useSearchParams();
 
   const [tab, setTab] = useState<EventsTab>('upcoming');
   const [opened, setOpened] = useState<string | null>(null);
-  const [scheduling, setScheduling] = useState<Schedule | null>(null);
-  const [newDismissed, setNewDismissed] = useState(false);
 
   const { list, count, canSchedule, schedulable } = useEventsData(cid, tab);
   const meta = useEventsMeta(cid, routeEvent, eyebrow);
 
-  const wantsNew = search.get('new') === '1' && !newDismissed && !!cid && canSchedule;
-  const schedule = scheduling ?? (wantsNew && cid ? { cid, event: null } : null);
   const openId = opened ?? routeEvent;
   const groups = groupEvents(list, tab === 'past');
 
@@ -147,15 +139,7 @@ function EventsView({
       void navigate(cid ? routes.communityEvents(cid) : routes.events, { replace: true });
   };
 
-  const closeSchedule = () => {
-    setScheduling(null);
-    setNewDismissed(true);
-  };
-
-  const edit = (e: CommunityEvent) => {
-    closeEvent();
-    setScheduling({ cid: e.c, event: e });
-  };
+  const edit = (e: CommunityEvent) => void navigate(routes.eventEdit(e.c, e.id, e.title));
 
   const empty = emptyCopy(tab, canSchedule);
 
@@ -172,7 +156,7 @@ function EventsView({
             count={count}
             canSchedule={canSchedule}
             schedulable={schedulable}
-            onSchedule={(target) => setScheduling({ cid: target, event: null })}
+            onSchedule={(target) => void navigate(routes.eventNew(target))}
           />
 
           {!groups.length ? (
@@ -201,15 +185,6 @@ function EventsView({
       </main>
 
       {openId ? <EventDialog key={openId} id={openId} onClose={closeEvent} onEdit={edit} /> : null}
-
-      {schedule ? (
-        <ScheduleDialog
-          key={schedule.event?.id ?? schedule.cid}
-          cid={schedule.cid}
-          event={schedule.event}
-          onClose={closeSchedule}
-        />
-      ) : null}
     </>
   );
 }

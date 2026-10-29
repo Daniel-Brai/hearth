@@ -1,0 +1,8 @@
+@layer components {
+.room-settings__bar { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; padding-block: 0.2rem 1rem; }
+.room-settings__bar > :first-child:not(.btn) { margin-inline-end: auto; }
+@media (max-width: 40rem) {
+  .room-settings .segmented { inline-size: 100%; }
+  .room-settings .segmented label { flex: 1 1 auto; justify-content: center; padding-inline: 0.6rem; text-align: center; white-space: normal; }
+}
+}

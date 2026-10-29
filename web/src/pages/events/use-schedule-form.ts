@@ -21,7 +21,7 @@ import {
   type Problem,
 } from './schedule-form';
 
-export function useScheduleForm(cid: string, event: CommunityEvent | null, onClose: () => void) {
+export function useScheduleForm(cid: string, event: CommunityEvent | null) {
   const gateway = useGateway();
   const flash = useUi((s) => s.flash);
   const community = useAppState((state) => state.communities[cid]);
@@ -48,8 +48,11 @@ export function useScheduleForm(cid: string, event: CommunityEvent | null, onClo
   const fail = (field: Problem['field'], text: string) => {
     setProblem({ field, text });
     window.setTimeout(() => setProblem((p) => (p ? { ...p, field: null } : p)), 450);
+
+    return false;
   };
 
+  /** @returns whether the event was saved */
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setProblem(null);
@@ -80,7 +83,8 @@ export function useScheduleForm(cid: string, event: CommunityEvent | null, onClo
     if (!r.ok) return fail(null, r.error);
 
     flash(flashText(event, notify, community?.name ?? 'the community'));
-    onClose();
+
+    return true;
   };
 
   return {
