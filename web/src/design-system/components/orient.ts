@@ -154,7 +154,9 @@ function visibleBounds(el: HTMLElement) {
 
   for (let node = el.parentElement; node; node = node.parentElement) {
     const style = getComputedStyle(node);
-    const clipsX = style.overflowX !== 'visible';
+    /** A fenced column shows nothing past its edge even though it doesn't clip, since a sidebar sits over it */
+    const fenced = node.hasAttribute('data-popup-fence');
+    const clipsX = fenced || style.overflowX !== 'visible';
     const clipsY = style.overflowY !== 'visible';
 
     if (!clipsX && !clipsY) continue;

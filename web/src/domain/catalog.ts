@@ -74,6 +74,7 @@ export const PERMS: readonly [key: Permission, label: string, description: strin
     'Turn chat into posts',
     'Make a post from room messages, each under its own author',
   ],
+  ['mention.all', 'Mention everyone', 'Notify everyone who can see a room with @all'],
   ['content.remove', 'Remove content', 'Take down posts and messages, logged publicly'],
   ['member.ban', 'Ban people', 'Ban accounts and add them to shared lists'],
   ['role.update', 'Manage roles', 'Create roles and change permissions'],

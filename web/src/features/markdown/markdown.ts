@@ -36,6 +36,8 @@ export type RenderContext = {
   readonly state: AppState;
   readonly community: string | null;
   readonly files?: readonly Attachment[];
+  /** True when the message's @all came from someone allowed to ping the whole room */
+  readonly everyone?: boolean | undefined;
 };
 
 /** Extensions are registered once so the people and rooms for @mentions are set around each render */
@@ -45,6 +47,12 @@ let dropImages = false;
 
 function mentionHtml(handleText: string, raw: string) {
   if (!ctx) return esc(raw);
+
+  if (handleText.toLowerCase() === 'all') {
+    return ctx.everyone
+      ? '<span class="mention mention--me" title="Everyone who can see this room">@all</span>'
+      : esc(raw);
+  }
 
   const { state } = ctx;
   const id = findPerson(state, handleText);

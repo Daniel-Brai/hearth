@@ -18,10 +18,9 @@
 .kb-only.jump__hint { display: none !important; }
 .jump__cancel { display: inline-flex; margin-inline-end: -0.5rem; } }
 @media (max-width: 639px) {
-.dialog--jump { --dialog-width: calc(100vw - 1rem); margin-block-start: 0.5rem; max-block-size: calc(100dvh - 1rem); }
-.dialog--jump[open] { display: flex; flex-direction: column; }
+.dialog--jump { --dialog-width: calc(100vw - 1.5rem); margin-block-start: 14dvh; }
 .jump__field { padding: 0.35rem 0.75rem 0.35rem 1rem; }
-.jump__results { flex: 1; max-block-size: none; min-block-size: 0; } }
+.jump__results { max-block-size: 42dvh; } }
 /* Touch has no pointer to follow, so a row lights up only while it is pressed */
 @media (any-hover: none) {
 .jump__item { min-block-size: 2.75rem; }

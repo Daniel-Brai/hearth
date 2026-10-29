@@ -78,7 +78,7 @@ export const stripPrefix = (s: string, prefixes: readonly string[]) => {
   return hit ? s.slice(hit.length) : s;
 };
 
-export const stripSuffix = (s: string, suffix: string) =>
+const stripSuffix = (s: string, suffix: string) =>
   s.endsWith(suffix) ? s.slice(0, -suffix.length) : s;
 
 export function normalizeUrl(input: string): string {

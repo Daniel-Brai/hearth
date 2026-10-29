@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { typingLine } from './format';
+import { noun, typingLine } from './format';
 
 describe('typingLine', () => {
   it('says nothing when nobody is typing', () => {
@@ -15,5 +15,16 @@ describe('typingLine', () => {
 
   it('counts the rest past two names', () => {
     expect(typingLine(['Bea', 'Remy', 'Mira', 'Ada'])).toBe('Bea, Remy and 2 others are typing');
+  });
+});
+
+describe('noun', () => {
+  it('uses the singular for exactly one', () => {
+    expect(noun(1, 'member')).toBe('member');
+  });
+
+  it('uses the plural otherwise', () => {
+    expect(noun(0, 'member')).toBe('members');
+    expect(noun(2, 'person', 'people')).toBe('people');
   });
 });

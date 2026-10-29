@@ -202,7 +202,8 @@ function giveUp(error: unknown) {
 }
 
 function context(): AudioContext | null {
-  if (!available) return null;
+  // Browsers refuse to start audio before the person has touched the page
+  if (!available || navigator.userActivation?.hasBeenActive === false) return null;
 
   if (!audioCtx) {
     try {

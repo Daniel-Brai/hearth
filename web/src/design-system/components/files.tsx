@@ -12,8 +12,6 @@ import {
   type LinkPreview as LinkPreviewData,
 } from '@/domain/types';
 
-export type { LinkPreviewData };
-
 export function FileList({
   files,
   onOpenImage,

@@ -51,6 +51,16 @@ describe('Carousel', () => {
     expect(count()).toBe('1 / 3');
   });
 
+  it('keeps focus on the image showing when moving on', () => {
+    show(vi.fn());
+
+    screen.getByRole('button', { name: 'Open one' }).focus();
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Open one' }), { key: 'ArrowRight' });
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open two' }));
+    expect(document.querySelector('[aria-hidden="true"].carousel__slide')).toBeNull();
+  });
+
   it('opens the image that is showing', () => {
     const onOpen = vi.fn();
 

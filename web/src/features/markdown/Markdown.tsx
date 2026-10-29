@@ -21,11 +21,13 @@ export function Markdown({
   text,
   community,
   files,
+  everyone,
   className,
 }: {
   readonly text: string | readonly string[];
   readonly community: string | null;
   readonly files?: readonly Attachment[];
+  readonly everyone?: boolean | undefined;
   readonly className?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -34,10 +36,13 @@ export function Markdown({
 
   const html = useMemo(() => {
     const state = store.get();
-    return renderMarkdown(text, files ? { state, community, files } : { state, community });
+    return renderMarkdown(
+      text,
+      files ? { state, community, files, everyone } : { state, community, everyone },
+    );
     // The key stands in for the store parts this text depends on
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, community, files, key]);
+  }, [text, community, files, everyone, key]);
 
   useEffect(() => {
     const el = root.current;

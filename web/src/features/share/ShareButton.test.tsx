@@ -5,7 +5,12 @@ import { Store, StoreContext } from '@/data/store';
 import { createSeedState } from '@/mocks/seed';
 import { ShareButton } from './ShareButton';
 
-const request = { origin: 'https://hearth.example', zone: 'UTC', setStatus: () => undefined };
+const request = {
+  origin: 'https://hearth.example',
+  zone: 'UTC',
+  signedIn: false,
+  setStatus: () => undefined,
+};
 
 function show(store: Store) {
   return render(

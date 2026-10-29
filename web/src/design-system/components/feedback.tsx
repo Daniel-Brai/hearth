@@ -53,7 +53,7 @@ export function EmptyState({
   );
 }
 
-export type SkeletonKind = 'feed' | 'post' | 'chat' | 'queue' | 'profile';
+export type SkeletonKind = 'feed' | 'post' | 'compose' | 'chat' | 'queue' | 'profile';
 
 export function Skeleton({ kind }: { readonly kind: SkeletonKind }) {
   return (
@@ -93,6 +93,23 @@ export function Skeleton({ kind }: { readonly kind: SkeletonKind }) {
             <span className="skel skel--block" />
             <span className="skel skel--line" style={{ inlineSize: '60%' }} />
           </div>
+        </div>
+      ) : null}
+      {kind === 'compose' ? (
+        <div className="grid gap-4 justify-items-center" style={{ paddingBlock: '1rem' }}>
+          <span className="skel skel--pill" style={{ inlineSize: '12rem', blockSize: '2.2rem' }} />
+          <div className="flex flex-wrap gap-2 justify-center">
+            {[6, 5.5, 4.5, 5.5, 7.5, 4.5].map((w, i) => (
+              <span key={i} className="skel skel--pill" style={{ inlineSize: `${w}rem` }} />
+            ))}
+          </div>
+          <span className="skel skel--title" style={{ inlineSize: '70%', blockSize: '2.2rem' }} />
+          <span className="skel skel--pill" style={{ inlineSize: '11rem', blockSize: '2.4rem' }} />
+          <span className="skel skel--block" style={{ blockSize: '15rem' }} />
+          <span
+            className="skel skel--pill"
+            style={{ inlineSize: '12rem', blockSize: '2.6rem', justifySelf: 'end' }}
+          />
         </div>
       ) : null}
       {kind === 'chat' ? (

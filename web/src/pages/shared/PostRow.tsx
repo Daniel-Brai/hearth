@@ -3,13 +3,13 @@ import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { ageText, plural } from '@/domain/format';
 import {
+  authorName,
   canDo,
-  displayName,
   kindInfo,
   liveOnPost,
   postHref,
-  replyCountOf,
   recordingFor,
+  replyCountOf,
   transcriptionOn,
 } from '@/domain/selectors';
 import { attachmentSrc, type Post } from '@/domain/types';
@@ -41,7 +41,7 @@ function usePostRowView(post: Post): PostRowView {
   return useAppState((state) => ({
     kindHue: kindInfo(state, post.c, post.kind).hue,
     communityName: state.communities[post.c]?.name ?? null,
-    author: displayName(state, post.author),
+    author: authorName(state, post.author),
     live: !!liveOnPost(state, post),
     recorded: !!recordingFor(state, post.id),
     transcribed: !!post.transcript && transcriptionOn(state),

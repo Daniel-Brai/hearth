@@ -1,12 +1,14 @@
 import { matchPath, useLocation } from 'react-router';
 import { Skeleton, type SkeletonKind } from '@/design-system';
-import { patterns } from '@/runtime/routes';
+import { patterns, routes } from '@/runtime/routes';
 
 const SHAPES: readonly [string, SkeletonKind][] = [
   [patterns.chat, 'chat'],
   [patterns.dm, 'chat'],
   [patterns.voice, 'chat'],
   [patterns.post, 'post'],
+  [patterns.communityNew, 'compose'],
+  [routes.newPost, 'compose'],
   [patterns.profile, 'profile'],
   [patterns.moderation, 'queue'],
 ];

@@ -30,6 +30,8 @@ export const fmtLimit = (b: number) =>
 
 export const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? one : many}`;
 
+export const noun = (n: number, one: string, many = one + 's') => (n === 1 ? one : many);
+
 const AGE_UNITS: Record<string, number> = { m: 1, h: 60, d: 1440 };
 
 export const ageMinutes = (a: string) => {

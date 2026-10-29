@@ -69,9 +69,6 @@
 .mini-badge.is-locked { box-shadow: 0 0 0 2px var(--hue-red); }
 .mode-pill { display: inline-flex; align-items: center; gap: 0.35rem; font: inherit; font-size: var(--text-x-small); font-weight: 700; color: inherit;
   border: 1px solid var(--color-ink-lighter); border-radius: 99rem; padding: 0.2rem 0.65rem; background: none; }
-.popup__item--rich { align-items: flex-start; text-align: start; white-space: normal; padding-block: 0.6rem; }
-.popup__item--rich + .popup__item--rich { margin-block-start: 0.15rem; }
-.popup__item--rich small { font-weight: 400; line-height: 1.35; }
 .speaker--more { background: none; border: 0; cursor: pointer; padding: 0; font: inherit; color: inherit; border-radius: 1rem; }
 .speaker--more:hover .avatar { filter: brightness(1.12); }
 .speaker--more:focus-visible { outline: var(--focus-ring); outline-offset: 4px; }

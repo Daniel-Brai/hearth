@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Avatar, Link, type AvatarSize } from '@/design-system';
-import { displayName, initials, person, photoOf, presence } from '@/domain/selectors';
+import { authorName, displayName, initials, person, photoOf, presence } from '@/domain/selectors';
 import { useAppState } from '@/data/store';
 import { routes } from '@/runtime/routes';
 
@@ -57,15 +57,18 @@ export function PersonLink({
   id,
   className,
   labelled,
+  you,
   children,
 }: {
   readonly id: string;
   readonly className?: string | undefined;
   readonly labelled?: boolean | undefined;
+  /** Shows You for the person signed in, for the author of something */
+  readonly you?: boolean | undefined;
   readonly children?: ReactNode;
 }) {
   const view = useAppState((state) => ({
-    name: displayName(state, id),
+    name: you ? authorName(state, id) : displayName(state, id),
     username: person(state, id).username,
   }));
 

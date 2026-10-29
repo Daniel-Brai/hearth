@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { Icon } from '@/design-system/icons/Icon';
 import { IconButton } from './button';
 import { Img } from './image';
@@ -22,14 +22,30 @@ export function Carousel({
   readonly onOpen?: ((index: number) => void) | undefined;
 }) {
   const track = useRef<HTMLDivElement>(null);
+  /** Leaving a slide makes it inert, which drops focus, so a keyboard user carries on from the new one */
+  const refocus = useRef(false);
   const [index, setIndex] = useState(0);
   const last = images.length - 1;
   const first = images[0];
 
+  useEffect(() => {
+    if (!refocus.current) return;
+
+    refocus.current = false;
+    track.current?.children[index]?.querySelector<HTMLElement>('.carousel__open')?.focus();
+  }, [index]);
+
+  const show = (to: number) => {
+    if (to === index) return;
+
+    refocus.current = !!track.current?.contains(document.activeElement);
+    setIndex(to);
+  };
+
   const go = (next: number) => {
     const to = Math.max(0, Math.min(last, next));
 
-    setIndex(to);
+    show(to);
 
     const el = track.current;
 
@@ -40,7 +56,7 @@ export function Carousel({
     const el = track.current;
     if (!el || !el.clientWidth) return;
 
-    setIndex(Math.max(0, Math.min(last, Math.round(el.scrollLeft / el.clientWidth))));
+    show(Math.max(0, Math.min(last, Math.round(el.scrollLeft / el.clientWidth))));
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -74,14 +90,13 @@ export function Carousel({
             role="group"
             aria-roledescription="slide"
             aria-label={`${i + 1} of ${images.length}`}
-            aria-hidden={i !== index}
+            inert={i !== index}
           >
             <Img className="carousel__backdrop" src={image.src} alt="" lazy={i !== 0} />
             {onOpen ? (
               <button
                 type="button"
                 className="carousel__open"
-                tabIndex={i === index ? 0 : -1}
                 aria-label={'Open ' + image.alt}
                 onClick={() => onOpen(i)}
               >

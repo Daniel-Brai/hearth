@@ -43,7 +43,7 @@ export { EmptyState, Skeleton, Toasts, type SkeletonKind } from './components/fe
 
 export { Measure, OriginNote, Panel, Separator, SettingsRow } from './components/layout';
 
-export { FileList, LinkPreview, type LinkPreviewData } from './components/files';
+export { FileList, LinkPreview } from './components/files';
 
 export { Emoji, EmojiPicker, preloadEmojiPicker } from './emoji/index';
 

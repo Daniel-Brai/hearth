@@ -161,3 +161,20 @@ describe('links', () => {
     expect(link.getAttribute('title')).toBeNull();
   });
 });
+
+describe('@all', () => {
+  const pill = (html: string) =>
+    new DOMParser().parseFromString(html, 'text/html').querySelector('.mention');
+
+  it('stays plain text from someone without the permission', () => {
+    const html = renderMarkdown('Standup @all', { state, community: null, everyone: false });
+
+    expect(pill(html)).toBeNull();
+  });
+
+  it('shows as a mention of the reader when it reached everyone', () => {
+    const html = renderMarkdown('Standup @all', { state, community: null, everyone: true });
+
+    expect(pill(html)?.classList.contains('mention--me')).toBe(true);
+  });
+});
