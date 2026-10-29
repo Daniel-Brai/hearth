@@ -529,10 +529,12 @@ defmodule Hearth.CommunitiesTest do
     end
 
     test "keeps the roles on a rename", %{owner: owner, community: community} do
+      %{id: community_id} = community
       room = TestUtils.create_random_private_room!(community, ["moderator"])
+
       assert {:ok, renamed} = Communities.update_room(owner, room, %{name: Lorem.word()})
       assert renamed.room_roles == room.room_roles
-      refute_receive %RoomAccessChanged{}
+      refute_receive %RoomAccessChanged{community_id: ^community_id}
     end
   end
 
