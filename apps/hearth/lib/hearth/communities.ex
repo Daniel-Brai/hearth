@@ -410,7 +410,7 @@ defmodule Hearth.Communities do
   def create_room(%User{} = user, %Community{} = community, %{} = params) do
     with :ok <- authorize(user, :update, :room, community),
          role_ids = role_ids_in(community.id, params),
-         {:ok, room} <- SaveRoom.execute(%Room{community_id: community.id}, params, role_ids) do
+         {:ok, room} <- SaveRoom.execute(community.id, params, role_ids) do
       broadcast(%RoomChanged{community_id: community.id, room_id: room.id})
       {:ok, room}
     end
