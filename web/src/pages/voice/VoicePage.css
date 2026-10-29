@@ -93,9 +93,7 @@
 .voice-layout__room { transition: filter 220ms ease; }
 .voice-layout.has-chat > .voice-layout__room { filter: blur(3px); }
 @media (prefers-reduced-motion: reduce) { .voice-layout__room { transition: none; } }
-.voice-chat__head { align-items: center; border-block-end: 1px solid var(--color-ink-lightest); display: flex; gap: 0.6rem; min-block-size: 3.2rem; padding: 0.35rem 0.5rem 0.35rem 1rem; }
-.voice-chat__head .icon-text { color: var(--color-ink-dark); }
-.voice-chat__title { display: grid; flex: 1; line-height: 1.2; min-inline-size: 0; }
+.voice-chat__head { display: flex; justify-content: flex-end; padding: 0.35rem 0.5rem 0; }
 .voice-chat .chat__messages { padding-inline: 0.75rem; }
 .voice-chat .chat__composer { padding: 0.5rem 0.75rem 0.75rem; }
 .voice-chat .return-latest { inset-block-end: 5.5rem; }
