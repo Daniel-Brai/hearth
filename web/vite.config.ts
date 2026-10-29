@@ -115,7 +115,8 @@ export default defineConfig({
           },
         ],
       },
-      devOptions: { enabled: false },
+      // The manifest is served in development too, so installing from the dev server gets the icons
+      devOptions: { enabled: true },
     }),
   ],
   resolve: {
