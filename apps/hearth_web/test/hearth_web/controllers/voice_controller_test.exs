@@ -41,13 +41,16 @@ defmodule HearthWeb.VoiceControllerTest do
     end
 
     test "gets the live session", %{conn: conn, member: member, community: community} do
-      %{id: id, room_id: room_id} = TestUtils.start_random_voice_session!(community)
+      session = TestUtils.start_random_voice_session!(community)
 
-      assert %{"id" => ^id, "ended_at" => nil} =
+      assert %{"ended_at" => nil} =
+               response =
                conn
                |> auth_conn(member)
-               |> get(~p"/api/rooms/#{room_id}/voice-session")
+               |> get(~p"/api/rooms/#{session.room_id}/voice-session")
                |> valid_response(200)
+
+      assert response["id"] == session.id
     end
   end
 
@@ -71,13 +74,15 @@ defmodule HearthWeb.VoiceControllerTest do
       member: member,
       community: community
     } do
-      %{id: id} = TestUtils.start_random_voice_session!(community)
+      session = TestUtils.start_random_voice_session!(community)
 
-      assert [%{"id" => ^id, "ended_at" => nil, "recording" => false, "people" => 0}] =
+      assert [%{"ended_at" => nil, "recording" => false, "people" => 0} = live] =
                conn
                |> auth_conn(member)
                |> get(~p"/api/voice-sessions/live")
                |> valid_response(200)
+
+      assert live["id"] == session.id
     end
   end
 
@@ -175,26 +180,29 @@ defmodule HearthWeb.VoiceControllerTest do
     end
 
     test "starts a session", %{conn: conn, owner: owner, room: room} do
-      %{id: host_id} = owner
+      body = %{mode: "open", topic: "Planning"}
 
-      assert %{"host_id" => ^host_id, "mode" => "open", "topic" => "Planning"} =
+      assert response =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/rooms/#{room.id}/voice-sessions", %{
-                 mode: "open",
-                 topic: "Planning"
-               })
+               |> post(~p"/api/rooms/#{room.id}/voice-sessions", body)
                |> valid_response(201)
+
+      assert response["host_id"] == owner.id
+      assert response["mode"] == body.mode
+      assert response["topic"] == body.topic
     end
 
     test "gives the live one", %{conn: conn, owner: owner, community: community} do
-      %{id: id, room_id: room_id} = TestUtils.start_random_voice_session!(community)
+      session = TestUtils.start_random_voice_session!(community)
 
-      assert %{"id" => ^id} =
+      assert response =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/rooms/#{room_id}/voice-sessions", %{})
+               |> post(~p"/api/rooms/#{session.room_id}/voice-sessions", %{})
                |> valid_response(200)
+
+      assert response["id"] == session.id
     end
   end
 
@@ -215,18 +223,17 @@ defmodule HearthWeb.VoiceControllerTest do
 
     test "shows the session", %{conn: conn, owner: owner, member: member, community: community} do
       session = TestUtils.start_random_voice_session!(community)
-      %{id: member_id} = member
       {:ok, _joined} = Voice.join(member, session, TestUtils.start_fake_channel!())
 
-      assert %{
-               "host_tools" => false,
-               "share" => nil,
-               "participants" => [%{"user_id" => ^member_id, "role" => "listener"}]
-             } =
+      assert %{"host_tools" => false, "share" => nil} =
+               response =
                conn
                |> auth_conn(member)
                |> get(~p"/api/voice-sessions/#{session.id}")
                |> valid_response(200)
+
+      assert [%{"role" => "listener"} = participant] = response["participants"]
+      assert participant["user_id"] == member.id
 
       assert %{"host_tools" => true} =
                conn
@@ -480,18 +487,19 @@ defmodule HearthWeb.VoiceControllerTest do
 
     test "starts recording", %{conn: conn, owner: owner, member: member, community: community} do
       session = TestUtils.start_random_voice_session!(community)
-      %{id: owner_id} = owner
 
       assert conn
              |> auth_conn(owner)
              |> post(~p"/api/voice-sessions/#{session.id}/recording")
              |> response(204)
 
-      assert %{"recording" => %{"started_by_id" => ^owner_id}} =
+      assert response =
                conn
                |> auth_conn(member)
                |> get(~p"/api/voice-sessions/#{session.id}")
                |> valid_response(200)
+
+      assert response["recording"]["started_by_id"] == owner.id
     end
   end
 

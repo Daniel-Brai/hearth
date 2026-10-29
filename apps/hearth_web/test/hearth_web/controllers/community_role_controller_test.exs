@@ -158,15 +158,16 @@ defmodule HearthWeb.CommunityRoleControllerTest do
       community: community,
       member: member
     } do
-      user_id = member.id
+      body = %{keys: ["moderator"]}
 
-      assert %{"user_id" => ^user_id, "keys" => ["moderator"]} =
+      assert response =
                conn
                |> auth_conn(owner)
-               |> put(~p"/api/communities/#{community.id}/members/#{member.id}/roles", %{
-                 keys: ["moderator"]
-               })
+               |> put(~p"/api/communities/#{community.id}/members/#{member.id}/roles", body)
                |> valid_response(200)
+
+      assert response["user_id"] == member.id
+      assert response["keys"] == body.keys
     end
   end
 end

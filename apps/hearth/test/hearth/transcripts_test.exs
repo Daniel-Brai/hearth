@@ -30,10 +30,10 @@ defmodule Hearth.TranscriptsTest do
     end
 
     test "show transcript", %{member: member, session: session, transcript: transcript} do
-      %{id: id} = transcript
-
-      assert {:ok, %{transcript: %Transcript{id: ^id}}} =
+      assert {:ok, %{transcript: %Transcript{} = shown}} =
                Transcripts.get_for_session(member, session.id)
+
+      assert shown.id == transcript.id
     end
   end
 
@@ -59,10 +59,11 @@ defmodule Hearth.TranscriptsTest do
     } do
       post = TestUtils.create_random_post!(owner, community)
       :ok = TestUtils.update_rows!(Transcript, [id: transcript.id], post_id: post.id)
-      %{id: id} = transcript
 
-      assert %{transcript: %Transcript{id: ^id}, room_name: "Voice " <> _n} =
+      assert %{transcript: %Transcript{} = shown, room_name: "Voice " <> _n} =
                Transcripts.for_post(member, post)
+
+      assert shown.id == transcript.id
     end
   end
 
@@ -87,10 +88,12 @@ defmodule Hearth.TranscriptsTest do
 
     test "fix own line", %{member: member, transcript: transcript} do
       [_welcome, thanks] = transcript.segments
-      %{id: member_id} = member
+      params = %{text: " Thank you "}
 
-      assert {:ok, %Segment{text: "Thank you", edited_by_id: ^member_id}} =
-               Transcripts.edit_segment(member, thanks.id, %{text: " Thank you "})
+      assert {:ok, %Segment{text: "Thank you"} = edited} =
+               Transcripts.edit_segment(member, thanks.id, params)
+
+      assert edited.edited_by_id == member.id
     end
 
     test "fix anyone's line as a moderator", %{owner: owner, transcript: transcript} do

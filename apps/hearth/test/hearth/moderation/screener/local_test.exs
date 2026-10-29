@@ -40,14 +40,14 @@ defmodule Hearth.Moderation.Screener.LocalTest do
   end
 
   describe "screen_image/2" do
+    test "fails for bytes that aren't an image" do
+      assert {:error, :unreadable} = Local.screen_image(Lorem.sentence(), [])
+    end
+
     test "passes an ordinary image" do
       image = TestUtils.random_file!()
 
       assert {:ok, %Verdict{verdict: :safe}} = Local.screen_image(image, [])
-    end
-
-    test "fails for bytes that aren't an image" do
-      assert {:error, :unreadable} = Local.screen_image(Lorem.sentence(), [])
     end
   end
 end

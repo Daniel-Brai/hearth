@@ -56,18 +56,21 @@ defmodule Hearth.VoiceTest do
 
     test "start session", %{owner: owner, room: room} do
       %{id: host_id} = owner
+      params = %{"mode" => "open", "topic" => "Release"}
 
-      assert {:ok, %Session{id: id, host_id: ^host_id, mode: :open}} =
-               Voice.start_session(owner, room, %{"mode" => "open", "topic" => "Release"})
+      assert {:ok, %Session{id: id, mode: :open} = session} =
+               Voice.start_session(owner, room, params)
 
-      assert is_pid(TestUtils.live_of!(%Session{id: id}))
+      assert session.host_id == owner.id
+      assert is_pid(TestUtils.live_of!(session))
       assert_receive %VoiceSessionStarted{session_id: ^id, host_id: ^host_id, topic: "Release"}
     end
 
     test "gives the live session of a live room", %{owner: owner, room: room} do
-      {:ok, %Session{id: id}} = Voice.start_session(owner, room, %{})
+      {:ok, session} = Voice.start_session(owner, room, %{})
 
-      assert {:error, :already_live, %Session{id: ^id}} = Voice.start_session(owner, room, %{})
+      assert {:error, :already_live, live} = Voice.start_session(owner, room, %{})
+      assert live.id == session.id
     end
   end
 
@@ -98,21 +101,22 @@ defmodule Hearth.VoiceTest do
     end
 
     test "discuss live", %{owner: owner, forum: forum, post: post} do
-      %{id: post_id, title: title} = post
+      %{id: post_id} = post
       _room = TestUtils.create_random_voice_room!(forum)
 
-      assert {:ok, %Session{id: id, post_id: ^post_id, topic: ^title, mode: :stage}} =
-               Voice.discuss_live(owner, post)
-
+      assert {:ok, %Session{id: id, mode: :stage} = session} = Voice.discuss_live(owner, post)
+      assert session.post_id == post.id
+      assert session.topic == post.title
       assert_receive %VoiceSessionStarted{session_id: ^id, post_id: ^post_id}
     end
 
     test "gives the post's session while it is live", %{owner: owner, forum: forum, post: post} do
       _room = TestUtils.create_random_voice_room!(forum)
       _other = TestUtils.create_random_voice_room!(forum)
-      {:ok, %Session{id: id}} = Voice.discuss_live(owner, post)
+      {:ok, session} = Voice.discuss_live(owner, post)
 
-      assert {:error, :already_live, %Session{id: ^id}} = Voice.discuss_live(owner, post)
+      assert {:error, :already_live, live} = Voice.discuss_live(owner, post)
+      assert live.id == session.id
     end
   end
 
@@ -122,11 +126,11 @@ defmodule Hearth.VoiceTest do
       _room = TestUtils.create_random_voice_room!(forum)
       live = TestUtils.create_random_post!(owner, forum)
       quiet = TestUtils.create_random_post!(owner, forum)
-      {:ok, %Session{id: id}} = Voice.discuss_live(owner, live)
+      {:ok, session} = Voice.discuss_live(owner, live)
 
       assert %{} = sessions = Voice.live_on_posts([live.id, quiet.id])
       assert [live.id] == Map.keys(sessions)
-      assert %Session{id: ^id} = sessions[live.id]
+      assert sessions[live.id].id == session.id
     end
   end
 
@@ -179,7 +183,6 @@ defmodule Hearth.VoiceTest do
 
     test "keeps a dropped person's place for the grace", %{member: member, community: community} do
       session = TestUtils.start_random_voice_session!(community)
-      %{id: member_id} = member
       channel = TestUtils.start_fake_channel!()
       {:ok, _joined} = Voice.join(member, session, channel)
       :ok = Voice.raise_hand(member, session, true)
@@ -187,7 +190,7 @@ defmodule Hearth.VoiceTest do
       send(channel, :stop)
       {:ok, %{snapshot: snapshot}} = Voice.join(member, session, TestUtils.start_fake_channel!())
 
-      assert [^member_id] = snapshot.hands
+      assert snapshot.hands == [member.id]
     end
 
     test "lets a dropped person go after the grace", %{member: member, community: community} do
@@ -541,10 +544,9 @@ defmodule Hearth.VoiceTest do
         started_by_id: ^recorder_id
       }
 
-      assert %{recording: %{started_by_id: ^recorder_id}} =
-               id |> Live.whereis() |> Live.snapshot()
-
-      assert Action.exists?(actor_id: recorder_id, action: :recording_started)
+      assert %{recording: recording} = id |> Live.whereis() |> Live.snapshot()
+      assert recording.started_by_id == recorder.id
+      assert Action.exists?(actor_id: recorder.id, action: :recording_started)
     end
 
     test "name it after the session's event", %{owner: owner, community: community} do
@@ -599,10 +601,9 @@ defmodule Hearth.VoiceTest do
 
     test "stop recording", %{owner: owner, recorder: recorder, community: community} do
       session = TestUtils.start_random_voice_session!(community)
-      %{id: owner_id} = owner
       {:ok, _joined} = Voice.join(owner, session, TestUtils.start_fake_channel!())
       :ok = Voice.start_recording(recorder, session)
-      :ok = TestUtils.send_random_audio!(session, owner_id)
+      :ok = TestUtils.send_random_audio!(session, owner.id)
 
       assert :ok = Voice.stop_recording(recorder, session)
       :ok = TestUtils.await_recording_uploads!()
@@ -612,8 +613,10 @@ defmodule Hearth.VoiceTest do
       assert Action.exists?(actor_id: recorder.id, action: :recording_stopped)
       assert_enqueued(worker: AssembleRecording, args: %{recording_id: id})
 
-      assert %Recording{status: :processing, tracks: [%Track{user_id: ^owner_id, kind: :audio}]} =
+      assert %Recording{status: :processing, tracks: [%Track{kind: :audio} = track]} =
                Recording.get(id: id)
+
+      assert track.user_id == owner.id
     end
   end
 
@@ -766,7 +769,6 @@ defmodule Hearth.VoiceTest do
     test "comes back once after a crash", %{member: member, community: community} do
       session = TestUtils.start_random_voice_session!(community)
       %{id: id} = session
-      %{id: member_id} = member
       {:ok, _joined} = Voice.join(member, session, TestUtils.start_fake_channel!())
       live = TestUtils.live_of!(session)
       ref = Process.monitor(live)
@@ -775,10 +777,11 @@ defmodule Hearth.VoiceTest do
       assert_receive {:DOWN, ^ref, :process, ^live, :killed}
 
       again = TestUtils.live_of!(session)
-      assert %{participants: [%{user_id: ^member_id}]} = Live.snapshot(again)
+      assert %{participants: [participant]} = Live.snapshot(again)
+      assert participant.user_id == member.id
 
       Process.exit(again, :kill)
-      assert_receive %VoiceSessionEnded{session_id: ^id, reason: :lost}
+      assert_receive %VoiceSessionEnded{session_id: ^id, reason: :lost}, 1_000
     end
 
     test "broadcasts who is speaking", %{owner: owner, community: community} do

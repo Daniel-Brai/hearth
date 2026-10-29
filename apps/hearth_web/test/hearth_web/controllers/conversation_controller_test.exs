@@ -39,7 +39,8 @@ defmodule HearthWeb.ConversationControllerTest do
     end
 
     test "fails with someone who shares no community", %{conn: conn, owner: owner} do
-      body = %{user_ids: [TestUtils.register_random_user!().id]}
+      stranger = TestUtils.register_random_user!()
+      body = %{user_ids: [stranger.id]}
 
       assert %{"code" => "no_shared_community"} =
                conn
@@ -51,17 +52,20 @@ defmodule HearthWeb.ConversationControllerTest do
     test "starts the direct conversation once", %{conn: conn, owner: owner, member: member} do
       body = %{user_ids: [member.id]}
 
-      assert %{"kind" => "direct", "id" => id} =
+      assert %{"kind" => "direct"} =
+               started =
                conn
                |> auth_conn(owner)
                |> post(~p"/api/conversations", body)
                |> valid_response(201)
 
-      assert %{"id" => ^id} =
+      assert again =
                conn
                |> auth_conn(owner)
                |> post(~p"/api/conversations", body)
                |> valid_response(201)
+
+      assert again["id"] == started["id"]
     end
   end
 end

@@ -71,13 +71,16 @@ defmodule HearthWeb.UserControllerTest do
       private = TestUtils.create_random_forum!(owner, visibility: :private)
       _hidden = TestUtils.create_random_post!(owner, private)
       {:ok, _removed} = owner |> TestUtils.create_random_post!(open) |> Forum.moderate(:removed)
-      %{id: id} = TestUtils.create_random_post!(owner, open)
+      shown = TestUtils.create_random_post!(owner, open)
+      outsider = TestUtils.register_random_user!()
 
-      assert %{"data" => [%{"id" => ^id, "reported" => false}]} =
+      assert %{"data" => [%{"reported" => false} = post]} =
                conn
-               |> auth_conn(TestUtils.register_random_user!())
+               |> auth_conn(outsider)
                |> get(~p"/api/users/#{owner.username}/posts")
                |> valid_response(200)
+
+      assert post["id"] == shown.id
     end
   end
 
@@ -104,13 +107,12 @@ defmodule HearthWeb.UserControllerTest do
       author = TestUtils.join_random_member!(community)
       {:ok, reply} = Forum.reply(author, post, %{body: Lorem.sentence()})
       {:ok, _post} = Forum.mark_answer(owner, post, reply)
-      post_id = post.id
-      title = post.title
 
-      assert %{"data" => [%{"reply" => %{"id" => _id}, "answer" => true, "post" => post}]} =
+      assert %{"data" => [%{"reply" => %{"id" => _id}, "answer" => true} = entry]} =
                conn |> get(~p"/api/users/#{author.username}/replies") |> valid_response(200)
 
-      assert %{"id" => ^post_id, "title" => ^title} = post
+      assert entry["post"]["id"] == post.id
+      assert entry["post"]["title"] == post.title
     end
   end
 end

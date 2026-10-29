@@ -75,10 +75,10 @@ defmodule Hearth.Forum.AuthoredTest do
 
     test "lists the newest first", %{author: author, community: community} do
       _older = TestUtils.create_random_post!(author, community)
-      %{id: newest} = TestUtils.create_random_post!(author, community)
+      newest = TestUtils.create_random_post!(author, community)
 
-      assert %Page{data: [%Post{id: ^newest} | _rest]} =
-               Forum.list_author_posts(author.id, [community.id])
+      assert %Page{data: [latest | _rest]} = Forum.list_author_posts(author.id, [community.id])
+      assert latest.id == newest.id
     end
   end
 
@@ -114,18 +114,19 @@ defmodule Hearth.Forum.AuthoredTest do
     test "lists the newest first", %{owner: owner, author: author, community: community} do
       post = TestUtils.create_random_post!(owner, community)
       {:ok, _older} = Forum.reply(author, post, %{body: Lorem.sentence()})
-      {:ok, %{id: newest}} = Forum.reply(author, post, %{body: Lorem.sentence()})
+      {:ok, newest} = Forum.reply(author, post, %{body: Lorem.sentence()})
 
-      assert %Page{data: [%Reply{id: ^newest} | _rest]} =
-               Forum.list_author_replies(author.id, [community.id])
+      assert %Page{data: [latest | _rest]} = Forum.list_author_replies(author.id, [community.id])
+      assert latest.id == newest.id
     end
   end
 
   describe "list_posts_by_id/1" do
     test "gives each post by id", %{author: author, community: community} do
-      %{id: id} = TestUtils.create_random_post!(author, community)
+      post = TestUtils.create_random_post!(author, community)
 
-      assert %{^id => %Post{id: ^id}} = Forum.list_posts_by_id([id])
+      assert %{} = posts = Forum.list_posts_by_id([post.id])
+      assert posts[post.id].id == post.id
     end
   end
 

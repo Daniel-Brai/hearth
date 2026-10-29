@@ -4,7 +4,6 @@ defmodule Hearth.Voice.Worker.EventStartTest do
   alias Hearth.Events
   alias Hearth.TestUtils
   alias Hearth.Voice
-  alias Hearth.Voice.Session
   alias Hearth.Voice.Worker.EventStart
 
   setup do
@@ -35,15 +34,12 @@ defmodule Hearth.Voice.Worker.EventStartTest do
     end
 
     test "starts the event's session", %{event: event, starts_at: starts_at} do
-      %{id: event_id, room_id: room_id} = event
       next = event.starts_at |> DateTime.add(7, :day) |> DateTime.to_iso8601()
 
-      assert :ok = perform_job(EventStart, %{event_id: event_id, starts_at: starts_at})
-
-      assert {:ok, %Session{event_id: ^event_id}} =
-               Voice.get_session(room_id: room_id, ended_at: nil)
-
-      assert_enqueued(worker: EventStart, args: %{event_id: event_id, starts_at: next})
+      assert :ok = perform_job(EventStart, %{event_id: event.id, starts_at: starts_at})
+      assert {:ok, session} = Voice.get_session(room_id: event.room_id, ended_at: nil)
+      assert session.event_id == event.id
+      assert_enqueued(worker: EventStart, args: %{event_id: event.id, starts_at: next})
     end
   end
 end

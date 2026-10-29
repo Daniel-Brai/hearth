@@ -24,18 +24,19 @@ defmodule Hearth.IAMTest do
 
   describe "co_members/2" do
     test "lists shared communities per person" do
-      %{id: owner_id} = owner = TestUtils.register_random_user!()
+      owner = TestUtils.register_random_user!()
       first = TestUtils.create_random_community!(owner)
       second = TestUtils.create_random_community!(owner)
-      %{id: member_id} = member = TestUtils.join_random_member!(first)
+      member = TestUtils.join_random_member!(first)
       {:ok, _membership} = Communities.join(member, second)
       _stranger = TestUtils.join_random_member!(TestUtils.create_random_community!())
 
-      assert %{^member_id => shared} = IAM.co_members(owner)
-      assert MapSet.new(shared) == MapSet.new([first.id, second.id])
-      assert %{^member_id => [_only]} = IAM.co_members(owner, first.id)
-      assert %{^owner_id => _shared} = IAM.co_members(member)
-      assert map_size(IAM.co_members(owner)) == 1
+      co_members = IAM.co_members(owner)
+
+      assert MapSet.new(co_members[member.id]) == MapSet.new([first.id, second.id])
+      assert map_size(co_members) == 1
+      assert [_only] = IAM.co_members(owner, first.id)[member.id]
+      assert member |> IAM.co_members() |> Map.has_key?(owner.id)
     end
   end
 

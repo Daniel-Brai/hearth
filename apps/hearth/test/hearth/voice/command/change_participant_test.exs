@@ -33,8 +33,8 @@ defmodule Hearth.Voice.Command.ChangeParticipantTest do
     test "logs a host action", %{participant: participant, member: member, log: log} do
       at = DateTime.utc_now()
 
-      assert {:ok, %Participant{server_muted_at: ^at}} =
-               ChangeParticipant.execute(participant, %{server_muted_at: at}, log)
+      assert {:ok, muted} = ChangeParticipant.execute(participant, %{server_muted_at: at}, log)
+      assert muted.server_muted_at == at
 
       assert Action.exists?(target_id: member.id, action: :server_muted, subject_type: :room)
     end

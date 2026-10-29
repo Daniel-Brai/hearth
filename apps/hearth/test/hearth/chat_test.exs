@@ -45,15 +45,6 @@ defmodule Hearth.ChatTest do
       assert {:error, :archived} = Chat.send_message(member, archived, %{body: Lorem.sentence()})
     end
 
-    test "sends to the chat beside a voice room", %{member: member, community: community} do
-      voice = TestUtils.get_room!(community, type: :voice)
-
-      assert {:ok, %Message{room_id: room_id}} =
-               Chat.send_message(member, voice, %{body: Lorem.sentence()})
-
-      assert room_id == voice.id
-    end
-
     test "fails if answering a message elsewhere", %{
       member: member,
       community: community,
@@ -83,23 +74,30 @@ defmodule Hearth.ChatTest do
       assert %Page{data: []} = Chat.list_messages(member, room)
     end
 
+    test "sends to the chat beside a voice room", %{member: member, community: community} do
+      voice = TestUtils.get_room!(community, type: :voice)
+
+      assert {:ok, %Message{room_id: room_id}} =
+               Chat.send_message(member, voice, %{body: Lorem.sentence()})
+
+      assert room_id == voice.id
+    end
+
     test "sends files with no text", %{member: member, room: room} do
       [file] = TestUtils.upload_random_attachments!(member, 1)
-      file_id = file.id
+      params = %{body: "", attachment_ids: [file.id]}
 
-      assert {:ok, %Message{id: id, body: ""}} =
-               Chat.send_message(member, room, %{body: "", attachment_ids: [file.id]})
-
-      assert %{^id => [%{media_id: ^file_id}]} = Media.list_attachments(:message, [id])
+      assert {:ok, %Message{body: ""} = message} = Chat.send_message(member, room, params)
+      assert [attachment] = Media.list_attachments(:message, [message.id])[message.id]
+      assert attachment.media_id == file.id
     end
 
     test "send message", %{member: member, room: room} do
       %{id: author_id} = member
-      %{id: room_id} = room
+      params = %{body: Lorem.sentence()}
 
-      assert {:ok, %Message{depth: 0, room_id: ^room_id}} =
-               Chat.send_message(member, room, %{body: Lorem.sentence()})
-
+      assert {:ok, %Message{depth: 0} = message} = Chat.send_message(member, room, params)
+      assert message.room_id == room.id
       assert_receive %MessageCreated{author_id: ^author_id, reply_to_author_id: nil}
     end
 
@@ -109,18 +107,19 @@ defmodule Hearth.ChatTest do
       {:ok, message} = Chat.send_message(member, conversation, %{body: body})
 
       refute TestUtils.stored_value!(Message, message.id, :body) =~ body
-      assert {:ok, %Message{body: ^body}} = Chat.get_message(message.id)
+      assert {:ok, stored} = Chat.get_message(message.id)
+      assert stored.body == body
     end
 
     test "answer a message", %{owner: owner, member: member, room: room} do
       %{id: member_id} = member
-      %{id: owner_id} = owner
-      {:ok, %{id: id}} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      {:ok, question} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      params = %{body: Lorem.sentence(), reply_to_id: question.id}
 
-      assert {:ok, %Message{depth: 1, thread_root_id: ^id}} =
-               Chat.send_message(owner, room, %{body: Lorem.sentence(), reply_to_id: id})
-
-      assert {:ok, %Message{child_count: 1, recent_repliers: [^owner_id]}} = Chat.get_message(id)
+      assert {:ok, %Message{depth: 1} = answer} = Chat.send_message(owner, room, params)
+      assert answer.thread_root_id == question.id
+      assert {:ok, %Message{child_count: 1} = question} = Chat.get_message(question.id)
+      assert question.recent_repliers == [owner.id]
       assert_receive %MessageCreated{reply_to_author_id: ^member_id}
     end
   end
@@ -131,37 +130,35 @@ defmodule Hearth.ChatTest do
     end
 
     test "list newest first", %{owner: owner, member: member, room: room} do
-      {:ok, %{id: first_id} = first} = Chat.send_message(member, room, %{body: Lorem.sentence()})
-      {:ok, %{id: second_id}} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      {:ok, older} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      {:ok, newer} = Chat.send_message(member, room, %{body: Lorem.sentence()})
 
-      params = %{body: Lorem.sentence(), reply_to_id: first_id}
-      {:ok, %{id: answer_id}} = Chat.send_message(owner, room, params)
+      params = %{body: Lorem.sentence(), reply_to_id: older.id}
+      {:ok, answer} = Chat.send_message(owner, room, params)
 
-      assert %Page{data: [%Message{id: ^second_id} | _rest]} = Chat.list_messages(member, room)
-
-      assert %Page{data: [%Message{id: ^answer_id}]} =
-               Chat.list_messages(member, room, parent: first)
+      assert %Page{data: [newest | _rest]} = Chat.list_messages(member, room)
+      assert newest.id == newer.id
+      assert %Page{data: [reply]} = Chat.list_messages(member, room, parent: older)
+      assert reply.id == answer.id
     end
   end
 
   describe "edit_message/3" do
-    test "replaces the files", %{member: member, room: room} do
-      [first, second] = TestUtils.upload_random_attachments!(member, 2)
-      body = %{body: Lorem.sentence(), attachment_ids: [first.id]}
-      {:ok, message} = Chat.send_message(member, room, body)
-      second_id = second.id
-
-      assert {:ok, _edited} =
-               Chat.edit_message(member, message, %{body: "", attachment_ids: [second.id]})
-
-      assert [%{media_id: ^second_id}] =
-               Media.list_attachments(:message, [message.id])[message.id]
-    end
-
     test "fails if not the author", %{owner: owner, member: member, room: room} do
       {:ok, message} = Chat.send_message(member, room, %{body: Lorem.sentence()})
 
       assert {:error, :forbidden} = Chat.edit_message(owner, message, %{body: Lorem.sentence()})
+    end
+
+    test "replaces the files", %{member: member, room: room} do
+      [first, second] = TestUtils.upload_random_attachments!(member, 2)
+      body = %{body: Lorem.sentence(), attachment_ids: [first.id]}
+      {:ok, message} = Chat.send_message(member, room, body)
+      params = %{body: "", attachment_ids: [second.id]}
+
+      assert {:ok, _edited} = Chat.edit_message(member, message, params)
+      assert [attachment] = Media.list_attachments(:message, [message.id])[message.id]
+      assert attachment.media_id == second.id
     end
 
     test "edits the message", %{member: member, room: room} do
@@ -185,23 +182,24 @@ defmodule Hearth.ChatTest do
     end
 
     test "keeps a message that has answers", %{owner: owner, member: member, room: room} do
-      {:ok, %{id: id}} = Chat.send_message(member, room, %{body: Lorem.sentence()})
-      {:ok, _answer} = Chat.send_message(owner, room, %{body: Lorem.sentence(), reply_to_id: id})
-      {:ok, message} = Chat.get_message(id)
+      {:ok, question} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      params = %{body: Lorem.sentence(), reply_to_id: question.id}
+      {:ok, _answer} = Chat.send_message(owner, room, params)
+      {:ok, answered} = Chat.get_message(question.id)
 
-      assert {:ok, %Message{deleted_at: %DateTime{}}} = Chat.delete_message(member, message)
-      assert Message.exists?(id: id)
+      assert {:ok, %Message{deleted_at: %DateTime{}}} = Chat.delete_message(member, answered)
+      assert Message.exists?(id: question.id)
     end
 
     test "removes a message with no answers", %{owner: owner, member: member, room: room} do
-      {:ok, first} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      {:ok, question} = Chat.send_message(member, room, %{body: Lorem.sentence()})
 
-      params = %{body: Lorem.sentence(), reply_to_id: first.id}
+      params = %{body: Lorem.sentence(), reply_to_id: question.id}
       {:ok, %{id: answer_id} = answer} = Chat.send_message(owner, room, params)
 
       assert {:ok, _message} = Chat.delete_message(owner, answer)
-      refute Message.exists?(id: answer_id)
-      assert {:ok, %Message{child_count: 0, descendant_count: 0}} = Chat.get_message(first.id)
+      refute Message.exists?(id: answer.id)
+      assert {:ok, %Message{child_count: 0, descendant_count: 0}} = Chat.get_message(question.id)
       assert_receive %MessageRemoved{message_id: ^answer_id}
     end
   end
@@ -268,9 +266,8 @@ defmodule Hearth.ChatTest do
       {:ok, _own} = Chat.send_message(member, room, %{body: Lorem.sentence()})
       {:ok, _new} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
 
-      assert %{rooms: [%{room_id: ^room_id, community_id: ^community_id, count: 1}]} =
-               Chat.unread_counts(member)
-
+      assert %{rooms: [unread]} = Chat.unread_counts(member)
+      assert unread == %{room_id: room.id, community_id: room.community_id, count: 1}
       assert_receive %RoomActivity{room_id: ^room_id, community_id: ^community_id}
     end
 
@@ -279,20 +276,19 @@ defmodule Hearth.ChatTest do
       room: room,
       community: community
     } do
-      %{id: room_id} = room
       {:ok, _message} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
       newcomer = TestUtils.join_random_member!(community)
 
       assert %{rooms: rooms} = Chat.unread_counts(newcomer)
-      refute room_id in TestUtils.pluck(rooms, :room_id)
+      refute room.id in TestUtils.pluck(rooms, :room_id)
     end
 
     test "counts a conversation's unread messages", %{owner: owner, member: member} do
       {:ok, conversation} = Chat.start_direct(owner, member)
-      %{id: conversation_id} = conversation
       {:ok, _message} = Chat.send_message(owner, conversation, %{body: Lorem.sentence()})
 
-      assert %{conversations: %{^conversation_id => 1}} = Chat.unread_counts(member)
+      assert %{conversations: unread} = Chat.unread_counts(member)
+      assert unread == %{conversation.id => 1}
       assert %{conversations: conversations} = Chat.unread_counts(owner)
       assert conversations == %{}
     end
@@ -314,9 +310,13 @@ defmodule Hearth.ChatTest do
       {:ok, :added} = Chat.toggle_reaction(owner, message, "🔥")
       {:ok, :added} = Chat.toggle_reaction(member, message, "🔥")
       {:ok, :added} = Chat.toggle_reaction(owner, message, "👍")
-      %{id: id} = message
 
-      assert %{id => [%{emoji: "🔥", count: 2, mine: true}, %{emoji: "👍", count: 1, mine: false}]} ==
+      assert %{
+               message.id => [
+                 %{emoji: "🔥", count: 2, mine: true},
+                 %{emoji: "👍", count: 1, mine: false}
+               ]
+             } ==
                Chat.list_reactions(member, [message])
     end
   end
@@ -332,9 +332,9 @@ defmodule Hearth.ChatTest do
     end
 
     test "start direct conversation once", %{owner: owner, member: member} do
-      assert {:ok, %Conversation{kind: :direct, id: id}} = Chat.start_direct(member, owner)
-
-      assert {:ok, %Conversation{id: ^id}} = Chat.start_direct(owner, member)
+      assert {:ok, %Conversation{kind: :direct} = started} = Chat.start_direct(member, owner)
+      assert {:ok, again} = Chat.start_direct(owner, member)
+      assert again.id == started.id
     end
   end
 
@@ -348,9 +348,10 @@ defmodule Hearth.ChatTest do
       {:ok, _membership} = Communities.join(user, community)
       name = Lorem.sentence()
 
-      assert {:ok, %Conversation{kind: :group, name: ^name}} =
+      assert {:ok, %Conversation{kind: :group} = group} =
                Chat.start_group(member, [owner, user], name)
 
+      assert group.name == name
       assert [%Conversation{}] = Chat.list_conversations(user)
     end
   end
@@ -363,23 +364,23 @@ defmodule Hearth.ChatTest do
 
     test "keeps the newest mark in a room", %{owner: owner, member: member, room: room} do
       {:ok, older} = Chat.send_message(member, room, %{body: Lorem.sentence()})
-      {:ok, %{id: id} = newer} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      {:ok, newer} = Chat.send_message(member, room, %{body: Lorem.sentence()})
 
       assert :ok = Chat.mark_read(owner, newer)
       assert :ok = Chat.mark_read(owner, older)
-      assert %RoomRead{last_read_message_id: ^id} = RoomRead.get(user_id: owner.id)
+      assert %RoomRead{} = read = RoomRead.get(user_id: owner.id)
+      assert read.last_read_message_id == newer.id
     end
 
     test "mark read in a conversation", %{owner: owner, member: member} do
       {:ok, conversation} = Chat.start_direct(member, owner)
 
       params = %{body: Lorem.sentence()}
-      {:ok, %{id: id} = message} = Chat.send_message(member, conversation, params)
+      {:ok, message} = Chat.send_message(member, conversation, params)
 
       assert :ok = Chat.mark_read(owner, message)
-
-      assert %ConversationMember{last_read_message_id: ^id} =
-               ConversationMember.get(user_id: owner.id)
+      assert %ConversationMember{} = read = ConversationMember.get(user_id: owner.id)
+      assert read.last_read_message_id == message.id
     end
   end
 

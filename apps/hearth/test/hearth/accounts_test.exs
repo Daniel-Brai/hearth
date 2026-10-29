@@ -109,11 +109,12 @@ defmodule Hearth.AccountsTest do
 
   describe "list_users/1" do
     test "leaves out unknown and deleted people" do
-      %{id: id} = user = TestUtils.register_random_user!()
+      user = TestUtils.register_random_user!()
       deleted = TestUtils.register_random_user!()
       :ok = TestUtils.update_rows!(User, [id: deleted.id], deleted_at: DateTime.utc_now())
 
-      assert [%User{id: ^id}] = Accounts.list_users([user.id, deleted.id, Common.new_id()])
+      assert [listed] = Accounts.list_users([user.id, deleted.id, Common.new_id()])
+      assert listed.id == user.id
     end
 
     test "lists each person once" do
@@ -144,13 +145,11 @@ defmodule Hearth.AccountsTest do
     end
 
     test "ranks username matches first" do
-      %{id: exact_id} =
-        TestUtils.register_random_user!(username: "ada_l", display_name: "Someone")
-
+      exact = TestUtils.register_random_user!(username: "ada_l")
       named = TestUtils.register_random_user!(username: "lovelace", display_name: "Ada Lovelace")
 
-      assert [%User{id: ^exact_id} | _rest] =
-               Accounts.search_users("ada", [named.id, exact_id], 5)
+      assert [first | _rest] = Accounts.search_users("ada", [named.id, exact.id], 5)
+      assert first.id == exact.id
     end
 
     test "lists everyone by username for an empty query" do
@@ -295,7 +294,8 @@ defmodule Hearth.AccountsTest do
       assert {:error, changeset} = Accounts.replace_links(user, links)
       assert %{links: errors} = errors_on(changeset)
       assert %{url: ["must be a web address"]} in errors
-      assert {:ok, %User{links: [%Link{url: ^url}]}} = Accounts.get_user(id: user.id)
+      assert {:ok, %User{links: [%Link{} = link]}} = Accounts.get_user(id: user.id)
+      assert link.url == url
     end
 
     test "replace links", %{user: user} do

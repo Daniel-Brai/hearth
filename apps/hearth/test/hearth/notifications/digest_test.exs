@@ -79,11 +79,12 @@ defmodule Hearth.Notifications.DigestTest do
       owner: owner,
       since: since
     } do
-      [%{id: best_id} = best | _rest] = TestUtils.create_random_posts!(owner, community, 5)
+      [best | _rest] = TestUtils.create_random_posts!(owner, community, 5)
       {:ok, :marked} = Forum.toggle_helpful(reader, best)
 
       assert %CatchUp{communities: [entry]} = Digest.build(reader, :weekly, since)
-      assert [%{post: %{id: ^best_id}} | _rest] = entry.posts
+      assert [top | _rest] = entry.posts
+      assert top.post.id == best.id
       assert length(entry.posts) == 3
       assert entry.more == 2
     end

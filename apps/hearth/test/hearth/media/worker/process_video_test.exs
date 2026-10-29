@@ -53,9 +53,7 @@ defmodule Hearth.Media.Worker.ProcessVideoTest do
     end
 
     test "remuxes an H.264 clip and writes a poster", %{user: user} do
-      media = TestUtils.upload_random_file!(user, :video)
-
-      %{id: id} = media
+      %{id: id} = TestUtils.upload_random_file!(user, :video)
 
       assert :ok = perform_job(ProcessVideo, %{media_id: id})
       assert_receive %MediaReady{media_id: ^id}

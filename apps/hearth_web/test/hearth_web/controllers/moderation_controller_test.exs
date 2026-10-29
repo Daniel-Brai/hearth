@@ -48,10 +48,10 @@ defmodule HearthWeb.ModerationControllerTest do
 
   describe "counts" do
     test "counts what waits in each queue", %{conn: conn, owner: owner, community: community} do
-      community_id = community.id
-
-      assert %{"counts" => %{^community_id => 1}} =
+      assert response =
                conn |> auth_conn(owner) |> get(~p"/api/moderation/counts") |> valid_response(200)
+
+      assert response["counts"][community.id] == 1
     end
   end
 

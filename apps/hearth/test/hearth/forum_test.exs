@@ -110,9 +110,8 @@ defmodule Hearth.ForumTest do
         body: "#{Lorem.sentence()} Tagged #Turbo-8 and #morphing"
       }
 
-      assert {:ok, %Post{author_id: ^author_id} = post} =
-               Forum.create_post(member, community, params)
-
+      assert {:ok, %Post{} = post} = Forum.create_post(member, community, params)
+      assert post.author_id == member.id
       assert TestUtils.pluck(post.tags, :name) == ~w[turbo-8 morphing]
       assert_receive %PostCreated{author_id: ^author_id}
     end
@@ -162,7 +161,6 @@ defmodule Hearth.ForumTest do
 
     test "promote messages", %{owner: owner, member: member, room: room, kinds: kinds} do
       :ok = Chat.subscribe_to_pubsub()
-      %{id: member_id} = member
       %{id: owner_id} = owner
 
       {:ok, first} = Chat.send_message(member, room, %{body: Lorem.sentence()})
@@ -173,17 +171,15 @@ defmodule Hearth.ForumTest do
       params = %{kind_id: kinds["question"].id, title: Lorem.sentence()}
       ids = [third.id, first.id, second.id]
 
-      assert {:ok, %Post{author_id: ^member_id, promoted_by_id: ^owner_id} = post} =
-               Forum.promote(owner, room, ids, params)
-
+      assert {:ok, %Post{} = post} = Forum.promote(owner, room, ids, params)
+      assert post.author_id == member.id
+      assert post.promoted_by_id == owner.id
       assert post.body == first.body
 
       %Page{data: [_second, files_reply]} = Forum.list_replies(post)
 
-      file_id = file.id
-
-      assert [%{media_id: ^file_id}] =
-               Media.list_attachments(:reply, [files_reply.id])[files_reply.id]
+      assert [attachment] = Media.list_attachments(:reply, [files_reply.id])[files_reply.id]
+      assert attachment.media_id == file.id
 
       second_id = second.id
 
@@ -205,10 +201,10 @@ defmodule Hearth.ForumTest do
     test "keeps the files when none are sent", %{member: member, community: community} do
       [file] = TestUtils.upload_random_attachments!(member, 1)
       post = TestUtils.create_random_post!(member, community, attachment_ids: [file.id])
-      file_id = file.id
 
       assert {:ok, _updated} = Forum.update_post(member, post, %{title: Lorem.sentence()})
-      assert [%{media_id: ^file_id}] = Media.list_attachments(:post, [post.id])[post.id]
+      assert [attachment] = Media.list_attachments(:post, [post.id])[post.id]
+      assert attachment.media_id == file.id
     end
 
     test "update post", %{member: member, community: community} do
@@ -256,12 +252,14 @@ defmodule Hearth.ForumTest do
     end
 
     test "pin post", %{owner: owner, member: member, community: community} do
-      %{id: id} = post = TestUtils.create_random_post!(member, community)
-      %{id: other_id} = TestUtils.create_random_post!(member, community)
+      post = TestUtils.create_random_post!(member, community)
+      other = TestUtils.create_random_post!(member, community)
 
       assert {:ok, %Post{pinned_at: %DateTime{}}} = Forum.pin_post(owner, post, true)
-      assert [%Post{id: ^id}] = Forum.list_pinned(community)
-      assert %Page{data: [%Post{id: ^other_id}]} = Forum.list_posts(community)
+      assert [pinned] = Forum.list_pinned(community)
+      assert pinned.id == post.id
+      assert %Page{data: [listed]} = Forum.list_posts(community)
+      assert listed.id == other.id
     end
   end
 
@@ -272,15 +270,6 @@ defmodule Hearth.ForumTest do
 
       assert {:error, :too_many_attachments} =
                Forum.reply(member, post, %{body: Lorem.sentence(), attachment_ids: ids})
-    end
-
-    test "sends files with no text", %{member: member, community: community} do
-      post = TestUtils.create_random_post!(member, community)
-      [file] = TestUtils.upload_random_attachments!(member, 1)
-      file_id = file.id
-
-      assert {:ok, reply} = Forum.reply(member, post, %{body: "", attachment_ids: [file.id]})
-      assert [%{media_id: ^file_id}] = Media.list_attachments(:reply, [reply.id])[reply.id]
     end
 
     test "fails if not a member", %{member: member, community: community} do
@@ -311,6 +300,16 @@ defmodule Hearth.ForumTest do
 
       assert {:error, changeset} = Forum.reply(member, post, %{body: ""})
       assert %{body: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "sends files with no text", %{member: member, community: community} do
+      post = TestUtils.create_random_post!(member, community)
+      [file] = TestUtils.upload_random_attachments!(member, 1)
+      params = %{body: "", attachment_ids: [file.id]}
+
+      assert {:ok, reply} = Forum.reply(member, post, params)
+      assert [attachment] = Media.list_attachments(:reply, [reply.id])[reply.id]
+      assert attachment.media_id == file.id
     end
 
     test "reply to post", %{owner: owner, member: member, community: community} do
@@ -356,19 +355,19 @@ defmodule Hearth.ForumTest do
   describe "list_replies/2" do
     test "list one level", %{owner: owner, member: member, community: community} do
       post = TestUtils.create_random_post!(member, community)
-      {:ok, %{id: first_id} = first} = Forum.reply(owner, post, %{body: Lorem.sentence()})
-      {:ok, %{id: second_id} = second} = Forum.reply(owner, post, %{body: Lorem.sentence()})
+      {:ok, plain} = Forum.reply(owner, post, %{body: Lorem.sentence()})
+      {:ok, helpful} = Forum.reply(owner, post, %{body: Lorem.sentence()})
 
-      params = %{body: Lorem.sentence(), parent_reply_id: first.id}
-      {:ok, %{id: nested_id}} = Forum.reply(member, post, params)
+      params = %{body: Lorem.sentence(), parent_reply_id: plain.id}
+      {:ok, nested} = Forum.reply(member, post, params)
 
-      {:ok, :marked} = Forum.toggle_helpful(member, second)
+      {:ok, :marked} = Forum.toggle_helpful(member, helpful)
 
       %Page{data: replies} = Forum.list_replies(post)
 
-      assert TestUtils.pluck(replies, :id) == [second_id, first_id]
-
-      assert %Page{data: [%Reply{id: ^nested_id}]} = Forum.list_replies(post, parent: first)
+      assert TestUtils.pluck(replies, :id) == [helpful.id, plain.id]
+      assert %Page{data: [child]} = Forum.list_replies(post, parent: plain)
+      assert child.id == nested.id
     end
   end
 
@@ -446,7 +445,8 @@ defmodule Hearth.ForumTest do
       post = TestUtils.create_random_post!(member, community, kind_id: kinds["question"].id)
       {:ok, %{id: reply_id} = reply} = Forum.reply(owner, post, %{body: Lorem.sentence()})
 
-      assert {:ok, %Post{answer_reply_id: ^reply_id}} = Forum.mark_answer(member, post, reply)
+      assert {:ok, %Post{} = answered} = Forum.mark_answer(member, post, reply)
+      assert answered.answer_reply_id == reply.id
       assert_receive %AnswerMarked{reply_id: ^reply_id}
     end
   end
@@ -487,12 +487,21 @@ defmodule Hearth.ForumTest do
       {:ok, :added} = Forum.toggle_reaction(owner, post, "🔥")
       {:ok, :added} = Forum.toggle_reaction(member, post, "🔥")
       {:ok, :added} = Forum.toggle_reaction(owner, post, "👍")
-      %{id: id} = post
 
-      assert %{id => [%{emoji: "🔥", count: 2, mine: true}, %{emoji: "👍", count: 1, mine: false}]} ==
+      assert %{
+               post.id => [
+                 %{emoji: "🔥", count: 2, mine: true},
+                 %{emoji: "👍", count: 1, mine: false}
+               ]
+             } ==
                Forum.list_reactions(member, [post])
 
-      assert %{id => [%{emoji: "🔥", count: 2, mine: false}, %{emoji: "👍", count: 1, mine: false}]} ==
+      assert %{
+               post.id => [
+                 %{emoji: "🔥", count: 2, mine: false},
+                 %{emoji: "👍", count: 1, mine: false}
+               ]
+             } ==
                Forum.list_reactions(nil, [post])
     end
   end
@@ -621,10 +630,11 @@ defmodule Hearth.ForumTest do
 
   describe "list_drafts/1" do
     test "lists only my drafts", %{owner: owner, member: member, community: community} do
-      {:ok, %{id: id}} = Forum.save_draft(member, community, %{title: Lorem.sentence()})
+      {:ok, mine} = Forum.save_draft(member, community, %{title: Lorem.sentence()})
       {:ok, _theirs} = Forum.save_draft(owner, community, %{title: Lorem.sentence()})
 
-      assert [%Draft{id: ^id}] = Forum.list_drafts(member)
+      assert [%Draft{} = draft] = Forum.list_drafts(member)
+      assert draft.id == mine.id
     end
   end
 

@@ -135,13 +135,6 @@ defmodule HearthWeb.AuthControllerTest do
                |> json_response(403)
     end
 
-    test "says nothing to refresh without cookie", %{conn: conn} do
-      conn = post(conn, ~p"/api/auth/refresh")
-
-      assert conn.status == 204
-      refute Map.has_key?(conn.resp_cookies, @cookie)
-    end
-
     test "fails the second time a cookie is used", %{conn: conn, session: session} do
       assert conn
              |> put_req_cookie(@cookie, session)
@@ -152,6 +145,13 @@ defmodule HearthWeb.AuthControllerTest do
 
       assert %{"code" => "invalid_refresh"} = valid_response(conn, 401)
       assert %{max_age: 0} = conn.resp_cookies[@cookie]
+    end
+
+    test "says nothing to refresh without cookie", %{conn: conn} do
+      conn = post(conn, ~p"/api/auth/refresh")
+
+      assert conn.status == 204
+      refute Map.has_key?(conn.resp_cookies, @cookie)
     end
 
     test "swaps the cookie for a new access token", %{conn: conn, session: session} do
@@ -276,6 +276,18 @@ defmodule HearthWeb.AuthControllerTest do
                |> valid_response(400)
     end
 
+    test "fails due to validation", %{conn: conn, user: user} do
+      body = %{privacy: %{presence: "friends"}}
+
+      assert %{"errors" => errors} =
+               conn
+               |> auth_conn(user)
+               |> patch(~p"/api/auth/me", body)
+               |> valid_response(422)
+
+      assert [_message] = errors["privacy.presence"]
+    end
+
     test "sets photo once ready", %{conn: conn, user: user} do
       photo = TestUtils.upload_random_file!(user, width: 400, height: 400, purpose: :avatar)
 
@@ -293,18 +305,6 @@ defmodule HearthWeb.AuthControllerTest do
                conn |> auth_conn(user) |> get(~p"/api/auth/me") |> valid_response(200)
 
       assert url =~ "w320.webp"
-    end
-
-    test "fails due to validation", %{conn: conn, user: user} do
-      body = %{privacy: %{presence: "friends"}}
-
-      assert %{"errors" => errors} =
-               conn
-               |> auth_conn(user)
-               |> patch(~p"/api/auth/me", body)
-               |> valid_response(422)
-
-      assert [_message] = errors["privacy.presence"]
     end
 
     test "saves links and privacy", %{conn: conn, user: user} do

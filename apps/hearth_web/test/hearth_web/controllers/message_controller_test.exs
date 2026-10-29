@@ -44,13 +44,15 @@ defmodule HearthWeb.MessageControllerTest do
 
     test "lists messages newest first", %{conn: conn, owner: owner, member: member, room: room} do
       {:ok, _older} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
-      {:ok, %{id: newest_id}} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      {:ok, newest} = Chat.send_message(member, room, %{body: Lorem.sentence()})
 
-      assert %{"data" => [%{"id" => ^newest_id} | _rest]} =
+      assert %{"data" => [latest | _rest]} =
                conn
                |> auth_conn(member)
                |> get(~p"/api/rooms/#{room.id}/messages")
                |> valid_response(200)
+
+      assert latest["id"] == newest.id
     end
   end
 
@@ -158,17 +160,18 @@ defmodule HearthWeb.MessageControllerTest do
     end
 
     test "replaces the files", %{conn: conn, owner: owner, room: room} do
-      [first, second] = TestUtils.upload_random_attachments!(owner, 2)
-      body = %{body: Lorem.sentence(), attachment_ids: [first.id]}
+      [original, replacement] = TestUtils.upload_random_attachments!(owner, 2)
+      body = %{body: Lorem.sentence(), attachment_ids: [original.id]}
       {:ok, message} = Chat.send_message(owner, room, body)
+      changes = %{body: "", attachment_ids: [replacement.id]}
 
       assert %{"attachments" => [attachment]} =
                conn
                |> auth_conn(owner)
-               |> patch(~p"/api/messages/#{message.id}", %{body: "", attachment_ids: [second.id]})
+               |> patch(~p"/api/messages/#{message.id}", changes)
                |> valid_response(200)
 
-      assert attachment["id"] == second.id
+      assert attachment["id"] == replacement.id
     end
 
     test "edits a message", %{conn: conn, owner: owner, room: room} do

@@ -80,20 +80,23 @@ defmodule Hearth.NotificationsTest do
     end
 
     test "link push sub" do
-      %{id: id} = user = TestUtils.register_random_user!()
+      user = TestUtils.register_random_user!()
+      params = TestUtils.random_push_sub_params()
 
-      assert {:ok, %PushSubscription{user_id: ^id}} =
-               Notifications.link_push_sub(user, TestUtils.random_push_sub_params())
+      assert {:ok, %PushSubscription{} = subscription} = Notifications.link_push_sub(user, params)
+      assert subscription.user_id == user.id
     end
 
     test "moves endpoint to the new user" do
-      first = TestUtils.register_random_user!()
-      %{id: id} = second = TestUtils.register_random_user!()
+      owner = TestUtils.register_random_user!()
+      %{id: id} = newcomer = TestUtils.register_random_user!()
       params = TestUtils.random_push_sub_params()
 
-      {:ok, _subscription} = Notifications.link_push_sub(first, params)
+      {:ok, _subscription} = Notifications.link_push_sub(owner, params)
 
-      assert {:ok, %PushSubscription{user_id: ^id}} = Notifications.link_push_sub(second, params)
+      assert {:ok, %PushSubscription{user_id: ^id}} =
+               Notifications.link_push_sub(newcomer, params)
+
       assert [%PushSubscription{user_id: ^id}] = PushSubscription.all(endpoint: params.endpoint)
     end
   end

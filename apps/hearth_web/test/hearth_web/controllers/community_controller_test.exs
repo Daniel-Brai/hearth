@@ -344,8 +344,9 @@ defmodule HearthWeb.CommunityControllerTest do
     end
 
     test "fails for someone outside", %{conn: conn, owner: owner, community: community} do
+      outsider = TestUtils.register_random_user!()
       code = TestUtils.transfer_code!(owner, community)
-      body = %{user_id: TestUtils.register_random_user!().id, code: code}
+      body = %{user_id: outsider.id, code: code}
 
       assert %{"code" => "not_a_member"} =
                conn

@@ -43,13 +43,13 @@ defmodule HearthWeb.RecordingControllerTest do
       session: session,
       recording: recording
     } do
-      %{id: id} = recording
-
-      assert %{"data" => [%{"id" => ^id, "status" => "processing", "video_url" => nil}]} =
+      assert %{"data" => [%{"status" => "processing", "video_url" => nil} = listed]} =
                conn
                |> auth_conn(member)
                |> get(~p"/api/rooms/#{session.room_id}/recordings")
                |> valid_response(200)
+
+      assert listed["id"] == recording.id
     end
   end
 
@@ -102,27 +102,26 @@ defmodule HearthWeb.RecordingControllerTest do
       owner: owner,
       recording: recording
     } do
-      %{id: owner_id} = owner
+      speaker = %Recording.Speaker{user_id: owner.id, key: Recording.key(recording, "a.m4a")}
 
-      :ok =
-        TestUtils.update_rows!(Recording, [id: recording.id],
-          status: :ready,
-          video_key: Recording.key(recording, "video.mp4"),
-          poster_key: Recording.key(recording, "poster.webp"),
-          speakers: [
-            %Recording.Speaker{user_id: owner_id, key: Recording.key(recording, "a.m4a")}
-          ]
-        )
+      changes = [
+        status: :ready,
+        video_key: Recording.key(recording, "video.mp4"),
+        poster_key: Recording.key(recording, "poster.webp"),
+        speakers: [speaker]
+      ]
 
-      assert %{
-               "status" => "ready",
-               "video_url" => "http" <> _video,
-               "speakers" => [%{"user_id" => ^owner_id}]
-             } =
+      :ok = TestUtils.update_rows!(Recording, [id: recording.id], changes)
+
+      assert %{"status" => "ready", "video_url" => "http" <> _video} =
+               response =
                conn
                |> auth_conn(member)
                |> get(~p"/api/recordings/#{recording.id}")
                |> valid_response(200)
+
+      assert [listed] = response["speakers"]
+      assert listed["user_id"] == owner.id
     end
   end
 

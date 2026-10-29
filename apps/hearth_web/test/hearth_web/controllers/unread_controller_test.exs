@@ -28,13 +28,14 @@ defmodule HearthWeb.UnreadControllerTest do
       {:ok, conversation} = Chat.start_direct(owner, member)
       {:ok, _message} = Chat.send_message(owner, conversation, %{body: Lorem.sentence()})
       {:ok, _message} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
-      room_id = room.id
-      conversation_id = conversation.id
 
-      assert %{
-               "rooms" => [%{"id" => ^room_id, "count" => 1}],
-               "conversations" => [%{"id" => ^conversation_id, "count" => 1}]
-             } = conn |> auth_conn(member) |> get(~p"/api/unread") |> valid_response(200)
+      assert %{"rooms" => [unread_room], "conversations" => [unread_conversation]} =
+               conn |> auth_conn(member) |> get(~p"/api/unread") |> valid_response(200)
+
+      assert unread_room["id"] == room.id
+      assert unread_room["count"] == 1
+      assert unread_conversation["id"] == conversation.id
+      assert unread_conversation["count"] == 1
     end
   end
 end

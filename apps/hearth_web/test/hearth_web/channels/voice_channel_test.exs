@@ -38,7 +38,6 @@ defmodule HearthWeb.VoiceChannelTest do
     end
 
     test "joins and gets the first offer", %{owner: owner, member: member, session: session} do
-      %{id: owner_id} = owner
       {_owner, _reply} = owner |> connected_socket() |> FakeBrowser.start!(session.id, :host)
 
       assert {:ok, reply, _socket} =
@@ -46,7 +45,8 @@ defmodule HearthWeb.VoiceChannelTest do
 
       assert %{me: %{role: :listener}} = reply
       assert_push "offer", %{sdp: "v=0" <> _sdp, tracks: tracks}, 1_000
-      assert [%{kind: :audio, direction: :receive, user_id: ^owner_id}] = Map.values(tracks)
+      assert [%{kind: :audio, direction: :receive} = track] = Map.values(tracks)
+      assert track.user_id == owner.id
     end
 
     test "takes someone who leaves out at once", %{member: member, session: session} do

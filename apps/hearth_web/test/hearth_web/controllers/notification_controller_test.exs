@@ -5,9 +5,8 @@ defmodule HearthWeb.NotificationControllerTest do
 
   setup do
     user = TestUtils.register_random_user!()
-
-    notification =
-      TestUtils.create_random_notification!(user, actor_id: TestUtils.register_random_user!().id)
+    actor = TestUtils.register_random_user!()
+    notification = TestUtils.create_random_notification!(user, actor_id: actor.id)
 
     {:ok, binding()}
   end

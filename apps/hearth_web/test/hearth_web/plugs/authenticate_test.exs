@@ -38,9 +38,8 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
 
     test "fails for a token signed with a shared secret", %{conn: conn, user: user} do
       jwk = JWK.from_oct("not the signing key")
-
-      {_jws, token} =
-        jwk |> JWT.sign(%{"alg" => "HS256"}, access_claims(user)) |> JWS.compact()
+      claims = access_claims(user)
+      {_jws, token} = jwk |> JWT.sign(%{"alg" => "HS256"}, claims) |> JWS.compact()
 
       assert %{"code" => "invalid_token"} =
                conn

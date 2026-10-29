@@ -74,9 +74,8 @@ defmodule Hearth.EventsTest do
     test "schedule event", %{owner: owner, community: community, params: params} do
       %{id: host_id} = owner
 
-      assert {:ok, %Event{host_id: ^host_id} = event} =
-               Events.schedule_event(owner, community, params)
-
+      assert {:ok, %Event{} = event} = Events.schedule_event(owner, community, params)
+      assert event.host_id == owner.id
       assert_enqueued(worker: Remind, args: %{event_id: event.id, minutes: 60})
       assert_enqueued(worker: Remind, args: %{event_id: event.id, minutes: 10})
       assert_enqueued(worker: "Hearth.Voice.Worker.EventStart", args: %{event_id: event.id})
@@ -186,10 +185,12 @@ defmodule Hearth.EventsTest do
     } do
       {:ok, _later} = Events.schedule_event(owner, community, params)
       sooner = %{params | starts_at: DateTime.add(DateTime.utc_now(), 1, :hour)}
-      {:ok, %{id: sooner_id}} = Events.schedule_event(owner, community, sooner)
+      {:ok, soonest} = Events.schedule_event(owner, community, sooner)
 
-      assert [%Event{id: ^sooner_id, next_starts_at: %DateTime{}} | _later] =
+      assert [%Event{next_starts_at: %DateTime{}} = first | _later] =
                Events.list_upcoming([community.id])
+
+      assert first.id == soonest.id
     end
   end
 
@@ -199,11 +200,10 @@ defmodule Hearth.EventsTest do
     end
 
     test "create template event", %{owner: owner, community: community} do
-      %{id: owner_id} = owner
-
-      assert {:ok, %Event{title: "Office hours", repeat: :weekly, host_id: ^owner_id} = event} =
+      assert {:ok, %Event{title: "Office hours", repeat: :weekly} = event} =
                Events.create_template_event(community.id, "oss")
 
+      assert event.host_id == owner.id
       assert %{hour: 17} = DateTime.shift_zone!(event.starts_at, event.timezone)
     end
   end

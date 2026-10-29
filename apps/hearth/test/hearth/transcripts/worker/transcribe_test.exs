@@ -23,13 +23,6 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
       assert {:cancel, :not_found} = perform_job(Transcribe, %{recording_id: Common.new_id()})
     end
 
-    test "waits while the model loads", %{session: session} do
-      recording = TestUtils.insert_random_ready_recording!(session, [{session.host_id, "down"}])
-
-      assert {:snooze, 60} = perform_job(Transcribe, %{recording_id: recording.id})
-      assert %Transcript{status: :transcribing} = Transcript.get(recording_id: recording.id)
-    end
-
     test "fails for unreadable audio", %{session: session} do
       speakers = [{session.host_id, "garbled"}]
       recording = TestUtils.insert_random_ready_recording!(session, speakers)
@@ -43,6 +36,13 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
       :ok = Storage.delete(file.key)
 
       assert {:cancel, :missing} = perform_job(Transcribe, %{recording_id: recording.id})
+    end
+
+    test "waits while the model loads", %{session: session} do
+      recording = TestUtils.insert_random_ready_recording!(session, [{session.host_id, "down"}])
+
+      assert {:snooze, 60} = perform_job(Transcribe, %{recording_id: recording.id})
+      assert %Transcript{status: :transcribing} = Transcript.get(recording_id: recording.id)
     end
 
     test "keeps finished speakers on a retry", %{session: session, speaker: speaker} do
@@ -67,8 +67,7 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
         {speaker.id, "4500 7500 Thanks for having me"}
       ]
 
-      recording = TestUtils.insert_random_ready_recording!(session, speakers)
-      %{id: id} = recording
+      %{id: id} = TestUtils.insert_random_ready_recording!(session, speakers)
 
       assert :ok = perform_job(Transcribe, %{recording_id: id})
       assert_receive %TranscriptReady{recording_id: ^id}

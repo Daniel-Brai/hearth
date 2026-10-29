@@ -86,8 +86,10 @@ defmodule Hearth.Voice.StateTest do
     test "keeps the first time a hand went up", %{state: state, listener: listener, now: now} do
       {:ok, state} = State.raise_hand(state, listener, now)
 
-      assert {:ok, %{people: %{^listener => %{hand_raised_at: ^now}}}} =
-               State.raise_hand(state, listener, DateTime.add(now, 1, :minute))
+      later = DateTime.add(now, 1, :minute)
+
+      assert {:ok, state} = State.raise_hand(state, listener, later)
+      assert state.people[listener].hand_raised_at == now
     end
   end
 
@@ -149,7 +151,8 @@ defmodule Hearth.Voice.StateTest do
     end
 
     test "takes the slot", %{state: state, speaker: speaker} do
-      assert {:ok, %{share: ^speaker}} = State.start_share(state, speaker)
+      assert {:ok, state} = State.start_share(state, speaker)
+      assert state.share == speaker
     end
   end
 
@@ -176,7 +179,10 @@ defmodule Hearth.Voice.StateTest do
 
   describe "routes/1" do
     test "gives listeners no send track", %{state: state, listener: listener} do
-      assert %{^listener => %{send_audio: false, send_video: false}} = State.routes(state)
+      routes = State.routes(state)
+
+      refute routes[listener].send_audio
+      refute routes[listener].send_video
     end
 
     test "sends each speaker's audio to everyone else", %{
@@ -210,7 +216,10 @@ defmodule Hearth.Voice.StateTest do
     test "marks the server muted", %{state: state, speaker: speaker} do
       {:ok, state} = State.server_mute(state, speaker, true)
 
-      assert %{^speaker => %{muted: true, send_audio: true}} = State.routes(state)
+      routes = State.routes(state)
+
+      assert routes[speaker].muted
+      assert routes[speaker].send_audio
     end
   end
 end

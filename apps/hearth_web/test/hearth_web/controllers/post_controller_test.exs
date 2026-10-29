@@ -198,10 +198,12 @@ defmodule HearthWeb.PostControllerTest do
       session = TestUtils.insert_random_voice_session!(community)
       transcript = TestUtils.transcribe_random_recording!(session, [{member.id, "0 1000 Hi"}])
       :ok = TestUtils.update_rows!(Transcript, [id: transcript.id], post_id: post.id)
-      session_id = session.id
 
-      assert %{"transcript" => %{"session_id" => ^session_id, "duration_ms" => 60_000}} =
+      assert response =
                conn |> auth_conn(member) |> get(~p"/api/posts/#{post.id}") |> valid_response(200)
+
+      assert response["transcript"]["session_id"] == session.id
+      assert response["transcript"]["duration_ms"] == 60_000
 
       assert %{"transcript" => nil} =
                conn |> get(~p"/api/posts/#{post.id}") |> valid_response(200)

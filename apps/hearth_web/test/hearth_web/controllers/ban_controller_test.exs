@@ -28,13 +28,14 @@ defmodule HearthWeb.BanControllerTest do
       community: community
     } do
       {:ok, _ban} = Moderation.ban(owner, community, member, %{reason: Lorem.sentence()})
-      username = member.username
 
-      assert [%{"user" => %{"username" => ^username}, "banned_by" => %{}}] =
+      assert [%{"banned_by" => %{}} = ban] =
                conn
                |> auth_conn(owner)
                |> get(~p"/api/communities/#{community.id}/bans")
                |> valid_response(200)
+
+      assert ban["user"]["username"] == member.username
     end
   end
 

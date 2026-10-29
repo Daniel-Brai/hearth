@@ -54,10 +54,10 @@ defmodule Hearth.CommunitiesTest do
 
     test "start community as instance admin" do
       %{id: id} = admin = TestUtils.register_random_user!(admin: true)
+      params = %{name: "Plant Parents", template: "club"}
 
-      assert {:ok, %Community{owner_id: ^id} = community} =
-               Communities.start_community(admin, %{name: "Plant Parents", template: "club"})
-
+      assert {:ok, %Community{} = community} = Communities.start_community(admin, params)
+      assert community.owner_id == admin.id
       assert [%Room{slug: "general"} | _rooms] = community.rooms
 
       assert {:ok, %Membership{roles: [%{key: "owner"}]}} =
@@ -89,8 +89,8 @@ defmodule Hearth.CommunitiesTest do
     test "get request" do
       requester = TestUtils.register_random_user!()
 
-      request = %Request{requester_id: requester.id}
-      {:ok, %{id: id}} = Request.insert(request, %{name: Company.name()})
+      draft = %Request{requester_id: requester.id}
+      {:ok, %{id: id}} = Request.insert(draft, %{name: Company.name()})
 
       assert {:ok, %Request{id: ^id}} = Communities.get_request(id)
     end
@@ -132,14 +132,14 @@ defmodule Hearth.CommunitiesTest do
       assert_receive %RequestDecided{request_id: ^id, status: :declined}
     end
 
-    test "approve request", %{requester: %{id: requester_id}, request: request} do
+    test "approve request", %{requester: %{id: requester_id} = requester, request: request} do
       admin = TestUtils.register_random_user!(admin: true)
 
-      assert {:ok, %Request{status: :approved, community_id: community_id}} =
+      assert {:ok, %Request{status: :approved} = approved} =
                Communities.decide_request(admin, request, :approved)
 
-      assert {:ok, %Community{owner_id: ^requester_id}} =
-               Communities.get_community(id: community_id)
+      assert {:ok, community} = Communities.get_community(id: approved.community_id)
+      assert community.owner_id == requester.id
 
       assert_receive %RequestDecided{status: :approved, requester_id: ^requester_id}
     end
@@ -166,21 +166,23 @@ defmodule Hearth.CommunitiesTest do
   end
 
   describe "list_public/0" do
-    test "leaves out hidden and archived communities", %{community: %{id: id}} do
+    test "leaves out hidden and archived communities", %{community: community} do
       _invite = TestUtils.create_random_community!(nil, visibility: :invite_only)
       _private = TestUtils.create_random_community!(nil, visibility: :private)
       archived = TestUtils.create_random_community!(nil, visibility: :public)
       :ok = TestUtils.update_rows!(Community, [id: archived.id], archived_at: DateTime.utc_now())
 
-      assert [%{id: ^id}] = Communities.list_public()
+      assert [listed] = Communities.list_public()
+      assert listed.id == community.id
     end
 
     test "lists public communities with rooms" do
       opts = [visibility: :public_indexed]
       _birch = TestUtils.create_random_community!(nil, [name: "Birch Club"] ++ opts)
-      %{id: first_id} = TestUtils.create_random_community!(nil, [name: "Alder Club"] ++ opts)
+      alder = TestUtils.create_random_community!(nil, [name: "Alder Club"] ++ opts)
 
-      assert [%{id: ^first_id, rooms: [_room | _rooms]} | _others] = Communities.list_public()
+      assert [%{rooms: [_room | _rooms]} = first | _others] = Communities.list_public()
+      assert first.id == alder.id
     end
   end
 
@@ -196,11 +198,13 @@ defmodule Hearth.CommunitiesTest do
 
     test "lists joined communities with rooms" do
       owner = TestUtils.register_random_user!()
-      %{id: second_id} = TestUtils.create_random_community!(owner, name: "B side")
-      %{id: first_id} = TestUtils.create_random_community!(owner, name: "A side")
+      b_side = TestUtils.create_random_community!(owner, name: "B side")
+      a_side = TestUtils.create_random_community!(owner, name: "A side")
 
-      assert [%Community{id: ^first_id, rooms: [_room | _rooms]}, %Community{id: ^second_id}] =
-               Communities.list_joined(owner)
+      assert [%Community{rooms: [_room | _rooms]} | _others] =
+               joined = Communities.list_joined(owner)
+
+      assert TestUtils.pluck(joined, :id) == [a_side.id, b_side.id]
     end
   end
 
@@ -461,8 +465,10 @@ defmodule Hearth.CommunitiesTest do
       %{id: id} = user = TestUtils.join_random_member!(community)
       code = TestUtils.transfer_code!(owner, community)
 
-      assert {:ok, %Community{owner_id: ^id}} =
+      assert {:ok, %Community{} = transferred} =
                Communities.transfer_ownership(owner, community, user, code)
+
+      assert transferred.owner_id == user.id
 
       assert {:ok, %Membership{roles: [%{key: "owner"}]}} = IAM.get_membership(user, community.id)
 
@@ -503,9 +509,10 @@ defmodule Hearth.CommunitiesTest do
 
     test "list archived rooms", %{owner: owner, community: community} do
       [room | _rooms] = Communities.list_rooms(community)
-      {:ok, %{id: id}} = Communities.archive_room(owner, room)
+      {:ok, archived} = Communities.archive_room(owner, room)
 
-      assert {:ok, [%Room{id: ^id}]} = Communities.list_archived_rooms(owner, community)
+      assert {:ok, [listed]} = Communities.list_archived_rooms(owner, community)
+      assert listed.id == archived.id
     end
   end
 
@@ -537,10 +544,11 @@ defmodule Hearth.CommunitiesTest do
   describe "restore_room/2" do
     test "restore room", %{owner: owner, community: community} do
       [room | _rooms] = Communities.list_rooms(community)
-      {:ok, %{id: id} = archived} = Communities.archive_room(owner, room)
+      {:ok, archived} = Communities.archive_room(owner, room)
 
       assert {:ok, %Room{archived_at: nil}} = Communities.restore_room(owner, archived)
-      assert [%Room{id: ^id} | _rooms] = Communities.list_rooms(community)
+      assert [first | _rooms] = Communities.list_rooms(community)
+      assert first.id == archived.id
     end
   end
 
@@ -689,7 +697,7 @@ defmodule Hearth.CommunitiesTest do
     end
 
     test "hides emailed people from members", %{owner: owner, community: community} do
-      {:ok, %Invite{id: link_id}} = Communities.create_invite(owner, community, %{})
+      {:ok, link} = Communities.create_invite(owner, community, %{})
 
       entries = [%{email: Internet.email(), role_key: "member"}]
       {:ok, _sent} = Communities.email_invites(owner, community, entries)
@@ -697,19 +705,22 @@ defmodule Hearth.CommunitiesTest do
       member = TestUtils.register_random_user!()
       {:ok, _membership} = Communities.join(member, community)
 
-      assert {:ok, %{links: [%Invite{id: ^link_id}], emails: []}} =
-               Communities.list_invites(member, community)
+      assert {:ok, %{links: [listed], emails: []}} = Communities.list_invites(member, community)
+      assert listed.id == link.id
     end
 
     test "keeps links and emailed invites apart", %{owner: owner, community: community} do
-      {:ok, %Invite{id: link_id}} = Communities.create_invite(owner, community, %{})
+      {:ok, link} = Communities.create_invite(owner, community, %{})
       email = Internet.email()
 
       entries = [%{email: email, role_key: "member"}]
       {:ok, _sent} = Communities.email_invites(owner, community, entries)
 
-      assert {:ok, %{links: [%Invite{id: ^link_id}], emails: [%{email: ^email}]}} =
+      assert {:ok, %{links: [listed], emails: [emailed]}} =
                Communities.list_invites(owner, community)
+
+      assert listed.id == link.id
+      assert emailed.email == email
     end
   end
 

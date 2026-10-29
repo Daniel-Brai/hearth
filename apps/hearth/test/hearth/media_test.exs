@@ -84,12 +84,8 @@ defmodule Hearth.MediaTest do
       [first, second] = TestUtils.upload_random_attachments!(user, 2)
 
       assert :ok = Media.put_attachments(user, :post, post.id, [second.id, first.id])
-
-      %{id: post_id} = post
-      %{id: second_id} = second
-
-      assert %{^post_id => [%{media: %{id: ^second_id}} | _rest]} =
-               Media.list_attachments(:post, [post.id])
+      assert [attachment | _rest] = Media.list_attachments(:post, [post.id])[post.id]
+      assert attachment.media.id == second.id
     end
 
     test "replaces the files it had", %{user: user, post: post} do
@@ -97,11 +93,8 @@ defmodule Hearth.MediaTest do
       :ok = Media.put_attachments(user, :post, post.id, [first.id])
 
       assert :ok = Media.put_attachments(user, :post, post.id, [second.id])
-
-      post_id = post.id
-      media_id = second.id
-
-      assert %{^post_id => [%{media_id: ^media_id}]} = Media.list_attachments(:post, [post.id])
+      assert [attachment] = Media.list_attachments(:post, [post.id])[post.id]
+      assert attachment.media_id == second.id
       assert {:ok, _kept} = Media.get_media(first.id)
     end
   end
@@ -179,10 +172,12 @@ defmodule Hearth.MediaTest do
     test "returns the same row for the same key", %{user: user} do
       params = TestUtils.random_upload_params()
 
-      {:ok, %{media: %{id: id}}} = Media.request_upload(user, params)
+      {:ok, %{media: first}} = Media.request_upload(user, params)
 
-      assert {:ok, %{media: %Asset{id: ^id}, upload: %{url: _url}}} =
+      assert {:ok, %{media: %Asset{} = again, upload: %{url: _url}}} =
                Media.request_upload(user, params)
+
+      assert again.id == first.id
     end
   end
 
@@ -315,9 +310,8 @@ defmodule Hearth.MediaTest do
       assert {:ok, %Asset{status: :ready, multipart_upload_id: nil}} =
                Media.complete_upload(user, media, [{1, etag}])
 
-      size = byte_size(data)
-
-      assert {:ok, %{size: ^size}} = Storage.head(media.bucket_key)
+      assert {:ok, object} = Storage.head(media.bucket_key)
+      assert object.size == byte_size(data)
     end
 
     test "returns the row again once completed", %{user: user} do

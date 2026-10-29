@@ -47,12 +47,6 @@ defmodule Hearth.ModerationTest do
       assert {:error, :forbidden} = Moderation.set_level(member, community, :full)
     end
 
-    test "succeeds with community.update", %{community: community} do
-      editor = TestUtils.join_with_permissions!(community, ["community.update"])
-
-      assert {:ok, %{moderation: :full}} = Moderation.set_level(editor, community, :full)
-    end
-
     test "fails for a room without room.update", %{member: member, community: community} do
       room = TestUtils.get_room!(community, type: :text)
 
@@ -63,6 +57,12 @@ defmodule Hearth.ModerationTest do
       room = TestUtils.get_room!(community, type: :text)
 
       assert {:error, :above_community} = Moderation.set_level(owner, room, :full)
+    end
+
+    test "succeeds with community.update", %{community: community} do
+      editor = TestUtils.join_with_permissions!(community, ["community.update"])
+
+      assert {:ok, %{moderation: :full}} = Moderation.set_level(editor, community, :full)
     end
 
     test "logs a community's change", %{owner: owner, community: community} do
@@ -246,9 +246,9 @@ defmodule Hearth.ModerationTest do
       {:ok, item} = Moderation.report(member, :post, post.id, %{reason: :spam})
       helper = TestUtils.join_with_permissions!(community, ["content.remove"])
 
-      assert {:ok, %Page{data: [%Item{id: id}]}} = Moderation.list_queue(helper, community)
-      assert id == item.id
-      assert %{^id => %{type: :post}} = Moderation.subjects([item])
+      assert {:ok, %Page{data: [%Item{} = queued]}} = Moderation.list_queue(helper, community)
+      assert queued.id == item.id
+      assert Moderation.subjects([item])[item.id].type == :post
       assert Moderation.queue_counts(helper) == %{community.id => 1}
     end
   end
@@ -280,9 +280,8 @@ defmodule Hearth.ModerationTest do
       assert {:ok, %{status: :removed}} = Forum.get_post(id: post.id)
       assert_receive %ContentRemoved{subject_id: ^post_id}
 
-      assert %Page{data: [%Action{action: :removed, reason: ^reason} = action]} =
-               Moderation.list_log(community)
-
+      assert %Page{data: [%Action{action: :removed} = action]} = Moderation.list_log(community)
+      assert action.reason == reason
       assert action.actor_id == owner.id
       assert action.target_id == post.author_id
     end
@@ -423,8 +422,8 @@ defmodule Hearth.ModerationTest do
     test "bans and logs it", %{owner: owner, author: author, community: community} do
       reason = Lorem.sentence()
 
-      assert {:ok, %Ban{reason: ^reason}} =
-               Moderation.ban(owner, community, author, %{reason: reason})
+      assert {:ok, %Ban{} = ban} = Moderation.ban(owner, community, author, %{reason: reason})
+      assert ban.reason == reason
 
       assert {:error, :banned} = Communities.join(author, community)
 

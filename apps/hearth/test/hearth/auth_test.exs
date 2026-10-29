@@ -162,8 +162,9 @@ defmodule Hearth.AuthTest do
       }
 
       assert {:sign_up, token} = Auth.sign_in_with_identity(:github, claims)
-      assert {:ok, %{id: id}} = Auth.register_user(token, TestUtils.random_username())
-      assert %Identity{user_id: ^id} = Identity.get(provider: :github, provider_uid: "42")
+      assert {:ok, user} = Auth.register_user(token, TestUtils.random_username())
+      assert %Identity{} = identity = Identity.get(provider: :github, provider_uid: "42")
+      assert identity.user_id == user.id
     end
 
     test "links identity to registered email" do
@@ -176,12 +177,13 @@ defmodule Hearth.AuthTest do
     end
 
     test "returns user for linked identity" do
-      %{id: id, email: email} = user = TestUtils.register_random_user!()
-      claims = %{"sub" => "9", "email" => email, "email_verified" => true}
+      user = TestUtils.register_random_user!()
+      claims = %{"sub" => "9", "email" => user.email, "email_verified" => true}
       {:ok, _user} = Auth.sign_in_with_identity(:github, claims)
       {:ok, _user} = Accounts.change_email(user, Internet.email())
 
-      assert {:ok, %{id: ^id}} = Auth.sign_in_with_identity(:github, claims)
+      assert {:ok, signed_in} = Auth.sign_in_with_identity(:github, claims)
+      assert signed_in.id == user.id
     end
   end
 
@@ -254,13 +256,14 @@ defmodule Hearth.AuthTest do
     end
 
     test "swaps the session for a new one" do
-      %{id: id} = user = TestUtils.register_random_user!()
+      user = TestUtils.register_random_user!()
       {:ok, session} = Auth.create_session(user)
+      meta = %{ip: Internet.ip_v4_address()}
 
-      assert {:ok, %{id: ^id}, new_session} =
-               Auth.rotate_session(session, %{ip: Internet.ip_v4_address()})
-
-      assert {:ok, %{user_id: ^id}} = Token.find_random(:session, new_session)
+      assert {:ok, rotated, new_session} = Auth.rotate_session(session, meta)
+      assert rotated.id == user.id
+      assert {:ok, token} = Token.find_random(:session, new_session)
+      assert token.user_id == user.id
       assert {:error, _reason} = Token.find_random(:session, session)
     end
   end
@@ -339,7 +342,8 @@ defmodule Hearth.AuthTest do
     test "change email", %{user: user, email: email, code: code} do
       %{id: id, email: old_email} = user
 
-      assert {:ok, %{email: ^email}} = Auth.confirm_email_change(user, code)
+      assert {:ok, changed} = Auth.confirm_email_change(user, code)
+      assert changed.email == email
 
       assert_receive %EmailChangeConfirmed{
         user_id: ^id,
@@ -367,7 +371,8 @@ defmodule Hearth.AuthTest do
       {:ok, _user} = Auth.confirm_email_change(user, code)
       assert_receive %EmailChangeConfirmed{user_id: ^id, undo_token: undo_token}
 
-      assert {:ok, %{email: ^old_email}} = Auth.undo_email_change(undo_token)
+      assert {:ok, restored} = Auth.undo_email_change(undo_token)
+      assert restored.email == old_email
       assert_receive %EmailChangeUndone{user_id: ^id, email: ^old_email}
       assert {:error, _reason} = Token.find_random(:session, session)
       assert {:error, :invalid} = Auth.undo_email_change(undo_token)

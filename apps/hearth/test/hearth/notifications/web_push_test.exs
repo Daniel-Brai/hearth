@@ -45,7 +45,7 @@ defmodule Hearth.Notifications.WebPushTest do
     assert <<_encrypted_data::binary-size(^actual_record_size)>> = cipher
   end
 
-  describe "sending message" do
+  describe "send/3" do
     test "fails if subscription is expired" do
       subscription = Map.put(@subscription_keys, :endpoint, Internet.url())
 

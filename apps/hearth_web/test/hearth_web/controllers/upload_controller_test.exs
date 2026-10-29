@@ -83,19 +83,21 @@ defmodule HearthWeb.UploadControllerTest do
       body = :png |> TestUtils.random_upload_params() |> Map.delete(:idempotency_key)
       key = Common.new_id()
 
-      assert %{"media" => %{"id" => id}} =
+      assert started =
                conn
                |> auth_conn(user)
                |> put_req_header("idempotency-key", key)
                |> post(~p"/api/uploads", body)
                |> valid_response(201)
 
-      assert %{"media" => %{"id" => ^id}} =
+      assert again =
                conn
                |> auth_conn(user)
                |> put_req_header("idempotency-key", key)
                |> post(~p"/api/uploads", body)
                |> valid_response(201)
+
+      assert again["media"]["id"] == started["media"]["id"]
     end
   end
 

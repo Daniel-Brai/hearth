@@ -21,6 +21,17 @@ defmodule Hearth.Moderation.ScreeningTest do
   end
 
   describe "screen/2" do
+    test "fails if screener is down", %{
+      admin: admin,
+      author: author,
+      community: community
+    } do
+      post = TestUtils.create_random_post!(author, community, body: "[down]")
+
+      assert {:error, :not_ready} = Moderation.screen(:post, post.id)
+      assert {:ok, %{days: []}} = Moderation.screening_summary(admin)
+    end
+
     test "skips when screening is off", %{author: author, community: community} do
       TestUtils.put_screening(screener: :off)
       post = TestUtils.create_random_post!(author, community, title: "[unsafe]")
@@ -34,17 +45,6 @@ defmodule Hearth.Moderation.ScreeningTest do
       post = TestUtils.create_random_post!(author, community, title: "[unsafe]")
 
       assert {:ok, :skipped} = Moderation.screen(:post, post.id)
-    end
-
-    test "fails if screener is down", %{
-      admin: admin,
-      author: author,
-      community: community
-    } do
-      post = TestUtils.create_random_post!(author, community, body: "[down]")
-
-      assert {:error, :not_ready} = Moderation.screen(:post, post.id)
-      assert {:ok, %{days: []}} = Moderation.screening_summary(admin)
     end
 
     test "leaves content under the threshold up", %{author: author, community: community} do

@@ -53,17 +53,13 @@ defmodule Hearth.Voice.Worker.AssembleRecordingTest do
 
     @tag :tmp_dir
     test "assemble recording", %{session: session, speaker: speaker, tmp_dir: dir} do
-      %{host_id: host_id} = session
-      %{id: speaker_id} = speaker
-
       tracks = [
-        {host_id, :audio, 0, 3},
-        {speaker_id, :audio, 1_500, 2},
-        {host_id, :video, 1_000, 2}
+        {session.host_id, :audio, 0, 3},
+        {speaker.id, :audio, 1_500, 2},
+        {session.host_id, :video, 1_000, 2}
       ]
 
-      recording = TestUtils.record_random_session!(session, tracks, 4)
-      %{id: id} = recording
+      %{id: id} = TestUtils.record_random_session!(session, tracks, 4)
 
       assert :ok = perform_job(AssembleRecording, %{recording_id: id})
       assert_receive %VoiceRecordingChanged{recording_id: ^id, status: :ready}
@@ -71,7 +67,7 @@ defmodule Hearth.Voice.Worker.AssembleRecordingTest do
       assert_enqueued(worker: "Hearth.Transcripts.Worker.Transcribe", args: %{recording_id: id})
 
       assert ready.speakers |> TestUtils.pluck(:user_id) |> MapSet.new() ==
-               MapSet.new([host_id, speaker_id])
+               MapSet.new([session.host_id, speaker.id])
 
       assert TestUtils.stored(ready.tracks) == []
 

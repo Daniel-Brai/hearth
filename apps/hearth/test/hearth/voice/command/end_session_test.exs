@@ -17,11 +17,11 @@ defmodule Hearth.Voice.Command.EndSessionTest do
 
   describe "execute/1" do
     test "ends once", %{session: session} do
-      {:ok, %Session{ended_at: ended_at}} = EndSession.execute(session)
+      {:ok, ended} = EndSession.execute(session)
+      stored = Session.get(id: session.id)
 
-      ended = Session.get(id: session.id)
-
-      assert {:ok, %Session{ended_at: ^ended_at}} = EndSession.execute(ended)
+      assert {:ok, again} = EndSession.execute(stored)
+      assert again.ended_at == ended.ended_at
     end
 
     test "end session", %{session: session} do

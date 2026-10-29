@@ -99,20 +99,20 @@ defmodule Hearth.StorageTest do
   end
 
   describe "get_url/1" do
-    test "keeps the same URL within the hour", %{key: key} do
-      assert {:ok, url} = Storage.get_url(key)
-      assert {:ok, ^url} = Storage.get_url(key)
-
-      params = url |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
-      assert {:ok, %{"op" => "get"}} = Storage.verify_local("GET", key, params)
-    end
-
     test "fails once expired", %{key: key} do
       {:ok, url} = Storage.get_url(key)
       params = url |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
       expired = %{params | "exp" => "1"}
 
       assert {:error, :invalid} = Storage.verify_local("GET", key, expired)
+    end
+
+    test "keeps the same URL within the hour", %{key: key} do
+      assert {:ok, url} = Storage.get_url(key)
+      assert {:ok, ^url} = Storage.get_url(key)
+
+      params = url |> URI.parse() |> Map.fetch!(:query) |> URI.decode_query()
+      assert {:ok, %{"op" => "get"}} = Storage.verify_local("GET", key, params)
     end
   end
 
