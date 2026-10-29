@@ -32,9 +32,9 @@ defmodule HearthWeb.Plugs.ContentSecurityPolicyTest do
     conn = conn(:get, "/")
     opts = ContentSecurityPolicy.init([])
 
-    assert first = ContentSecurityPolicy.call(conn, opts)
-    assert second = ContentSecurityPolicy.call(conn, opts)
+    assert earlier = ContentSecurityPolicy.call(conn, opts)
+    assert later = ContentSecurityPolicy.call(conn, opts)
 
-    refute first.assigns.csp_nonce == second.assigns.csp_nonce
+    refute earlier.assigns.csp_nonce == later.assigns.csp_nonce
   end
 end

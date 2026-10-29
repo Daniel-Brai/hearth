@@ -39,11 +39,11 @@ defmodule Hearth.CommonTest do
 
   describe "new_id/0" do
     test "sorts by creation time" do
-      first = Common.new_id()
-      second = Common.new_id()
+      older = Common.new_id()
+      newer = Common.new_id()
 
-      assert String.at(first, 14) == "7"
-      assert first < second
+      assert String.at(older, 14) == "7"
+      assert older < newer
     end
   end
 end
