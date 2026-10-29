@@ -319,8 +319,6 @@ defmodule HearthWeb.CoreComponents do
     """
   end
 
-  ## JS Commands
-
   def show(js \\ %JS{}, selector) do
     JS.show(js,
       to: selector,

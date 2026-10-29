@@ -39,7 +39,6 @@ export function useVoiceActions(cid: string, rid: string) {
       postId: room?.postId ?? null,
       open: room?.mode === 'open',
       muted: state.live.muted,
-      // Everyone in an open room may talk, whatever role they joined with
       stage: here && mayTalk(state),
       captions: transcriptionOn(state) && state.settings.captions,
       transcribed: transcriptionOn(state),

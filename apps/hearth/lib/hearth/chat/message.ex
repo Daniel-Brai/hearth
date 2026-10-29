@@ -24,7 +24,6 @@ defmodule Hearth.Chat.Message do
     field :author_id, Ecto.UUID
     field :reply_to_id, Ecto.UUID
     field :thread_root_id, Ecto.UUID
-    # Encrypted at rest
     field :body, Hearth.Vault.Binary, default: ""
     field :depth, :integer, default: 0
     field :path, {:array, Ecto.UUID}, default: []

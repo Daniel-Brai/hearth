@@ -1,6 +1,5 @@
 import Config
 
-# Upload limits, in megabytes
 config :hearth, Hearth.Media,
   max_image_mb: {:system, :integer, "UPLOAD_MAX_IMAGE_MB", 10},
   max_file_mb: {:system, :integer, "UPLOAD_MAX_FILE_MB", 25},

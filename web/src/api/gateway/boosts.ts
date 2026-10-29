@@ -1,6 +1,5 @@
 import type { Boost } from '@/domain/types';
 
-// The viewer's own reaction, added or taken back
 export function setMine(holder: { boosts: Boost[] }, emoji: string, on: boolean) {
   const boost = holder.boosts.find((b) => b.e === emoji);
 

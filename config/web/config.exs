@@ -15,7 +15,6 @@ config :hearth_web, HearthWeb.Endpoint,
   pubsub_server: Hearth.PubSub,
   live_view: [signing_salt: "8ZSOZ/If"]
 
-# Access tokens are ES256 JWTs for 15 minutes
 config :hearth_web, HearthWeb.Guardian,
   issuer: {:system, "API_URL", "http://localhost:4000"},
   verify_issuer: true,

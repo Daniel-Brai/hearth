@@ -29,7 +29,6 @@ defmodule Hearth.Transcripts.AudioMark do
           removed: boolean()
         }
 
-  # Stretches longer than two seconds where nobody is speaking, from the start to the end
   @spec silences([%{start_ms: integer(), end_ms: integer()}], non_neg_integer()) ::
           [{non_neg_integer(), non_neg_integer()}]
   def silences(segments, duration_ms) do

@@ -57,7 +57,6 @@ defmodule Hearth.AI.Whisper do
     File.rm(path <> ".pcm")
   end
 
-  # The stretches between silences, cut to fit Whisper's window
   @spec speech([{non_neg_integer(), nil | non_neg_integer()}], non_neg_integer()) ::
           [{non_neg_integer(), non_neg_integer()}]
   def speech(silences, duration_ms) do

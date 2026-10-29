@@ -3,7 +3,6 @@ import { useAppState } from '@/data/store';
 import type { Template } from '@/domain/types';
 import { kindName } from './form';
 
-// What a starting point sets up, in one plain line
 const BLANK = 'blank';
 
 const contents = (t: Template) =>

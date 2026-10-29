@@ -5,7 +5,6 @@ import { patterns, routes } from './runtime/routes';
 const at = (file: string) => `app/routes/${file}.tsx`;
 
 /**
- * Every screen and the frame around it
  * Public screens render on the server for search engines and link previews
  * and the frames under standalone and protected render only in the browser
  */

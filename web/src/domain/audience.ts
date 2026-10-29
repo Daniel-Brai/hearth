@@ -1,6 +1,5 @@
 import type { Community, CommunityVisibility } from './types';
 
-// Who can find and read a community, one for each value the server keeps
 export type Audience = 'indexed' | 'public' | 'invite' | 'private';
 
 const isOpenAudience = (audience: Audience) => audience === 'indexed' || audience === 'public';

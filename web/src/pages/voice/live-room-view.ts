@@ -13,7 +13,6 @@ export function useLiveRoomView(cid: string, rid: string) {
     return {
       me: state.me,
       role: state.live.role,
-      // Everyone in an open room may talk, whatever role they joined with
       onStage: room.mode === 'open' || state.live.role !== 'listener',
       muted: state.live.muted,
       open: room.mode === 'open',
