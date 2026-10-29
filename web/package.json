@@ -22,7 +22,7 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "doctor": "react-doctor . --yes",
+    "doctor": "CI=true react-doctor . --yes",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm knip && pnpm test && pnpm run doctor",
     "gen:api": "orval",
     "gen:emoji": "node scripts/gen-emoji-glyphs.mjs",
