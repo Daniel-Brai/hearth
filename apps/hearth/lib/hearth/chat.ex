@@ -308,6 +308,9 @@ defmodule Hearth.Chat do
   @spec can_read?(User.t(), place()) :: boolean()
   def can_read?(%User{} = user, place), do: may_read(user, place) == :ok
 
+  @spec can_write?(User.t(), place()) :: boolean()
+  def can_write?(%User{} = user, place), do: may_write(user, place) == :ok
+
   @spec list_conversations(User.t()) :: [Conversation.t()]
   def list_conversations(%User{id: id}) do
     Conversation.for_member(id)

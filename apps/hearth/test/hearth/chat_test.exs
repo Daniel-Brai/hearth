@@ -412,6 +412,18 @@ defmodule Hearth.ChatTest do
     end
   end
 
+  describe "can_write?/2" do
+    test "returns false in an archived room", %{owner: owner, member: member, room: room} do
+      {:ok, archived} = Communities.archive_room(owner, room)
+
+      refute Chat.can_write?(member, archived)
+    end
+
+    test "returns true for a member in an open room", %{member: member, room: room} do
+      assert Chat.can_write?(member, room)
+    end
+  end
+
   describe "mark_read/2" do
     test "fails if not a member", %{member: member, room: room} do
       {:ok, message} = Chat.send_message(member, room, %{body: Lorem.sentence()})

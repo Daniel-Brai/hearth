@@ -5,6 +5,7 @@ defmodule HearthWeb.RoomChannel do
   alias Hearth.Common
   alias Hearth.Communities
   alias HearthWeb.Endpoint
+  alias HearthWeb.Typing
   alias Phoenix.Socket
   alias Phoenix.Socket.Broadcast
 
@@ -20,6 +21,14 @@ defmodule HearthWeb.RoomChannel do
       _denied -> {:error, %{reason: "unauthorized"}}
     end
   end
+
+  @impl Phoenix.Channel
+  def handle_in("typing", %{"typing" => typing}, socket) when is_boolean(typing) do
+    :ok = Typing.relay(socket, socket.assigns.room, typing)
+    {:noreply, socket}
+  end
+
+  def handle_in(_event, _payload, socket), do: {:reply, {:error, %{reason: "unknown"}}, socket}
 
   @impl Phoenix.Channel
   def handle_info(%Broadcast{event: "RoomAccessChanged"}, socket) do

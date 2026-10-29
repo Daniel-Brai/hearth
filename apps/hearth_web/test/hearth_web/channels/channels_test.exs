@@ -99,6 +99,49 @@ defmodule HearthWeb.ChannelsTest do
     end
   end
 
+  describe "typing" do
+    test "fails for an event the channel doesn't know", %{owner: owner, room: room} do
+      topic = "room:#{room.id}"
+      {:ok, _reply, socket} = owner |> connected_socket() |> subscribe_and_join(topic)
+
+      ref = push(socket, "typed", %{"typing" => true})
+
+      assert_reply ref, :error, %{reason: "unknown"}
+    end
+
+    test "drops it in a room nobody can post in", %{owner: owner, room: room} do
+      {:ok, archived} = Communities.archive_room(owner, room)
+      topic = "room:#{archived.id}"
+      {:ok, _reply, socket} = owner |> connected_socket() |> subscribe_and_join(topic)
+
+      push(socket, "typing", %{"typing" => true})
+
+      refute_broadcast "typing", _payload, 200
+    end
+
+    test "tells the room someone is typing", %{owner: owner, room: room} do
+      %{id: owner_id} = owner
+      topic = "room:#{room.id}"
+      {:ok, _reply, socket} = owner |> connected_socket() |> subscribe_and_join(topic)
+
+      push(socket, "typing", %{"typing" => true})
+
+      assert_broadcast "typing", %{user_id: ^owner_id, typing: true}
+    end
+
+    test "tells the conversation someone stopped", %{owner: owner, community: community} do
+      %{id: owner_id} = owner
+      member = TestUtils.join_random_member!(community)
+      {:ok, conversation} = Chat.start_direct(owner, member)
+      topic = "conversation:#{conversation.id}"
+      {:ok, _reply, socket} = owner |> connected_socket() |> subscribe_and_join(topic)
+
+      push(socket, "typing", %{"typing" => false})
+
+      assert_broadcast "typing", %{user_id: ^owner_id, typing: false}
+    end
+  end
+
   describe "post:<id>" do
     test "pushes new replies", %{owner: owner, community: community, kind: kind} do
       post = TestUtils.create_random_post!(owner, community, kind_id: kind.id)
