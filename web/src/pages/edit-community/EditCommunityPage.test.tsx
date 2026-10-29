@@ -13,7 +13,10 @@ async function show(cid: string) {
   const store = new Store(createSeedState());
 
   const router = createMemoryRouter(
-    [{ path: '/c/:community/edit', element: <EditCommunityPage /> }],
+    [
+      { path: '/c/:community/edit', element: <EditCommunityPage /> },
+      { path: '/c/:community', element: <h1>Community</h1> },
+    ],
     { initialEntries: [`/c/${cid}/edit`] },
   );
 
