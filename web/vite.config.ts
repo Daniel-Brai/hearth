@@ -51,17 +51,26 @@ export default defineConfig({
         theme_color: '#1d2433',
         background_color: '#ffffff',
         display: 'standalone',
+        id: '/',
+        scope: '/',
         start_url: '/',
+        // PNG only, since some desktop installers fail to turn an SVG into an app icon.
+        // Maskable icons fill the square so Android can cut its own shape.
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          {
+            src: '/icon-maskable-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
           {
             src: '/icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
-          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
         shortcuts: [
           { name: 'Catch up', url: '/' },
