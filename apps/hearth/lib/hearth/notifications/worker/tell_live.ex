@@ -33,7 +33,10 @@ defmodule Hearth.Notifications.Worker.TellLive do
       |> List.delete(host.id)
       |> Enum.chunk_every(@batch)
       |> Enum.each(fn ids ->
-        ids |> Accounts.list_users() |> Enum.each(&Notifications.send(&1, notice))
+        ids
+        |> Accounts.list_users()
+        |> Enum.filter(&Communities.room_visible?(&1, room))
+        |> Enum.each(&Notifications.send(&1, notice))
       end)
     end
 

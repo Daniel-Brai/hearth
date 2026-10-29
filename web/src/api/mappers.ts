@@ -130,6 +130,9 @@ const toKind = (kind: ApiPostKind): PostKind => ({
 const toPermissions = (permissions: readonly string[]): Permission[] =>
   permissions.filter((p): p is Permission => KNOWN.has(p));
 
+const accessOf = (room: ApiCommunity['rooms'][number]) =>
+  room.role_ids ? { access: room.access, roleIds: room.role_ids } : { access: room.access };
+
 export function toCommunity(
   community: ApiCommunity,
   detail: CommunityDetail | null = null,
@@ -157,7 +160,7 @@ export function toCommunity(
     welcome: community.welcome_message ?? '',
     rooms: rooms
       .filter((r) => r.type === 'text')
-      .map((r): Room => ({ id: r.slug, name: r.name, unread: 0 })),
+      .map((r): Room => ({ id: r.slug, name: r.name, unread: 0, ...accessOf(r) })),
     voice: rooms
       .filter((r) => r.type === 'voice')
       .map((r): VoiceRoom => ({
@@ -168,6 +171,7 @@ export function toCommunity(
         topic: r.topic,
         host: '',
         postId: null,
+        ...accessOf(r),
       })),
     summary: null,
     kinds: detail ? detail.kinds.map(toKind) : [],

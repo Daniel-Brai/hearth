@@ -9,7 +9,6 @@ defmodule HearthWeb.VoiceController do
   alias Hearth.Common
   alias Hearth.Communities
   alias Hearth.Forum
-  alias Hearth.IAM
   alias Hearth.Voice
   alias Plug.Conn
 
@@ -150,7 +149,7 @@ defmodule HearthWeb.VoiceController do
   def show(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    with {:ok, session} <- Voice.get_session(id: id),
+    with {:ok, session} <- find_session(id, auth),
          {:ok, snapshot} <- Voice.snapshot(auth, session) do
       render(conn, :state,
         session: session,
@@ -314,7 +313,7 @@ defmodule HearthWeb.VoiceController do
   end
 
   defp act(conn, id, fun) do
-    with {:ok, session} <- Voice.get_session(id: id),
+    with {:ok, session} <- find_session(id, conn.assigns.auth),
          :ok <- fun.(session) do
       send_resp(conn, :no_content, "")
     end
@@ -322,11 +321,18 @@ defmodule HearthWeb.VoiceController do
 
   defp find_room(id, auth) do
     with {:ok, room} <- Communities.get_room(id: id),
-         true <- IAM.member?(auth, room.community_id) do
+         true <- Communities.room_visible?(auth, room) do
       {:ok, room}
     else
       false -> {:error, :not_found}
       error -> error
+    end
+  end
+
+  defp find_session(id, auth) do
+    with {:ok, session} <- Voice.get_session(id: id),
+         {:ok, _room} <- Communities.view_room(auth, id: session.room_id) do
+      {:ok, session}
     end
   end
 end

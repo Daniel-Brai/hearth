@@ -238,6 +238,20 @@ defmodule Hearth.ModerationTest do
       assert {:error, :forbidden} = Moderation.list_queue(member, community)
     end
 
+    test "leaves out private rooms they can't see", %{
+      member: member,
+      author: author,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["member"])
+      {:ok, message} = Chat.send_message(author, room, %{body: Lorem.sentence()})
+      {:ok, _item} = Moderation.report(member, :message, message.id, %{reason: :spam})
+      helper = TestUtils.join_with_permissions!(community, ["content.remove"])
+
+      assert {:ok, %Page{data: []}} = Moderation.list_queue(helper, community)
+      assert Moderation.queue_counts(helper) == %{}
+    end
+
     test "lists items with content.remove", %{
       member: member,
       community: community,
@@ -293,6 +307,19 @@ defmodule Hearth.ModerationTest do
       {:ok, kept} = Moderation.keep(owner, item)
 
       assert {:error, :invalid_transition} = Moderation.keep(owner, kept)
+    end
+
+    test "fails in a private room they can't see", %{
+      member: member,
+      author: author,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["member"])
+      {:ok, message} = Chat.send_message(author, room, %{body: Lorem.sentence()})
+      {:ok, item} = Moderation.report(member, :message, message.id, %{reason: :spam})
+      helper = TestUtils.join_with_permissions!(community, ["content.remove"])
+
+      assert {:error, :not_found} = Moderation.keep(helper, item)
     end
 
     test "keeps the content up", %{owner: owner, member: member, post: post} do
@@ -353,6 +380,18 @@ defmodule Hearth.ModerationTest do
     test "fails without content.remove", %{member: member, post: post} do
       assert {:error, :forbidden} =
                Moderation.remove_content(member, :post, post.id, Lorem.sentence())
+    end
+
+    test "fails in a private room they can't see", %{
+      author: author,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["member"])
+      {:ok, message} = Chat.send_message(author, room, %{body: Lorem.sentence()})
+      helper = TestUtils.join_with_permissions!(community, ["content.remove"])
+
+      assert {:error, :not_found} =
+               Moderation.remove_content(helper, :message, message.id, Lorem.sentence())
     end
 
     test "removes and closes item", %{

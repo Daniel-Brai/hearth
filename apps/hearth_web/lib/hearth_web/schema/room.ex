@@ -4,7 +4,7 @@ defmodule HearthWeb.Schema.Room do
   defschema %{
     title: "Room",
     type: :object,
-    required: ~w[id community_id type slug name topic position moderation archived_at]a,
+    required: ~w[id community_id type slug name topic position moderation access archived_at]a,
     properties: %{
       id: uuid(),
       community_id: uuid(),
@@ -14,6 +14,9 @@ defmodule HearthWeb.Schema.Room do
       topic: nullable(string()),
       position: integer(),
       moderation: nullable(enum(~w[full reports none])),
+      access: enum(~w[everyone roles]),
+      role_ids:
+        array_of(uuid(), description: "Who can see a private room, for people with room.update"),
       archived_at: nullable(string(format: :"date-time"))
     }
   }

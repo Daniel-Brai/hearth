@@ -149,8 +149,8 @@ defmodule Hearth.Moderation.Item do
     :ok
   end
 
-  @spec pending_counts([T.id()]) :: %{T.id() => non_neg_integer()}
-  def pending_counts(community_ids) when is_list(community_ids) do
+  @spec pending_counts([T.id()], [T.id()]) :: %{T.id() => non_neg_integer()}
+  def pending_counts(community_ids, hidden_room_ids) when is_list(community_ids) do
     query =
       from(i in __MODULE__,
         where: i.community_id in ^community_ids and i.status == :pending,
@@ -159,7 +159,18 @@ defmodule Hearth.Moderation.Item do
       )
 
     query
+    |> outside_rooms(hidden_room_ids)
     |> Repo.all()
     |> Map.new()
   end
+
+  defp query_from(opts, query) do
+    {hidden_room_ids, opts} = Keyword.pop(opts, :outside_rooms, [])
+    super(opts, outside_rooms(query, hidden_room_ids))
+  end
+
+  defp outside_rooms(query, []), do: query
+
+  defp outside_rooms(query, room_ids),
+    do: where(query, [i], is_nil(i.room_id) or i.room_id not in ^room_ids)
 end

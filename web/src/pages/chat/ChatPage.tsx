@@ -7,6 +7,7 @@ import { community, personIdByHandle } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { useLeaveHiddenRoom } from '@/features/rooms/use-leave-hidden-room';
 import { ChatView } from './ChatView';
 import type { ChatTarget } from './chat-select';
 import './ChatPage.css';
@@ -34,6 +35,7 @@ function ChatRoute({ target }: { readonly target: ChatTarget }) {
   const gateway = useGateway();
 
   useLoad(() => gateway.load.chat(target.key), 'chat:' + target.key);
+  useLeaveHiddenRoom(target.cid, target.room);
 
   const found = useAppState(
     (state) =>

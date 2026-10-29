@@ -173,6 +173,7 @@ export function createRoomsGateway(
           type: spec.type,
           name: spec.type === 'text' ? slugify(spec.name) : spec.name.trim(),
           topic: spec.topic.trim() || null,
+          ...(spec.access ? { access: spec.access, role_ids: spec.roleIds ?? [] } : {}),
         }),
       );
 
@@ -191,6 +192,9 @@ export function createRoomsGateway(
 
       return r.ok ? ok({ id: from }) : r;
     },
+
+    setAccess: (cid, rid, access, roleIds) =>
+      change(cid, rid, (id) => roomUpdate(id, { access, role_ids: roleIds }), 200),
 
     archive: (cid, id) => change(cid, id, roomArchive, 200),
     restore: (cid, id) => change(cid, id, roomRestore, 200),

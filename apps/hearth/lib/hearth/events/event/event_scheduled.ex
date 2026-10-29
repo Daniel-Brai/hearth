@@ -3,21 +3,22 @@ defmodule Hearth.Events.EventScheduled do
 
   alias Hearth.Common.T
 
-  @fields ~w[event_id community_id host_id notify]a
+  @fields ~w[event_id community_id room_id host_id notify]a
   @enforce_keys @fields
   defstruct @fields
 
   @type t :: %__MODULE__{
           event_id: T.id(),
           community_id: T.id(),
+          room_id: nil | T.id(),
           host_id: T.id(),
           notify: boolean()
         }
 
   @impl Hearth.PubSub.WebsocketEvent
-  def broadcast_on(%__MODULE__{community_id: id}), do: "community:#{id}"
+  def broadcast_on(%__MODULE__{community_id: id}), do: "rooms:#{id}"
 
   @impl Hearth.PubSub.WebsocketEvent
   def broadcast_with(%__MODULE__{} = event),
-    do: Map.take(event, ~w[event_id community_id host_id]a)
+    do: Map.take(event, ~w[event_id community_id room_id host_id]a)
 end

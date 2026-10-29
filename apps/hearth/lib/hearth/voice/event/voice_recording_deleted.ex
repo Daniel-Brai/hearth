@@ -17,7 +17,7 @@ defmodule Hearth.Voice.VoiceRecordingDeleted do
 
   @impl Hearth.PubSub.WebsocketEvent
   def broadcast_on(%__MODULE__{} = event) do
-    topic = "community:#{event.community_id}"
+    topic = "rooms:#{event.community_id}"
 
     if event.post_id, do: ["post:#{event.post_id}", topic], else: [topic]
   end

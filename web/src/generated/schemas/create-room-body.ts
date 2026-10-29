@@ -3,9 +3,11 @@
  * Hearth
  * OpenAPI spec version: 2026-10-24
  */
+import type { CreateRoomBodyAccess } from './create-room-body-access';
 import type { CreateRoomBodyType } from './create-room-body-type';
 
 export interface CreateRoomBody {
+  access?: CreateRoomBodyAccess;
   /**
    * @minLength 1
    * @maxLength 40
@@ -13,6 +15,7 @@ export interface CreateRoomBody {
   name: string;
   /** @minimum 0 */
   position?: number;
+  role_ids?: string[];
   /**
    * @maxLength 200
    * @nullable

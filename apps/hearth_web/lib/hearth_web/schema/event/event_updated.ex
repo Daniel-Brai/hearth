@@ -5,10 +5,11 @@ defmodule HearthWeb.Schema.Event.EventUpdated do
     title: "EventUpdated",
     type: :object,
     description: "On community:<id>, moved is true when its time did",
-    required: ~w[event_id community_id moved]a,
+    required: ~w[event_id community_id room_id moved]a,
     properties: %{
       event_id: uuid(),
       community_id: uuid(),
+      room_id: nullable(uuid()),
       moved: boolean()
     }
   }

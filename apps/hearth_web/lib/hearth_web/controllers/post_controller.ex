@@ -172,7 +172,7 @@ defmodule HearthWeb.PostController do
 
     attrs = params |> Map.take(~w[kind_id title]) |> Common.atomize_string_keys()
 
-    with {:ok, room} <- Communities.get_room(id: room_id, type: :text),
+    with {:ok, room} <- Communities.view_room(auth, id: room_id, type: :text),
          {:ok, post} <- Forum.promote(auth, room, message_ids, attrs) do
       conn
       |> put_status(:created)

@@ -97,14 +97,17 @@ defmodule Hearth.Forum do
     end
   end
 
-  # The first message becomes the post and the rest its replies, each under the person who wrote it
+  # The first message becomes the post and the rest its replies, each under the person who wrote it.
+  # A private room's messages stay in it, since a post shows to everyone
   @spec promote(User.t(), Room.t(), [T.id()], map()) ::
           {:ok, Post.t()}
-          | {:error, :forbidden | :unknown_kind | :invalid_messages | Changeset.t()}
+          | {:error,
+             :forbidden | :private_room | :unknown_kind | :invalid_messages | Changeset.t()}
   def promote(%User{} = user, %Room{} = room, message_ids, %{} = params) do
     kind_id = params[:kind_id] || params["kind_id"]
 
     with :ok <- authorize(user, :promote, :chat, room.community_id),
+         :ok <- open_room(room),
          {:ok, messages} <- Chat.get_promotable(room, message_ids),
          {:ok, community} <- Communities.get_community(id: room.community_id),
          {:ok, kind} <- fetch_kind(community.id, kind_id),
@@ -120,6 +123,9 @@ defmodule Hearth.Forum do
       {:ok, post}
     end
   end
+
+  defp open_room(%Room{access: :everyone}), do: :ok
+  defp open_room(%Room{}), do: {:error, :private_room}
 
   @spec get_post(keyword()) :: {:ok, Post.t()} | {:error, :not_found}
   def get_post(opts) when is_list(opts) do

@@ -4,6 +4,7 @@ defmodule HearthWeb.RoomControllerTest do
   alias Faker.Lorem
   alias Hearth.Communities
   alias Hearth.IAM
+  alias Hearth.IAM.Role
   alias Hearth.TestUtils
 
   setup do
@@ -48,9 +49,47 @@ defmodule HearthWeb.RoomControllerTest do
 
       assert response["name"] == body.name
     end
+
+    test "adds a private room", %{conn: conn, owner: owner, community: community} do
+      moderator = Role.get(community_id: community.id, key: "moderator")
+      body = %{name: Lorem.word(), access: "roles", role_ids: [moderator.id]}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> post(~p"/api/communities/#{community.id}/rooms", body)
+               |> valid_response(201)
+
+      assert response["access"] == "roles"
+      assert response["role_ids"] == [moderator.id]
+    end
   end
 
   describe "update" do
+    test "fails for a private room the member can't see", %{conn: conn, community: community} do
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      assert %{"code" => "not_found"} =
+               conn
+               |> auth_conn(member)
+               |> patch(~p"/api/rooms/#{room.id}", %{name: Lorem.word()})
+               |> valid_response(404)
+    end
+
+    test "opens a private room to everyone", %{conn: conn, owner: owner, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      body = %{access: "everyone"}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/rooms/#{room.id}", body)
+               |> valid_response(200)
+
+      assert response["access"] == "everyone"
+    end
+
     test "changes a room", %{conn: conn, owner: owner, community: community} do
       {:ok, room} = Communities.create_room(owner, community, %{name: Lorem.word()})
       body = %{topic: Lorem.sentence()}

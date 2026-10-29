@@ -2,6 +2,7 @@ defmodule HearthWeb.VoiceChannelTest do
   # Sessions and peers run in their own processes and write to the database.
   use HearthWeb.ChannelCase, async: false
 
+  alias Hearth.Communities
   alias Hearth.TestUtils
   alias Hearth.Voice
   alias Hearth.Voice.VoiceParticipantChanged
@@ -35,6 +36,38 @@ defmodule HearthWeb.VoiceChannelTest do
 
       assert {:error, %{reason: "not_live"}} =
                owner |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+    end
+
+    test "fails for a private room the member can't see", %{
+      owner: owner,
+      member: member,
+      session: session
+    } do
+      {:ok, room} = Communities.get_room(id: session.room_id)
+      {:ok, _room} = Communities.update_room(owner, room, %{access: :roles, role_ids: []})
+
+      assert {:error, %{reason: "not_found"}} =
+               member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+    end
+
+    test "drops someone who loses the room", %{
+      owner: owner,
+      community: community,
+      member: member,
+      session: session
+    } do
+      {:ok, room} = Communities.get_room(id: session.room_id)
+      {:ok, _room} = Communities.update_room(owner, room, %{access: :roles, role_ids: []})
+      # Moderators see every private room through room.update
+      {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["moderator"])
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
+      Process.unlink(socket.channel_pid)
+
+      {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["member"])
+      room_id = room.id
+
+      assert_push "room_hidden", %{room_id: ^room_id}, 1_000
     end
 
     test "joins and gets the first offer", %{owner: owner, member: member, session: session} do

@@ -47,7 +47,7 @@ defmodule HearthWeb.RecordingController do
   }
 
   def room_index(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
-    with {:ok, room} <- Communities.get_room(id: id),
+    with {:ok, room} <- Communities.view_room(auth, id: id),
          {:ok, page} <- Voice.list_room_recordings(auth, room, Paging.opts(conn)) do
       render(conn, :page, page: page)
     end
@@ -100,7 +100,8 @@ defmodule HearthWeb.RecordingController do
   @validate %{"id" => ~V[required|uuid]}
 
   def show(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
-    with {:ok, recording} <- Voice.get_recording(auth, id) do
+    with {:ok, recording} <- Voice.get_recording(auth, id),
+         {:ok, _room} <- Communities.view_room(auth, id: recording.room_id) do
       render(conn, :show, recording: recording)
     end
   end

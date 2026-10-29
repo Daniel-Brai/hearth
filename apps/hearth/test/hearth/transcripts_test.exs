@@ -2,6 +2,7 @@ defmodule Hearth.TranscriptsTest do
   use Hearth.DataCase, async: true
 
   alias Hearth.Common
+  alias Hearth.Communities
   alias Hearth.TestUtils
   alias Hearth.Transcripts
   alias Hearth.Transcripts.Segment
@@ -23,6 +24,17 @@ defmodule Hearth.TranscriptsTest do
   describe "get_for_session/2" do
     test "fails for someone outside the community", %{outsider: outsider, session: session} do
       assert {:error, :forbidden} = Transcripts.get_for_session(outsider, session.id)
+    end
+
+    test "fails in a private room they can't see", %{
+      owner: owner,
+      member: member,
+      session: session
+    } do
+      {:ok, room} = Communities.get_room(id: session.room_id)
+      {:ok, _room} = Communities.update_room(owner, room, %{access: :roles, role_ids: []})
+
+      assert {:error, :not_found} = Transcripts.get_for_session(member, session.id)
     end
 
     test "fails for a session without one", %{member: member} do

@@ -7,6 +7,7 @@ defmodule Hearth.Communities do
     MemberLeft,
     OwnershipTransferred,
     RequestDecided,
+    RoomAccessChanged,
     RoomChanged
   ]
 
@@ -41,6 +42,7 @@ defmodule Hearth.Communities do
   alias Hearth.Communities.Command.CreateCommunity
   alias Hearth.Communities.Command.EmailInvite
   alias Hearth.Communities.Command.RevokeEmailInvite
+  alias Hearth.Communities.Command.SaveRoom
   alias Hearth.Communities.Command.TransferOwnership
   alias Hearth.Communities.Community
   alias Hearth.Communities.CommunityCreated
@@ -55,6 +57,7 @@ defmodule Hearth.Communities do
   alias Hearth.Communities.Request
   alias Hearth.Communities.RequestDecided
   alias Hearth.Communities.Room
+  alias Hearth.Communities.RoomAccessChanged
   alias Hearth.Communities.RoomChanged
   alias Hearth.Communities.Template
   alias Hearth.IAM
@@ -254,15 +257,21 @@ defmodule Hearth.Communities do
   def update_role(%User{}, %Role{key: @owner_role}, %{}), do: {:error, :forbidden}
 
   def update_role(%User{} = user, %Role{} = role, %{} = params) do
-    with :ok <- authorize(user, :update, :role, role) do
-      IAM.update_role(role, Map.take(params, @role_fields))
+    with :ok <- authorize(user, :update, :role, role),
+         {:ok, role} <- IAM.update_role(role, Map.take(params, @role_fields)) do
+      broadcast(%RoomAccessChanged{community_id: role.community_id})
+      {:ok, role}
     end
   end
 
   @spec delete_role(User.t(), Role.t()) ::
           {:ok, Role.t()} | {:error, :forbidden | :system_role | :default_role}
   def delete_role(%User{} = user, %Role{} = role) do
-    with :ok <- authorize(user, :update, :role, role), do: IAM.delete_role(role)
+    with :ok <- authorize(user, :update, :role, role),
+         {:ok, role} <- IAM.delete_role(role) do
+      broadcast(%RoomAccessChanged{community_id: role.community_id})
+      {:ok, role}
+    end
   end
 
   # Ownership moves only through transfer_ownership/3
@@ -272,8 +281,10 @@ defmodule Hearth.Communities do
       when is_list(keys) do
     with :ok <- authorize(user, :update, :role, community),
          true <- @owner_role not in keys and member.id != community.owner_id,
-         {:ok, membership} <- IAM.get_membership(member, community.id) do
-      IAM.set_roles(membership, keys)
+         {:ok, membership} <- IAM.get_membership(member, community.id),
+         {:ok, membership} <- IAM.set_roles(membership, keys) do
+      broadcast(%RoomAccessChanged{community_id: community.id, user_id: member.id})
+      {:ok, membership}
     else
       false -> {:error, :forbidden}
       error -> error
@@ -314,12 +325,59 @@ defmodule Hearth.Communities do
 
   def transfer_ownership(%User{}, %Community{}, %User{}, _code), do: {:error, :forbidden}
 
+  # Every room, private or not, for work that isn't shown to a person
   @spec list_rooms(Community.t()) :: [Room.t()]
   def list_rooms(%Community{id: id}), do: Room.for_community(id)
 
   @spec list_rooms([T.id()], :text | :voice) :: [Room.t()]
   def list_rooms(community_ids, type) when is_list(community_ids) and type in [:text, :voice],
     do: Room.all(community_id: community_ids, type: type, archived_at: nil)
+
+  @spec list_visible_rooms(Community.t(), nil | User.t()) :: [Room.t()]
+  def list_visible_rooms(%Community{id: id}, nil),
+    do: Room.for_community(id, %{role_ids: [], managed: []})
+
+  def list_visible_rooms(%Community{id: id}, %User{} = user),
+    do: Room.for_community(id, sight(user, [id]))
+
+  @spec list_visible_rooms([T.id()], :text | :voice, User.t()) :: [Room.t()]
+  def list_visible_rooms(community_ids, type, %User{} = user)
+      when is_list(community_ids) and type in [:text, :voice] do
+    Room.visible(
+      [community_id: community_ids, type: type, archived_at: nil],
+      sight(user, community_ids)
+    )
+  end
+
+  # Members see rooms for everyone. Private rooms need one of their roles, or room.update
+  @spec room_visible?(nil | User.t(), Room.t()) :: boolean()
+  def room_visible?(nil, %Room{}), do: false
+
+  def room_visible?(%User{} = user, %Room{access: :everyone} = room),
+    do: IAM.member?(user, room.community_id)
+
+  def room_visible?(%User{} = user, %Room{} = room),
+    do: Room.visible?(room, sight(user, [room.community_id]))
+
+  # Rooms for everyone are left to each caller's own member checks
+  @spec room_hidden?(nil | User.t(), Room.t()) :: boolean()
+  def room_hidden?(_viewer, %Room{access: :everyone}), do: false
+  def room_hidden?(viewer, %Room{} = room), do: not room_visible?(viewer, room)
+
+  @spec hidden_room_ids(nil | User.t(), [T.id()]) :: [T.id()]
+  def hidden_room_ids(nil, community_ids) when is_list(community_ids),
+    do: for(room <- Room.all(community_id: community_ids, access: :roles), do: room.id)
+
+  def hidden_room_ids(%User{} = user, community_ids) when is_list(community_ids) do
+    seen =
+      [community_id: community_ids, access: :roles]
+      |> Room.visible(sight(user, community_ids))
+      |> MapSet.new(& &1.id)
+
+    nil
+    |> hidden_room_ids(community_ids)
+    |> Enum.reject(&MapSet.member?(seen, &1))
+  end
 
   @spec moderation_level(Community.t(), nil | Room.t()) :: :full | :reports | :none
   def moderation_level(%Community{moderation: level}, nil), do: level
@@ -336,11 +394,23 @@ defmodule Hearth.Communities do
     end
   end
 
+  # A private room the viewer can't see answers not found, so nothing shows that it exists
+  @spec view_room(nil | User.t(), keyword()) :: {:ok, Room.t()} | {:error, :not_found}
+  def view_room(viewer, opts) when is_list(opts) do
+    with {:ok, room} <- get_room(opts) do
+      case room_hidden?(viewer, room) do
+        true -> {:error, :not_found}
+        false -> {:ok, room}
+      end
+    end
+  end
+
   @spec create_room(User.t(), Community.t(), map()) ::
           {:ok, Room.t()} | {:error, :forbidden | Changeset.t()}
   def create_room(%User{} = user, %Community{} = community, %{} = params) do
     with :ok <- authorize(user, :update, :room, community),
-         {:ok, room} <- Room.insert(%Room{community_id: community.id}, params) do
+         role_ids = role_ids_in(community.id, params),
+         {:ok, room} <- SaveRoom.execute(%Room{community_id: community.id}, params, role_ids) do
       broadcast(%RoomChanged{community_id: community.id, room_id: room.id})
       {:ok, room}
     end
@@ -350,9 +420,11 @@ defmodule Hearth.Communities do
           {:ok, Room.t()} | {:error, :forbidden | Changeset.t()}
   def update_room(%User{} = user, %Room{} = room, %{} = params) do
     with :ok <- authorize(user, :update, :room, room),
-         {:ok, room} <- Room.update(room, params) do
-      broadcast(%RoomChanged{community_id: room.community_id, room_id: room.id})
-      {:ok, room}
+         role_ids = role_ids_in(room.community_id, params),
+         {:ok, updated} <- SaveRoom.execute(room, params, role_ids) do
+      broadcast(%RoomChanged{community_id: updated.community_id, room_id: updated.id})
+      access_changed(room, updated, role_ids)
+      {:ok, updated}
     end
   end
 
@@ -657,6 +729,26 @@ defmodule Hearth.Communities do
       false -> {:error, :forbidden}
     end
   end
+
+  defp sight(user, community_ids) do
+    %{
+      role_ids: IAM.role_ids(user, community_ids),
+      managed: IAM.communities_with(user, "room.update", community_ids)
+    }
+  end
+
+  # Unknown role ids and roles from another community are dropped, as set_roles does with keys
+  defp role_ids_in(community_id, params) do
+    case params[:role_ids] || params["role_ids"] do
+      nil -> nil
+      ids -> community_id |> IAM.list_roles() |> Enum.map(& &1.id) |> Enum.filter(&(&1 in ids))
+    end
+  end
+
+  defp access_changed(%Room{access: access}, %Room{access: access}, nil), do: :ok
+
+  defp access_changed(_room, %Room{} = updated, _role_ids),
+    do: broadcast(%RoomAccessChanged{community_id: updated.community_id, room_id: updated.id})
 
   defp broadcast(event), do: PubSub.broadcast(@topic, event)
 end

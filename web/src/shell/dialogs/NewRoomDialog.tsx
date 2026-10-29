@@ -14,6 +14,8 @@ import {
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { voiceOn } from '@/domain/selectors';
+import type { RoomAccess } from '@/domain/types';
+import { RoomAccessField } from '@/features/rooms/RoomAccessField';
 import { routes, slugify } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 
@@ -34,6 +36,8 @@ export function NewRoomDialog() {
   const [type, setType] = useState<RoomType>('text');
   const [name, setName] = useState('');
   const [topic, setTopic] = useState('');
+  const [access, setAccess] = useState<RoomAccess>('everyone');
+  const [roleIds, setRoleIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,7 +48,9 @@ export function NewRoomDialog() {
   const submit = async () => {
     setBusy(true);
 
-    const r = await gateway.rooms.create(cid, { type, name, topic }).finally(() => setBusy(false));
+    const r = await gateway.rooms
+      .create(cid, { type, name, topic, access, roleIds })
+      .finally(() => setBusy(false));
 
     if (!r.ok) {
       setError(r.error);
@@ -137,6 +143,16 @@ export function NewRoomDialog() {
             placeholder={type === 'text' ? 'What this room is for' : 'What people talk about here'}
           />
         </Field>
+
+        <RoomAccessField
+          cid={cid}
+          access={access}
+          roleIds={roleIds}
+          onChange={(nextAccess, nextRoles) => {
+            setAccess(nextAccess);
+            setRoleIds(nextRoles);
+          }}
+        />
 
         <DialogFooter>
           <Button onClick={close}>Cancel</Button>

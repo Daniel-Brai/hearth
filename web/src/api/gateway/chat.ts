@@ -21,7 +21,7 @@ import { toAttachments, toMessage, toPerson, timeOf } from '../mappers';
 import type { Topic } from '../realtime';
 import { setCount, setMine } from './boosts';
 import type { GatewayContext } from './context';
-import { call, failed } from './context';
+import { call, errorCode, failed } from './context';
 
 type Place = { kind: 'room' | 'conversation'; id: string };
 type Paging = { parent_id?: string };
@@ -150,6 +150,10 @@ export function createChatGateway(
           realtime.onPush(t, 'MessageRemoved', (e) => void refresh(key, e.message_id, true)),
           realtime.onPush(t, 'ContentRemoved', (e) => void refresh(key, e.subject_id, false)),
           realtime.onPush(t, 'ContentRestored', (e) => void refresh(key, e.subject_id, false)),
+          realtime.onPush(t, 'room_hidden', () => {
+            const [cid, rid] = key.split('/');
+            if (cid && rid) ctx.dropRoom(cid, rid);
+          }),
         ];
 
         return () => stops.forEach((stop) => stop());
@@ -363,6 +367,9 @@ export function createChatGateway(
       const answer = await call(() =>
         postPromote(roomId, { message_ids: ids, kind_id: kindId, title: spec.title.trim() }),
       );
+
+      if (errorCode(answer) === 'private_room')
+        return fail("Messages in a private room can't become a post.");
 
       if (answer.status !== 201) return failed(answer);
 

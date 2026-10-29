@@ -8,7 +8,9 @@ defmodule HearthWeb.Schema.UpdateRoomBody do
     properties: %{
       name: string(minLength: 1, maxLength: 40),
       topic: nullable(string(maxLength: 200)),
-      position: integer(minimum: 0)
+      position: integer(minimum: 0),
+      access: enum(~w[everyone roles]),
+      role_ids: array_of(uuid())
     }
   }
 end

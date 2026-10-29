@@ -19,6 +19,7 @@ defmodule Hearth.TestUtils do
   alias Hearth.Communities
   alias Hearth.Events
   alias Hearth.Forum
+  alias Hearth.IAM
   alias Hearth.Media
   alias Hearth.Notifications
   alias Hearth.Notifications.Channel.Mail
@@ -657,6 +658,22 @@ defmodule Hearth.TestUtils do
   def live_of!(session) do
     _children = DynamicSupervisor.which_children(LiveSupervisor)
     Live.whereis(session.id)
+  end
+
+  def create_random_private_room!(community, role_keys, opts \\ []) do
+    {:ok, owner} = Accounts.get_user(id: community.owner_id)
+    role_ids = for role <- IAM.list_roles(community.id), role.key in role_keys, do: role.id
+
+    params = %{
+      name: "Private #{System.unique_integer([:positive])}",
+      type: Keyword.get(opts, :type, :text),
+      access: :roles,
+      role_ids: role_ids
+    }
+
+    {:ok, room} = Communities.create_room(owner, community, params)
+
+    room
   end
 
   def create_random_voice_room!(community) do

@@ -33,6 +33,7 @@ const community: Community = {
       topic: null,
       position: 0,
       moderation: null,
+      access: 'everyone',
       archived_at: null,
     },
     {
@@ -44,6 +45,7 @@ const community: Community = {
       topic: 'Hang out',
       position: 1,
       moderation: null,
+      access: 'everyone',
       archived_at: null,
     },
     {
@@ -55,6 +57,7 @@ const community: Community = {
       topic: null,
       position: 2,
       moderation: null,
+      access: 'everyone',
       archived_at: at(5),
     },
   ],

@@ -10,7 +10,9 @@ defmodule HearthWeb.Schema.CreateRoomBody do
       name: string(minLength: 1, maxLength: 40),
       type: enum(~w[text voice]),
       topic: nullable(string(maxLength: 200)),
-      position: integer(minimum: 0)
+      position: integer(minimum: 0),
+      access: enum(~w[everyone roles]),
+      role_ids: array_of(uuid())
     }
   }
 end

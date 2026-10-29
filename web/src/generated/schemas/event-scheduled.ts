@@ -11,4 +11,6 @@ export interface EventScheduled {
   community_id: string;
   event_id: string;
   host_id: string;
+  /** @nullable */
+  room_id: string | null;
 }

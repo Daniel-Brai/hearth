@@ -5,10 +5,11 @@ defmodule HearthWeb.Schema.Event.EventScheduled do
     title: "EventScheduled",
     type: :object,
     description: "On community:<id>",
-    required: ~w[event_id community_id host_id]a,
+    required: ~w[event_id community_id room_id host_id]a,
     properties: %{
       event_id: uuid(),
       community_id: uuid(),
+      room_id: nullable(uuid()),
       host_id: uuid()
     }
   }

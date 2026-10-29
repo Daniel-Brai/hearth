@@ -207,22 +207,29 @@ defmodule Hearth.Events.Event do
     end
   end
 
-  @spec sitemap_entries(T.id()) :: [map()]
-  def sitemap_entries(community_id) do
+  @spec sitemap_entries(T.id(), [T.id()]) :: [map()]
+  def sitemap_entries(community_id, hidden_room_ids) do
     __MODULE__
     |> where([e], e.community_id == ^community_id and is_nil(e.cancelled_at))
+    |> outside_rooms(hidden_room_ids)
     |> order_by(asc: :starts_at, asc: :id)
     |> select([e], %{id: e.id, title: e.title, updated_at: e.updated_at})
     |> Repo.all()
   end
 
-  @spec sitemap_counts([T.id()]) :: %{T.id() => non_neg_integer()}
-  def sitemap_counts(community_ids) do
+  @spec sitemap_counts([T.id()], [T.id()]) :: %{T.id() => non_neg_integer()}
+  def sitemap_counts(community_ids, hidden_room_ids) do
     __MODULE__
     |> where([e], e.community_id in ^community_ids and is_nil(e.cancelled_at))
+    |> outside_rooms(hidden_room_ids)
     |> group_by([e], e.community_id)
     |> select([e], {e.community_id, count(e.id)})
     |> Repo.all()
     |> Map.new()
   end
+
+  defp outside_rooms(query, []), do: query
+
+  defp outside_rooms(query, room_ids),
+    do: where(query, [e], is_nil(e.room_id) or e.room_id not in ^room_ids)
 end

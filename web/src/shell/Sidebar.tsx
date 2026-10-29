@@ -40,6 +40,7 @@ import { brandFor } from '@/runtime/brand';
 import { AccountMenu } from './AccountMenu';
 import { PersonAvatar } from './people';
 import { useRouteContext } from './use-route-context';
+import { PrivateLock } from '@/features/rooms/PrivateLock';
 
 export function Sidebar() {
   const openDialog = useUi((s) => s.openDialog);
@@ -367,6 +368,7 @@ function CommunitySection({ cid, open }: { readonly cid: string; readonly open: 
               <Icon name="hash" />
             </span>
             <span className="side-link__name">{r.name}</span>
+            <PrivateLock room={r} />
             {r.unread ? <Badge count={r.unread} /> : null}
           </NavLink>
         ))}
@@ -377,6 +379,7 @@ function CommunitySection({ cid, open }: { readonly cid: string; readonly open: 
               <Icon name="volume" />
             </span>
             <span className="side-link__name">{v.name}</span>
+            <PrivateLock room={v} />
             {v.live ? <Badge red count={v.listeners} /> : null}
           </NavLink>
         ))}

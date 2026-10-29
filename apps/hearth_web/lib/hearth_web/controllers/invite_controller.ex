@@ -104,7 +104,7 @@ defmodule HearthWeb.InviteController do
         usable: Communities.invite_usable?(invite),
         inviter: inviter,
         role_name: role_name,
-        community: CommunityExtras.put_one(invite.community)
+        community: CommunityExtras.put_one(invite.community, nil)
       )
     end
   end

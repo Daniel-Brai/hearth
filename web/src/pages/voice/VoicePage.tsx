@@ -20,6 +20,8 @@ import { routes } from '@/runtime/routes';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { PageHeader } from '@/shell/PageHeader';
 import { PageMeta } from '@/shell/PageMeta';
+import { PrivateLock } from '@/features/rooms/PrivateLock';
+import { useLeaveHiddenRoom } from '@/features/rooms/use-leave-hidden-room';
 import { RoomRecordings } from './RoomRecordings';
 import { IdleRoomCard } from './IdleRoomCard';
 import { JoinCard } from './JoinCard';
@@ -71,6 +73,7 @@ function VoiceLoader({ cid, rid }: { readonly cid: string; readonly rid: string 
   const gateway = useGateway();
 
   useLoad(() => gateway.load.voice(cid, rid), `voice:${cid}/${rid}`);
+  useLeaveHiddenRoom(cid, rid);
 
   const exists = useAppState((state) => !!community(state, cid)?.voice.some((v) => v.id === rid));
 
@@ -105,7 +108,11 @@ function VoiceView({ cid, rid }: { readonly cid: string; readonly rid: string })
         label={view.name}
         confirmBack={view.inRoom ? confirmLeave : undefined}
         eyebrow={view.communityName}
-        title={view.name}
+        title={
+          <>
+            {view.name} <PrivateLock room={view} />
+          </>
+        }
         endActions={
           <>
             {/* Inside the room the tray already says it's on air */}
@@ -184,6 +191,7 @@ function voiceView(state: AppState, cid: string, rid: string, key: string) {
     communityName: c.name,
     member: c.joined,
     name: room.name,
+    access: room.access,
     live: room.live,
     host: room.host,
     postId: room.postId,

@@ -65,6 +65,9 @@ export type ChannelEvents = {
   VoiceRecordingDeleted: VoiceRecordingDeleted;
   VoiceRecordingRenamed: VoiceRecordingRenamed;
   TranscriptReady: TranscriptReady;
+  room_access_changed: { community_id: string };
+  // Sent on a room or voice topic to someone who can no longer see the room
+  room_hidden: { room_id: string };
 };
 
 export type VoiceEvents = {

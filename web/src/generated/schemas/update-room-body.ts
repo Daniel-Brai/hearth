@@ -3,8 +3,10 @@
  * Hearth
  * OpenAPI spec version: 2026-10-24
  */
+import type { UpdateRoomBodyAccess } from './update-room-body-access';
 
 export interface UpdateRoomBody {
+  access?: UpdateRoomBodyAccess;
   /**
    * @minLength 1
    * @maxLength 40
@@ -12,6 +14,7 @@ export interface UpdateRoomBody {
   name?: string;
   /** @minimum 0 */
   position?: number;
+  role_ids?: string[];
   /**
    * @maxLength 200
    * @nullable

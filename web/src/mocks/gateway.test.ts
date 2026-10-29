@@ -218,7 +218,55 @@ describe('permissions', () => {
   });
 });
 
+const roomIds = (cid: string) => store.get().communities[cid]?.rooms.map((r) => r.id);
+
 describe('rooms', () => {
+  it('hides a private room from members without its roles', async () => {
+    await gateway.rooms.create('plang', {
+      type: 'text',
+      name: 'core',
+      topic: '',
+      access: 'roles',
+      roleIds: ['moderator'],
+    });
+
+    expect(roomIds('plang')).toContain('core');
+
+    store.set((state) => {
+      state.me = 'marco';
+    });
+
+    expect(roomIds('plang')).not.toContain('core');
+  });
+
+  it('shows a private room once someone holds its role', async () => {
+    await gateway.rooms.setAccess('plang', 'general', 'roles', ['moderator']);
+
+    store.set((state) => {
+      state.me = 'marco';
+    });
+
+    expect(roomIds('plang')).not.toContain('general');
+
+    store.set((state) => {
+      state.roles.find((r) => r.c === 'plang' && r.id === 'moderator')!.members.push('marco');
+    });
+
+    expect(roomIds('plang')).toContain('general');
+  });
+
+  it('refuses to turn messages from a private room into a post', async () => {
+    await gateway.rooms.setAccess('plang', 'general', 'roles', ['moderator']);
+
+    const [message] = store.get().chats['plang/general']!.filter((m) => !m.system);
+    const r = await gateway.chat.promote('plang/general', [message!.id], {
+      title: 'From chat',
+      kind: 'Question',
+    });
+
+    expect(r).toEqual({ ok: false, error: "Messages in a private room can't become a post." });
+  });
+
   it('archives a room and brings it back', async () => {
     expect((await gateway.rooms.archive('plang', 'general')).ok).toBe(true);
     expect(store.get().communities.plang?.rooms.some((r) => r.id === 'general')).toBe(false);

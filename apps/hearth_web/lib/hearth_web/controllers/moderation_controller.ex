@@ -339,7 +339,7 @@ defmodule HearthWeb.ModerationController do
     %Conn{assigns: %{auth: auth}} = conn
     %{"id" => id} = params
 
-    with {:ok, room} <- Communities.get_room(id: id),
+    with {:ok, room} <- Communities.view_room(auth, id: id),
          {:ok, room} <- Moderation.set_level(auth, room, Common.to_atom(params["level"])),
          {:ok, community} <- Communities.get_community(id: room.community_id) do
       render(conn, :level, level: room.moderation, effective: Moderation.level(community, room))

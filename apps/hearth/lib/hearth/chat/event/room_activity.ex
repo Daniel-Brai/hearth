@@ -12,5 +12,5 @@ defmodule Hearth.Chat.RoomActivity do
   @type t :: %__MODULE__{room_id: T.id(), community_id: T.id()}
 
   @impl Hearth.PubSub.WebsocketEvent
-  def broadcast_on(%__MODULE__{community_id: id}), do: "community:#{id}"
+  def broadcast_on(%__MODULE__{community_id: id}), do: "rooms:#{id}"
 end

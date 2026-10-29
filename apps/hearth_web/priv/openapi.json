@@ -1324,6 +1324,12 @@
         "title": "CreateRoomBody",
         "additionalProperties": false,
         "properties": {
+          "access": {
+            "enum": [
+              "everyone",
+              "roles"
+            ]
+          },
           "name": {
             "maxLength": 40,
             "minLength": 1,
@@ -1332,6 +1338,13 @@
           "position": {
             "minimum": 0,
             "type": "integer"
+          },
+          "role_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
           },
           "topic": {
             "maxLength": 200,
@@ -1606,11 +1619,19 @@
           "event_id": {
             "format": "uuid",
             "type": "string"
+          },
+          "room_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "event_id",
           "community_id",
+          "room_id",
           "cancelled_by_id"
         ],
         "type": "object"
@@ -1630,11 +1651,19 @@
           "host_id": {
             "format": "uuid",
             "type": "string"
+          },
+          "room_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "event_id",
           "community_id",
+          "room_id",
           "host_id"
         ],
         "type": "object"
@@ -1653,11 +1682,19 @@
           },
           "moved": {
             "type": "boolean"
+          },
+          "room_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "event_id",
           "community_id",
+          "room_id",
           "moved"
         ],
         "type": "object"
@@ -4633,6 +4670,12 @@
       "Room": {
         "title": "Room",
         "properties": {
+          "access": {
+            "enum": [
+              "everyone",
+              "roles"
+            ]
+          },
           "archived_at": {
             "format": "date-time",
             "type": [
@@ -4662,6 +4705,14 @@
           "position": {
             "type": "integer"
           },
+          "role_ids": {
+            "description": "Who can see a private room, for people with room.update",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
           "slug": {
             "type": "string"
           },
@@ -4687,6 +4738,7 @@
           "topic",
           "position",
           "moderation",
+          "access",
           "archived_at"
         ],
         "type": "object"
@@ -5298,6 +5350,13 @@
             "format": "uuid",
             "type": "string"
           },
+          "room_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "session_id": {
             "format": "uuid",
             "type": "string"
@@ -5312,6 +5371,7 @@
           "session_id",
           "recording_id",
           "community_id",
+          "room_id",
           "post_id",
           "event_id"
         ],
@@ -5806,6 +5866,12 @@
         "title": "UpdateRoomBody",
         "additionalProperties": false,
         "properties": {
+          "access": {
+            "enum": [
+              "everyone",
+              "roles"
+            ]
+          },
           "name": {
             "maxLength": 40,
             "minLength": 1,
@@ -5814,6 +5880,13 @@
           "position": {
             "minimum": 0,
             "type": "integer"
+          },
+          "role_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
           },
           "topic": {
             "maxLength": 200,

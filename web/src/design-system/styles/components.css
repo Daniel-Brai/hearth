@@ -178,6 +178,7 @@ kbd, .keys kbd {
 .side-link__icon svg[aria-hidden] { inline-size: 1.05rem; block-size: 1.05rem; }
 .side-link__name { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .side-link.unread .side-link__name { font-weight: 800; }
+.room-lock { inline-size: 0.85em; block-size: 0.85em; flex: none; color: var(--color-ink-light); }
 .side-link .badge { margin-inline-start: auto; }
 .side-community summary { list-style: none; }
 .side-community summary::-webkit-details-marker { display: none; }

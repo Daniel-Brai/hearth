@@ -31,6 +31,7 @@ defmodule Hearth.Notifications.Listener.Events do
 
       event.user_ids
       |> Accounts.list_users()
+      |> Enum.filter(&Events.visible?(&1, scheduled))
       |> Enum.each(&Notifications.send(&1, notice))
     end
 

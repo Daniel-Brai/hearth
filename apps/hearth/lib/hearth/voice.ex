@@ -11,7 +11,14 @@ defmodule Hearth.Voice do
     VoiceSpeakingChanged
   ]
 
-  default = [Participant, Recording, Recording.Speaker, Session, Supervisor | events]
+  default = [
+    Listener.Communities,
+    Participant,
+    Recording,
+    Recording.Speaker,
+    Session,
+    Supervisor | events
+  ]
 
   exports =
     case Mix.env() do
@@ -40,6 +47,7 @@ defmodule Hearth.Voice do
     exports: exports
 
   alias Ecto.Changeset
+  alias Hearth.Accounts
   alias Hearth.Accounts.User
   alias Hearth.Common
   alias Hearth.Common.T
@@ -110,7 +118,7 @@ defmodule Hearth.Voice do
   def live_for(%User{} = user) do
     user
     |> IAM.community_ids()
-    |> Communities.list_rooms(:voice)
+    |> Communities.list_visible_rooms(:voice, user)
     |> Enum.map(& &1.id)
     |> Session.live_in_rooms()
   end
@@ -124,7 +132,7 @@ defmodule Hearth.Voice do
           | {:error, :already_live, Session.t()}
   def start_session(%User{} = user, %Room{} = room, %{} = params \\ %{}) do
     with :ok <- voice_room(room),
-         :ok <- may_read(user, room.community_id),
+         :ok <- may_read(user, room),
          :ok <- allowed(user, :create, room.community_id) do
       start(room, user.id, params)
     end
@@ -150,7 +158,7 @@ defmodule Hearth.Voice do
           | {:error, :forbidden | :no_voice_room | :rooms_busy | :unavailable | Changeset.t()}
           | {:error, :already_live, Session.t()}
   def discuss_live(%User{id: id} = user, %Post{author_id: id, status: :published} = post) do
-    with :ok <- may_read(user, post.community_id),
+    with :ok <- may_enter(user, post.community_id),
          :ok <- allowed(user, :create, post.community_id),
          nil <- Session.get(post_id: post.id, ended_at: nil),
          {:ok, room} <- free_room(post.community_id) do
@@ -167,9 +175,15 @@ defmodule Hearth.Voice do
   def live_on_posts(post_ids) when is_list(post_ids),
     do: post_ids |> Session.live_on_posts() |> Map.new(&{&1.post_id, &1})
 
+  # A post is for everyone in the community, so it is never discussed in a private room
   defp free_room(community_id) do
     {:ok, community} = Communities.get_community(id: community_id)
-    rooms = community |> Communities.list_rooms() |> Enum.filter(&(&1.type == :voice))
+
+    rooms =
+      community
+      |> Communities.list_rooms()
+      |> Enum.filter(&(&1.type == :voice and &1.access == :everyone))
+
     live = rooms |> Enum.map(& &1.id) |> Session.live_in_rooms() |> MapSet.new(& &1.room_id)
 
     case {rooms, Enum.reject(rooms, &MapSet.member?(live, &1.id))} do
@@ -286,7 +300,7 @@ defmodule Hearth.Voice do
     may_speak? = session.host_id == user.id or can?(user, :speak, session)
 
     Common.span("voice.join", %{session_id: session.id}, fn ->
-      with :ok <- may_read(user, session.community_id),
+      with :ok <- may_see(user, session),
            {:ok, live} <- live(session),
            {:ok, joined} <-
              Live.join(live, user.id, channel, Keyword.get(opts, :stage, true), may_speak?) do
@@ -309,7 +323,7 @@ defmodule Hearth.Voice do
 
   @spec snapshot(User.t(), Session.t()) :: {:ok, map()} | {:error, error()}
   def snapshot(%User{} = user, %Session{} = session) do
-    with :ok <- may_read(user, session.community_id),
+    with :ok <- may_see(user, session),
          {:ok, live} <- live(session) do
       {:ok, Live.snapshot(live)}
     end
@@ -400,9 +414,11 @@ defmodule Hearth.Voice do
   @spec list_recordings(User.t(), Recording.scope()) ::
           {:ok, [Recording.t()]} | {:error, :forbidden | :not_found}
   def list_recordings(%User{} = user, {_field, _id, community_id} = scope) do
-    with :ok <- may_read(user, community_id) do
+    with :ok <- may_enter(user, community_id) do
       failed? = IAM.can?(user, :create, %{type: :"voice.recording", community_id: community_id})
-      {:ok, Recording.list(scope, failed?)}
+      seen = [community_id] |> Communities.list_visible_rooms(:voice, user) |> MapSet.new(& &1.id)
+
+      {:ok, scope |> Recording.list(failed?) |> Enum.filter(&MapSet.member?(seen, &1.room_id))}
     end
   end
 
@@ -410,7 +426,7 @@ defmodule Hearth.Voice do
   @spec list_room_recordings(User.t(), Room.t(), keyword()) ::
           {:ok, Page.t()} | {:error, error() | Flop.Meta.t()}
   def list_room_recordings(%User{} = user, %Room{} = room, paging) when is_list(paging) do
-    with :ok <- may_read(user, room.community_id) do
+    with :ok <- may_read(user, room) do
       failed? =
         IAM.can?(user, :create, %{type: :"voice.recording", community_id: room.community_id})
 
@@ -439,7 +455,8 @@ defmodule Hearth.Voice do
   @spec get_recording(User.t(), T.id()) :: {:ok, Recording.t()} | {:error, error()}
   def get_recording(%User{} = user, id) do
     with %Recording{} = recording <- Recording.get(id: id),
-         :ok <- may_read(user, recording.community_id) do
+         {:ok, room} <- Communities.get_room(id: recording.room_id),
+         :ok <- may_read(user, room) do
       {:ok, recording}
     else
       nil -> {:error, :not_found}
@@ -550,6 +567,14 @@ defmodule Hearth.Voice do
     })
   end
 
+  # Each node handles the sessions it runs
+  @spec remove_hidden(T.id(), nil | T.id(), nil | T.id()) :: :ok
+  def remove_hidden(community_id, nil, user_id),
+    do: remove_hidden_in([community_id: community_id, ended_at: nil], user_id)
+
+  def remove_hidden(community_id, room_id, user_id),
+    do: remove_hidden_in([community_id: community_id, room_id: room_id, ended_at: nil], user_id)
+
   @spec host_tools?(User.t(), Session.t()) :: boolean()
   def host_tools?(%User{} = user, %Session{} = session), do: host_tools(user, session) == :ok
 
@@ -566,10 +591,53 @@ defmodule Hearth.Voice do
 
   defp live(%Session{}), do: {:error, :not_live}
 
+  defp remove_hidden_in(filters, user_id) do
+    filters
+    |> Session.all()
+    |> Enum.each(&remove_hidden_from(&1, user_id))
+  end
+
+  defp remove_hidden_from(session, user_id) do
+    with {:ok, live} <- local_live(session),
+         {:ok, room} <- Communities.get_room(id: session.room_id) do
+      session.id
+      |> Participant.present()
+      |> Enum.filter(&(user_id in [nil, &1.user_id] and not sees_room?(&1.user_id, room)))
+      |> Enum.each(&Live.act(live, {:remove, &1.user_id}))
+    end
+  end
+
+  defp local_live(session) do
+    case live(session) do
+      {:ok, pid} when node(pid) == node() -> {:ok, pid}
+      _elsewhere -> {:error, :not_live}
+    end
+  end
+
+  defp sees_room?(user_id, room) do
+    case Accounts.get_user(id: user_id) do
+      {:ok, user} -> Communities.room_visible?(user, room)
+      {:error, :not_found} -> false
+    end
+  end
+
   defp voice_room(%Room{type: :voice, archived_at: nil}), do: :ok
   defp voice_room(%Room{}), do: {:error, :not_found}
 
-  defp may_read(user, community_id) do
+  defp may_read(user, %Room{} = room) do
+    with :ok <- may_enter(user, room.community_id) do
+      case Communities.room_visible?(user, room) do
+        true -> :ok
+        false -> {:error, :not_found}
+      end
+    end
+  end
+
+  defp may_see(user, %Session{room_id: room_id}) do
+    with {:ok, room} <- Communities.get_room(id: room_id), do: may_read(user, room)
+  end
+
+  defp may_enter(user, community_id) do
     case IAM.member?(user, community_id) and not Communities.banned?(user, community_id) do
       true -> :ok
       false -> Communities.refusal(user, community_id)

@@ -369,6 +369,16 @@ defmodule Hearth.Voice.Live do
     end
   end
 
+  defp act_on({:remove, user_id}, state) do
+    with {:ok, _person} <- State.fetch(state.voice, user_id) do
+      peer = state.peers[user_id]
+      state = leave(state, user_id)
+      if peer, do: Peer.close(peer, :no_access)
+
+      {:ok, state}
+    end
+  end
+
   defp act_on({:leave, user_id}, state) do
     with {:ok, _person} <- State.fetch(state.voice, user_id) do
       peer = state.peers[user_id]

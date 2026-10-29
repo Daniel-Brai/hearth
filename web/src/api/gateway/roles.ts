@@ -24,6 +24,7 @@ const HUES: Record<string, Hue> = { owner: 'orange', moderator: 'blue', member: 
 const toRole = (role: ApiRole, cid: string): Role => ({
   c: cid,
   id: role.key,
+  uid: role.id,
   name: role.name,
   hue: HUES[role.key] ?? 'violet',
   members: [],

@@ -8,9 +8,7 @@ import { createSeedState } from '@/mocks/seed';
 import { useUi } from '@/runtime/ui-store';
 import { Sidebar } from './Sidebar';
 
-async function show() {
-  const store = new Store(createSeedState());
-
+async function show(store = new Store(createSeedState())) {
   await act(async () =>
     render(
       <MemoryRouter initialEntries={['/']}>
@@ -41,5 +39,17 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /jump/i }));
 
     expect(useUi.getState().sidebarOpen).toBe(true);
+  });
+
+  it('marks a private room with a lock', async () => {
+    const store = new Store(createSeedState());
+
+    store.set((state) => {
+      state.communities.plang!.rooms.find((r) => r.id === 'general')!.access = 'roles';
+    });
+
+    await show(store);
+
+    expect(screen.getByRole('img', { name: 'Only some roles can see this room' })).toBeTruthy();
   });
 });

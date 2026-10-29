@@ -51,6 +51,14 @@ defmodule Hearth.EventsTest do
                Events.schedule_event(owner, community, %{params | room_id: room.id})
     end
 
+    test "fails in a private room they can't see", %{community: community, params: params} do
+      host = TestUtils.join_with_permissions!(community, ["event.create"])
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+
+      assert {:error, :not_found} =
+               Events.schedule_event(host, community, %{params | room_id: room.id})
+    end
+
     test "fails if it already started", %{owner: owner, community: community, params: params} do
       params = %{params | starts_at: DateTime.add(DateTime.utc_now(), -1, :hour)}
 
@@ -169,6 +177,18 @@ defmodule Hearth.EventsTest do
                Events.toggle_interest(TestUtils.register_random_user!(), event)
     end
 
+    test "fails in a private room they can't see", %{
+      owner: owner,
+      member: member,
+      community: community,
+      params: params
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      {:ok, event} = Events.schedule_event(owner, community, %{params | room_id: room.id})
+
+      assert {:error, :not_found} = Events.toggle_interest(member, event)
+    end
+
     test "toggle interest", %{owner: owner, member: member, community: community, params: params} do
       {:ok, event} = Events.schedule_event(owner, community, params)
 
@@ -191,6 +211,71 @@ defmodule Hearth.EventsTest do
                Events.list_upcoming([community.id])
 
       assert first.id == soonest.id
+    end
+  end
+
+  describe "list_visible_upcoming/3" do
+    test "leaves out events in private rooms they can't see", %{
+      owner: owner,
+      member: member,
+      community: community,
+      params: params
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      {:ok, hidden} = Events.schedule_event(owner, community, %{params | room_id: room.id})
+      {:ok, shown} = Events.schedule_event(owner, community, params)
+
+      event_ids = member |> Events.list_visible_upcoming([community.id]) |> TestUtils.pluck(:id)
+
+      refute hidden.id in event_ids
+      assert shown.id in event_ids
+    end
+
+    test "lists only open rooms' events signed out", %{
+      owner: owner,
+      community: community,
+      params: params
+    } do
+      room = TestUtils.create_random_private_room!(community, ["member"], type: :voice)
+      {:ok, _hidden} = Events.schedule_event(owner, community, %{params | room_id: room.id})
+
+      assert Events.list_visible_upcoming(nil, [community.id]) == []
+    end
+  end
+
+  describe "visible?/2" do
+    test "returns false for a private room they can't see", %{
+      owner: owner,
+      member: member,
+      community: community,
+      params: params
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      {:ok, event} = Events.schedule_event(owner, community, %{params | room_id: room.id})
+
+      refute Events.visible?(member, event)
+    end
+
+    test "shows an event in an open room", %{owner: owner, community: community, params: params} do
+      {:ok, event} = Events.schedule_event(owner, community, params)
+
+      assert Events.visible?(nil, event)
+    end
+  end
+
+  describe "sitemap_events/1" do
+    test "leaves out events in private rooms", %{
+      owner: owner,
+      community: community,
+      params: params
+    } do
+      room = TestUtils.create_random_private_room!(community, ["member"], type: :voice)
+      {:ok, _hidden} = Events.schedule_event(owner, community, %{params | room_id: room.id})
+      {:ok, shown} = Events.schedule_event(owner, community, params)
+
+      assert [listed] = Events.sitemap_events(community.id)
+      assert listed.id == shown.id
+      assert Events.count_sitemap_events([community.id]) == %{community.id => 1}
     end
   end
 

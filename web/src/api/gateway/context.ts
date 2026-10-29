@@ -7,6 +7,7 @@ import { userIndex } from '@/generated/api/people/people';
 import type { RoomSettings } from '@/domain/types';
 import type { ChatMessage, Community, CommunityDetail, Post, Reply } from '@/generated/schemas';
 import { toCommunity, toMessage, toPerson, toPost, toReply } from '../mappers';
+import { useUi } from '@/runtime/ui-store';
 import { getRealtime } from '../realtime';
 import type { Realtime, Topic } from '../realtime';
 
@@ -78,6 +79,19 @@ export class GatewayContext {
     this.store = store;
   }
 
+  dropRoom(cid: string, rid: string) {
+    useUi.getState().setHiddenRoom(`${cid}/${rid}`);
+    this.roomIds.delete(`${cid}/${rid}`);
+    this.store.set((state) => {
+      const community = state.communities[cid];
+      if (!community) return;
+
+      community.rooms = community.rooms.filter((r) => r.id !== rid);
+      community.voice = community.voice.filter((v) => v.id !== rid);
+      delete state.chats[`${cid}/${rid}`];
+    });
+  }
+
   rememberCommunity(community: Community, detail: CommunityDetail | null): string {
     const slug = community.slug;
 
@@ -113,7 +127,13 @@ export class GatewayContext {
 
       for (const room of next.voice) {
         const was = wasById.get(room.id);
-        if (was?.live) Object.assign(room, { ...was, name: room.name });
+        if (was?.live)
+          Object.assign(room, {
+            ...was,
+            name: room.name,
+            access: room.access,
+            roleIds: room.roleIds,
+          });
       }
 
       state.communities[slug] = next;

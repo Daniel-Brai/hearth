@@ -105,9 +105,12 @@ defmodule Hearth.Chat do
 
   @spec edit_message(User.t(), Message.t(), map()) ::
           {:ok, Message.t()}
-          | {:error, :forbidden | :too_many_attachments | :invalid_attachment | Changeset.t()}
+          | {:error,
+             :forbidden | :not_found | :too_many_attachments | :invalid_attachment | Changeset.t()}
   def edit_message(%User{id: id} = user, %Message{author_id: id} = message, %{} = params) do
-    with {:ok, message} <- EditMessage.execute(user, message, params) do
+    with {:ok, place} <- place_of(message),
+         :ok <- may_read(user, place),
+         {:ok, message} <- EditMessage.execute(user, message, params) do
       broadcast(%MessageEdited{
         message_id: message.id,
         room_id: message.room_id,
@@ -174,6 +177,7 @@ defmodule Hearth.Chat do
 
   def hide_preview(%User{} = user, %Message{} = message, hidden?) when is_boolean(hidden?) do
     with {:ok, %Room{} = room} <- place_of(message),
+         :ok <- may_read(user, room),
          :all <- viewing(user, room) do
       Message.hide_preview(message, hidden?)
     else
@@ -195,7 +199,7 @@ defmodule Hearth.Chat do
         }
   def unread_counts(%User{} = user) do
     joined = IAM.joined_at(user)
-    rooms = joined |> Map.keys() |> Communities.list_rooms(:text)
+    rooms = joined |> Map.keys() |> Communities.list_visible_rooms(:text, user)
     counts = Message.unread_in_rooms(user.id, Map.new(rooms, &{&1.id, joined[&1.community_id]}))
 
     %{
@@ -333,21 +337,17 @@ defmodule Hearth.Chat do
 
   defp viewing(user, %Conversation{}), do: user.id
 
-  defp may_write(user, %Room{archived_at: nil, community_id: community_id}) do
-    case IAM.can?(user, :create, %{type: :message, community_id: community_id}) do
-      true -> :ok
-      false -> {:error, :forbidden}
-    end
+  defp may_write(user, %Room{} = room) do
+    with :ok <- may_read(user, room), do: may_post(user, room)
   end
-
-  defp may_write(_user, %Room{}), do: {:error, :archived}
 
   defp may_write(user, %Conversation{} = conversation), do: may_read(user, conversation)
 
-  defp may_read(user, %Room{community_id: community_id}) do
-    case IAM.member?(user, community_id) do
-      true -> :ok
-      false -> Communities.refusal(user, community_id)
+  defp may_read(user, %Room{community_id: community_id} = room) do
+    case {Communities.room_visible?(user, room), IAM.member?(user, community_id)} do
+      {true, _member?} -> :ok
+      {false, true} -> {:error, :not_found}
+      {false, false} -> Communities.refusal(user, community_id)
     end
   end
 
@@ -357,6 +357,15 @@ defmodule Hearth.Chat do
       false -> {:error, :forbidden}
     end
   end
+
+  defp may_post(user, %Room{archived_at: nil, community_id: community_id}) do
+    case IAM.can?(user, :create, %{type: :message, community_id: community_id}) do
+      true -> :ok
+      false -> {:error, :forbidden}
+    end
+  end
+
+  defp may_post(_user, %Room{}), do: {:error, :archived}
 
   defp where_in(%Room{id: id}), do: [room_id: id]
   defp where_in(%Conversation{id: id}), do: [conversation_id: id]

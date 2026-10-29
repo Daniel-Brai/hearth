@@ -22,6 +22,7 @@ defmodule Hearth.Notifications.Worker.TellTranscript do
       |> Events.interested_ids()
       |> Map.get(event.id, [])
       |> Accounts.list_users()
+      |> Enum.filter(&Events.visible?(&1, event))
       |> Enum.each(&Notifications.send(&1, notice))
     end
 

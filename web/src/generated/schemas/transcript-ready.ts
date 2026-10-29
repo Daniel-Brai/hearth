@@ -14,6 +14,8 @@ export interface TranscriptReady {
   /** @nullable */
   post_id: string | null;
   recording_id: string;
+  /** @nullable */
+  room_id: string | null;
   session_id: string;
   transcript_id: string;
 }

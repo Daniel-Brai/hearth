@@ -30,7 +30,7 @@ defmodule HearthWeb.EventController do
 
   def index(%Conn{assigns: %{auth: auth}} = conn, params) do
     with {:ok, community_ids} <- community_ids(params["community_id"], auth) do
-      events = Events.list_upcoming(community_ids)
+      events = Events.list_visible_upcoming(auth, community_ids)
 
       render(conn, :index, events: events, interested: Events.interested_ids(events))
     end

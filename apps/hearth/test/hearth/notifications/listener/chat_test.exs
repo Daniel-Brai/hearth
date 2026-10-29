@@ -69,6 +69,26 @@ defmodule Hearth.Notifications.Listener.ChatTest do
     assert %Page{data: []} = Notifications.list_notifications(member)
   end
 
+  test "tells nobody who can't see the private room", %{
+    owner: owner,
+    member: member,
+    community: community
+  } do
+    room = TestUtils.create_random_private_room!(community, ["moderator"])
+    {:ok, message} = Chat.send_message(owner, room, %{body: "Welcome @#{member.username}"})
+
+    event = %MessageCreated{
+      message_id: message.id,
+      room_id: room.id,
+      conversation_id: nil,
+      author_id: owner.id,
+      reply_to_author_id: nil
+    }
+
+    assert {:noreply, nil} = Listener.handle_info(event, nil)
+    assert %Page{data: []} = Notifications.list_notifications(member)
+  end
+
   test "tells the people a room message mentions", %{
     owner: owner,
     member: member,

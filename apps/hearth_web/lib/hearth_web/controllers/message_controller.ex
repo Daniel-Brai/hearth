@@ -48,7 +48,7 @@ defmodule HearthWeb.MessageController do
   def room_index(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id} = params) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    with {:ok, room} <- Communities.get_room(id: room_id, archived_at: nil) do
+    with {:ok, room} <- Communities.view_room(auth, id: room_id, archived_at: nil) do
       list(conn, params, auth, room)
     end
   end
@@ -81,7 +81,7 @@ defmodule HearthWeb.MessageController do
   def room_create(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id} = params) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    with {:ok, room} <- Communities.get_room(id: room_id, archived_at: nil) do
+    with {:ok, room} <- Communities.view_room(auth, id: room_id, archived_at: nil) do
       send_message(conn, params, auth, room)
     end
   end

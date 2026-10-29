@@ -19,8 +19,8 @@ defmodule Hearth.Voice.VoiceSessionStarted do
         }
 
   @impl Hearth.PubSub.WebsocketEvent
-  def broadcast_on(%__MODULE__{community_id: id, post_id: nil}), do: "community:#{id}"
+  def broadcast_on(%__MODULE__{community_id: id, post_id: nil}), do: "rooms:#{id}"
 
   def broadcast_on(%__MODULE__{community_id: id, post_id: post_id}),
-    do: ["community:#{id}", "post:#{post_id}"]
+    do: ["rooms:#{id}", "post:#{post_id}"]
 end

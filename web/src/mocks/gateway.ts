@@ -19,6 +19,7 @@ import {
   reportsOn,
   rolesOf,
   soundAccess,
+  roomAccess,
 } from '@/domain/selectors';
 import { stripPrefix } from '@/domain/links';
 import { usernameProblem } from '@/domain/username';
@@ -36,6 +37,7 @@ import type {
   QueueItem,
   Reply,
   ReportReason,
+  RoomAccess,
   RoomSettings,
   UserSettings,
   Visibility,
@@ -70,6 +72,7 @@ import { sfx } from '@/runtime/sounds';
 import { profileActivity } from './activity';
 import { rememberTourDone } from './tour-memory';
 import { grantPermissions } from './permissions';
+import { showVisibleRooms, type Offstage } from './private-rooms';
 
 const SUBJECT_TYPE = { Post: 'post', Reply: 'reply', Message: 'message' } as const;
 
@@ -80,12 +83,18 @@ const loaded = () => Promise.resolve(ok(undefined));
 
 const clone = <T>(o: T): T => structuredClone(o);
 
+const PRIVATE_ROOM = "Messages in a private room can't become a post.";
+
 export class MockGateway implements HearthGateway {
   private readonly store: Store;
+  private readonly offstage: Offstage = new Map();
 
   constructor(store: Store) {
     this.store = store;
-    store.onWrite(grantPermissions);
+    store.onWrite((state) => {
+      grantPermissions(state);
+      showVisibleRooms(state, this.offstage);
+    });
   }
 
   readonly load: HearthGateway['load'] = {
@@ -552,7 +561,13 @@ export class MockGateway implements HearthGateway {
     },
     create: async (
       cid: string,
-      spec: { type: 'text' | 'voice'; name: string; topic: string },
+      spec: {
+        type: 'text' | 'voice';
+        name: string;
+        topic: string;
+        access?: RoomAccess;
+        roleIds?: string[];
+      },
     ): Promise<Result<{ id: string }>> => {
       await latency(200);
 
@@ -571,8 +586,11 @@ export class MockGateway implements HearthGateway {
 
       this.store.set((d) => {
         const x = d.communities[cid]!;
+        const access: RoomAccess = spec.access ?? 'everyone';
+        const roleIds = access === 'roles' ? [...(spec.roleIds ?? [])] : [];
+
         if (spec.type === 'text') {
-          x.rooms.push({ id, name: id, unread: 0 });
+          x.rooms.push({ id, name: id, unread: 0, access, roleIds });
           d.roomSettings[cid + '/' + id] = {
             ...clone(ROOM_DEFAULTS as RoomSettings),
             topic: spec.topic.trim(),
@@ -587,12 +605,38 @@ export class MockGateway implements HearthGateway {
             topic: spec.topic.trim(),
             host: this.me(),
             postId: null,
+            access,
+            roleIds,
           });
           this.log(d, cid, 'changed', 'added the voice room ' + spec.name.trim());
         }
       });
 
       return ok({ id });
+    },
+    setAccess: async (
+      cid: string,
+      rid: string,
+      access: RoomAccess,
+      roleIds: string[],
+    ): Promise<Result> => {
+      await latency(200);
+
+      if (!canDo(this.state(), cid, 'room.update'))
+        return fail('You need the Manage rooms permission');
+
+      this.store.set((d) => {
+        const x = d.communities[cid]!;
+        const room = x.rooms.find((r) => r.id === rid) ?? x.voice.find((v) => v.id === rid);
+
+        if (!room) return;
+
+        room.access = access;
+        room.roleIds = access === 'roles' ? [...roleIds] : [];
+        this.log(d, cid, 'changed', 'changed who can see ' + room.name);
+      });
+
+      return ok(undefined);
     },
     archive: async (cid: string, id: string): Promise<Result> => {
       await latency(200);
@@ -1238,6 +1282,7 @@ export class MockGateway implements HearthGateway {
 
       if (!msgs.length) return fail('Pick at least one message');
       if (!spec.title.trim()) return fail('Give the post a title');
+      if (roomAccess(state, cid, rid) === 'roles') return fail(PRIVATE_ROOM);
 
       const first = msgs[0]!;
 

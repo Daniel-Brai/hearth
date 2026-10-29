@@ -131,6 +131,14 @@ defmodule Hearth.ForumTest do
       assert {:error, :forbidden} = Forum.promote(member, room, [message.id], params)
     end
 
+    test "fails in a private room", %{owner: owner, community: community, kinds: kinds} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      {:ok, message} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
+      params = %{kind_id: kinds["question"].id, title: Lorem.sentence()}
+
+      assert {:error, :private_room} = Forum.promote(owner, room, [message.id], params)
+    end
+
     test "fails with no messages", %{owner: owner, room: room, kinds: kinds} do
       params = %{kind_id: kinds["question"].id, title: Lorem.sentence()}
 
@@ -557,11 +565,11 @@ defmodule Hearth.ForumTest do
     end
 
     test "mark a community seen", %{owner: owner, member: member, community: community} do
-      first = TestUtils.create_random_post!(member, community)
-      second = TestUtils.create_random_post!(member, community)
+      older = TestUtils.create_random_post!(member, community)
+      newer = TestUtils.create_random_post!(member, community)
 
       assert :ok = Forum.mark_all_seen(owner, community)
-      assert MapSet.new([first.id, second.id]) == Forum.seen(owner, [first, second])
+      assert MapSet.new([older.id, newer.id]) == Forum.seen(owner, [older, newer])
     end
 
     test "mark every joined community seen", %{owner: owner, member: member, community: community} do

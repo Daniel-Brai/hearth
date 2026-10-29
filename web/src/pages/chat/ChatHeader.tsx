@@ -10,8 +10,10 @@ import {
   modLevel,
   person,
   presence,
+  roomAccess,
   roomSettings,
 } from '@/domain/selectors';
+import { PrivateLock } from '@/features/rooms/PrivateLock';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar } from '@/shell/people';
@@ -45,6 +47,7 @@ export function ChatHeader({
           .filter((s): s is string => !!s)
           .join(' · ') || null,
       canRooms: canDo(state, target.cid, 'room.update'),
+      access: roomAccess(state, target.cid, target.room),
       dmUsername: target.dm ? person(state, target.dm).username : null,
       dmName: target.dm ? displayName(state, target.dm) : null,
     };
@@ -55,7 +58,11 @@ export function ChatHeader({
       ruled
       label={title}
       eyebrow={view.eyebrow}
-      title={title}
+      title={
+        <>
+          {title} <PrivateLock room={view} />
+        </>
+      }
       sub={target.dm ? null : view.sub}
       endActions={
         <>

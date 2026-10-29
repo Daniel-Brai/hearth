@@ -25,7 +25,7 @@ export type JoinReply = {
   readonly participants: VoiceParticipant[];
 };
 
-export type DisconnectReason = 'disconnected' | 'ended' | 'lost' | 'left' | 'replaced';
+export type DisconnectReason = 'disconnected' | 'ended' | 'lost' | 'left' | 'replaced' | 'hidden';
 
 export type AudioOut = {
   play(): Promise<void>;
@@ -141,6 +141,11 @@ export class VoiceClient {
     channel.on('Disconnected', ({ reason }: { reason: DisconnectReason }) => {
       this.close();
       this.on.onDisconnected(reason);
+    });
+
+    channel.on('room_hidden', () => {
+      this.close();
+      this.on.onDisconnected('hidden');
     });
 
     for (const name of VOICE_EVENTS)

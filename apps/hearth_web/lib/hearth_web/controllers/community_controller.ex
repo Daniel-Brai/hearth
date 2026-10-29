@@ -35,7 +35,9 @@ defmodule HearthWeb.CommunityController do
   def index(%Conn{assigns: %{auth: %{}}} = conn, _params) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    render(conn, :index, communities: auth |> Communities.list_joined() |> CommunityExtras.put())
+    render(conn, :index,
+      communities: auth |> Communities.list_joined() |> CommunityExtras.put(auth)
+    )
   end
 
   operation :public,
@@ -46,7 +48,7 @@ defmodule HearthWeb.CommunityController do
     ]
 
   def public(%Conn{} = conn, _params) do
-    render(conn, :index, communities: CommunityExtras.put(Communities.list_public()))
+    render(conn, :index, communities: CommunityExtras.put(Communities.list_public(), nil))
   end
 
   operation :create,
@@ -88,7 +90,7 @@ defmodule HearthWeb.CommunityController do
 
         conn
         |> put_status(:created)
-        |> render(:create, community: CommunityExtras.put_one(community))
+        |> render(:create, community: CommunityExtras.put_one(community, auth))
 
       {:requested, request} ->
         conn
@@ -132,7 +134,7 @@ defmodule HearthWeb.CommunityController do
 
   def show(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
     with {:ok, community} <- find_visible(id, auth) do
-      community = CommunityExtras.put_one(community)
+      community = CommunityExtras.put_one(community, auth)
 
       if Communities.readable?(community, auth) do
         render(conn, :show,
@@ -187,7 +189,7 @@ defmodule HearthWeb.CommunityController do
 
     with {:ok, community} <- find_visible(id, auth),
          {:ok, community} <- Communities.update_community(auth, community, changes) do
-      render(conn, :update, community: CommunityExtras.put_one(community))
+      render(conn, :update, community: CommunityExtras.put_one(community, auth))
     end
   end
 
@@ -293,7 +295,7 @@ defmodule HearthWeb.CommunityController do
          {:ok, to} <- Accounts.get_user(id: user_id),
          {:ok, community} <- Communities.transfer_ownership(auth, community, to, code) do
       {:ok, community} = Communities.get_community(id: community.id, preload: :rooms)
-      render(conn, :update, community: CommunityExtras.put_one(community))
+      render(conn, :update, community: CommunityExtras.put_one(community, auth))
     else
       {:error, :invalid} -> {:error, :invalid_code}
       {:error, :expired} -> {:error, :expired_code}

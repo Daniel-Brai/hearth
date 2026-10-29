@@ -17,7 +17,7 @@ defmodule Hearth.Voice.VoiceSessionEnded do
 
   @impl Hearth.PubSub.WebsocketEvent
   def broadcast_on(%__MODULE__{} = event) do
-    topics = ["community:#{event.community_id}", "voice:#{event.session_id}"]
+    topics = ["rooms:#{event.community_id}", "voice:#{event.session_id}"]
 
     if event.post_id, do: ["post:#{event.post_id}" | topics], else: topics
   end

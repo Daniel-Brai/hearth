@@ -14,6 +14,7 @@ import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { RoomDangerActions } from '@/shell/RoomDangerActions';
 import { useRoomActions } from '@/shell/use-room-actions';
+import { RoomAccessSetting } from '@/features/rooms/RoomAccessSetting';
 
 type VoiceRoomSettingsDialogProps = {
   readonly cid: string;
@@ -76,6 +77,8 @@ export function VoiceRoomSettingsDialog({ cid, rid, name, onClose }: VoiceRoomSe
             maxLength={30}
           />
         </Field>
+
+        <RoomAccessSetting cid={cid} rid={rid} />
 
         <DialogFooter>
           <RoomDangerActions actions={actions} />

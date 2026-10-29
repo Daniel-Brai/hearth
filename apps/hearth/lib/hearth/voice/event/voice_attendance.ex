@@ -17,5 +17,5 @@ defmodule Hearth.Voice.VoiceAttendance do
         }
 
   @impl Hearth.PubSub.WebsocketEvent
-  def broadcast_on(%__MODULE__{community_id: id}), do: "community:#{id}"
+  def broadcast_on(%__MODULE__{community_id: id}), do: "rooms:#{id}"
 end

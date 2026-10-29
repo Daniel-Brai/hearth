@@ -39,6 +39,18 @@ defmodule Hearth.Notifications.Worker.TellLiveTest do
       assert %Page{data: []} = Notifications.list_notifications(member)
     end
 
+    test "tells nobody who can't see the private room", %{
+      args: args,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+
+      assert :ok = perform_job(TellLive, %{args | room_id: room.id})
+
+      assert %Page{data: []} = Notifications.list_notifications(member)
+    end
+
     test "tells every member but the host", %{args: args, owner: owner, member: member} do
       assert :ok = perform_job(TellLive, args)
 

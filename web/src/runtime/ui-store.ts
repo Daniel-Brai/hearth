@@ -44,6 +44,9 @@ type UiState = {
   tourStep: number | null;
   // A screen share in full screen shows the room's chat inside it, so the page's own steps aside
   shareFull: boolean;
+  // The room someone was just shut out of, as `community/room`, so its screen can step back
+  hiddenRoom: string | null;
+  setHiddenRoom: (key: string | null) => void;
   setShareFull: (on: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
   toggleTray: (which: 'notifications' | 'live') => void;
@@ -68,6 +71,8 @@ export const useUi = create<UiState>((set, get) => ({
   toasts: [],
   lightbox: null,
   shareFull: false,
+  hiddenRoom: null,
+  setHiddenRoom: (hiddenRoom) => set({ hiddenRoom }),
   setShareFull: (shareFull) => set({ shareFull }),
   tourStep: null,
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),

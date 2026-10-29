@@ -32,6 +32,7 @@ import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar, PersonName } from '@/shell/people';
 import { RoomDangerActions } from '@/shell/RoomDangerActions';
 import { useRoomActions } from '@/shell/use-room-actions';
+import { RoomAccessSetting } from '@/features/rooms/RoomAccessSetting';
 import { communityPeople, LEVELS } from './chat-select';
 
 type RoomSettingsDialogProps = {
@@ -168,6 +169,8 @@ export function RoomSettingsDialog({ cid, room, title, onClose }: RoomSettingsDi
               placeholder="What this room is for"
             />
           </Field>
+
+          <RoomAccessSetting cid={cid} rid={room} />
 
           <SettingsRow
             className="border-0 p-0"

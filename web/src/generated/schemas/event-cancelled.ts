@@ -11,4 +11,6 @@ export interface EventCancelled {
   cancelled_by_id: string;
   community_id: string;
   event_id: string;
+  /** @nullable */
+  room_id: string | null;
 }

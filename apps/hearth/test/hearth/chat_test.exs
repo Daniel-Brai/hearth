@@ -39,6 +39,12 @@ defmodule Hearth.ChatTest do
                })
     end
 
+    test "fails in a private room they can't see", %{member: member, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      assert {:error, :not_found} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+    end
+
     test "fails if the room is archived", %{owner: owner, member: member, room: room} do
       {:ok, archived} = Communities.archive_room(owner, room)
 
@@ -129,6 +135,18 @@ defmodule Hearth.ChatTest do
       assert {:error, :forbidden} = Chat.list_messages(TestUtils.register_random_user!(), room)
     end
 
+    test "fails in a private room they can't see", %{member: member, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      assert {:error, :not_found} = Chat.list_messages(member, room)
+    end
+
+    test "list in a private room they can see", %{member: member, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["member"])
+
+      assert %Page{data: []} = Chat.list_messages(member, room)
+    end
+
     test "list newest first", %{owner: owner, member: member, room: room} do
       {:ok, older} = Chat.send_message(member, room, %{body: Lorem.sentence()})
       {:ok, newer} = Chat.send_message(member, room, %{body: Lorem.sentence()})
@@ -148,6 +166,19 @@ defmodule Hearth.ChatTest do
       {:ok, message} = Chat.send_message(member, room, %{body: Lorem.sentence()})
 
       assert {:error, :forbidden} = Chat.edit_message(owner, message, %{body: Lorem.sentence()})
+    end
+
+    test "fails once they can't see the room", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["moderator"])
+      {:ok, message} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["member"])
+
+      assert {:error, :not_found} = Chat.edit_message(member, message, %{body: Lorem.sentence()})
     end
 
     test "replaces the files", %{member: member, room: room} do
@@ -219,6 +250,17 @@ defmodule Hearth.ChatTest do
                Chat.toggle_reaction(TestUtils.register_random_user!(), message, "🔥")
     end
 
+    test "fails in a private room they can't see", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      {:ok, message} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
+
+      assert {:error, :not_found} = Chat.toggle_reaction(member, message, "🔥")
+    end
+
     test "toggle reaction", %{owner: owner, member: member, room: room} do
       {:ok, message} = Chat.send_message(member, room, %{body: Lorem.sentence()})
       %{id: id} = message
@@ -281,6 +323,20 @@ defmodule Hearth.ChatTest do
 
       assert %{rooms: rooms} = Chat.unread_counts(newcomer)
       refute room.id in TestUtils.pluck(rooms, :room_id)
+    end
+
+    test "leaves out private rooms they can't see", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      hidden = TestUtils.create_random_private_room!(community, ["moderator"])
+      shown = TestUtils.create_random_private_room!(community, ["member"])
+      {:ok, _message} = Chat.send_message(owner, hidden, %{body: Lorem.sentence()})
+      {:ok, _message} = Chat.send_message(owner, shown, %{body: Lorem.sentence()})
+
+      assert %{rooms: [unread]} = Chat.unread_counts(member)
+      assert unread.room_id == shown.id
     end
 
     test "counts a conversation's unread messages", %{owner: owner, member: member} do

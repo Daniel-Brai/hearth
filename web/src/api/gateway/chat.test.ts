@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { useUi } from '@/runtime/ui-store';
 import {
   community,
   file,
@@ -196,6 +197,27 @@ describe('load.chat', () => {
     pushes.get('room:r1 MessageRemoved')?.({ message_id: 'm1' });
 
     await vi.waitFor(() => expect(store.get().chats['gardeners/general']).toEqual([]));
+  });
+
+  it('drops a room its viewer can no longer see', async () => {
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([message('m1', 'Hi')]) };
+
+    const { store, gateway: g } = gateway();
+
+    await g.load.chat('gardeners/general');
+
+    pushes.get('room:r1 room_hidden')?.({ message_id: 'r1' });
+
+    expect(store.get().communities.gardeners?.rooms).toEqual([]);
+    expect(store.get().chats['gardeners/general']).toBeUndefined();
+    expect(useUi.getState().hiddenRoom).toBe('gardeners/general');
   });
 
   it("shows someone else's reaction as it happens", async () => {

@@ -3,7 +3,15 @@ import { Badge, Button, EmptyState, Icon, Separator } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { plural } from '@/domain/format';
-import { canDo, community, isMod, modLevel, reportsOn, roomSettings } from '@/domain/selectors';
+import {
+  canDo,
+  community,
+  isMod,
+  modLevel,
+  reportsOn,
+  roomSettings,
+  roomAccess,
+} from '@/domain/selectors';
 import type { Message } from '@/domain/types';
 import { Thread } from '@/features/threads/Thread';
 import { useThreadDepth } from '@/features/threads/use-thread-depth';
@@ -48,7 +56,11 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
       joined: !!c?.joined,
       canChat: target.dm !== null || canDo(state, cid, 'message.create'),
       mod: isMod(state, cid),
-      promote: target.dm === null && canDo(state, cid, 'chat.promote'),
+      // Messages in a private room stay there, so they can't become a post
+      promote:
+        target.dm === null &&
+        canDo(state, cid, 'chat.promote') &&
+        roomAccess(state, cid, target.room) !== 'roles',
       reports: target.dm !== null || (!!cid && reportsOn(state, cid, target.room)),
       previews: roomSettings(state, target.key).previews,
       soundsOn: state.settings.sounds,

@@ -341,6 +341,11 @@ export function createVoiceGateway(
       useVoiceSession.getState().drop(j.key);
     }
 
+    if (reason === 'hidden') {
+      useVoiceSession.getState().drop(j.key);
+      ctx.dropRoom(j.cid, j.rid);
+    }
+
     const text = reason && !quiet ? DISCONNECT_TEXT[reason] : undefined;
 
     if (text) useUi.getState().flash(text);
@@ -356,7 +361,6 @@ export function createVoiceGateway(
         const p = payload as VoiceEvents['VoiceParticipantChanged'];
         const arrived = !p.left && !!p.role && !j.participants.has(p.user_id);
 
-        // Everyone already in the room hears someone new come in
         if (arrived && p.user_id !== ctx.store.get().me) sfx('arrive');
 
         if (p.left || !p.role) j.participants.delete(p.user_id);
@@ -384,7 +388,6 @@ export function createVoiceGateway(
         const r = payload as VoiceEvents['VoiceRecordingChanged'];
         const me = ctx.store.get().me;
 
-        // Everyone hears a recording start and stop, and is told who started it
         if (r.status === 'recording' && !j.recording) {
           j.recording = running({
             id: r.recording_id,

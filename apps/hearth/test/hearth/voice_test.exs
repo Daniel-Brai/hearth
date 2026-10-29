@@ -42,6 +42,13 @@ defmodule Hearth.VoiceTest do
       assert {:error, :forbidden} = Voice.start_session(member, room, %{})
     end
 
+    test "fails in a private room they can't see", %{community: community} do
+      host = TestUtils.join_with_permissions!(community, ["voice-session.create"])
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+
+      assert {:error, :not_found} = Voice.start_session(host, room, %{})
+    end
+
     test "fails for a text room", %{owner: owner, community: community} do
       room = TestUtils.get_room!(community, type: :text)
 
@@ -141,6 +148,17 @@ defmodule Hearth.VoiceTest do
 
       assert {:error, :forbidden} =
                Voice.join(stranger, session, TestUtils.start_fake_channel!())
+    end
+
+    test "fails in a private room they can't see", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      {:ok, session} = Voice.start_session(owner, room, %{mode: :stage})
+
+      assert {:error, :not_found} = Voice.join(member, session, TestUtils.start_fake_channel!())
     end
 
     test "fails for an ended session", %{owner: owner, community: community} do
@@ -620,7 +638,56 @@ defmodule Hearth.VoiceTest do
     end
   end
 
+  describe "live_for/1" do
+    test "leaves out private rooms they can't see", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      {:ok, hidden} = Voice.start_session(owner, room, %{mode: :stage})
+      shown = TestUtils.start_random_voice_session!(community)
+
+      session_ids = member |> Voice.live_for() |> TestUtils.pluck(:id)
+
+      refute hidden.id in session_ids
+      assert shown.id in session_ids
+    end
+  end
+
+  describe "remove_hidden/3" do
+    test "takes out people who can no longer see the room", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["member"], type: :voice)
+      {:ok, session} = Voice.start_session(owner, room, %{mode: :stage})
+      {:ok, _joined} = Voice.join(owner, session, TestUtils.start_fake_channel!())
+      channel = TestUtils.start_fake_channel!()
+      {:ok, _joined} = Voice.join(member, session, channel)
+      {:ok, _room} = Communities.update_room(owner, room, %{role_ids: []})
+
+      assert :ok = Voice.remove_hidden(community.id, room.id, nil)
+      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :no_access}}, 1_000
+      assert {:ok, snapshot} = Voice.snapshot(owner, session)
+      assert TestUtils.pluck(snapshot.participants, :user_id) == [owner.id]
+    end
+  end
+
   describe "list_recordings/2" do
+    test "leaves out private rooms they can't see", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      {:ok, session} = Voice.start_session(owner, room, %{mode: :stage})
+      _recording = TestUtils.insert_random_ready_recording!(session, [{owner.id, "hello"}])
+
+      assert {:ok, []} = Voice.list_recordings(member, {:room_id, room.id, community.id})
+    end
+
     test "fails for someone outside the community", %{room: room, community: community} do
       stranger = TestUtils.register_random_user!()
 
@@ -641,6 +708,20 @@ defmodule Hearth.VoiceTest do
 
       assert {:ok, []} = Voice.list_recordings(member, scope)
       assert {:ok, [%Recording{status: :failed}]} = Voice.list_recordings(owner, scope)
+    end
+  end
+
+  describe "get_recording/2" do
+    test "fails in a private room they can't see", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      {:ok, session} = Voice.start_session(owner, room, %{mode: :stage})
+      recording = TestUtils.insert_random_ready_recording!(session, [{owner.id, "hello"}])
+
+      assert {:error, :not_found} = Voice.get_recording(member, recording.id)
     end
   end
 

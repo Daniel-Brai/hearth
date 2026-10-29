@@ -204,8 +204,8 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
           realtime.onPush(topic, 'ContentRestored', (e) => void refetch(e.subject_id)),
           realtime.onPush(topic, 'MemberJoined', (e) => countMember(e.user_id, 1)),
           realtime.onPush(topic, 'MemberLeft', (e) => countMember(e.user_id, -1)),
-          // A room added, renamed or archived shows in the sidebar for everyone
           realtime.onPush(topic, 'RoomChanged', () => void load.community(cid)),
+          realtime.onPush(topic, 'room_access_changed', () => void load.community(cid)),
         ];
 
         return () => stops.forEach((stop) => stop());

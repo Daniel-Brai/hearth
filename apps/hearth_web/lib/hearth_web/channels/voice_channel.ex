@@ -2,11 +2,14 @@ defmodule HearthWeb.VoiceChannel do
   use HearthWeb, :channel
 
   alias Hearth.Common
+  alias Hearth.Communities
   alias Hearth.Voice
+  alias HearthWeb.Endpoint
   alias HearthWeb.FloodGuard
   alias Phoenix.Socket
+  alias Phoenix.Socket.Broadcast
 
-  @reactions_a_second 5
+  @reactions_per_second 5
 
   @impl Phoenix.Channel
   def join("voice:" <> id, payload, socket) do
@@ -14,14 +17,17 @@ defmodule HearthWeb.VoiceChannel do
 
     with true <- Common.valid_id?(id),
          {:ok, session} <- Voice.get_session(id: id),
+         {:ok, _room} <- Communities.view_room(auth, id: session.room_id),
          {:ok, joined} <- Voice.join(auth, session, self(), stage: payload["stage"] != false) do
       Process.monitor(joined.peer)
+      # Access changes are told on the community's rooms topic
+      :ok = Endpoint.subscribe("rooms:" <> session.community_id)
 
       socket = assign(socket, peer: joined.peer, session: session)
       {:ok, joined_reply(auth, joined), socket}
     else
-      false -> {:error, %{reason: "not_found"}}
-      {:error, reason} -> {:error, %{reason: Atom.to_string(reason)}}
+      false -> error_reply(:not_found)
+      {:error, reason} -> error_reply(reason)
     end
   end
 
@@ -29,7 +35,7 @@ defmodule HearthWeb.VoiceChannel do
   def handle_in("answer", %{"sdp" => sdp}, socket) when is_binary(sdp) do
     case Voice.answer(socket.assigns.peer, sdp) do
       :ok -> {:reply, :ok, socket}
-      {:error, _reason} -> {:reply, {:error, %{reason: "invalid_answer"}}, socket}
+      {:error, _reason} -> {:reply, error_reply(:invalid_answer), socket}
     end
   end
 
@@ -48,9 +54,9 @@ defmodule HearthWeb.VoiceChannel do
     %Socket{assigns: %{auth: auth, session: session}} = socket
 
     # A burst past the limit is dropped quietly, since a reaction is only decoration.
-    with {:allow, _count} <- FloodGuard.hit("voice-react:#{auth.id}", 1000, @reactions_a_second),
+    with {:allow, _count} <- FloodGuard.hit("voice-react:#{auth.id}", 1000, @reactions_per_second),
          {:error, reason} <- Voice.react(auth, session, emoji) do
-      {:reply, {:error, %{reason: Atom.to_string(reason)}}, socket}
+      {:reply, error_reply(reason), socket}
     else
       _sent_or_dropped -> {:noreply, socket}
     end
@@ -61,11 +67,11 @@ defmodule HearthWeb.VoiceChannel do
 
     case Voice.captions(auth, session, on) do
       :ok -> {:reply, :ok, socket}
-      {:error, reason} -> {:reply, {:error, %{reason: Atom.to_string(reason)}}, socket}
+      {:error, reason} -> {:reply, error_reply(reason), socket}
     end
   end
 
-  def handle_in(_event, _payload, socket), do: {:reply, {:error, %{reason: "unknown"}}, socket}
+  def handle_in(_event, _payload, socket), do: {:reply, error_reply(:unknown), socket}
 
   @impl Phoenix.Channel
   def handle_info({:hearth_rtc, :offer, offer}, socket) do
@@ -84,6 +90,19 @@ defmodule HearthWeb.VoiceChannel do
   def handle_info({:DOWN, _ref, :process, peer, _reason}, %{assigns: %{peer: peer}} = socket),
     do: disconnected(socket, :lost)
 
+  def handle_info(%Broadcast{event: "RoomAccessChanged"}, socket) do
+    %Socket{assigns: %{auth: auth, session: session}} = socket
+
+    case Communities.view_room(auth, id: session.room_id) do
+      {:ok, _room} ->
+        {:noreply, socket}
+
+      {:error, :not_found} ->
+        :ok = push(socket, "room_hidden", %{room_id: session.room_id})
+        {:stop, {:shutdown, :left}, socket}
+    end
+  end
+
   def handle_info(_message, socket), do: {:noreply, socket}
 
   # Leaving on purpose takes the person out at once. A dropped socket keeps
@@ -95,6 +114,8 @@ defmodule HearthWeb.VoiceChannel do
   end
 
   def terminate(_reason, _socket), do: :ok
+
+  defp error_reply(reason), do: {:error, %{reason: Atom.to_string(reason)}}
 
   defp disconnected(socket, reason) do
     push(socket, "Disconnected", %{reason: reason})

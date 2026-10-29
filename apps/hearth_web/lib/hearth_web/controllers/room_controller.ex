@@ -55,14 +55,20 @@ defmodule HearthWeb.RoomController do
     "name" => ~V[required|string|min:1|max:40],
     "type" => ~V[allowed:text,voice],
     "topic" => ~V[string|max:200],
-    "position" => ~V[integer|min:0]
+    "position" => ~V[integer|min:0],
+    "access" => ~V[allowed:everyone,roles],
+    "role_ids" => ~V[list],
+    "role_ids.*" => ~V[uuid]
   }
 
   def create(%Conn{assigns: %{auth: %{}}} = conn, params) do
     %Conn{assigns: %{auth: auth}} = conn
     %{"community_id" => community_id} = params
 
-    changes = params |> Map.take(~w[name type topic position]) |> Common.atomize_string_keys()
+    changes =
+      params
+      |> Map.take(~w[name type topic position access role_ids])
+      |> Common.atomize_string_keys()
 
     with {:ok, community} <- Communities.get_community(id: community_id, archived_at: nil),
          {:ok, room} <- Communities.create_room(auth, community, changes) do
@@ -87,16 +93,20 @@ defmodule HearthWeb.RoomController do
     "id" => ~V[required|uuid],
     "name" => ~V[string|min:1|max:40],
     "topic" => ~V[string|max:200],
-    "position" => ~V[integer|min:0]
+    "position" => ~V[integer|min:0],
+    "access" => ~V[allowed:everyone,roles],
+    "role_ids" => ~V[list],
+    "role_ids.*" => ~V[uuid]
   }
 
   def update(%Conn{assigns: %{auth: %{}}} = conn, params) do
     %Conn{assigns: %{auth: auth}} = conn
     %{"id" => id} = params
 
-    changes = params |> Map.take(~w[name topic position]) |> Common.atomize_string_keys()
+    changes =
+      params |> Map.take(~w[name topic position access role_ids]) |> Common.atomize_string_keys()
 
-    with {:ok, room} <- Communities.get_room(id: id, archived_at: nil),
+    with {:ok, room} <- Communities.view_room(auth, id: id, archived_at: nil),
          {:ok, room} <- Communities.update_room(auth, room, changes) do
       render(conn, :update, room: room)
     end
@@ -120,7 +130,7 @@ defmodule HearthWeb.RoomController do
   def archive(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    with {:ok, room} <- Communities.get_room(id: id, archived_at: nil),
+    with {:ok, room} <- Communities.view_room(auth, id: id, archived_at: nil),
          {:ok, room} <- Communities.archive_room(auth, room) do
       render(conn, :archive, room: room)
     end
@@ -143,7 +153,7 @@ defmodule HearthWeb.RoomController do
   def restore(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    with {:ok, room} <- Communities.get_room(id: id),
+    with {:ok, room} <- Communities.view_room(auth, id: id),
          {:ok, room} <- Communities.restore_room(auth, room) do
       render(conn, :restore, room: room)
     end
@@ -167,7 +177,7 @@ defmodule HearthWeb.RoomController do
   def delete(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    with {:ok, room} <- Communities.get_room(id: id),
+    with {:ok, room} <- Communities.view_room(auth, id: id),
          {:ok, _room} <- Communities.delete_room(auth, room) do
       send_resp(conn, :no_content, "")
     end

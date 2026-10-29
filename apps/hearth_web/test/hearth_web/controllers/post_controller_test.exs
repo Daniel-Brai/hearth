@@ -474,6 +474,18 @@ defmodule HearthWeb.PostControllerTest do
                |> valid_response(403)
     end
 
+    test "fails in a private room", %{conn: conn, owner: owner, community: community, kind: kind} do
+      private = TestUtils.create_random_private_room!(community, ["moderator"])
+      {:ok, message} = Chat.send_message(owner, private, %{body: Lorem.sentence()})
+      body = %{message_ids: [message.id], kind_id: kind.id, title: Lorem.sentence()}
+
+      assert %{"code" => "private_room"} =
+               conn
+               |> auth_conn(owner)
+               |> post(~p"/api/rooms/#{private.id}/posts", body)
+               |> valid_response(400)
+    end
+
     test "fails without messages", %{conn: conn, owner: owner, room: room, kind: kind} do
       body = %{message_ids: [], kind_id: kind.id, title: Lorem.sentence()}
 

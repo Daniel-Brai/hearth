@@ -20,6 +20,7 @@ defmodule Hearth.CommunitiesTest do
   alias Hearth.Communities.Request
   alias Hearth.Communities.RequestDecided
   alias Hearth.Communities.Room
+  alias Hearth.Communities.RoomAccessChanged
   alias Hearth.Events.Event
   alias Hearth.IAM
   alias Hearth.IAM.Membership
@@ -70,10 +71,10 @@ defmodule Hearth.CommunitiesTest do
   describe "slug_for/1" do
     test "numbers a taken name", %{owner: owner} do
       name = "Book club #{System.unique_integer([:positive])}"
-      first = TestUtils.create_random_community!(owner, name: name)
-      _second = TestUtils.create_random_community!(owner, name: name)
+      original = TestUtils.create_random_community!(owner, name: name)
+      _copy = TestUtils.create_random_community!(owner, name: name)
 
-      assert Communities.slug_for(name) == first.slug <> "-3"
+      assert Communities.slug_for(name) == original.slug <> "-3"
     end
 
     test "uses community for non latin names" do
@@ -496,6 +497,166 @@ defmodule Hearth.CommunitiesTest do
     test "create room", %{owner: owner, community: community} do
       assert {:ok, %Room{slug: "release-notes", type: :text}} =
                Communities.create_room(owner, community, %{name: "Release notes"})
+    end
+
+    test "create private room", %{owner: owner, community: community} do
+      moderator = Role.get(community_id: community.id, key: "moderator")
+      params = %{name: Lorem.word(), access: :roles, role_ids: [moderator.id, Common.new_id()]}
+
+      assert {:ok, %Room{access: :roles} = room} =
+               Communities.create_room(owner, community, params)
+
+      assert TestUtils.pluck(room.room_roles, :role_id) == [moderator.id]
+    end
+  end
+
+  describe "update_room/3" do
+    test "fails if not allowed", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      assert {:error, :forbidden} = Communities.update_room(member, room, %{access: :everyone})
+    end
+
+    test "opens a private room to everyone", %{owner: owner, community: community} do
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      %{id: room_id} = room
+
+      assert {:ok, opened} = Communities.update_room(owner, room, %{access: :everyone})
+      assert Communities.room_visible?(member, opened)
+      assert_receive %RoomAccessChanged{room_id: ^room_id}
+    end
+
+    test "keeps the roles on a rename", %{owner: owner, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      assert {:ok, renamed} = Communities.update_room(owner, room, %{name: Lorem.word()})
+      assert renamed.room_roles == room.room_roles
+      refute_receive %RoomAccessChanged{}
+    end
+  end
+
+  describe "room_visible?/2" do
+    test "returns false for someone signed out", %{community: community} do
+      [room | _rooms] = Communities.list_rooms(community)
+
+      refute Communities.room_visible?(nil, room)
+    end
+
+    test "returns false for an outsider", %{community: community} do
+      outsider = TestUtils.register_random_user!()
+      [room | _rooms] = Communities.list_rooms(community)
+
+      refute Communities.room_visible?(outsider, room)
+    end
+
+    test "returns false without the room's roles", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      refute Communities.room_visible?(member, room)
+    end
+
+    test "shows a room for everyone to members", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      [room | _rooms] = Communities.list_rooms(community)
+
+      assert Communities.room_visible?(member, room)
+    end
+
+    test "shows a private room to holders of its roles", %{community: community} do
+      moderator = TestUtils.register_random_user!()
+      {:ok, _membership} = IAM.join(moderator, community.id, ["moderator"])
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      assert Communities.room_visible?(moderator, room)
+    end
+
+    test "shows a private room to the owner", %{owner: owner, community: community} do
+      room = TestUtils.create_random_private_room!(community, [])
+
+      assert Communities.room_visible?(owner, room)
+    end
+
+    test "shows a private room to room.update holders", %{community: community} do
+      manager = TestUtils.join_with_permissions!(community, ["room.update"])
+      room = TestUtils.create_random_private_room!(community, [])
+
+      assert Communities.room_visible?(manager, room)
+    end
+
+    test "hides it once the role is taken away", %{owner: owner, community: community} do
+      member = TestUtils.join_random_member!(community)
+      %{id: member_id} = member
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["moderator"])
+
+      assert Communities.room_visible?(member, room)
+
+      {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["member"])
+
+      refute Communities.room_visible?(member, room)
+      assert_receive %RoomAccessChanged{user_id: ^member_id}
+    end
+  end
+
+  describe "room_hidden?/2" do
+    test "returns true for a private room without its roles", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      assert Communities.room_hidden?(member, room)
+    end
+
+    test "returns false for a room for everyone", %{community: community} do
+      [room | _rooms] = Communities.list_rooms(community)
+
+      refute Communities.room_hidden?(nil, room)
+    end
+  end
+
+  describe "view_room/2" do
+    test "fails for a private room the member can't see", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      assert {:error, :not_found} = Communities.view_room(member, id: room.id)
+    end
+
+    test "gets a private room for holders of its roles", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      %{id: room_id} = TestUtils.create_random_private_room!(community, ["member"])
+
+      assert {:ok, %Room{id: ^room_id}} = Communities.view_room(member, id: room_id)
+    end
+  end
+
+  describe "list_visible_rooms/2" do
+    test "leaves out private rooms for someone signed out", %{community: community} do
+      room = TestUtils.create_random_private_room!(community, ["member"])
+
+      room_ids = community |> Communities.list_visible_rooms(nil) |> TestUtils.pluck(:id)
+
+      refute room.id in room_ids
+    end
+
+    test "leaves out private rooms the member can't see", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      hidden = TestUtils.create_random_private_room!(community, ["moderator"])
+      shown = TestUtils.create_random_private_room!(community, ["member"])
+
+      room_ids = community |> Communities.list_visible_rooms(member) |> TestUtils.pluck(:id)
+
+      refute hidden.id in room_ids
+      assert shown.id in room_ids
+    end
+
+    test "gives the roles to those who manage rooms", %{owner: owner, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+
+      rooms = Communities.list_visible_rooms(community, owner)
+
+      assert Enum.find(rooms, &(&1.id == room.id)).room_roles == room.room_roles
     end
   end
 

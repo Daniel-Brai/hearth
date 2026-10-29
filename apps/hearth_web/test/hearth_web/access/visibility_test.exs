@@ -4,6 +4,7 @@ defmodule HearthWeb.Access.VisibilityTest do
   import Phoenix.ChannelTest
   import HearthWeb.ChannelCase, only: [connected_socket: 1]
 
+  alias Hearth.Communities
   alias Hearth.TestUtils
 
   @endpoint HearthWeb.Endpoint
@@ -183,6 +184,152 @@ defmodule HearthWeb.Access.VisibilityTest do
              |> auth_conn(stranger)
              |> get(~p"/api/rooms/#{room.id}/messages")
              |> response(403)
+    end
+  end
+
+  describe "private room to a member without its roles" do
+    setup %{owner: owner} do
+      open = TestUtils.create_random_forum!(owner, visibility: :public)
+      member = TestUtils.join_random_member!(open)
+      hidden = TestUtils.create_random_private_room!(open, ["moderator"])
+      session = TestUtils.insert_random_voice_session!(open)
+      {:ok, lounge} = Communities.get_room(id: session.room_id)
+      {:ok, voice} = Communities.update_room(owner, lounge, %{access: :roles, role_ids: []})
+      transcript = TestUtils.transcribe_random_recording!(session, [{owner.id, "0 1000 Hi"}])
+
+      {:ok, binding()}
+    end
+
+    test "leaves it out of the community", %{
+      conn: conn,
+      member: member,
+      open: open,
+      hidden: hidden,
+      voice: voice
+    } do
+      response =
+        conn |> auth_conn(member) |> get(~p"/api/communities/#{open.id}") |> valid_response(200)
+
+      room_ids = TestUtils.pluck(response["community"]["rooms"], "id")
+
+      refute hidden.id in room_ids
+      refute voice.id in room_ids
+    end
+
+    test "hides its chat", %{conn: conn, member: member, hidden: hidden} do
+      assert conn
+             |> auth_conn(member)
+             |> get(~p"/api/rooms/#{hidden.id}/messages")
+             |> response(404)
+
+      assert conn
+             |> auth_conn(member)
+             |> post(~p"/api/rooms/#{hidden.id}/messages", %{body: "Hi"})
+             |> response(404)
+
+      assert conn
+             |> auth_conn(member)
+             |> put(~p"/api/rooms/#{hidden.id}/moderation", %{level: "none"})
+             |> response(404)
+    end
+
+    test "hides its voice", %{conn: conn, member: member, voice: voice, session: session} do
+      assert conn
+             |> auth_conn(member)
+             |> get(~p"/api/rooms/#{voice.id}/voice-session")
+             |> response(404)
+
+      assert conn
+             |> auth_conn(member)
+             |> get(~p"/api/voice-sessions/#{session.id}")
+             |> response(404)
+
+      assert conn
+             |> auth_conn(member)
+             |> get(~p"/api/rooms/#{voice.id}/recordings")
+             |> response(404)
+
+      assert conn
+             |> auth_conn(member)
+             |> get(~p"/api/voice-sessions/#{session.id}/transcript")
+             |> response(404)
+    end
+
+    test "hides its recording", %{conn: conn, member: member, transcript: transcript} do
+      assert conn
+             |> auth_conn(member)
+             |> get(~p"/api/recordings/#{transcript.recording_id}")
+             |> response(404)
+    end
+
+    test "can't listen in on it", %{member: member, hidden: hidden, session: session} do
+      socket = connected_socket(member)
+
+      assert {:error, _reason} = subscribe_and_join(socket, "room:#{hidden.id}")
+      assert {:error, _reason} = subscribe_and_join(socket, "voice:#{session.id}")
+    end
+
+    test "keeps its changes from the community topic", %{
+      owner: owner,
+      member: member,
+      open: open,
+      hidden: hidden
+    } do
+      socket = connected_socket(member)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "community:#{open.id}")
+      {:ok, _room} = Communities.update_room(owner, hidden, %{topic: "Plans"})
+      hidden_id = hidden.id
+
+      refute_push "RoomChanged", %{room_id: ^hidden_id}, 300
+    end
+
+    test "keeps a new private room from the community topic", %{member: member, open: open} do
+      socket = connected_socket(member)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "community:#{open.id}")
+      %{id: room_id} = TestUtils.create_random_private_room!(open, ["moderator"])
+
+      refute_push "RoomChanged", %{room_id: ^room_id}, 300
+    end
+
+    test "opens it to the owner", %{conn: conn, owner: owner, open: open, hidden: hidden} do
+      response =
+        conn |> auth_conn(owner) |> get(~p"/api/communities/#{open.id}") |> valid_response(200)
+
+      assert hidden.id in TestUtils.pluck(response["community"]["rooms"], "id")
+
+      assert conn
+             |> auth_conn(owner)
+             |> get(~p"/api/rooms/#{hidden.id}/messages")
+             |> json_response(200)
+    end
+
+    test "tells the owner it changed", %{owner: owner, open: open, hidden: hidden} do
+      socket = connected_socket(owner)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "community:#{open.id}")
+      {:ok, _room} = Communities.update_room(owner, hidden, %{topic: "Plans"})
+      hidden_id = hidden.id
+
+      assert_push "RoomChanged", %{room_id: ^hidden_id}, 1_000
+    end
+
+    test "closes the room once its role is gone", %{owner: owner, open: open, hidden: hidden} do
+      moderator = TestUtils.join_random_member!(open)
+      {:ok, _membership} = Communities.set_member_roles(owner, open, moderator, ["moderator"])
+      socket = connected_socket(moderator)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "room:#{hidden.id}")
+      {:ok, _membership} = Communities.set_member_roles(owner, open, moderator, ["member"])
+      hidden_id = hidden.id
+
+      assert_push "room_hidden", %{room_id: ^hidden_id}, 1_000
+    end
+
+    test "tells the community to refetch rooms", %{member: member, owner: owner, open: open} do
+      socket = connected_socket(member)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "community:#{open.id}")
+      {:ok, _membership} = Communities.set_member_roles(owner, open, member, ["member"])
+      open_id = open.id
+
+      assert_push "room_access_changed", %{community_id: ^open_id}, 1_000
     end
   end
 end

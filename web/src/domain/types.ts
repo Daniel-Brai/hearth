@@ -43,7 +43,16 @@ export type PostKind = {
   desc: string | null;
 };
 
-export type Room = { id: string; name: string; unread: number };
+// A room for some roles lists them as role ids, sent only to people who manage rooms
+export type RoomAccess = 'everyone' | 'roles';
+
+export type Room = {
+  id: string;
+  name: string;
+  unread: number;
+  access?: RoomAccess;
+  roleIds?: string[];
+};
 
 export type ArchivedRoom = {
   id: string;
@@ -66,6 +75,8 @@ export type VoiceRoom = {
   postId: string | null;
   mode?: VoiceMode;
   recording?: boolean;
+  access?: RoomAccess;
+  roleIds?: string[];
   // Where the next page of the room's recordings starts, missing when there are no more
   recordingsAfter?: string | null;
 };
@@ -328,6 +339,8 @@ export type Ban = {
 export type Role = {
   c: string;
   id: string;
+  // The server's id for the role, which rooms use. Roles made without a server have none
+  uid?: string;
   name: string;
   hue: Hue;
   members: string[];

@@ -151,6 +151,24 @@ defmodule Hearth.IAM do
     Enum.uniq(explicit ++ by_default)
   end
 
+  # A member with no roles of their own holds the default ones
+  @spec role_ids(User.t(), [T.id()]) :: [T.id()]
+  def role_ids(%User{id: user_id}, community_ids) when is_list(community_ids) do
+    [user_id: user_id, community_id: community_ids, preload: :roles]
+    |> Membership.all()
+    |> Enum.flat_map(&held_roles/1)
+    |> Enum.map(& &1.id)
+  end
+
+  @spec communities_with(User.t(), String.t(), [T.id()]) :: [T.id()]
+  def communities_with(%User{id: user_id}, permission, community_ids)
+      when is_binary(permission) and is_list(community_ids) do
+    [user_id: user_id, community_id: community_ids, preload: :roles]
+    |> Membership.all()
+    |> Enum.filter(&(permission in with_permissions(&1).permissions))
+    |> Enum.map(& &1.community_id)
+  end
+
   @spec permissions_for(User.t(), T.id()) :: [String.t()]
   def permissions_for(%User{} = user, community_id) do
     case get_membership(user, community_id) do
@@ -192,11 +210,7 @@ defmodule Hearth.IAM do
   end
 
   defp with_permissions(%Membership{} = membership) do
-    roles =
-      case membership.roles do
-        [] -> default_roles(membership.community_id)
-        roles -> roles
-      end
+    roles = held_roles(membership)
 
     permissions =
       case Enum.any?(roles, &(&1.key == @owner)) do
@@ -206,6 +220,11 @@ defmodule Hearth.IAM do
 
     %{membership | permissions: permissions |> Enum.uniq() |> Enum.sort()}
   end
+
+  defp held_roles(%Membership{roles: [], community_id: community_id}),
+    do: default_roles(community_id)
+
+  defp held_roles(%Membership{roles: roles}), do: roles
 
   defp default_roles(community_id), do: Role.all(community_id: community_id, is_default: true)
 end

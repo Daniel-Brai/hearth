@@ -11,4 +11,6 @@ export interface EventUpdated {
   community_id: string;
   event_id: string;
   moved: boolean;
+  /** @nullable */
+  room_id: string | null;
 }

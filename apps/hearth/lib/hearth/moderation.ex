@@ -183,6 +183,7 @@ defmodule Hearth.Moderation do
       opts
       |> Keyword.put_new(:status, :pending)
       |> Keyword.put(:community_id, id)
+      |> Keyword.put(:outside_rooms, Communities.hidden_room_ids(user, [id]))
       |> paginate()
     end
   end
@@ -200,10 +201,12 @@ defmodule Hearth.Moderation do
 
   @spec queue_counts(User.t()) :: %{T.id() => non_neg_integer()}
   def queue_counts(%User{} = user) do
-    user
-    |> IAM.community_ids()
-    |> Enum.filter(&IAM.can?(user, :remove, %{type: :content, community_id: &1}))
-    |> Item.pending_counts()
+    community_ids =
+      user
+      |> IAM.community_ids()
+      |> Enum.filter(&IAM.can?(user, :remove, %{type: :content, community_id: &1}))
+
+    Item.pending_counts(community_ids, Communities.hidden_room_ids(user, community_ids))
   end
 
   @spec get_item(T.id()) :: {:ok, Item.t()} | {:error, :not_found}
@@ -440,11 +443,26 @@ defmodule Hearth.Moderation do
 
   defp may_moderate(%User{is_instance_admin: true}, %Subject{community_id: nil}), do: :ok
   defp may_moderate(%User{}, %Subject{community_id: nil}), do: {:error, :forbidden}
-  defp may_moderate(user, %Subject{community_id: id}), do: authorize(user, :remove, :content, id)
+
+  defp may_moderate(user, %Subject{community_id: id} = subject) do
+    with :ok <- authorize(user, :remove, :content, id), do: sees_room(user, id, subject.room_id)
+  end
 
   defp may_decide(%User{is_instance_admin: true}, %Item{community_id: nil}), do: :ok
   defp may_decide(%User{}, %Item{community_id: nil}), do: {:error, :forbidden}
-  defp may_decide(user, %Item{community_id: id}), do: authorize(user, :remove, :content, id)
+
+  defp may_decide(user, %Item{community_id: id} = item) do
+    with :ok <- authorize(user, :remove, :content, id), do: sees_room(user, id, item.room_id)
+  end
+
+  defp sees_room(_user, _community_id, nil), do: :ok
+
+  defp sees_room(user, community_id, room_id) do
+    case room_id in Communities.hidden_room_ids(user, [community_id]) do
+      true -> {:error, :not_found}
+      false -> :ok
+    end
+  end
 
   defp within(_community, nil), do: :ok
 

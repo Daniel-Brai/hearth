@@ -39,6 +39,20 @@ defmodule HearthWeb.EventControllerTest do
       assert [] = conn |> get(~p"/api/events") |> valid_response(200)
     end
 
+    test "leaves out events in a private room", %{
+      conn: conn,
+      owner: owner,
+      member: member,
+      community: community,
+      event: event
+    } do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      _hidden = TestUtils.create_random_community_event!(owner, community, room_id: room.id)
+
+      assert [response] = conn |> auth_conn(member) |> get(~p"/api/events") |> valid_response(200)
+      assert response["id"] == event.id
+    end
+
     test "lists the events in the communities joined", %{
       conn: conn,
       owner: owner,

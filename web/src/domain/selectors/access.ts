@@ -5,6 +5,9 @@ import { joinedCids } from './communities';
 export const rolesOf = (state: AppState, cid: string): Role[] =>
   state.roles.filter((r) => r.c === cid);
 
+// Rooms list roles by the server's id, and roles made without a server by their key
+export const roleRef = (role: Role) => role.uid ?? role.id;
+
 export function myRolesIn(state: AppState, cid: string) {
   if (!state.me || !state.communities[cid]?.joined) return [];
   const mine = rolesOf(state, cid)

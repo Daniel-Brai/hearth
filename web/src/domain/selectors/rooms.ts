@@ -1,5 +1,5 @@
 import type { AppState } from '../app-state';
-import type { RoomSettings } from '../types';
+import type { RoomAccess, RoomSettings } from '../types';
 import { ROOM_DEFAULTS } from '@/domain/catalog';
 import { canDo, isOwner, myRolesIn, roleName } from './access';
 import { community } from './communities';
@@ -8,6 +8,17 @@ export const findRoom = (state: AppState, name: string, cid: string | null | und
   const c = community(state, cid);
   return c ? c.rooms.find((r) => r.name.toLowerCase() === String(name).toLowerCase()) : undefined;
 };
+
+export function roomAccess(
+  state: AppState,
+  cid: string | null | undefined,
+  rid: string | null | undefined,
+): RoomAccess {
+  const c = community(state, cid);
+  const room = c?.rooms.find((r) => r.id === rid) ?? c?.voice.find((v) => v.id === rid);
+
+  return room?.access ?? 'everyone';
+}
 
 export const roomSettings = (state: AppState, key: string): RoomSettings =>
   state.roomSettings[key] || (ROOM_DEFAULTS as RoomSettings);

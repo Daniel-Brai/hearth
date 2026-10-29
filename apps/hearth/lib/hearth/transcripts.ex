@@ -71,7 +71,8 @@ defmodule Hearth.Transcripts do
          true <- IAM.member?(user, community_id) and not Communities.banned?(user, community_id),
          %Transcript{} = transcript <- Transcript.latest(post_id: post_id, status: :ready),
          {:ok, session} <- Voice.get_session(id: transcript.session_id),
-         {:ok, room} <- Communities.get_room(id: session.room_id) do
+         {:ok, room} <- Communities.get_room(id: session.room_id),
+         true <- Communities.room_visible?(user, room) do
       %{transcript: transcript, session: session, room_name: room.name}
     else
       _hidden -> nil

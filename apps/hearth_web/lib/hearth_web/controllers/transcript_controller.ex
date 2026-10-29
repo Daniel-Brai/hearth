@@ -32,7 +32,7 @@ defmodule HearthWeb.TranscriptController do
 
   def show(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
     with {:ok, view} <- Transcripts.get_for_session(auth, id),
-         {:ok, room} <- Communities.get_room(id: view.session.room_id) do
+         {:ok, room} <- Communities.view_room(auth, id: view.session.room_id) do
       people = view.transcript.speakers |> Enum.map(& &1.user_id) |> Authors.people()
 
       render(conn, :show,

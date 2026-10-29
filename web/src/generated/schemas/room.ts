@@ -3,10 +3,12 @@
  * Hearth
  * OpenAPI spec version: 2026-10-24
  */
+import type { RoomAccess } from './room-access';
 import type { RoomModeration } from './room-moderation';
 import type { RoomType } from './room-type';
 
 export interface Room {
+  access: RoomAccess;
   /** @nullable */
   archived_at: string | null;
   community_id: string;
@@ -14,6 +16,8 @@ export interface Room {
   moderation: RoomModeration;
   name: string;
   position: number;
+  /** Who can see a private room, for people with room.update */
+  role_ids?: string[];
   slug: string;
   /** @nullable */
   topic: string | null;

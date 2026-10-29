@@ -14,6 +14,7 @@ import type {
   QueueItem,
   Reply,
   ReportReason,
+  RoomAccess,
   RoomSettings,
   UserSettings,
   Visibility,
@@ -28,7 +29,6 @@ export const fail = (error: string): Result<never> => ({ ok: false, error });
 // Changing email needs a fresh sign in so the screen offers one with this message
 export const SIGN_IN_AGAIN = 'To change your email, sign in again first.';
 
-// Whether this device gets pushes, or why it can't
 export type PushStatus = 'on' | 'off' | 'blocked' | 'unsupported';
 
 export type CommunitySpec = {
@@ -229,8 +229,15 @@ export interface HearthGateway {
     rename(cid: string, from: string, to: string): Promise<Result<{ id: string }>>;
     create(
       cid: string,
-      spec: { type: 'text' | 'voice'; name: string; topic: string },
+      spec: {
+        type: 'text' | 'voice';
+        name: string;
+        topic: string;
+        access?: RoomAccess;
+        roleIds?: string[];
+      },
     ): Promise<Result<{ id: string }>>;
+    setAccess(cid: string, rid: string, access: RoomAccess, roleIds: string[]): Promise<Result>;
     archive(cid: string, id: string): Promise<Result>;
     restore(cid: string, id: string): Promise<Result>;
     destroy(cid: string, id: string): Promise<Result>;

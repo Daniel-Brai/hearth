@@ -14,6 +14,18 @@ defmodule Hearth.Notifications.Worker.TellMembersTest do
       assert :ok = perform_job(TellMembers, %{event_id: Common.new_id()})
     end
 
+    test "tells nobody who can't see the private room" do
+      owner = TestUtils.register_random_user!()
+      community = TestUtils.create_random_community!(owner, template: "oss")
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      event = TestUtils.create_random_community_event!(owner, community, room_id: room.id)
+
+      assert :ok = perform_job(TellMembers, %{event_id: event.id})
+
+      assert %Page{data: []} = Notifications.list_notifications(member)
+    end
+
     test "tells every member but the host" do
       owner = TestUtils.register_random_user!()
       community = TestUtils.create_random_community!(owner, template: "oss")

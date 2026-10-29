@@ -37,6 +37,7 @@ defmodule Hearth.Transcripts.Command.PublishTranscript do
         session_id: ready.session_id,
         recording_id: ready.recording_id,
         community_id: ready.community_id,
+        room_id: session.room_id,
         post_id: ready.post_id,
         event_id: session.event_id
       })

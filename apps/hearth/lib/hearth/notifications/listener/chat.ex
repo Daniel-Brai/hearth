@@ -47,6 +47,7 @@ defmodule Hearth.Notifications.Listener.Chat do
       Mentions.notify(%{
         actor: actor,
         community: community,
+        room: room,
         body: message.body,
         subject: {"message", message.id},
         data: %{message_id: message.id, room_slug: room.slug},
