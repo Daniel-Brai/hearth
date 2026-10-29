@@ -58,13 +58,12 @@ defmodule Hearth.ScreeningPolicyTest do
     test "screens direct message image" do
       TestUtils.put_screening(image_floor: :images)
       owner = TestUtils.register_random_user!()
-      community = TestUtils.create_random_forum!(owner)
-      member = TestUtils.join_random_member!(community)
+      member = owner |> TestUtils.create_random_forum!() |> TestUtils.join_random_member!()
       {:ok, conversation} = Chat.start_direct(member, owner)
-      image = TestUtils.upload_random_file!(member, Lorem.sentence(), "image/png")
+      image = TestUtils.upload_random_file!(member, data: Lorem.sentence())
 
-      {:ok, message} =
-        Chat.send_message(member, conversation, %{body: "", attachment_ids: [image.id]})
+      params = %{body: "", attachment_ids: [image.id]}
+      {:ok, message} = Chat.send_message(member, conversation, params)
 
       assert_enqueued(worker: Screen, args: %{subject_type: "message", subject_id: message.id})
     end

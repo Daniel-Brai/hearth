@@ -87,7 +87,7 @@ defmodule Hearth.Moderation.ScreeningTest do
       TestUtils.put_screening(image_floor: :images)
       community = TestUtils.create_random_forum!(owner, moderation: :none)
       {:ok, _membership} = Communities.join(author, community)
-      image = TestUtils.upload_random_file!(author, "unsafe" <> Lorem.sentence(), "image/png")
+      image = TestUtils.upload_random_file!(author, data: "unsafe" <> Lorem.sentence())
       post = TestUtils.create_random_post!(author, community, attachment_ids: [image.id])
 
       assert {:ok, %Item{source: :instance, community_id: nil, held: true}} =

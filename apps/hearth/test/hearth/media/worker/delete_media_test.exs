@@ -14,13 +14,8 @@ defmodule Hearth.Media.Worker.DeleteMediaTest do
     end
 
     test "deletes the file with every size made of it" do
-      media =
-        TestUtils.upload_random_file!(
-          TestUtils.register_random_user!(),
-          TestUtils.random_png!(400, 400),
-          "image/png",
-          purpose: :avatar
-        )
+      user = TestUtils.register_random_user!()
+      media = TestUtils.upload_random_file!(user, purpose: :avatar)
 
       :ok = perform_job(ProcessImage, %{media_id: media.id})
       %Asset{variants: [variant | _variants]} = Asset.get(id: media.id)

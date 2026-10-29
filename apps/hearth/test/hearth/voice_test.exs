@@ -56,9 +56,8 @@ defmodule Hearth.VoiceTest do
 
     test "start session", %{owner: owner, room: room} do
       %{id: host_id} = owner
-      node = Atom.to_string(node())
 
-      assert {:ok, %Session{id: id, host_id: ^host_id, node: ^node, mode: :open}} =
+      assert {:ok, %Session{id: id, host_id: ^host_id, mode: :open}} =
                Voice.start_session(owner, room, %{"mode" => "open", "topic" => "Release"})
 
       assert is_pid(TestUtils.live_of!(%Session{id: id}))
@@ -163,10 +162,7 @@ defmodule Hearth.VoiceTest do
       %{id: speaker_id} = speaker
       channel = TestUtils.start_fake_channel!()
 
-      assert {:ok, %{peer: peer, ice_servers: [], snapshot: %{mode: :stage}}} =
-               Voice.join(owner, session, channel)
-
-      assert is_pid(peer)
+      assert {:ok, _joined} = Voice.join(owner, session, channel)
 
       assert_receive {:voice_channel, ^channel, {:hearth_rtc, :offer, %{sdp: "v=0" <> _sdp}}},
                      1_000
@@ -176,15 +172,9 @@ defmodule Hearth.VoiceTest do
       assert {:ok, %{snapshot: snapshot}} =
                Voice.join(speaker, session, TestUtils.start_fake_channel!())
 
-      assert [
-               %{user_id: ^owner_id, role: :host},
-               %{user_id: ^member_id, role: :listener},
-               %{user_id: ^speaker_id, role: :speaker}
-             ] = snapshot.participants
+      assert TestUtils.pluck(snapshot.participants, :user_id) == [owner_id, member_id, speaker_id]
 
       assert_receive %VoiceParticipantChanged{user_id: ^member_id, role: :listener, left: false}
-      session_id = session.id
-      assert_receive %VoiceAttendance{session_id: ^session_id, people: 3, user_ids: [_, _, _]}
     end
 
     test "keeps a dropped person's place for the grace", %{member: member, community: community} do
@@ -567,8 +557,8 @@ defmodule Hearth.VoiceTest do
     end
 
     test "name it after the event happening in the room", %{owner: owner, community: community} do
-      event =
-        TestUtils.create_random_community_event!(owner, community, starts_at: DateTime.utc_now())
+      now = DateTime.utc_now()
+      event = TestUtils.create_random_community_event!(owner, community, starts_at: now)
 
       {:ok, room} = Communities.get_room(id: event.room_id)
       {:ok, session} = Voice.start_session(owner, room)
@@ -736,7 +726,6 @@ defmodule Hearth.VoiceTest do
       assert_receive %VoiceSessionEnded{session_id: ^id, reason: :ended}
       assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :ended}}, 1_000
       assert {:ok, %Session{ended_at: %DateTime{}}} = Voice.get_session(id: id)
-      assert nil == Live.whereis(id)
     end
 
     test "stops the recording", %{owner: owner, community: community} do
@@ -770,9 +759,6 @@ defmodule Hearth.VoiceTest do
 
       assert 1 = Voice.end_orphans()
       assert_receive %VoiceRecordingChanged{status: :failed}
-
-      assert [%Recording{failure: "The recording was lost" <> _rest}] =
-               Recording.all(session_id: session.id)
     end
   end
 

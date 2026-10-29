@@ -19,8 +19,8 @@ defmodule Hearth.Auth.Worker.PurgeTokensTest do
       user = TestUtils.register_random_user!()
       {:ok, _session} = Auth.create_session(user)
 
-      :ok =
-        TestUtils.update_rows!(Token, [user_id: user.id], expires_at: TestUtils.minutes_ago(1))
+      expires_at = TestUtils.minutes_ago(1)
+      :ok = TestUtils.update_rows!(Token, [user_id: user.id], expires_at: expires_at)
 
       assert :ok = perform_job(PurgeTokens, %{})
       refute Token.exists?(user_id: user.id)

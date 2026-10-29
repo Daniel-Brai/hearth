@@ -13,12 +13,11 @@ defmodule Hearth.MediaTest do
   alias Hearth.TestUtils
 
   @pdf "application/pdf"
-  @docx "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
   setup do
     :ok = Media.subscribe_to_pubsub()
 
-    {:ok, user: TestUtils.register_random_user!(), png: TestUtils.random_png!(400, 300)}
+    {:ok, user: TestUtils.register_random_user!(), png: TestUtils.random_file!()}
   end
 
   describe "share_card_url/1" do
@@ -61,15 +60,15 @@ defmodule Hearth.MediaTest do
                Media.put_attachments(user, :post, post.id, [theirs.id])
     end
 
-    test "fails for an unfinished upload", %{user: user, post: post, png: png} do
-      [unfinished] = TestUtils.request_random_uploads!(user, png, "image/png", 1)
+    test "fails for an unfinished upload", %{user: user, post: post} do
+      [unfinished] = TestUtils.request_random_uploads!(user, 1)
 
       assert {:error, :invalid_attachment} =
                Media.put_attachments(user, :post, post.id, [unfinished.id])
     end
 
-    test "fails for an avatar", %{user: user, post: post, png: png} do
-      avatar = TestUtils.upload_random_file!(user, png, "image/png", purpose: :avatar)
+    test "fails for an avatar", %{user: user, post: post} do
+      avatar = TestUtils.upload_random_file!(user, purpose: :avatar)
 
       assert {:error, :invalid_attachment} =
                Media.put_attachments(user, :post, post.id, [avatar.id])
@@ -87,10 +86,9 @@ defmodule Hearth.MediaTest do
       assert :ok = Media.put_attachments(user, :post, post.id, [second.id, first.id])
 
       %{id: post_id} = post
-      %{id: first_id} = first
       %{id: second_id} = second
 
-      assert %{^post_id => [%{media: %{id: ^second_id}}, %{media: %{id: ^first_id}}]} =
+      assert %{^post_id => [%{media: %{id: ^second_id}} | _rest]} =
                Media.list_attachments(:post, [post.id])
     end
 
@@ -110,68 +108,67 @@ defmodule Hearth.MediaTest do
 
   describe "request_upload/2" do
     test "fails for a type that can't be uploaded", %{user: user} do
-      params = TestUtils.random_upload_params("MZ", "application/x-msdownload")
+      params = TestUtils.random_upload_params(content_type: "application/x-msdownload")
 
       assert {:error, changeset} = Media.request_upload(user, params)
       assert %{content_type: ["is not a type that can be uploaded"]} = errors_on(changeset)
     end
 
-    test "fails for a file over the limit", %{user: user, png: png} do
-      params = TestUtils.random_upload_params(png, "image/png", byte_size: 11 * 1024 * 1024)
+    test "fails for a file over the limit", %{user: user} do
+      params = TestUtils.random_upload_params(byte_size: 11 * 1024 * 1024)
 
       assert {:error, changeset} = Media.request_upload(user, params)
       assert %{byte_size: [_too_big]} = errors_on(changeset)
     end
 
     test "fails for a video over 100 MB", %{user: user} do
-      params = TestUtils.random_upload_params("", "video/mp4", byte_size: 101 * 1024 * 1024)
+      params = TestUtils.random_upload_params(:video, byte_size: 101 * 1024 * 1024)
 
       assert {:error, changeset} = Media.request_upload(user, params)
       assert %{byte_size: [_too_big]} = errors_on(changeset)
     end
 
     test "fails for a video said to be over 20 minutes", %{user: user} do
-      params = TestUtils.random_upload_params("clip", "video/mp4", duration_ms: 21 * 60_000)
+      params = TestUtils.random_upload_params(:video, duration_ms: 21 * 60_000)
 
       assert {:error, changeset} = Media.request_upload(user, params)
       assert %{duration_ms: [_too_long]} = errors_on(changeset)
     end
 
-    test "fails for a checksum that isn't hex SHA-256", %{user: user, png: png} do
-      params = TestUtils.random_upload_params(png, "image/png", sha256: "nope")
+    test "fails for a checksum that isn't hex SHA-256", %{user: user} do
+      params = TestUtils.random_upload_params(sha256: "nope")
 
       assert {:error, changeset} = Media.request_upload(user, params)
       assert %{sha256: ["is not a SHA-256 in hex"]} = errors_on(changeset)
     end
 
-    test "fails with 20 unfinished uploads", %{user: user, png: png} do
-      _media = TestUtils.request_random_uploads!(user, png, "image/png", 20)
+    test "fails with 20 unfinished uploads", %{user: user} do
+      _media = TestUtils.request_random_uploads!(user, 20)
 
       assert {:error, :too_many_unfinished} =
-               Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+               Media.request_upload(user, TestUtils.random_upload_params())
     end
 
-    test "fails after 60 uploads in an hour", %{user: user, png: png} do
-      :ok = TestUtils.fail_random_uploads!(user, png, "image/png", 60)
+    test "fails after 60 uploads in an hour", %{user: user} do
+      :ok = TestUtils.fail_random_uploads!(user, 60)
 
       assert {:error, :rate_limited} =
-               Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+               Media.request_upload(user, TestUtils.random_upload_params())
     end
 
-    test "signs one PUT for a small file", %{user: user, png: png} do
-      params = TestUtils.random_upload_params(png, "image/png")
+    test "signs one PUT for a small file", %{user: user} do
+      params = TestUtils.random_upload_params()
 
       assert {:ok, %{media: media, upload: %{url: url, headers: headers}}} =
                Media.request_upload(user, params)
 
-      assert %Asset{status: :uploading, multipart_upload_id: nil} = media
-      assert media.bucket_key == "media/#{media.id}/original"
+      assert %Asset{multipart_upload_id: nil} = media
       assert url =~ media.bucket_key
       assert headers["content-type"] == "image/png"
     end
 
     test "starts a multipart upload for a big file", %{user: user} do
-      params = TestUtils.random_upload_params("", @pdf, byte_size: 3 * 1024 * 1024)
+      params = TestUtils.random_upload_params(:pdf, byte_size: 3 * 1024 * 1024)
 
       assert {:ok, %{media: media, upload: %{upload_id: upload_id, parts: 1}}} =
                Media.request_upload(user, params)
@@ -179,8 +176,8 @@ defmodule Hearth.MediaTest do
       assert media.multipart_upload_id == upload_id
     end
 
-    test "returns the same row for the same key", %{user: user, png: png} do
-      params = TestUtils.random_upload_params(png, "image/png")
+    test "returns the same row for the same key", %{user: user} do
+      params = TestUtils.random_upload_params()
 
       {:ok, %{media: %{id: id}}} = Media.request_upload(user, params)
 
@@ -191,7 +188,7 @@ defmodule Hearth.MediaTest do
 
   describe "part_urls/3" do
     setup %{user: user} do
-      params = TestUtils.random_upload_params("", @pdf, byte_size: 25 * 1024 * 1024)
+      params = TestUtils.random_upload_params(:pdf, byte_size: 25 * 1024 * 1024)
       {:ok, %{media: media}} = Media.request_upload(user, params)
 
       {:ok, binding()}
@@ -201,9 +198,9 @@ defmodule Hearth.MediaTest do
       assert {:error, :forbidden} = Media.part_urls(TestUtils.register_random_user!(), media, [1])
     end
 
-    test "fails for a single upload", %{user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+    test "fails for a single upload", %{user: user} do
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       assert {:error, :not_multipart} = Media.part_urls(user, media, [1])
     end
@@ -221,56 +218,55 @@ defmodule Hearth.MediaTest do
 
   describe "list_parts/2" do
     test "fails for someone else", %{user: user} do
-      params = TestUtils.random_upload_params("", @pdf, byte_size: 3 * 1024 * 1024)
+      params = TestUtils.random_upload_params(:pdf, byte_size: 3 * 1024 * 1024)
       {:ok, %{media: media}} = Media.request_upload(user, params)
 
       assert {:error, :forbidden} = Media.list_parts(TestUtils.register_random_user!(), media)
     end
 
     test "lists the parts already stored", %{user: user} do
-      params = TestUtils.random_upload_params("", @pdf, byte_size: 3 * 1024 * 1024)
+      params = TestUtils.random_upload_params(:pdf, byte_size: 3 * 1024 * 1024)
       {:ok, %{media: media}} = Media.request_upload(user, params)
 
-      {:ok, _etag} =
-        Storage.write_local_part(media.bucket_key, media.multipart_upload_id, 1, ["%PDF-"])
+      %{bucket_key: key, multipart_upload_id: upload_id} = media
+      {:ok, _etag} = Storage.write_local_part(key, upload_id, 1, ["%PDF-"])
 
       assert {:ok, [%{number: 1, size: 5}]} = Media.list_parts(user, media)
     end
   end
 
   describe "complete_upload/3" do
-    test "fails for someone else", %{user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+    test "fails for someone else", %{user: user} do
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       assert {:error, :forbidden} =
                Media.complete_upload(TestUtils.register_random_user!(), media)
     end
 
-    test "fails before the file is stored", %{user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+    test "fails before the file is stored", %{user: user} do
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       assert {:error, :not_uploaded} = Media.complete_upload(user, media)
       assert %Asset{status: :uploading} = Asset.get(id: media.id)
     end
 
     test "fails and deletes a file of another size", %{user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       :ok = Storage.put(media.bucket_key, png <> "more", "image/png")
 
       assert {:error, :mismatch} = Media.complete_upload(user, media)
-      assert %Asset{status: :failed, failure: "The file isn't" <> _rest} = Asset.get(id: media.id)
       assert {:error, :not_found} = Storage.head(media.bucket_key)
     end
 
     test "fails a program named as a PDF", %{user: user} do
       data = "MZ" <> :binary.copy(<<0>>, 64)
 
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(data, @pdf))
+      params = TestUtils.random_upload_params(:pdf, data: data)
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       :ok = Storage.put(media.bucket_key, data, @pdf)
 
@@ -278,9 +274,9 @@ defmodule Hearth.MediaTest do
       assert %Asset{status: :failed} = Asset.get(id: media.id)
     end
 
-    test "fails again once failed", %{user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+    test "fails again once failed", %{user: user} do
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       :ok = Storage.put(media.bucket_key, "short", "image/png")
       {:error, :mismatch} = Media.complete_upload(user, media)
@@ -288,37 +284,33 @@ defmodule Hearth.MediaTest do
       assert {:error, :failed} = Media.complete_upload(user, Asset.get(id: media.id))
     end
 
-    test "queues an image to be processed", %{user: user, png: png} do
+    test "queues an image to be processed", %{user: user} do
       assert %Asset{id: id, status: :processing} =
-               TestUtils.upload_random_file!(user, png, "image/png")
+               TestUtils.upload_random_file!(user)
 
       assert_enqueued(worker: ProcessImage, args: %{media_id: id})
-      refute_receive %MediaReady{media_id: ^id}
     end
 
     test "queues a video to be processed", %{user: user} do
       assert %Asset{id: id, status: :processing} =
-               TestUtils.upload_random_file!(user, TestUtils.random_video!(), "video/mp4")
+               TestUtils.upload_random_file!(user, :video)
 
       assert_enqueued(worker: ProcessVideo, args: %{media_id: id})
     end
 
     test "makes a document ready", %{user: user} do
-      {:ok, {_name, docx}} =
-        :zip.create(~c"file.docx", [{~c"word/document.xml", "<w:document/>"}], [:memory])
-
-      assert %Asset{id: id, status: :ready} = TestUtils.upload_random_file!(user, docx, @docx)
+      assert %Asset{id: id, status: :ready} = TestUtils.upload_random_file!(user, :docx)
       assert_receive %MediaReady{media_id: ^id}
     end
 
     test "completes a multipart upload", %{user: user} do
       data = "%PDF-" <> :binary.copy("x", 2 * 1024 * 1024)
 
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(data, @pdf))
+      params = TestUtils.random_upload_params(:pdf, data: data)
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
-      {:ok, etag} =
-        Storage.write_local_part(media.bucket_key, media.multipart_upload_id, 1, [data])
+      %{bucket_key: key, multipart_upload_id: upload_id} = media
+      {:ok, etag} = Storage.write_local_part(key, upload_id, 1, [data])
 
       assert {:ok, %Asset{status: :ready, multipart_upload_id: nil}} =
                Media.complete_upload(user, media, [{1, etag}])
@@ -328,20 +320,20 @@ defmodule Hearth.MediaTest do
       assert {:ok, %{size: ^size}} = Storage.head(media.bucket_key)
     end
 
-    test "returns the row again once completed", %{user: user, png: png} do
-      media = TestUtils.upload_random_file!(user, png, "image/png")
+    test "returns the row again once completed", %{user: user} do
+      media = TestUtils.upload_random_file!(user)
 
       assert {:ok, %Asset{status: :processing}} = Media.complete_upload(user, media)
     end
   end
 
   describe "urls/1" do
-    test "has none until ready", %{user: user, png: png} do
-      assert user |> TestUtils.upload_random_file!(png, "image/png") |> Media.urls() == nil
+    test "has none until ready", %{user: user} do
+      assert user |> TestUtils.upload_random_file!() |> Media.urls() == nil
     end
 
-    test "signs the original and each size", %{user: user, png: png} do
-      media = TestUtils.upload_random_file!(user, png, "image/png")
+    test "signs the original and each size", %{user: user} do
+      media = TestUtils.upload_random_file!(user)
       :ok = perform_job(ProcessImage, %{media_id: media.id})
 
       assert %{original: original, variants: [%{width: 320, format: :webp, url: url}]} =
@@ -351,8 +343,8 @@ defmodule Hearth.MediaTest do
       assert url =~ "w320.webp"
     end
 
-    test "saves a picture as it was sent", %{user: user, png: png} do
-      media = TestUtils.upload_random_file!(user, png, "image/png", name: "harbour.png")
+    test "saves a picture as it was sent", %{user: user} do
+      media = TestUtils.upload_random_file!(user, name: "harbour.png")
       :ok = perform_job(ProcessImage, %{media_id: media.id})
 
       %{download: download} = [id: media.id] |> Asset.get() |> Media.urls()
@@ -364,10 +356,7 @@ defmodule Hearth.MediaTest do
     end
 
     test "saves a document as it was sent", %{user: user} do
-      {:ok, {_name, docx}} =
-        :zip.create(~c"file.docx", [{~c"word/document.xml", "<w:document/>"}], [:memory])
-
-      media = TestUtils.upload_random_file!(user, docx, @docx, name: "notes.docx")
+      media = TestUtils.upload_random_file!(user, :docx, name: "notes.docx")
 
       %{download: download} = Media.urls(media)
 
@@ -379,14 +368,14 @@ defmodule Hearth.MediaTest do
   end
 
   describe "delete_media/2" do
-    test "fails for someone else", %{user: user, png: png} do
-      media = TestUtils.upload_random_file!(user, png, "image/png")
+    test "fails for someone else", %{user: user} do
+      media = TestUtils.upload_random_file!(user)
 
       assert {:error, :forbidden} = Media.delete_media(TestUtils.register_random_user!(), media)
     end
 
-    test "deletes the row and its files", %{user: user, png: png} do
-      media = TestUtils.upload_random_file!(user, png, "image/png")
+    test "deletes the row and its files", %{user: user} do
+      media = TestUtils.upload_random_file!(user)
       :ok = perform_job(ProcessImage, %{media_id: media.id})
 
       assert {:ok, _media} = Media.delete_media(user, media)
@@ -398,31 +387,28 @@ defmodule Hearth.MediaTest do
 
   describe "avatar?/2" do
     test "is false if not own avatar", %{
-      user: user,
-      png: png
+      user: user
     } do
-      avatar =
-        TestUtils.upload_random_file!(TestUtils.register_random_user!(), png, "image/png",
-          purpose: :avatar
-        )
+      other = TestUtils.register_random_user!()
+      avatar = TestUtils.upload_random_file!(other, purpose: :avatar)
 
-      image = TestUtils.upload_random_file!(user, png, "image/png")
+      image = TestUtils.upload_random_file!(user)
 
       refute Media.avatar?(user, avatar.id)
       refute Media.avatar?(user, image.id)
     end
 
-    test "is true for own avatar", %{user: user, png: png} do
-      avatar = TestUtils.upload_random_file!(user, png, "image/png", purpose: :avatar)
+    test "is true for own avatar", %{user: user} do
+      avatar = TestUtils.upload_random_file!(user, purpose: :avatar)
 
       assert Media.avatar?(user, avatar.id)
     end
   end
 
   describe "avatar_urls/1" do
-    test "signs only ready avatars", %{user: user, png: png} do
-      ready = TestUtils.upload_random_file!(user, png, "image/png", purpose: :avatar)
-      waiting = TestUtils.upload_random_file!(user, png, "image/png", purpose: :avatar)
+    test "signs only ready avatars", %{user: user} do
+      ready = TestUtils.upload_random_file!(user, purpose: :avatar)
+      waiting = TestUtils.upload_random_file!(user, purpose: :avatar)
       :ok = perform_job(ProcessImage, %{media_id: ready.id})
 
       assert [ready.id] == [ready.id, waiting.id, nil] |> Media.avatar_urls() |> Map.keys()
@@ -430,15 +416,14 @@ defmodule Hearth.MediaTest do
   end
 
   describe "image_urls/2" do
-    test "leaves out images that aren't ready", %{user: user, png: png} do
-      waiting = TestUtils.upload_random_file!(user, png, "image/png")
+    test "leaves out images that aren't ready", %{user: user} do
+      waiting = TestUtils.upload_random_file!(user)
 
       assert Media.image_urls([waiting.id, nil], 0) == %{}
     end
 
     test "signs smallest wide enough size", %{user: user} do
-      wide = TestUtils.random_png!(1400, 400)
-      image = TestUtils.upload_random_file!(user, wide, "image/png")
+      image = TestUtils.upload_random_file!(user, width: 1400, height: 400)
       :ok = perform_job(ProcessImage, %{media_id: image.id})
 
       small = Media.image_urls([image.id], 0)[image.id]

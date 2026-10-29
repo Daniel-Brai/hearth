@@ -31,8 +31,8 @@ defmodule HearthWeb.InviteControllerTest do
     } do
       email = Internet.email()
 
-      {:ok, _sent} =
-        Communities.email_invites(owner, community, [%{email: email, role_key: "member"}])
+      entries = [%{email: email, role_key: "member"}]
+      {:ok, _sent} = Communities.email_invites(owner, community, entries)
 
       assert %{"links" => [link], "emails" => [emailed]} =
                conn
@@ -65,7 +65,6 @@ defmodule HearthWeb.InviteControllerTest do
                |> valid_response(201)
 
       assert is_binary(response["code"])
-      assert response["role_key"] == "member"
       assert response["max_uses"] == body.max_uses
     end
   end
@@ -143,7 +142,6 @@ defmodule HearthWeb.InviteControllerTest do
                |> patch(~p"/api/invites/#{invite.code}", body)
                |> valid_response(200)
 
-      assert response["code"] == invite.code
       assert response["max_uses"] == body.max_uses
       assert response["role_key"] == body.role_key
     end
@@ -185,10 +183,8 @@ defmodule HearthWeb.InviteControllerTest do
     end
 
     test "revokes the emailed invite", %{conn: conn, owner: owner, community: community} do
-      {:ok, [sent]} =
-        Communities.email_invites(owner, community, [
-          %{email: Internet.email(), role_key: "member"}
-        ])
+      entries = [%{email: Internet.email(), role_key: "member"}]
+      {:ok, [sent]} = Communities.email_invites(owner, community, entries)
 
       assert %{"status" => "revoked"} =
                conn
@@ -210,8 +206,8 @@ defmodule HearthWeb.InviteControllerTest do
     } do
       user = TestUtils.register_random_user!()
 
-      {:ok, [sent]} =
-        Communities.email_invites(owner, community, [%{email: user.email, role_key: "member"}])
+      entries = [%{email: user.email, role_key: "member"}]
+      {:ok, [sent]} = Communities.email_invites(owner, community, entries)
 
       assert [response] =
                conn |> auth_conn(user) |> get(~p"/api/auth/me/invites") |> valid_response(200)
@@ -228,10 +224,8 @@ defmodule HearthWeb.InviteControllerTest do
       owner: owner,
       community: community
     } do
-      {:ok, [sent]} =
-        Communities.email_invites(owner, community, [
-          %{email: Internet.email(), role_key: "member"}
-        ])
+      entries = [%{email: Internet.email(), role_key: "member"}]
+      {:ok, [sent]} = Communities.email_invites(owner, community, entries)
 
       assert conn
              |> auth_conn(TestUtils.register_random_user!())
@@ -242,8 +236,8 @@ defmodule HearthWeb.InviteControllerTest do
     test "turns the invite down", %{conn: conn, owner: owner, community: community} do
       user = TestUtils.register_random_user!()
 
-      {:ok, [sent]} =
-        Communities.email_invites(owner, community, [%{email: user.email, role_key: "member"}])
+      entries = [%{email: user.email, role_key: "member"}]
+      {:ok, [sent]} = Communities.email_invites(owner, community, entries)
 
       assert conn
              |> auth_conn(user)

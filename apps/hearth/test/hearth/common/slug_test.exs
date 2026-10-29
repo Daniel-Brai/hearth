@@ -15,8 +15,7 @@ defmodule Hearth.Common.SlugTest do
     end
 
     test "caps length at 60" do
-      title = String.duplicate("word ", 30)
-      slug = Slug.slugify(title)
+      slug = "word " |> String.duplicate(30) |> Slug.slugify()
 
       assert String.length(slug) <= 60
       refute String.ends_with?(slug, "-")

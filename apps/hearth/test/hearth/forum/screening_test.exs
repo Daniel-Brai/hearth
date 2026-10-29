@@ -32,13 +32,8 @@ defmodule Hearth.Forum.ScreeningTest do
     end
 
     test "queues no screening when the write rolls back", %{author: author, full: full} do
-      :ok =
-        TestUtils.roll_back!(fn ->
-          post = TestUtils.create_random_post!(author, full)
-          send(self(), {:post, post.id})
-        end)
+      post_id = TestUtils.roll_back_random_post!(author, full)
 
-      assert_received {:post, post_id}
       refute_enqueued(worker: Screen, args: %{subject_id: post_id})
     end
 

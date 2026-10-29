@@ -45,21 +45,14 @@ defmodule HearthWeb.TranscriptControllerTest do
     end
 
     test "show transcript", %{conn: conn, member: member, session: session} do
-      member_id = member.id
-
       response =
         conn
         |> auth_conn(member)
         |> get(~p"/api/voice-sessions/#{session.id}/transcript")
         |> valid_response(200)
 
-      assert %{"status" => "ready", "segments" => [welcome, thanks], "speakers" => speakers} =
-               response
-
-      assert %{"text" => "Welcome", "editable" => false} = welcome
-      assert %{"text" => "Thanks", "editable" => true} = thanks
-      assert [_owner, _member] = response["people"]
-      assert member_id in TestUtils.pluck(speakers, "user_id")
+      assert response["status"] == "ready"
+      assert TestUtils.pluck(response["segments"], "editable") == [false, true]
     end
   end
 

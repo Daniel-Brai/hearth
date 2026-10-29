@@ -1,14 +1,11 @@
 defmodule HearthWeb.Plugs.ApiDocsTest do
   use HearthWeb.ConnCase, async: false
 
-  setup do
-    previous = Application.get_env(:hearth_web, :api_docs)
-    on_exit(fn -> Application.put_env(:hearth_web, :api_docs, previous) end)
-  end
+  alias Hearth.TestUtils
 
   describe "call/2" do
     test "returns 404 when the docs are off" do
-      Application.put_env(:hearth_web, :api_docs, false)
+      :ok = TestUtils.put_env(:hearth_web, :api_docs, false)
 
       assert build_conn() |> get(~p"/docs") |> response(404)
       assert build_conn() |> get(~p"/redoc") |> response(404)

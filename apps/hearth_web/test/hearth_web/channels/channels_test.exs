@@ -55,8 +55,8 @@ defmodule HearthWeb.ChannelsTest do
     end
 
     test "pushes new posts", %{owner: owner, community: community, kind: kind} do
-      {:ok, _reply, _socket} =
-        owner |> connected_socket() |> subscribe_and_join("community:#{community.id}")
+      topic = "community:#{community.id}"
+      {:ok, _reply, _socket} = owner |> connected_socket() |> subscribe_and_join(topic)
 
       post = TestUtils.create_random_post!(owner, community, kind_id: kind.id)
 
@@ -72,8 +72,8 @@ defmodule HearthWeb.ChannelsTest do
     end
 
     test "pushes new messages", %{owner: owner, room: room} do
-      {:ok, _reply, _socket} =
-        owner |> connected_socket() |> subscribe_and_join("room:#{room.id}")
+      topic = "room:#{room.id}"
+      {:ok, _reply, _socket} = owner |> connected_socket() |> subscribe_and_join(topic)
 
       {:ok, message} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
 
@@ -103,8 +103,8 @@ defmodule HearthWeb.ChannelsTest do
     test "pushes new replies", %{owner: owner, community: community, kind: kind} do
       post = TestUtils.create_random_post!(owner, community, kind_id: kind.id)
 
-      {:ok, _reply, _socket} =
-        owner |> connected_socket() |> subscribe_and_join("post:#{post.id}")
+      topic = "post:#{post.id}"
+      {:ok, _reply, _socket} = owner |> connected_socket() |> subscribe_and_join(topic)
 
       {:ok, reply} = Forum.reply(owner, post, %{body: Lorem.sentence()})
 

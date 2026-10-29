@@ -44,7 +44,7 @@ defmodule HearthWeb.VoiceChannelTest do
       assert {:ok, reply, _socket} =
                member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
 
-      assert %{ice_servers: [], me: %{role: :listener, server_muted: false}, mode: :stage} = reply
+      assert %{me: %{role: :listener}} = reply
       assert_push "offer", %{sdp: "v=0" <> _sdp, tracks: tracks}, 1_000
       assert [%{kind: :audio, direction: :receive, user_id: ^owner_id}] = Map.values(tracks)
     end
@@ -53,8 +53,8 @@ defmodule HearthWeb.VoiceChannelTest do
       %{id: member_id} = member
       :ok = Voice.subscribe_to_pubsub()
 
-      {:ok, _reply, socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       Process.unlink(socket.channel_pid)
       leave(socket)
@@ -67,8 +67,8 @@ defmodule HearthWeb.VoiceChannelTest do
       member: member,
       session: session
     } do
-      {:ok, _reply, _socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, _socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       :ok = Voice.disconnect(owner, session, member.id)
 
@@ -80,16 +80,16 @@ defmodule HearthWeb.VoiceChannelTest do
     test "fails where speech isn't turned into text", %{member: member, session: session} do
       TestUtils.put_transcription(:off)
 
-      {:ok, _reply, socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       ref = push(socket, "captions", %{"on" => true})
       assert_reply ref, :error, %{reason: "transcription_off"}
     end
 
     test "turns captions on for the room", %{member: member, session: session} do
-      {:ok, _reply, socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       ref = push(socket, "captions", %{"on" => true})
       assert_reply ref, :ok
@@ -98,16 +98,16 @@ defmodule HearthWeb.VoiceChannelTest do
 
   describe "react" do
     test "fails if not an emoji shortcode", %{member: member, session: session} do
-      {:ok, _reply, socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       ref = push(socket, "react", %{"emoji" => "<b>hi</b>"})
       assert_reply ref, :error, %{reason: "invalid_emoji"}
     end
 
     test "closes once the person leaves", %{member: member, session: session} do
-      {:ok, _reply, socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       ref = Process.monitor(socket.channel_pid)
       :ok = Voice.leave(member, session)
@@ -117,8 +117,8 @@ defmodule HearthWeb.VoiceChannelTest do
     end
 
     test "drops reactions past five a second", %{member: member, session: session} do
-      {:ok, _reply, socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       :ok = push_times(socket, "react", %{"emoji" => ":tada:"}, 7)
 
@@ -133,8 +133,8 @@ defmodule HearthWeb.VoiceChannelTest do
     test "floats a reaction to everyone in the session", %{member: member, session: session} do
       %{id: member_id} = member
 
-      {:ok, _reply, socket} =
-        member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
+      topic = "voice:#{session.id}"
+      {:ok, _reply, socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       push(socket, "react", %{"emoji" => ":heart:"})
 

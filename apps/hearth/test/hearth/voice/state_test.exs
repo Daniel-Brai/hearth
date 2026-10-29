@@ -99,11 +99,10 @@ defmodule Hearth.Voice.StateTest do
       person: person
     } do
       other = Common.new_id()
-      joined = State.join(state, other, person)
-      {:ok, raised} = State.raise_hand(joined, listener, now)
+      {:ok, raised} = state |> State.join(other, person) |> State.raise_hand(listener, now)
       {:ok, both} = State.raise_hand(raised, other, DateTime.add(now, -1, :minute))
 
-      assert [^other, ^listener] = State.hands(both)
+      assert State.hands(both) == [other, listener]
     end
   end
 

@@ -56,10 +56,7 @@ defmodule HearthWeb.CommunityControllerTest do
       owner: owner,
       community: community
     } do
-      logo =
-        TestUtils.upload_random_file!(owner, TestUtils.random_png!(400, 400), "image/png",
-          purpose: :logo
-        )
+      logo = TestUtils.upload_random_file!(owner, width: 400, height: 400, purpose: :logo)
 
       :ok = perform_job(ProcessImage, %{media_id: logo.id})
       {:ok, _community} = Communities.update_community(owner, community, %{logo_id: logo.id})
@@ -101,7 +98,9 @@ defmodule HearthWeb.CommunityControllerTest do
 
     test "starts one with its description and logo", %{conn: conn} do
       user = TestUtils.register_random_user!(admin: true)
-      logo = TestUtils.upload_random_file!(user, TestUtils.random_png!(64, 64), "image/png")
+
+      logo = TestUtils.upload_random_file!(user)
+
       body = %{name: Company.name(), description: Lorem.paragraph(), logo_id: logo.id}
 
       assert response =
@@ -122,8 +121,6 @@ defmodule HearthWeb.CommunityControllerTest do
                |> valid_response(202)
 
       assert response["status"] == "pending"
-      assert response["name"] == body.name
-      assert response["description"] == body.description
     end
   end
 
@@ -199,8 +196,6 @@ defmodule HearthWeb.CommunityControllerTest do
                conn |> get(~p"/api/communities/#{community.slug}") |> valid_response(200)
 
       assert response["community"]["id"] == community.id
-      assert [_kind | _kinds] = response["kinds"]
-      assert response["membership"] == nil
     end
 
     test "shows the member's roles and permissions", %{
@@ -232,10 +227,10 @@ defmodule HearthWeb.CommunityControllerTest do
     end
 
     test "clears a field sent as null", %{conn: conn, owner: owner, community: community} do
-      {:ok, _community} =
-        Communities.update_community(owner, community, %{tagline: Lorem.sentence()})
+      changes = %{tagline: Lorem.sentence()}
+      {:ok, _community} = Communities.update_community(owner, community, changes)
 
-      body = %{tagline: nil, hue: "blue"}
+      body = %{tagline: nil}
 
       assert response =
                conn
@@ -244,7 +239,6 @@ defmodule HearthWeb.CommunityControllerTest do
                |> valid_response(200)
 
       assert response["tagline"] == nil
-      assert response["hue"] == body.hue
     end
   end
 

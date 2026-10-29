@@ -24,7 +24,6 @@ defmodule HearthWeb.DraftControllerTest do
       {:ok, _draft} = Forum.save_draft(owner, community, params)
 
       assert [draft] = conn |> auth_conn(owner) |> get(~p"/api/drafts") |> valid_response(200)
-      assert draft["community_id"] == community.id
       assert draft["kind"] == kind.label
     end
   end

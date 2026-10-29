@@ -7,19 +7,14 @@ defmodule Hearth.VaultTest do
   alias Hearth.Vault
 
   setup do
-    previous = Application.fetch_env!(:hearth, Vault)
+    on_exit(fn -> :ok = Vault.load!() end)
 
-    on_exit(fn ->
-      Application.put_env(:hearth, Vault, previous)
-      :ok = Vault.load!()
-    end)
-
-    {:ok, previous: previous}
+    {:ok, previous: Application.fetch_env!(:hearth, Vault)}
   end
 
   describe "load!/0" do
-    test "fails for a key that isn't 32 bytes", %{previous: previous} do
-      Application.put_env(:hearth, Vault, Keyword.put(previous, :key, Base.encode64("too short")))
+    test "fails for a key that isn't 32 bytes" do
+      :ok = TestUtils.merge_env(Vault, key: Base.encode64("too short"))
 
       assert_raise ArgumentError, fn -> Vault.load!() end
     end
@@ -42,9 +37,9 @@ defmodule Hearth.VaultTest do
       assert :error = Vault.decrypt(<<head::binary, Bitwise.bxor(byte, 1), rest::binary>>)
     end
 
-    test "fails for a value sealed with an unknown key", %{previous: previous} do
+    test "fails for a value sealed with an unknown key" do
       sealed = Vault.encrypt(Lorem.sentence())
-      Application.put_env(:hearth, Vault, Keyword.put(previous, :key, TestUtils.random_key()))
+      :ok = TestUtils.merge_env(Vault, key: TestUtils.random_key())
       :ok = Vault.load!()
 
       assert :error = Vault.decrypt(sealed)
@@ -54,10 +49,8 @@ defmodule Hearth.VaultTest do
       text = Lorem.sentence()
       sealed = Vault.encrypt(text)
 
-      rotated =
-        Keyword.merge(previous, key: TestUtils.random_key(), previous_keys: previous[:key])
-
-      Application.put_env(:hearth, Vault, rotated)
+      key = TestUtils.random_key()
+      :ok = TestUtils.merge_env(Vault, key: key, previous_keys: previous[:key])
       :ok = Vault.load!()
 
       assert {:ok, ^text} = Vault.decrypt(sealed)
@@ -76,10 +69,10 @@ defmodule Hearth.VaultTest do
       refute Vault.hash(Internet.email()) == Vault.hash(Internet.email())
     end
 
-    test "keeps the same digest after the key changes", %{previous: previous} do
+    test "keeps the same digest after the key changes" do
       email = Internet.email()
       digest = Vault.hash(email)
-      Application.put_env(:hearth, Vault, Keyword.put(previous, :key, TestUtils.random_key()))
+      :ok = TestUtils.merge_env(Vault, key: TestUtils.random_key())
       :ok = Vault.load!()
 
       assert Vault.hash(email) == digest

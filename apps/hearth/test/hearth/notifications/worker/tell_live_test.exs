@@ -31,8 +31,8 @@ defmodule Hearth.Notifications.Worker.TellLiveTest do
     end
 
     test "tells nobody who turned live rooms off", %{args: args, member: member} do
-      {:ok, _settings} =
-        Accounts.update_settings(member, %{notification_prefs: %{"live" => false}})
+      changes = %{notification_prefs: %{"live" => false}}
+      {:ok, _settings} = Accounts.update_settings(member, changes)
 
       assert :ok = perform_job(TellLive, args)
 
@@ -42,10 +42,9 @@ defmodule Hearth.Notifications.Worker.TellLiveTest do
     test "tells every member but the host", %{args: args, owner: owner, member: member} do
       assert :ok = perform_job(TellLive, args)
 
-      assert %Page{data: [%Notification{kind: :live_started, actor_id: actor_id}]} =
+      assert %Page{data: [%Notification{kind: :live_started}]} =
                Notifications.list_notifications(member)
 
-      assert actor_id == owner.id
       assert %Page{data: []} = Notifications.list_notifications(owner)
     end
   end

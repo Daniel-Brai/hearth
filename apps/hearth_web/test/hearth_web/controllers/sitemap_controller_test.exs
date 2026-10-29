@@ -21,8 +21,7 @@ defmodule HearthWeb.SitemapControllerTest do
 
   describe "robots" do
     test "blocks everything when indexing is off", %{conn: conn} do
-      Application.put_env(:hearth, :instance_indexing, false)
-      on_exit(fn -> Application.delete_env(:hearth, :instance_indexing) end)
+      :ok = TestUtils.put_env(:instance_indexing, false)
 
       assert conn |> get(~p"/robots.txt") |> response(200) == "User-agent: *\nDisallow: /\n"
     end
@@ -37,8 +36,7 @@ defmodule HearthWeb.SitemapControllerTest do
 
   describe "index" do
     test "lists nothing when indexing is off", %{conn: conn, indexed: indexed} do
-      Application.put_env(:hearth, :instance_indexing, false)
-      on_exit(fn -> Application.delete_env(:hearth, :instance_indexing) end)
+      :ok = TestUtils.put_env(:instance_indexing, false)
 
       refute conn |> get(~p"/sitemap.xml") |> response(200) =~ indexed.slug
     end

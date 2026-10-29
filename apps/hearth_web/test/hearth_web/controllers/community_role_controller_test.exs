@@ -31,12 +31,10 @@ defmodule HearthWeb.CommunityRoleControllerTest do
     test "lists the roles in order", %{conn: conn, owner: owner} do
       community = TestUtils.create_random_community!(owner)
 
-      assert [owner_role, moderator, member] =
+      assert response =
                conn |> get(~p"/api/communities/#{community.id}/roles") |> valid_response(200)
 
-      assert owner_role["key"] == "owner"
-      assert moderator["key"] == "moderator"
-      assert member["is_default"] == true
+      assert TestUtils.pluck(response, "key") == ~w[owner moderator member]
     end
   end
 
@@ -118,8 +116,8 @@ defmodule HearthWeb.CommunityRoleControllerTest do
     end
 
     test "deletes the role", %{conn: conn, owner: owner, community: community} do
-      {:ok, role} =
-        Communities.create_role(owner, community, %{key: "helper", name: "Helper"})
+      changes = %{key: "helper", name: "Helper"}
+      {:ok, role} = Communities.create_role(owner, community, changes)
 
       assert conn
              |> auth_conn(owner)

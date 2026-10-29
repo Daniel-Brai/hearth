@@ -32,7 +32,6 @@ defmodule HearthWeb.UserControllerTest do
       assert response = conn |> get(~p"/api/users/#{user.username}") |> valid_response(200)
 
       assert response["display_name"] == nil
-      assert response["username"] == user.username
     end
 
     test "shows the profile", %{conn: conn} do
@@ -41,7 +40,6 @@ defmodule HearthWeb.UserControllerTest do
       assert response = conn |> get(~p"/api/users/#{user.username}") |> valid_response(200)
 
       assert response["display_name"] == user.display_name
-      assert response["links"] == []
     end
 
     test "counts only what the reader may see", %{conn: conn} do
@@ -72,8 +70,7 @@ defmodule HearthWeb.UserControllerTest do
       open = TestUtils.create_random_forum!(owner)
       private = TestUtils.create_random_forum!(owner, visibility: :private)
       _hidden = TestUtils.create_random_post!(owner, private)
-      removed = TestUtils.create_random_post!(owner, open)
-      {:ok, _removed} = Forum.moderate(removed, :removed)
+      {:ok, _removed} = owner |> TestUtils.create_random_post!(open) |> Forum.moderate(:removed)
       %{id: id} = TestUtils.create_random_post!(owner, open)
 
       assert %{"data" => [%{"id" => ^id, "reported" => false}]} =

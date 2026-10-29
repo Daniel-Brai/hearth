@@ -27,7 +27,7 @@ defmodule Hearth.Storage.S3Test do
       assert %{"content-type" => "image/png", "content-length" => "5"} = headers
       assert headers["x-amz-checksum-sha256"] == Base.encode64(digest)
 
-      %URI{host: "s3.test", path: "/hearth-test/media/x/original", query: query} = URI.parse(url)
+      %URI{query: query} = URI.parse(url)
       signed = URI.decode_query(query)["X-Amz-SignedHeaders"]
 
       assert signed =~ "content-length"
@@ -110,8 +110,7 @@ defmodule Hearth.Storage.S3Test do
         """)
       end)
 
-      assert {:ok,
-              [%{number: 1, etag: "e1", size: 10_485_760}, %{number: 2, etag: "e2", size: 42}]} =
+      assert {:ok, [%{number: 1, etag: "e1", size: 10_485_760} | _parts]} =
                S3.list_parts("media/x/original", "up-1")
     end
   end

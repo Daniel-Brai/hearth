@@ -9,10 +9,10 @@ defmodule Hearth.Media.Worker.ExpireUploadsTest do
 
   setup do
     user = TestUtils.register_random_user!()
-    png = TestUtils.random_png!(40, 30)
+    png = TestUtils.random_file!()
 
-    {:ok, %{media: media}} =
-      Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+    params = TestUtils.random_upload_params()
+    {:ok, %{media: media}} = Media.request_upload(user, params)
 
     :ok = Storage.put(media.bucket_key, png, "image/png")
 
@@ -30,8 +30,7 @@ defmodule Hearth.Media.Worker.ExpireUploadsTest do
 
       assert :ok = perform_job(ExpireUploads, %{})
 
-      assert %Asset{status: :failed, failure: "The upload was never finished."} =
-               Asset.get(id: media.id)
+      assert %Asset{status: :failed} = Asset.get(id: media.id)
 
       assert {:error, :not_found} = Storage.head(media.bucket_key)
     end

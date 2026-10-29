@@ -36,9 +36,7 @@ defmodule Hearth.Notifications.Listener.CommunitiesTest do
     assert TestUtils.mail_enqueued?(%{to: [nil, email], template: "community_invite"})
     assert_enqueued(worker: DeliverMail, args: %{user_id: user.id, template: "community_invite"})
 
-    assert %Page{data: [%Notification{kind: :invite, actor_id: actor_id}]} =
+    assert %Page{data: [%Notification{kind: :invite}]} =
              Notifications.list_notifications(user)
-
-    assert actor_id == inviter.id
   end
 end

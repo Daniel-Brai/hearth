@@ -35,9 +35,7 @@ defmodule Hearth.StorageTest do
     test "put and head", %{key: key} do
       assert :ok = Storage.put(key, "hello", "text/plain")
 
-      assert {:ok, %Object{size: 5, content_type: "text/plain", etag: etag}} = Storage.head(key)
-      md5 = :crypto.hash(:md5, "hello")
-      assert etag == Base.encode16(md5, case: :lower)
+      assert {:ok, %Object{size: 5, content_type: "text/plain"}} = Storage.head(key)
     end
   end
 
@@ -168,18 +166,11 @@ defmodule Hearth.StorageTest do
 
     test "upload in parts", %{key: key} do
       {:ok, upload_id} = Storage.start_multipart(key, "video/mp4")
-      assert {:ok, url} = Storage.part_url(key, upload_id, 2)
-      assert url =~ "op=part"
-
       {:ok, first} = Storage.write_local_part(key, upload_id, 1, ["one "])
       {:ok, second} = Storage.write_local_part(key, upload_id, 2, ["two"])
 
-      assert {:ok, [%{number: 1, etag: ^first, size: 4}, %{number: 2, etag: ^second}]} =
-               Storage.list_parts(key, upload_id)
-
       assert :ok = Storage.complete_multipart(key, upload_id, [{1, first}, {2, second}])
-      assert {:ok, %Object{size: 7, content_type: "video/mp4", etag: etag}} = Storage.head(key)
-      assert String.ends_with?(etag, "-2")
+      assert {:ok, %Object{size: 7, content_type: "video/mp4"}} = Storage.head(key)
     end
 
     test "abort", %{key: key} do

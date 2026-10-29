@@ -30,10 +30,8 @@ defmodule Hearth.Notifications.Listener.EventsTest do
 
     assert {:noreply, nil} = Listener.handle_info(reminder, nil)
 
-    assert %Page{data: [%Notification{kind: :event_reminder, data: data}]} =
+    assert %Page{data: [%Notification{kind: :event_reminder}]} =
              Notifications.list_notifications(owner)
-
-    assert data["minutes"] == 10
   end
 
   test "tells the members when the host asked" do

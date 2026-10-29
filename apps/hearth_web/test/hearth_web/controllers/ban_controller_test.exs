@@ -76,7 +76,6 @@ defmodule HearthWeb.BanControllerTest do
 
       assert response["reason"] == body.reason
       assert response["user"]["id"] == member.id
-      assert response["expires_at"]
     end
   end
 

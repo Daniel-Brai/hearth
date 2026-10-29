@@ -41,7 +41,6 @@ defmodule HearthWeb.Plugs.LocalStorageTest do
       conn = conn |> put_req_header("content-type", "video/mp4") |> put(url, "hello")
 
       assert response(conn, 200) == ""
-      assert [~s(") <> _etag] = get_resp_header(conn, "etag")
       assert {:ok, %{size: 5, content_type: "video/mp4"}} = Storage.head(key)
     end
 

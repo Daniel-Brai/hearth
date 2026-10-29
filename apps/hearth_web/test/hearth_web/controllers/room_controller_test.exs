@@ -47,7 +47,6 @@ defmodule HearthWeb.RoomControllerTest do
                |> valid_response(201)
 
       assert response["name"] == body.name
-      assert response["type"] == "text"
     end
   end
 

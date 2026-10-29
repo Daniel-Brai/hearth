@@ -35,15 +35,13 @@ defmodule HearthWeb.CommunityMemberControllerTest do
       {:ok, _membership} = Communities.join(member, community)
       _outsider = TestUtils.register_random_user!(username: "owl_outsider")
 
-      assert [first, second] =
+      assert response =
                conn
                |> get(~p"/api/communities/#{community.id}/members?q=owl")
                |> valid_response(200)
 
-      assert first["user"]["id"] == member.id
-      assert first["role_keys"] == ["member"]
-      assert second["user"]["id"] == owner.id
-      assert "owner" in second["role_keys"]
+      assert response |> TestUtils.pluck("user") |> TestUtils.pluck("id") == [member.id, owner.id]
+      assert [%{"role_keys" => ["member"]} | _rest] = response
     end
   end
 end

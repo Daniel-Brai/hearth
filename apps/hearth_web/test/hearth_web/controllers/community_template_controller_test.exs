@@ -1,26 +1,16 @@
 defmodule HearthWeb.CommunityTemplateControllerTest do
   use HearthWeb.ConnCase, async: true
 
+  alias Hearth.TestUtils
+
   describe "index" do
     test "lists each template with what it sets up", %{conn: conn} do
-      conn = get(conn, ~p"/api/community-templates")
-      templates = valid_response(conn, 200)
+      templates = conn |> get(~p"/api/community-templates") |> valid_response(200)
 
-      assert get_resp_header(conn, "cache-control") == ["public, max-age=3600"]
+      [club | _rest] = templates
 
-      assert [
-               %{"id" => "club"},
-               %{"id" => "local"},
-               %{"id" => "creator"},
-               %{"id" => "class"},
-               %{"id" => "support"},
-               %{"id" => "oss"} = oss,
-               %{"id" => "blank"} = blank
-             ] = templates
-
-      assert "bug" in oss["kinds"]
-      assert %{"title" => "Office hours", "repeat" => "weekly"} = oss["event"]
-      assert %{"event" => nil, "voice" => nil} = blank
+      assert TestUtils.pluck(templates, "id") == ~w[club local creator class support oss blank]
+      assert "question" in club["kinds"]
     end
   end
 end

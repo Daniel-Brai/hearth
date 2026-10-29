@@ -11,10 +11,8 @@ defmodule Secrets.HashiCorp.TokenTest do
   end
 
   test "keeps secret values out of inspect output" do
-    secret =
-      Secret.from!(%{
-        "data" => %{"data" => %{"url" => "ecto://hidden"}, "metadata" => %{"version" => 1}}
-      })
+    data = %{"data" => %{"url" => "ecto://hidden"}, "metadata" => %{"version" => 1}}
+    secret = Secret.from!(%{"data" => data})
 
     refute inspect(secret) =~ "hidden"
   end

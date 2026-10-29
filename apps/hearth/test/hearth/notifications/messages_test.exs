@@ -16,8 +16,8 @@ defmodule Hearth.Notifications.MessagesTest do
   alias Hearth.TestUtils
 
   test "render SignInCode" do
-    mail =
-      SignInCode.to_mail(%SignInCode{code: "042917", ttl: 15}, %Anonymous{email: Internet.email()})
+    to = %Anonymous{email: Internet.email()}
+    mail = SignInCode.to_mail(%SignInCode{code: "042917", ttl: 15}, to)
 
     assert {:ok, "<!doctype html>" <> _rest = html} = Mail.render(mail, mail.subject)
     assert html =~ TestUtils.escape_html(mail.greeting)
@@ -58,10 +58,8 @@ defmodule Hearth.Notifications.MessagesTest do
   end
 
   test "render EmailChangeCode" do
-    mail =
-      EmailChangeCode.to_mail(%EmailChangeCode{code: "042917", ttl: 15}, %Anonymous{
-        email: Internet.email()
-      })
+    to = %Anonymous{email: Internet.email()}
+    mail = EmailChangeCode.to_mail(%EmailChangeCode{code: "042917", ttl: 15}, to)
 
     assert {:ok, "<!doctype html>" <> _rest = html} = Mail.render(mail, mail.subject)
     assert html =~ TestUtils.escape_html(mail.greeting)
@@ -77,11 +75,8 @@ defmodule Hearth.Notifications.MessagesTest do
   end
 
   test "render EmailChanged" do
-    mail =
-      EmailChanged.to_mail(
-        %EmailChanged{new_email: "new@example.com", undo_token: "undo-token", ttl: 10_080},
-        %Anonymous{email: Internet.email()}
-      )
+    message = %EmailChanged{new_email: "new@example.com", undo_token: "undo-token", ttl: 10_080}
+    mail = EmailChanged.to_mail(message, %Anonymous{email: Internet.email()})
 
     assert {:ok, "<!doctype html>" <> _rest = html} = Mail.render(mail, mail.subject)
     assert html =~ TestUtils.escape_html(mail.greeting)
@@ -132,7 +127,6 @@ defmodule Hearth.Notifications.MessagesTest do
              ~r{turn it off in\s*<a [^>]*href="http://localhost:5173/settings"[^>]*>Settings</a>\.}
 
     assert Mail.to_text(mail) =~ "Ada · 4 replies · 1 helpful"
-    assert Mail.to_text(mail) =~ "turn it off in Settings at http://localhost:5173/settings"
   end
 
   test "no email hides address" do

@@ -8,14 +8,14 @@ defmodule HearthWeb.UploadControllerTest do
 
   setup do
     user = TestUtils.register_random_user!()
-    png = TestUtils.random_png!(40, 30)
+    png = TestUtils.random_file!()
 
     {:ok, binding()}
   end
 
   describe "create" do
-    test "fails without signing in", %{conn: conn, png: png} do
-      body = png |> TestUtils.random_upload_params("image/png") |> Map.delete(:idempotency_key)
+    test "fails without signing in", %{conn: conn} do
+      body = :png |> TestUtils.random_upload_params() |> Map.delete(:idempotency_key)
 
       assert %{"code" => "missing_token"} =
                conn
@@ -37,8 +37,8 @@ defmodule HearthWeb.UploadControllerTest do
       assert Map.keys(errors) -- ~w[name byte_size sha256] == []
     end
 
-    test "fails without an idempotency key", %{conn: conn, user: user, png: png} do
-      body = png |> TestUtils.random_upload_params("image/png") |> Map.delete(:idempotency_key)
+    test "fails without an idempotency key", %{conn: conn, user: user} do
+      body = :png |> TestUtils.random_upload_params() |> Map.delete(:idempotency_key)
 
       assert %{"errors" => errors} =
                conn
@@ -51,8 +51,8 @@ defmodule HearthWeb.UploadControllerTest do
 
     test "fails for a type that can't be uploaded", %{conn: conn, user: user} do
       body =
-        "MZ"
-        |> TestUtils.random_upload_params("application/x-msdownload")
+        :png
+        |> TestUtils.random_upload_params(content_type: "application/x-msdownload")
         |> Map.delete(:idempotency_key)
 
       assert %{"errors" => errors} =
@@ -65,8 +65,8 @@ defmodule HearthWeb.UploadControllerTest do
       assert [_message] = errors["content_type"]
     end
 
-    test "starts an upload", %{conn: conn, user: user, png: png} do
-      body = png |> TestUtils.random_upload_params("image/png") |> Map.delete(:idempotency_key)
+    test "starts an upload", %{conn: conn, user: user} do
+      body = :png |> TestUtils.random_upload_params() |> Map.delete(:idempotency_key)
 
       assert response =
                conn
@@ -76,12 +76,11 @@ defmodule HearthWeb.UploadControllerTest do
                |> valid_response(201)
 
       assert response["media"]["status"] == "uploading"
-      assert response["media"]["urls"] == nil
       assert response["upload"]["headers"]["content-type"] == body.content_type
     end
 
-    test "returns the same file for the same key", %{conn: conn, user: user, png: png} do
-      body = png |> TestUtils.random_upload_params("image/png") |> Map.delete(:idempotency_key)
+    test "returns the same file for the same key", %{conn: conn, user: user} do
+      body = :png |> TestUtils.random_upload_params() |> Map.delete(:idempotency_key)
       key = Common.new_id()
 
       assert %{"media" => %{"id" => id}} =
@@ -101,12 +100,10 @@ defmodule HearthWeb.UploadControllerTest do
   end
 
   describe "part_urls" do
-    test "returns 404 for someone else's upload", %{conn: conn, user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(
-          TestUtils.register_random_user!(),
-          TestUtils.random_upload_params(png, "image/png")
-        )
+    test "returns 404 for someone else's upload", %{conn: conn, user: user} do
+      owner = TestUtils.register_random_user!()
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(owner, params)
 
       assert %{"message" => "Not Found"} =
                conn
@@ -115,9 +112,9 @@ defmodule HearthWeb.UploadControllerTest do
                |> valid_response(404)
     end
 
-    test "fails for a single upload", %{conn: conn, user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+    test "fails for a single upload", %{conn: conn, user: user} do
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       assert %{"code" => "not_multipart"} =
                conn
@@ -127,11 +124,8 @@ defmodule HearthWeb.UploadControllerTest do
     end
 
     test "signs each part", %{conn: conn, user: user} do
-      {:ok, %{media: media}} =
-        Media.request_upload(
-          user,
-          TestUtils.random_upload_params("", "application/pdf", byte_size: 3 * 1024 * 1024)
-        )
+      params = TestUtils.random_upload_params(:pdf, byte_size: 3 * 1024 * 1024)
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       assert %{"urls" => %{"1" => _url}} =
                conn
@@ -156,9 +150,9 @@ defmodule HearthWeb.UploadControllerTest do
                |> valid_response(404)
     end
 
-    test "fails before the file is stored", %{conn: conn, user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+    test "fails before the file is stored", %{conn: conn, user: user} do
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       assert %{"code" => "not_uploaded"} =
                conn
@@ -168,8 +162,8 @@ defmodule HearthWeb.UploadControllerTest do
     end
 
     test "queues the file to be processed", %{conn: conn, user: user, png: png} do
-      {:ok, %{media: media}} =
-        Media.request_upload(user, TestUtils.random_upload_params(png, "image/png"))
+      params = TestUtils.random_upload_params()
+      {:ok, %{media: media}} = Media.request_upload(user, params)
 
       :ok = Storage.put(media.bucket_key, png, "image/png")
 

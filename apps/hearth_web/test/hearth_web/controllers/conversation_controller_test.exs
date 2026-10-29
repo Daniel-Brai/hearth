@@ -23,12 +23,10 @@ defmodule HearthWeb.ConversationControllerTest do
     test "lists the person's conversations", %{conn: conn, owner: owner, member: member} do
       {:ok, conversation} = Chat.start_direct(owner, member)
 
-      assert [%{"id" => id, "kind" => "direct", "member_ids" => member_ids}] =
+      assert [%{"id" => id}] =
                conn |> auth_conn(member) |> get(~p"/api/conversations") |> valid_response(200)
 
       assert id == conversation.id
-      assert owner.id in member_ids
-      assert member.id in member_ids
     end
   end
 

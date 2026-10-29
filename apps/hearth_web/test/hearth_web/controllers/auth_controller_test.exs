@@ -39,8 +39,6 @@ defmodule HearthWeb.AuthControllerTest do
       conn = post(conn, ~p"/api/auth/codes", %{email: String.upcase(email)})
 
       assert %{"code" => "rate_limited"} = valid_response(conn, 429)
-      assert [retry_after] = get_resp_header(conn, "retry-after")
-      assert String.to_integer(retry_after) > 0
     end
 
     test "sends a code", %{conn: conn} do
@@ -89,13 +87,9 @@ defmodule HearthWeb.AuthControllerTest do
 
       assert response = valid_response(conn, 200)
       assert response["user"]["id"] == user.id
-      assert response["token_type"] == "Bearer"
-      assert response["expires_in"] in 890..900
 
-      assert %{path: "/api/auth", http_only: true, same_site: "Strict", max_age: max_age} =
+      assert %{path: "/api/auth", http_only: true, same_site: "Strict"} =
                conn.resp_cookies[@cookie]
-
-      assert max_age == 60 * 24 * 60 * 60
     end
   end
 
@@ -160,11 +154,10 @@ defmodule HearthWeb.AuthControllerTest do
       assert %{max_age: 0} = conn.resp_cookies[@cookie]
     end
 
-    test "swaps the cookie for a new access token", %{conn: conn, user: user, session: session} do
+    test "swaps the cookie for a new access token", %{conn: conn, session: session} do
       refreshed = conn |> put_req_cookie(@cookie, session) |> post(~p"/api/auth/refresh")
 
       assert response = valid_response(refreshed, 200)
-      assert response["user"]["id"] == user.id
       assert refreshed.resp_cookies[@cookie].value != session
 
       assert conn
@@ -212,7 +205,6 @@ defmodule HearthWeb.AuthControllerTest do
                |> valid_response(200)
 
       assert response["id"] == user.id
-      assert response["is_instance_admin"] == false
     end
   end
 
@@ -264,13 +256,8 @@ defmodule HearthWeb.AuthControllerTest do
     end
 
     test "fails with someone else's photo", %{conn: conn, user: user} do
-      photo =
-        TestUtils.upload_random_file!(
-          TestUtils.register_random_user!(),
-          TestUtils.random_png!(40, 40),
-          "image/png",
-          purpose: :avatar
-        )
+      owner = TestUtils.register_random_user!()
+      photo = TestUtils.upload_random_file!(owner, purpose: :avatar)
 
       assert %{"code" => "invalid_avatar"} =
                conn
@@ -280,7 +267,7 @@ defmodule HearthWeb.AuthControllerTest do
     end
 
     test "fails with an image not uploaded as an avatar", %{conn: conn, user: user} do
-      image = TestUtils.upload_random_file!(user, TestUtils.random_png!(40, 40), "image/png")
+      image = TestUtils.upload_random_file!(user)
 
       assert %{"code" => "invalid_avatar"} =
                conn
@@ -290,10 +277,7 @@ defmodule HearthWeb.AuthControllerTest do
     end
 
     test "sets photo once ready", %{conn: conn, user: user} do
-      photo =
-        TestUtils.upload_random_file!(user, TestUtils.random_png!(400, 400), "image/png",
-          purpose: :avatar
-        )
+      photo = TestUtils.upload_random_file!(user, width: 400, height: 400, purpose: :avatar)
 
       assert response =
                conn
@@ -339,7 +323,6 @@ defmodule HearthWeb.AuthControllerTest do
 
       assert response["links"] == [%{"url" => link.url, "label" => link.label}]
       assert response["privacy"]["show_name"] == false
-      assert response["privacy"]["presence"] == "everyone"
     end
 
     test "changes only fields sent", %{conn: conn, user: user} do

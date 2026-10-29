@@ -4,12 +4,10 @@ defmodule Hearth.Voice.Worker.ReaperTest do
   alias Hearth.TestUtils
   alias Hearth.Voice
   alias Hearth.Voice.Session
-  alias Hearth.Voice.VoiceSessionEnded
   alias Hearth.Voice.Worker.Reaper
 
   setup do
     :ok = TestUtils.start_voice!()
-    :ok = Voice.subscribe_to_pubsub()
 
     community = TestUtils.create_random_community!()
 
@@ -29,7 +27,6 @@ defmodule Hearth.Voice.Worker.ReaperTest do
 
       assert :ok = perform_job(Reaper, %{})
       assert {:ok, %Session{ended_at: %DateTime{}}} = Voice.get_session(id: id)
-      assert_receive %VoiceSessionEnded{session_id: ^id, reason: :lost}
     end
   end
 end

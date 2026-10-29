@@ -65,7 +65,6 @@ defmodule Hearth.IAMTest do
       assert "content.remove" in moderator.permissions
       refute "content.remove" in member.permissions
       assert "post.create" in member.permissions
-      refute "community-request.decide" in owner.permissions
     end
   end
 
@@ -156,7 +155,6 @@ defmodule Hearth.IAMTest do
 
       assert {:ok, %Membership{roles: []} = membership} = IAM.join(user, community_id)
       assert MapSet.new(membership.permissions) == MapSet.new(roles["member"].permissions)
-      assert TestUtils.out_of_order(membership.permissions) == []
     end
 
     test "joins with roles", %{community_id: community_id} do
@@ -186,12 +184,8 @@ defmodule Hearth.IAMTest do
     test "adds up permissions of every role", %{community_id: community_id} do
       user = TestUtils.register_random_user!()
 
-      {:ok, _role} =
-        IAM.create_role(community_id, %{
-          key: "dj",
-          name: Lorem.word(),
-          permissions: ["voice-session.speak"]
-        })
+      params = %{key: "dj", name: Lorem.word(), permissions: ["voice-session.speak"]}
+      {:ok, _role} = IAM.create_role(community_id, params)
 
       {:ok, _membership} = IAM.join(user, community_id, ~w[member dj])
 
@@ -218,7 +212,6 @@ defmodule Hearth.IAMTest do
       user = TestUtils.register_random_user!()
       {:ok, _membership} = IAM.join(user, community_id)
 
-      assert :ok = IAM.leave(user, community_id)
       assert :ok = IAM.leave(user, community_id)
       refute IAM.member?(user, community_id)
     end

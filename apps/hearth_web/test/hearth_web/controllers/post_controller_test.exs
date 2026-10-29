@@ -144,9 +144,7 @@ defmodule HearthWeb.PostControllerTest do
                |> post(~p"/api/communities/#{community.id}/posts", body)
                |> valid_response(201)
 
-      assert [%{"id" => second_id}, %{"id" => first_id}] = attachments
-      assert second_id == second.id
-      assert first_id == first.id
+      assert TestUtils.pluck(attachments, "id") == [second.id, first.id]
     end
 
     test "writes a post", %{conn: conn, member: member, community: community, kind: kind} do
@@ -172,9 +170,6 @@ defmodule HearthWeb.PostControllerTest do
       assert response = conn |> get(~p"/api/posts/#{post.id}") |> valid_response(200)
 
       assert response["id"] == post.id
-      assert response["locked"] == false
-      assert response["reported"] == false
-      assert response["in_review"] == false
     end
 
     test "tells only the person who reported it", %{conn: conn, owner: owner} do

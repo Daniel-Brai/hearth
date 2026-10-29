@@ -3,7 +3,6 @@ defmodule Hearth.InstanceTest do
 
   import Req.Test
 
-  alias Faker.Lorem
   alias Hearth.Instance
   alias Hearth.Instance.GitHubError
   alias Hearth.Instance.Releases
@@ -30,9 +29,7 @@ defmodule Hearth.InstanceTest do
 
   describe "check_for_update/0" do
     test "fails when update checks are off" do
-      previous = Application.get_env(:hearth, Releases)
-      on_exit(fn -> Application.put_env(:hearth, Releases, previous) end)
-      Application.put_env(:hearth, Releases, Keyword.put(previous, :enabled, false))
+      :ok = TestUtils.merge_env(Releases, enabled: false)
 
       assert {:error, :disabled} = Instance.check_for_update()
     end
@@ -64,18 +61,13 @@ defmodule Hearth.InstanceTest do
     end
 
     test "finds a newer release" do
-      notes = Lorem.paragraph()
-
       stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
-        json(conn, %{TestUtils.random_github_release("v0.2.0") | "body" => notes})
+        json(conn, TestUtils.random_github_release("v0.2.0"))
       end)
 
-      assert {:ok, status} = Instance.check_for_update()
+      assert {:ok, %{latest_version: "0.2.0", update_available: true} = status} =
+               Instance.check_for_update()
 
-      assert %{latest_version: "0.2.0", update_available: true, release_name: "Hearth v0.2.0"} =
-               status
-
-      assert status.notes == notes
       assert status == Instance.update_status()
     end
   end

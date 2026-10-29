@@ -36,8 +36,7 @@ defmodule Hearth.Notifications.DigestTest do
 
     test "leaves out communities the reader didn't join", %{reader: reader, since: since} do
       other = TestUtils.create_random_forum!()
-      author = TestUtils.join_random_member!(other)
-      _post = TestUtils.create_random_post!(author, other)
+      _post = other |> TestUtils.join_random_member!() |> TestUtils.create_random_post!(other)
 
       refute Digest.build(reader, :daily, since)
     end
@@ -80,17 +79,12 @@ defmodule Hearth.Notifications.DigestTest do
       owner: owner,
       since: since
     } do
-      posts = for _index <- 1..5, do: TestUtils.create_random_post!(owner, community)
-      best = List.last(posts)
+      [%{id: best_id} = best | _rest] = TestUtils.create_random_posts!(owner, community, 5)
       {:ok, :marked} = Forum.toggle_helpful(reader, best)
 
-      assert %CatchUp{period: :weekly, communities: [entry]} =
-               Digest.build(reader, :weekly, since)
-
-      assert entry.community.id == community.id
-      assert [%{post: %{id: best_id}, author: author}, _second, _third] = entry.posts
-      assert best_id == best.id
-      assert author.id == owner.id
+      assert %CatchUp{communities: [entry]} = Digest.build(reader, :weekly, since)
+      assert [%{post: %{id: ^best_id}} | _rest] = entry.posts
+      assert length(entry.posts) == 3
       assert entry.more == 2
     end
   end

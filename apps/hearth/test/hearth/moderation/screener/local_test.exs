@@ -41,7 +41,7 @@ defmodule Hearth.Moderation.Screener.LocalTest do
 
   describe "screen_image/2" do
     test "passes an ordinary image" do
-      image = TestUtils.random_png!(320, 240)
+      image = TestUtils.random_file!()
 
       assert {:ok, %Verdict{verdict: :safe}} = Local.screen_image(image, [])
     end

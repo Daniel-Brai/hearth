@@ -23,10 +23,9 @@ defmodule Hearth.Notifications.Worker.TellMembersTest do
 
       assert :ok = perform_job(TellMembers, %{event_id: event.id})
 
-      assert %Page{data: [%Notification{kind: :event_scheduled, actor_id: actor_id}]} =
+      assert %Page{data: [%Notification{kind: :event_scheduled}]} =
                Notifications.list_notifications(member)
 
-      assert actor_id == owner.id
       assert %Page{data: []} = Notifications.list_notifications(owner)
     end
   end

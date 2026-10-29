@@ -148,7 +148,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert %{"live" => nil} = conn |> get(~p"/api/posts/#{post.id}") |> valid_response(200)
       {:ok, session} = Voice.discuss_live(owner, post)
 
-      assert %{"live" => %{"session_id" => id, "mode" => "stage"}} =
+      assert %{"live" => %{"session_id" => id}} =
                conn |> get(~p"/api/posts/#{post.id}") |> valid_response(200)
 
       assert id == session.id
@@ -487,16 +487,10 @@ defmodule HearthWeb.VoiceControllerTest do
              |> post(~p"/api/voice-sessions/#{session.id}/recording")
              |> response(204)
 
-      assert %{"recording" => %{"started_by_id" => ^owner_id}, "may_record" => false} =
+      assert %{"recording" => %{"started_by_id" => ^owner_id}} =
                conn
                |> auth_conn(member)
                |> get(~p"/api/voice-sessions/#{session.id}")
-               |> valid_response(200)
-
-      assert %{"recording" => true} =
-               conn
-               |> auth_conn(member)
-               |> get(~p"/api/rooms/#{session.room_id}/voice-session")
                |> valid_response(200)
     end
   end

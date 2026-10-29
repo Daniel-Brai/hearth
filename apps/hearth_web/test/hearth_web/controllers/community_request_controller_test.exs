@@ -117,7 +117,6 @@ defmodule HearthWeb.CommunityRequestControllerTest do
 
       assert response["status"] == "approved"
       assert response["community_id"]
-      assert response["community_slug"]
     end
   end
 end

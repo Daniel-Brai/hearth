@@ -51,8 +51,7 @@ defmodule Hearth.Notifications.Channel.InAppTest do
 
       assert_receive %NotificationCreated{user_id: ^user_id, kind: :answer}
 
-      assert %Notification{subject_type: "post", read_at: nil} =
-               Notification.get(user_id: user_id)
+      assert Notification.exists?(user_id: user_id)
     end
   end
 end

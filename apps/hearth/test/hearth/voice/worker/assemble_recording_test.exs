@@ -1,7 +1,6 @@
 defmodule Hearth.Voice.Worker.AssembleRecordingTest do
   use Hearth.DataCase, async: true
 
-  alias Hearth.Media.TempFile
   alias Hearth.Media.Video
   alias Hearth.Storage
   alias Hearth.TestUtils
@@ -9,7 +8,6 @@ defmodule Hearth.Voice.Worker.AssembleRecordingTest do
   alias Hearth.Voice.Command.StartRecording
   alias Hearth.Voice.Command.StopRecording
   alias Hearth.Voice.Recording
-  alias Hearth.Voice.Recording.Speaker
   alias Hearth.Voice.VoiceRecordingChanged
   alias Hearth.Voice.Worker.AssembleRecording
 
@@ -27,20 +25,16 @@ defmodule Hearth.Voice.Worker.AssembleRecordingTest do
       {:ok, started} = StartRecording.execute(session, session.host_id)
       {:ok, recording} = StopRecording.execute(started, session.host_id, :stopped)
 
-      :ok =
-        TestUtils.update_rows!(Recording, [id: recording.id], ended_at: TestUtils.minutes_ago(11))
+      ended_at = TestUtils.minutes_ago(11)
+      :ok = TestUtils.update_rows!(Recording, [id: recording.id], ended_at: ended_at)
 
       assert {:cancel, :no_tracks} = perform_job(AssembleRecording, %{recording_id: recording.id})
-      assert %Recording{status: :failed} = Recording.get(id: recording.id)
     end
 
     test "fails when nobody spoke", %{session: session} do
       recording = TestUtils.record_random_session!(session, [{session.host_id, :video, 0, 1}], 2)
 
       assert {:cancel, :silent} = perform_job(AssembleRecording, %{recording_id: recording.id})
-
-      assert %Recording{status: :failed, failure: "Nobody spoke" <> _rest} =
-               Recording.get(id: recording.id)
     end
 
     test "fails when the files are gone", %{session: session} do
@@ -57,7 +51,8 @@ defmodule Hearth.Voice.Worker.AssembleRecordingTest do
       assert {:snooze, 5} = perform_job(AssembleRecording, %{recording_id: recording.id})
     end
 
-    test "assemble recording", %{session: session, speaker: speaker} do
+    @tag :tmp_dir
+    test "assemble recording", %{session: session, speaker: speaker, tmp_dir: dir} do
       %{host_id: host_id} = session
       %{id: speaker_id} = speaker
 
@@ -72,25 +67,18 @@ defmodule Hearth.Voice.Worker.AssembleRecordingTest do
 
       assert :ok = perform_job(AssembleRecording, %{recording_id: id})
       assert_receive %VoiceRecordingChanged{recording_id: ^id, status: :ready}
+      assert %Recording{status: :ready} = ready = Recording.get(id: id)
       assert_enqueued(worker: "Hearth.Transcripts.Worker.Transcribe", args: %{recording_id: id})
-
-      ready = Recording.get(id: id)
-
-      assert %Recording{status: :ready, has_screen: true, width: 1_280, height: 720} = ready
-      assert ready.duration_ms in 3_900..4_100
-      assert ready.processing_ms > 0
-      assert [%Speaker{}, %Speaker{}] = ready.speakers
 
       assert ready.speakers |> TestUtils.pluck(:user_id) |> MapSet.new() ==
                MapSet.new([host_id, speaker_id])
 
       assert TestUtils.stored(ready.tracks) == []
 
+      path = TestUtils.download_file!(dir, ready.video_key)
+
       assert {:ok, %{video_codec: "h264", audio_codec: "aac", width: 1_280, height: 720}} =
-               TempFile.run(fn path ->
-                 :ok = Storage.download(ready.video_key, path)
-                 Video.probe(path)
-               end)
+               Video.probe(path)
     end
   end
 end

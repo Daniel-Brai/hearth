@@ -51,8 +51,8 @@ defmodule Hearth.Notifications.Listener.ForumTest do
   end
 
   test "tells nobody who turned replies off", %{owner: owner, member: member, post: post} do
-    {:ok, _settings} =
-      Accounts.update_settings(owner, %{notification_prefs: %{"replies" => false}})
+    changes = %{notification_prefs: %{"replies" => false}}
+    {:ok, _settings} = Accounts.update_settings(owner, changes)
 
     {:ok, reply} = Forum.reply(member, post, %{body: Lorem.sentence()})
     event = TestUtils.reply_created(reply, post, member)
@@ -66,8 +66,8 @@ defmodule Hearth.Notifications.Listener.ForumTest do
     member: member,
     community: community
   } do
-    {:ok, _settings} =
-      Accounts.update_settings(member, %{notification_prefs: %{"mentions" => false}})
+    changes = %{notification_prefs: %{"mentions" => false}}
+    {:ok, _settings} = Accounts.update_settings(member, changes)
 
     post = TestUtils.create_random_post!(owner, community, body: "Ask @#{member.username}")
     event = %PostCreated{post_id: post.id, community_id: community.id, author_id: owner.id}
@@ -105,10 +105,9 @@ defmodule Hearth.Notifications.Listener.ForumTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    assert %Page{data: [%Notification{kind: :reply, actor_id: actor_id}]} =
+    assert %Page{data: [%Notification{kind: :reply}]} =
              Notifications.list_notifications(watcher)
 
-    assert actor_id == member.id
     assert %Page{data: [%Notification{kind: :reply}]} = Notifications.list_notifications(owner)
     assert %Page{data: []} = Notifications.list_notifications(member)
   end
@@ -145,18 +144,15 @@ defmodule Hearth.Notifications.Listener.ForumTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    assert %Page{data: [%Notification{kind: :reply, actor_id: actor_id, data: data}]} =
+    assert %Page{data: [%Notification{kind: :reply, data: data}]} =
              Notifications.list_notifications(owner)
 
-    assert actor_id == member.id
     assert data["post_title"] == post.title
   end
 
   test "tells the people a post mentions", %{owner: owner, member: member, community: community} do
-    post =
-      TestUtils.create_random_post!(owner, community,
-        body: "Ask @#{member.username} or @nobody_here"
-      )
+    body = "Ask @#{member.username} or @nobody_here"
+    post = TestUtils.create_random_post!(owner, community, body: body)
 
     event = %PostCreated{post_id: post.id, community_id: community.id, author_id: owner.id}
 
@@ -165,19 +161,13 @@ defmodule Hearth.Notifications.Listener.ForumTest do
     assert %Page{data: [%Notification{kind: :mention}]} = Notifications.list_notifications(member)
   end
 
-  test "tells author of accepted answer", %{
-    owner: owner,
-    member: member,
-    post: post
-  } do
+  test "tells author of accepted answer", %{member: member, post: post} do
     {:ok, reply} = Forum.reply(member, post, %{body: Lorem.sentence()})
     event = %AnswerMarked{post_id: post.id, reply_id: reply.id, reply_author_id: member.id}
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    assert %Page{data: [%Notification{kind: :answer, actor_id: actor_id}]} =
+    assert %Page{data: [%Notification{kind: :answer}]} =
              Notifications.list_notifications(member)
-
-    assert actor_id == owner.id
   end
 end

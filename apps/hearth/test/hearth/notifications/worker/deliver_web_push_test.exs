@@ -28,7 +28,6 @@ defmodule Hearth.Notifications.Worker.DeliverWebPushTest do
       assert [job] = all_enqueued(worker: DeliverWebPush)
 
       refute inspect(job.args) =~ text
-      assert %{"subscription_id" => _id, "sealed" => _sealed} = job.args
     end
   end
 

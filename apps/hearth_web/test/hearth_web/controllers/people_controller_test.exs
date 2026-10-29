@@ -36,12 +36,8 @@ defmodule HearthWeb.PeopleControllerTest do
     end
 
     test "hides presence and communities when asked", %{conn: conn, owner: owner, member: member} do
-      {:ok, _privacy} =
-        Accounts.update_privacy(member, %{
-          presence: :nobody,
-          last_seen: :nobody,
-          show_communities: :nobody
-        })
+      changes = %{presence: :nobody, last_seen: :nobody, show_communities: :nobody}
+      {:ok, _privacy} = Accounts.update_privacy(member, changes)
 
       {:ok, _ref} = Presence.track_user(self(), member.id)
 

@@ -7,6 +7,7 @@ defmodule SecretsTest do
   alias Plug.Conn
   alias Secrets.HashiCorp
   alias Secrets.MissingError
+  alias Secrets.TestUtils
 
   @names ~w[
     SECRETS_TEST_DATABASE_URL
@@ -19,22 +20,13 @@ defmodule SecretsTest do
   setup {Req.Test, :verify_on_exit!}
 
   setup %{tmp_dir: tmp_dir} do
-    settings = Application.fetch_env!(:secrets, Secrets)
-    vault = Application.fetch_env!(:secrets, HashiCorp)
-
-    on_exit(fn ->
-      Application.put_env(:secrets, Secrets, settings)
-      Application.put_env(:secrets, HashiCorp, vault)
-      Enum.each(@names, &System.delete_env/1)
-    end)
+    on_exit(fn -> Enum.each(@names, &System.delete_env/1) end)
 
     jwt_file = Path.join(tmp_dir, "token")
     File.write!(jwt_file, "service-account-jwt\n")
 
-    Application.put_env(:secrets, Secrets, file: "test/fixtures/secrets.yml", env: "staging")
-    Application.put_env(:secrets, HashiCorp, Keyword.merge(vault, jwt_file: jwt_file))
-
-    :ok
+    :ok = TestUtils.put_env(Secrets, file: "test/fixtures/secrets.yml", env: "staging")
+    TestUtils.merge_env(HashiCorp, jwt_file: jwt_file)
   end
 
   describe "inject!/0" do
@@ -84,7 +76,7 @@ defmodule SecretsTest do
     end
 
     test "sets nothing without a secrets file" do
-      Application.put_env(:secrets, Secrets, file: nil, env: "staging")
+      :ok = TestUtils.put_env(Secrets, file: nil, env: "staging")
 
       assert Secrets.inject!() == 0
     end
@@ -124,17 +116,8 @@ defmodule SecretsTest do
       File.write!(role_id_file, "role\n")
       File.write!(secret_id_file, "secret\n")
 
-      vault = Application.fetch_env!(:secrets, HashiCorp)
-
-      Application.put_env(
-        :secrets,
-        HashiCorp,
-        Keyword.merge(vault,
-          auth: "approle",
-          role_id_file: role_id_file,
-          secret_id_file: secret_id_file
-        )
-      )
+      files = [role_id_file: role_id_file, secret_id_file: secret_id_file]
+      :ok = TestUtils.merge_env(HashiCorp, [auth: "approle"] ++ files)
 
       stub(HashiCorp, fn
         %Conn{
@@ -153,13 +136,7 @@ defmodule SecretsTest do
     end
 
     test "uses a given token without signing in" do
-      vault = Application.fetch_env!(:secrets, HashiCorp)
-
-      Application.put_env(
-        :secrets,
-        HashiCorp,
-        Keyword.merge(vault, auth: "token", token: "s.root")
-      )
+      :ok = TestUtils.merge_env(HashiCorp, auth: "token", token: "s.root")
 
       stub(HashiCorp, fn %Conn{method: "GET"} = conn ->
         ["s.root"] = Conn.get_req_header(conn, "x-vault-token")

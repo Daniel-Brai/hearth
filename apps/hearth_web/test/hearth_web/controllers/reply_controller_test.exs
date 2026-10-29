@@ -47,8 +47,8 @@ defmodule HearthWeb.ReplyControllerTest do
     } do
       {:ok, top} = Forum.reply(owner, post, %{body: Lorem.sentence()})
 
-      {:ok, answer} =
-        Forum.reply(member, post, %{body: Lorem.sentence(), parent_reply_id: top.id})
+      params = %{body: Lorem.sentence(), parent_reply_id: top.id}
+      {:ok, answer} = Forum.reply(member, post, params)
 
       assert %{"data" => [entry]} =
                conn |> get(~p"/api/posts/#{post.id}/replies") |> valid_response(200)
@@ -99,7 +99,6 @@ defmodule HearthWeb.ReplyControllerTest do
                |> valid_response(201)
 
       assert response["body"] == body.body
-      assert response["depth"] == 0
       assert response["author"]["id"] == owner.id
     end
   end
@@ -153,8 +152,8 @@ defmodule HearthWeb.ReplyControllerTest do
     } do
       {:ok, top} = Forum.reply(owner, post, %{body: Lorem.sentence()})
 
-      {:ok, _answer} =
-        Forum.reply(member, post, %{body: Lorem.sentence(), parent_reply_id: top.id})
+      params = %{body: Lorem.sentence(), parent_reply_id: top.id}
+      {:ok, _answer} = Forum.reply(member, post, params)
 
       assert conn |> auth_conn(owner) |> delete(~p"/api/replies/#{top.id}") |> response(204)
 

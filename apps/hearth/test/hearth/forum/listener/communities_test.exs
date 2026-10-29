@@ -21,12 +21,7 @@ defmodule Hearth.Forum.Listener.CommunitiesTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    assert [
-             %{key: "discussion"},
-             %{key: "question"},
-             %{key: "photo"},
-             %{key: "meetup"},
-             %{key: "announcement"}
-           ] = Forum.list_kinds(community.id)
+    assert community.id |> Forum.list_kinds() |> TestUtils.pluck(:key) ==
+             ~w[discussion question photo meetup announcement]
   end
 end

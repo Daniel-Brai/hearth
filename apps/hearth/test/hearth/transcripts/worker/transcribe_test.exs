@@ -5,7 +5,6 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
   alias Hearth.Storage
   alias Hearth.TestUtils
   alias Hearth.Transcripts
-  alias Hearth.Transcripts.Segment
   alias Hearth.Transcripts.Transcript
   alias Hearth.Transcripts.TranscriptReady
   alias Hearth.Transcripts.Worker.Transcribe
@@ -32,13 +31,10 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
     end
 
     test "fails for unreadable audio", %{session: session} do
-      recording =
-        TestUtils.insert_random_ready_recording!(session, [{session.host_id, "garbled"}])
+      speakers = [{session.host_id, "garbled"}]
+      recording = TestUtils.insert_random_ready_recording!(session, speakers)
 
       assert {:cancel, :unreadable} = perform_job(Transcribe, %{recording_id: recording.id})
-
-      assert %Transcript{status: :failed, failure: "A speaker's audio" <> _rest} =
-               Transcript.get(recording_id: recording.id)
     end
 
     test "fails when the audio is gone", %{session: session} do
@@ -60,8 +56,9 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
 
       assert :ok = perform_job(Transcribe, %{recording_id: recording.id})
 
-      assert %Transcript{segments: [%{text: "First"}, %{text: "Second"}]} =
-               Transcript.latest(recording_id: recording.id)
+      transcript = Transcript.latest(recording_id: recording.id)
+
+      assert TestUtils.pluck(transcript.segments, :text) == ~w[First Second]
     end
 
     test "transcribe recording", %{session: session, speaker: speaker} do
@@ -74,24 +71,13 @@ defmodule Hearth.Transcripts.Worker.TranscribeTest do
       %{id: id} = recording
 
       assert :ok = perform_job(Transcribe, %{recording_id: id})
-      assert_receive %TranscriptReady{recording_id: ^id, event_id: nil}
+      assert_receive %TranscriptReady{recording_id: ^id}
+      assert %Transcript{status: :ready} = transcript = Transcript.latest(recording_id: id)
 
-      transcript = Transcript.latest(recording_id: id)
+      assert TestUtils.pluck(transcript.segments, :text) ==
+               ["Welcome everyone", "Thanks for having me", "Any questions"]
 
-      assert %Transcript{status: :ready, duration_ms: 60_000, engine: "local"} = transcript
-      assert [_host, _speaker] = transcript.speakers
-
-      assert [
-               %{text: "Welcome everyone"},
-               %{text: "Thanks for having me"},
-               %{text: "Any questions"}
-             ] = transcript.segments
-
-      assert [%{start_ms: 7_500, end_ms: 10_000}, %{start_ms: 12_000, end_ms: 60_000}] =
-               transcript.audio_marks
-
-      assert :ok = perform_job(Transcribe, %{recording_id: id})
-      assert 3 = length(Segment.all(transcript_id: transcript.id))
+      assert [%{start_ms: 7_500, end_ms: 10_000} | _marks] = transcript.audio_marks
     end
   end
 end

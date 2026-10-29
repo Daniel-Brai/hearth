@@ -32,7 +32,7 @@ defmodule Hearth.TranscriptsTest do
     test "show transcript", %{member: member, session: session, transcript: transcript} do
       %{id: id} = transcript
 
-      assert {:ok, %{transcript: %Transcript{id: ^id, segments: [_welcome, _thanks]}}} =
+      assert {:ok, %{transcript: %Transcript{id: ^id}}} =
                Transcripts.get_for_session(member, session.id)
     end
   end

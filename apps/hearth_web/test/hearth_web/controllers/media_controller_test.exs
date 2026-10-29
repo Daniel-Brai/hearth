@@ -6,7 +6,9 @@ defmodule HearthWeb.MediaControllerTest do
 
   setup do
     user = TestUtils.register_random_user!()
-    media = TestUtils.upload_random_file!(user, "%PDF-1.7\n", "application/pdf")
+
+    media =
+      TestUtils.upload_random_file!(user, :pdf)
 
     {:ok, binding()}
   end

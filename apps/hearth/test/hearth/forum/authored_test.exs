@@ -74,10 +74,10 @@ defmodule Hearth.Forum.AuthoredTest do
     end
 
     test "lists the newest first", %{author: author, community: community} do
-      %{id: first} = TestUtils.create_random_post!(author, community)
-      %{id: second} = TestUtils.create_random_post!(author, community)
+      _older = TestUtils.create_random_post!(author, community)
+      %{id: newest} = TestUtils.create_random_post!(author, community)
 
-      assert %Page{data: [%Post{id: ^second}, %Post{id: ^first}]} =
+      assert %Page{data: [%Post{id: ^newest} | _rest]} =
                Forum.list_author_posts(author.id, [community.id])
     end
   end
@@ -113,10 +113,10 @@ defmodule Hearth.Forum.AuthoredTest do
 
     test "lists the newest first", %{owner: owner, author: author, community: community} do
       post = TestUtils.create_random_post!(owner, community)
-      {:ok, %{id: first}} = Forum.reply(author, post, %{body: Lorem.sentence()})
-      {:ok, %{id: second}} = Forum.reply(author, post, %{body: Lorem.sentence()})
+      {:ok, _older} = Forum.reply(author, post, %{body: Lorem.sentence()})
+      {:ok, %{id: newest}} = Forum.reply(author, post, %{body: Lorem.sentence()})
 
-      assert %Page{data: [%Reply{id: ^second}, %Reply{id: ^first}]} =
+      assert %Page{data: [%Reply{id: ^newest} | _rest]} =
                Forum.list_author_replies(author.id, [community.id])
     end
   end

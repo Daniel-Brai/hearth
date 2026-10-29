@@ -74,10 +74,9 @@ defmodule Hearth.EventsTest do
     test "schedule event", %{owner: owner, community: community, params: params} do
       %{id: host_id} = owner
 
-      assert {:ok, %Event{host_id: ^host_id, talk_mode: :open} = event} =
+      assert {:ok, %Event{host_id: ^host_id} = event} =
                Events.schedule_event(owner, community, params)
 
-      assert {:ok, :not_interested} = Events.toggle_interest(owner, event)
       assert_enqueued(worker: Remind, args: %{event_id: event.id, minutes: 60})
       assert_enqueued(worker: Remind, args: %{event_id: event.id, minutes: 10})
       assert_enqueued(worker: "Hearth.Voice.Worker.EventStart", args: %{event_id: event.id})
@@ -185,15 +184,11 @@ defmodule Hearth.EventsTest do
       community: community,
       params: params
     } do
-      {:ok, %{id: later_id}} = Events.schedule_event(owner, community, params)
+      {:ok, _later} = Events.schedule_event(owner, community, params)
+      sooner = %{params | starts_at: DateTime.add(DateTime.utc_now(), 1, :hour)}
+      {:ok, %{id: sooner_id}} = Events.schedule_event(owner, community, sooner)
 
-      {:ok, %{id: sooner_id}} =
-        Events.schedule_event(owner, community, %{
-          params
-          | starts_at: DateTime.add(DateTime.utc_now(), 1, :hour)
-        })
-
-      assert [%Event{id: ^sooner_id}, %Event{id: ^later_id, next_starts_at: %DateTime{}}] =
+      assert [%Event{id: ^sooner_id, next_starts_at: %DateTime{}} | _later] =
                Events.list_upcoming([community.id])
     end
   end

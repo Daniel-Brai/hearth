@@ -41,8 +41,8 @@ defmodule Hearth.Events.Worker.RemindTest do
     end
 
     test "skips an occurrence that moved", %{owner: owner, event: event, starts_at: starts_at} do
-      {:ok, _event} =
-        Events.update_event(owner, event, %{starts_at: DateTime.add(event.starts_at, 1, :hour)})
+      changes = %{starts_at: DateTime.add(event.starts_at, 1, :hour)}
+      {:ok, _event} = Events.update_event(owner, event, changes)
 
       event_id = event.id
 

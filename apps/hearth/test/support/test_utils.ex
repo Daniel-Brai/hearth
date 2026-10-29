@@ -42,6 +42,17 @@ defmodule Hearth.TestUtils do
   alias Phoenix.HTML
   alias Vix.Vips.MutableImage
 
+  @file_opts ~w[width height size seconds format audio metadata]a
+
+  @content_types %{
+    "webm" => "video/webm",
+    png: "image/png",
+    video: "video/mp4",
+    pdf: "application/pdf",
+    text: "text/plain",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  }
+
   def random_username, do: "user_#{System.unique_integer([:positive])}"
 
   def random_key, do: 32 |> :crypto.strong_rand_bytes() |> Base.encode64()
@@ -143,11 +154,21 @@ defmodule Hearth.TestUtils do
     community
   end
 
-  def put_community_creation(mode) when mode in ~w[admins request anyone] do
-    previous = Application.fetch_env!(:hearth, Communities)
-    on_exit(fn -> Application.put_env(:hearth, Communities, previous) end)
+  def put_env(app \\ :hearth, key, value) do
+    case Application.fetch_env(app, key) do
+      {:ok, previous} -> on_exit(fn -> Application.put_env(app, key, previous) end)
+      :error -> on_exit(fn -> Application.delete_env(app, key) end)
+    end
 
-    Application.put_env(:hearth, Communities, creation: mode)
+    Application.put_env(app, key, value)
+  end
+
+  def merge_env(app \\ :hearth, key, changes) do
+    put_env(app, key, app |> Application.fetch_env!(key) |> Keyword.merge(changes))
+  end
+
+  def put_community_creation(mode) when mode in ~w[admins request anyone] do
+    put_env(Communities, creation: mode)
   end
 
   def create_random_post!(author, community, opts \\ []) do
@@ -164,28 +185,77 @@ defmodule Hearth.TestUtils do
     post
   end
 
-  def random_upload_params(data, content_type, opts \\ []) do
-    sha256 =
-      :sha256
-      |> :crypto.hash(data)
-      |> Base.encode16(case: :lower)
+  def random_upload_params(type \\ :png, opts \\ [])
 
-    Map.merge(
-      %{
-        idempotency_key: Common.new_id(),
-        name: "file",
-        content_type: content_type,
-        byte_size: byte_size(data),
-        sha256: sha256
-      },
-      Map.new(opts)
-    )
+  def random_upload_params(opts, []) when is_list(opts), do: random_upload_params(:png, opts)
+
+  def random_upload_params(type, opts) do
+    data =
+      Keyword.get_lazy(opts, :data, fn -> random_file!(type, Keyword.take(opts, @file_opts)) end)
+
+    content_type = Map.get(@content_types, opts[:format], Map.fetch!(@content_types, type))
+    sha256 = :sha256 |> :crypto.hash(data) |> Base.encode16(case: :lower)
+
+    params = %{
+      idempotency_key: Common.new_id(),
+      name: "file",
+      content_type: content_type,
+      byte_size: byte_size(data),
+      sha256: sha256
+    }
+
+    Map.merge(params, opts |> Keyword.drop([:data | @file_opts]) |> Map.new())
   end
 
-  def random_png!(width, height) do
-    width
-    |> Image.new!(height, color: :orange)
+  def random_file!(type \\ :png, opts \\ [])
+
+  def random_file!(:png, opts) do
+    opts
+    |> Keyword.get(:width, 400)
+    |> Image.new!(Keyword.get(opts, :height, 300), color: :orange)
     |> Image.write!(:memory, suffix: ".png")
+  end
+
+  # Without audio a clip runs at one frame a second, so a long one stays small
+  def random_file!(:video, opts) do
+    size = Keyword.get(opts, :size, "320x240")
+    seconds = Keyword.get(opts, :seconds, 2)
+    format = Keyword.get(opts, :format, "mp4")
+
+    metadata =
+      for {key, value} <- Keyword.get(opts, :metadata, []), do: ["-metadata", "#{key}=#{value}"]
+
+    dir = Path.join(System.tmp_dir!(), "hearth-video-#{System.unique_integer([:positive])}")
+    path = Path.join(dir, "clip.#{format}")
+    File.mkdir_p!(dir)
+
+    codecs =
+      case {format, Keyword.get(opts, :audio, true)} do
+        {"webm", _audio} -> ~w[-c:v libvpx-vp9 -deadline realtime -cpu-used 8 -c:a libopus]
+        {"mp4", true} -> ~w[-c:v libx264 -preset ultrafast -c:a aac]
+        {"mp4", false} -> ~w[-c:v libx264 -preset ultrafast -r 1 -an]
+      end
+
+    sources =
+      ~w[-f lavfi -i testsrc=duration=#{seconds}:size=#{size}:rate=5] ++
+        ~w[-f lavfi -i sine=duration=#{seconds}]
+
+    :ok = ffmpeg!(sources ++ codecs ++ List.flatten(metadata) ++ ["-shortest", path])
+    data = File.read!(path)
+    File.rm_rf!(dir)
+
+    data
+  end
+
+  def random_file!(:pdf, _opts), do: "%PDF-1.7\n" <> Lorem.sentence() <> "\n%%EOF\n"
+
+  def random_file!(:text, _opts), do: Lorem.paragraph()
+
+  def random_file!(:docx, _opts) do
+    {:ok, {_name, docx}} =
+      :zip.create(~c"file.docx", [{~c"word/document.xml", "<w:document/>"}], [:memory])
+
+    docx
   end
 
   # A JPEG stored on its side, as a phone does, carrying who took it
@@ -215,38 +285,44 @@ defmodule Hearth.TestUtils do
     json |> JSON.decode!() |> get_in(~w[format tags]) || %{}
   end
 
-  def upload_random_file!(uploader, data, content_type, opts \\ []) do
-    {:ok, %{media: requested}} =
-      Media.request_upload(uploader, random_upload_params(data, content_type, opts))
+  def write_file!(dir, data, name \\ "file") do
+    path = Path.join(dir, name)
+    File.write!(path, data)
 
-    :ok = Storage.put(requested.bucket_key, data, content_type)
+    path
+  end
+
+  def write_sideways_video!(dir) do
+    input = write_file!(dir, random_file!(:video), "in.mp4")
+    output = Path.join(dir, "out.mp4")
+    :ok = ffmpeg!(~w[-display_rotation 90 -i #{input} -c copy #{output}])
+
+    output
+  end
+
+  def download_file!(dir, key) do
+    path = Path.join(dir, Path.basename(key))
+    :ok = Storage.download(key, path)
+
+    path
+  end
+
+  def upload_random_file!(uploader, type \\ :png, opts \\ [])
+
+  def upload_random_file!(uploader, opts, []) when is_list(opts),
+    do: upload_random_file!(uploader, :png, opts)
+
+  def upload_random_file!(uploader, type, opts) do
+    data =
+      Keyword.get_lazy(opts, :data, fn -> random_file!(type, Keyword.take(opts, @file_opts)) end)
+
+    params = random_upload_params(type, Keyword.put(opts, :data, data))
+    {:ok, %{media: requested}} = Media.request_upload(uploader, params)
+
+    :ok = Storage.put(requested.bucket_key, data, params.content_type)
     {:ok, media} = Media.complete_upload(uploader, requested)
 
     media
-  end
-
-  def random_video!(opts \\ []) do
-    size = Keyword.get(opts, :size, "320x240")
-    seconds = Keyword.get(opts, :seconds, 2)
-    codecs = Keyword.get(opts, :codecs, ~w[-c:v libx264 -preset ultrafast -c:a aac])
-    format = Keyword.get(opts, :format, "mp4")
-    dir = Path.join(System.tmp_dir!(), "hearth-video-#{System.unique_integer([:positive])}")
-    path = Path.join(dir, "clip.#{format}")
-    File.mkdir_p!(dir)
-
-    sources =
-      ~w[-f lavfi -i testsrc=duration=#{seconds}:size=#{size}:rate=5] ++
-        ~w[-f lavfi -i sine=duration=#{seconds}]
-
-    {_output, 0} =
-      System.cmd("ffmpeg", ~w[-v error -y] ++ sources ++ codecs ++ ["-shortest", path],
-        env: %{"SECRET_KEY_BASE" => nil}
-      )
-
-    data = File.read!(path)
-    File.rm_rf!(dir)
-
-    data
   end
 
   def stored_value!(schema, id, field) do
@@ -271,29 +347,12 @@ defmodule Hearth.TestUtils do
   def put_screening(changes) do
     {policy, screener} = Keyword.split(changes, [:screener, :image_floor])
 
-    for {key, changes} <- [
-          {Hearth.ScreeningPolicy, policy},
-          {Hearth.Moderation.Screener, screener}
-        ],
-        changes != [] do
-      previous = Application.fetch_env!(:hearth, key)
-      on_exit(fn -> Application.put_env(:hearth, key, previous) end)
-      Application.put_env(:hearth, key, Keyword.merge(previous, changes))
-    end
-
-    :ok
+    :ok = merge_env(Hearth.ScreeningPolicy, policy)
+    merge_env(Hearth.Moderation.Screener, screener)
   end
 
   def put_transcription(mode) do
-    previous = Application.fetch_env!(:hearth, Hearth.TranscriptionPolicy)
-
-    on_exit(fn ->
-      Application.put_env(:hearth, Hearth.TranscriptionPolicy, previous)
-    end)
-
-    Application.put_env(:hearth, Hearth.TranscriptionPolicy, Keyword.put(previous, :mode, mode))
-
-    :ok
+    merge_env(Hearth.TranscriptionPolicy, mode: mode)
   end
 
   def roll_back!(fun) do
@@ -304,6 +363,21 @@ defmodule Hearth.TestUtils do
       end)
 
     :ok
+  end
+
+  def roll_back_random_post!(author, community) do
+    :ok = roll_back!(fn -> send(self(), {:post, create_random_post!(author, community).id}) end)
+
+    receive do
+      {:post, id} -> id
+    end
+  end
+
+  def start_flushing_buffer!(name) do
+    test = self()
+    opts = [name: name, processor: &send(test, {:flushed, &1}), processing_interval_ms: 10]
+
+    start_supervised!(%{id: name, start: {PartitionedBuffer.Map, :start_link, [opts]}})
   end
 
   def chat_completion(content) do
@@ -339,6 +413,10 @@ defmodule Hearth.TestUtils do
     Enum.map(1..count, fn _index -> create_random_community!(owner) end)
   end
 
+  def create_random_posts!(author, community, count) do
+    Enum.map(1..count, fn _index -> create_random_post!(author, community) end)
+  end
+
   def create_random_reply_chain!(author, post, parent, depth) do
     Enum.reduce(1..depth, parent, fn _level, parent ->
       {:ok, reply} =
@@ -355,14 +433,13 @@ defmodule Hearth.TestUtils do
 
   def upload_random_attachments!(uploader, count) do
     Enum.map(1..count, fn _index ->
-      upload_random_file!(uploader, Lorem.paragraph(), "text/plain", name: "notes.txt")
+      upload_random_file!(uploader, :text, name: "notes.txt")
     end)
   end
 
-  def request_random_uploads!(uploader, data, content_type, count) do
+  def request_random_uploads!(uploader, count) do
     Enum.map(1..count, fn _index ->
-      {:ok, %{media: media}} =
-        Media.request_upload(uploader, random_upload_params(data, content_type))
+      {:ok, %{media: media}} = Media.request_upload(uploader, random_upload_params())
 
       media
     end)
@@ -395,9 +472,9 @@ defmodule Hearth.TestUtils do
     |> HTML.safe_to_string()
   end
 
-  def fail_random_uploads!(uploader, data, content_type, count) do
+  def fail_random_uploads!(uploader, count) do
     Enum.each(1..count, fn _index ->
-      [media] = request_random_uploads!(uploader, data, content_type, 1)
+      [media] = request_random_uploads!(uploader, 1)
       update_rows!(Hearth.Media.Asset, [id: media.id], status: :failed)
     end)
   end
@@ -547,17 +624,11 @@ defmodule Hearth.TestUtils do
   end
 
   def put_voice(changes) do
-    previous = Application.fetch_env!(:hearth, Voice)
-    on_exit(fn -> Application.put_env(:hearth, Voice, previous) end)
-
-    Application.put_env(:hearth, Voice, Keyword.merge(previous, changes))
+    merge_env(Voice, changes)
   end
 
   def put_rtc(changes) do
-    previous = Application.fetch_env!(:hearth, RTC)
-    on_exit(fn -> Application.put_env(:hearth, RTC, previous) end)
-
-    Application.put_env(:hearth, RTC, Keyword.merge(previous, changes))
+    merge_env(RTC, changes)
   end
 
   defp await_exit(pid) do
