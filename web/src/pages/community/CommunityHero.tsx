@@ -45,7 +45,6 @@ export function CommunityHero({ cid, view, onToggleJoin }: HeroProps) {
             hue={view.hue}
             letter={view.letter}
             logo={view.logo}
-            size="4.6rem"
             className="community-mark--hero"
           />
 
@@ -147,8 +146,11 @@ function ManageMenu({ cid, view }: { readonly cid: string; readonly view: Commun
 function HeroMeta({ view }: { readonly view: CommunityViewData }) {
   return (
     <div className="community-hero__meta small subtle">
-      <span className="tabular">
-        <strong>{fmt(view.members)}</strong> members
+      <span className="icon-text">
+        <Icon name="users" />
+        <span className="tabular">
+          <strong>{fmt(view.members)}</strong> members
+        </span>
       </span>
       <span className="icon-text">
         <Dot green />
