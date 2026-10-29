@@ -1,11 +1,18 @@
-import type { CSSProperties } from 'react';
+import { useState } from 'react';
 import { Icon } from '@/design-system/icons/Icon';
 import { IconButton } from './button';
 import { Carousel } from './carousel';
 import { Img } from './image';
 import { VideoAttachment } from './video-attachment';
-import { fmtSize, shortFileName, tintStyle } from '@/domain/format';
-import { attachmentDownload, attachmentSrc, type Attachment } from '@/domain/types';
+import { fmtSize, shortFileName } from '@/domain/format';
+import {
+  attachmentDownload,
+  attachmentSrc,
+  type Attachment,
+  type LinkPreview as LinkPreviewData,
+} from '@/domain/types';
+
+export type { LinkPreviewData };
 
 export function FileList({
   files,
@@ -79,15 +86,6 @@ export function FileList({
   );
 }
 
-export type LinkPreviewData = {
-  readonly url: string;
-  readonly site: string;
-  readonly title: string;
-  readonly desc: string;
-  readonly hue: string;
-  readonly letter: string;
-};
-
 export function LinkPreview({
   preview,
   loading,
@@ -111,13 +109,11 @@ export function LinkPreview({
   }
   return (
     <a className="og" href={preview.url} target="_blank" rel="noopener nofollow">
-      <span className="og__image" style={tintStyle(preview.hue) as CSSProperties}>
-        {preview.letter}
-      </span>
+      <PreviewImage preview={preview} />
       <span className="og__body">
         <span className="og__site">{preview.site}</span>
         <span className="og__title">{preview.title}</span>
-        <span className="og__desc">{preview.desc}</span>
+        {preview.desc ? <span className="og__desc">{preview.desc}</span> : null}
       </span>
       {onRemove ? (
         <IconButton
@@ -137,5 +133,25 @@ export function LinkPreview({
         </IconButton>
       ) : null}
     </a>
+  );
+}
+
+// A site's image can be gone or blocked, so a letter tile stands in
+function PreviewImage({ preview }: { readonly preview: LinkPreviewData }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!preview.image || failed) {
+    return <span className="og__image">{preview.site.charAt(0).toUpperCase()}</span>;
+  }
+
+  return (
+    <img
+      className="og__image og__image--photo"
+      src={preview.image}
+      loading="lazy"
+      alt=""
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+    />
   );
 }

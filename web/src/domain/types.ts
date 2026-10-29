@@ -102,7 +102,6 @@ export type Community = {
   indexed?: boolean;
   // The exact value the server keeps, see domain/audience
   audience?: Audience;
-  previews: boolean;
   maintainer: string;
   welcome: string;
   rooms: Room[];
@@ -176,7 +175,6 @@ export type Post = {
   transcript: string | null;
   replies: Reply[];
   files?: Attachment[];
-  previewHidden?: boolean;
   locked?: boolean;
   removed?: boolean;
   moderated?: boolean;
@@ -185,6 +183,15 @@ export type Post = {
   inReview?: boolean;
   replyCount?: number;
   editedAt?: string | null | undefined;
+};
+
+// A page's own Open Graph data, with its image loaded straight from that site
+export type LinkPreview = {
+  url: string;
+  site: string;
+  title: string;
+  desc: string | null;
+  image: string | null;
 };
 
 export type Message = {

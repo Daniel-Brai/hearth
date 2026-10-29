@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  Button,
-  CommunityMark,
-  EmptyState,
-  Icon,
-  Label,
-  LinkPreview,
-  Select,
-} from '@/design-system';
+import { Button, CommunityMark, EmptyState, Icon, Label, Select } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { ageText, plural, tintStyle } from '@/domain/format';
@@ -15,7 +7,6 @@ import { canDo, community, displayName, handle, isHeld, person } from '@/domain/
 import { REPORT_REASONS } from '@/domain/catalog';
 import type { QueueItem, QueueReport } from '@/domain/types';
 import { InlineMarkdown, Markdown } from '@/features/markdown/Markdown';
-import { firstUrl, previewFor } from '@/features/previews';
 import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar, PersonLink } from '@/shell/people';
 import { modOffNote } from './mod-notes';
@@ -207,8 +198,6 @@ export function QueueCard({ item: x, reason, onReason, onKeep, onRemove, onBan }
     };
   });
 
-  const url = firstUrl(x.text);
-  const preview = url ? previewFor(url) : null;
   const pct = Math.round(x.score * 100);
 
   return (
@@ -232,12 +221,6 @@ export function QueueCard({ item: x, reason, onReason, onKeep, onRemove, onBan }
       </div>
 
       <Markdown text={x.text} community={x.c} className="queue-item__content" />
-
-      {preview ? (
-        <div className="og-wrap">
-          <LinkPreview preview={preview} />
-        </div>
-      ) : null}
 
       {x.source === 'automatic' || !x.reports?.length ? (
         <div className="queue-item__ai">

@@ -4,14 +4,86 @@
  * OpenAPI spec version: 2026-10-24
  */
 import type {
+  LinkPreview,
+  LinkPreviewShowParams,
   Media,
   NoContentResponse,
   NotFoundResponse,
+  TooManyRequestsResponse,
   UnauthorizedResponse,
   UnprocessableContentResponse,
 } from '../../schemas';
 
 import { customFetch } from '../../../api/custom-fetch';
+
+export type linkPreviewShowResponse200 = {
+  data: LinkPreview;
+  status: 200;
+};
+
+export type linkPreviewShowResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type linkPreviewShowResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type linkPreviewShowResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type linkPreviewShowResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type linkPreviewShowResponseSuccess = linkPreviewShowResponse200 & {
+  headers: Headers;
+};
+export type linkPreviewShowResponseError = (
+  | linkPreviewShowResponse401
+  | linkPreviewShowResponse404
+  | linkPreviewShowResponse422
+  | linkPreviewShowResponse429
+) & {
+  headers: Headers;
+};
+
+export type linkPreviewShowResponse = linkPreviewShowResponseSuccess | linkPreviewShowResponseError;
+
+export const getLinkPreviewShowUrl = (params: LinkPreviewShowParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/link-preview?${stringifiedParams}`
+    : `/api/link-preview`;
+};
+
+/**
+ * Private addresses, and sites without preview tags, are not found
+ * @summary Preview a link
+ */
+export const linkPreviewShow = async (
+  params: LinkPreviewShowParams,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<linkPreviewShowResponse> => {
+  return customFetch<linkPreviewShowResponse>(getLinkPreviewShowUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
 
 export type mediaDeleteResponse204 = {
   data: NoContentResponse;

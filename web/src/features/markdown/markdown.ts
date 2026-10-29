@@ -2,6 +2,7 @@ import DOMPurify, { type WindowLike } from 'dompurify';
 import { Marked, Parser, type Tokens, type TokensList } from 'marked';
 import type { AppState } from '@/domain/app-state';
 import { canSeeName, findPerson, findRoom, person } from '@/domain/selectors';
+import { shortLink } from '@/domain/links';
 import { attachmentDownload, attachmentSrc, type Attachment } from '@/domain/types';
 import { ICONS } from '@/design-system/icons/icons';
 import { routes } from '@/runtime/routes';
@@ -152,13 +153,17 @@ const md = new Marked({
   gfm: true,
   breaks: true,
   renderer: {
-    link({ href, title, text }: Tokens.Link) {
+    link({ href, title, text, raw }: Tokens.Link) {
       const safe = isSafeHref(href) ? href : '#';
       const external = isWeb(safe);
-      const t = title ? ` title="${esc(title)}"` : '';
+      // A pasted address is shortened to read, while the link still goes to all of it
+      const bare = external && (raw === href || raw === `<${href}>`);
+      const label = bare ? esc(shortLink(href)) : text;
+      const tip = title ?? (bare && label !== esc(href) ? href : null);
+      const t = tip ? ` title="${esc(tip)}"` : '';
       const rel = external ? ' target="_blank" rel="noopener nofollow ugc"' : '';
 
-      return `<a class="md-link" href="${esc(safe)}"${rel}${t}>${text}</a>`;
+      return `<a class="md-link" href="${esc(safe)}"${rel}${t}>${label}</a>`;
     },
     image({ href: rawHref, text }: Tokens.Image) {
       if (dropImages) return '';

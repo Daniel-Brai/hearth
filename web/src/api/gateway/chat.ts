@@ -1,7 +1,7 @@
 import type { HearthGateway, Result } from '@/data/gateway';
 import { fail, ok } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
-import type { Attachment, Message } from '@/domain/types';
+import type { Attachment, LinkPreview, Message } from '@/domain/types';
 import {
   conversationCreate,
   conversationIndex,
@@ -16,8 +16,10 @@ import {
   unreadShow,
 } from '@/generated/api/chat/chat';
 import { postPromote } from '@/generated/api/forum/forum';
+import { linkPreviewShow } from '@/generated/api/media/media';
 import { sendFiles } from '../attachments';
-import { toAttachments, toMessage, toPerson, timeOf } from '../mappers';
+import { toAttachments, toLinkPreview, toMessage, toPerson, timeOf } from '../mappers';
+import { getRealtime } from '../realtime';
 import type { Topic } from '../realtime';
 import { setCount, setMine } from './boosts';
 import type { GatewayContext } from './context';
@@ -28,6 +30,10 @@ type Paging = { parent_id?: string };
 type Body = { body: string; reply_to_id: string | null; attachment_ids: string[] };
 
 const topicOf = (place: Place): Topic => `${place.kind}:${place.id}`;
+
+// Someone shows as typing until this long after their last word, and ours goes out at most this often
+const TYPING_SHOWN_MS = 5000;
+const TYPING_EVERY_MS = 3000;
 
 function listMessages(place: Place, params: Paging) {
   if (place.kind === 'room') return messageRoomIndex(place.id, params);
@@ -91,6 +97,40 @@ export function createChatGateway(
     return id ? ok({ kind: 'room', id }) : fail('That room is not in this community.');
   };
 
+  // Every message with the same link shares one request
+  const linkPreviews = new Map<string, Promise<LinkPreview | null>>();
+
+  const typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const typingSent = new Map<string, number>();
+
+  const setTyping = (key: string, who: string, on: boolean) => {
+    const timer = key + ' ' + who;
+
+    clearTimeout(typingTimers.get(timer));
+    typingTimers.delete(timer);
+    if (on)
+      typingTimers.set(
+        timer,
+        setTimeout(() => setTyping(key, who, false), TYPING_SHOWN_MS),
+      );
+
+    const shown = ctx.store.get().typing[key]?.includes(who) ?? false;
+    if (on === shown) return;
+
+    ctx.store.set((state) => {
+      const others = (state.typing[key] ?? []).filter((id) => id !== who);
+      state.typing[key] = on ? [...others, who] : others;
+    });
+  };
+
+  // A chat nobody has opened yet has no topic to type on
+  const knownTopic = (key: string): Topic | null => {
+    const dm = key.startsWith('dm/');
+    const id = dm ? ctx.conversationIds.get(key.slice(3)) : ctx.roomIds.get(key);
+
+    return id ? topicOf({ kind: dm ? 'conversation' : 'room', id }) : null;
+  };
+
   const fetchMessages = (place: Place, parent: string | null) =>
     call(() => listMessages(place, parent ? { parent_id: parent } : {}));
 
@@ -136,7 +176,13 @@ export function createChatGateway(
 
       ctx.watch(topicOf(place.value), (realtime, t) => {
         const stops = [
-          realtime.onPush(t, 'MessageCreated', () => void fetchInto(key, null)),
+          realtime.onPush(t, 'MessageCreated', (e) => {
+            setTyping(key, e.author_id, false);
+            void fetchInto(key, null);
+          }),
+          realtime.onPush(t, 'typing', (e) => {
+            if (e.user_id !== ctx.store.get().me) setTyping(key, e.user_id, e.typing);
+          }),
           realtime.onPush(t, 'MessageEdited', (e) => void refresh(key, e.message_id, false)),
           // The reactor's own screen changed when they tapped, so only others take the count
           realtime.onPush(t, 'MessageReacted', (e) => {
@@ -236,10 +282,26 @@ export function createChatGateway(
         if (!state.directs.some((d) => d.who === who)) state.directs.unshift({ who, unread: 0 });
       }),
 
+    typing: (key, on) => {
+      const topic = knownTopic(key);
+      const last = typingSent.get(key);
+
+      if (!topic || (on ? last !== undefined && Date.now() - last < TYPING_EVERY_MS : !last))
+        return;
+
+      if (on) typingSent.set(key, Date.now());
+      else typingSent.delete(key);
+
+      getRealtime().send(topic, 'typing', { typing: on });
+    },
+
     send: (key, text, opts) => {
       const me = ctx.store.get().me;
 
       if (!me) return fail('Sign in to send messages.');
+
+      // The message itself clears the others' indicator, so the next word starts a new one
+      typingSent.delete(key);
 
       const files = opts?.files ?? [];
 
@@ -350,6 +412,19 @@ export function createChatGateway(
       void call(() => messagePreview(id, { hidden: true })).then((answer) => {
         if (answer.status !== 204) setHidden(false);
       });
+    },
+
+    linkPreview: (url) => {
+      const known = linkPreviews.get(url);
+      if (known) return known;
+
+      const preview = call(() => linkPreviewShow({ url })).then((answer) =>
+        answer.status === 200 ? toLinkPreview(answer.data) : null,
+      );
+
+      linkPreviews.set(url, preview);
+
+      return preview;
     },
 
     loadReplies: async (key, parent) => {

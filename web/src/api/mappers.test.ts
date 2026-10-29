@@ -155,7 +155,6 @@ describe('toPost and toReply', () => {
       transcript: null,
       reactions: [],
       seen: false,
-      preview_hidden: false,
     } satisfies Post;
 
     expect(toPost(post, 'gardeners', 'Question')).toMatchObject({

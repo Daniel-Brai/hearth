@@ -614,9 +614,10 @@ h2.separator { font: inherit; }
 }
 .og:hover { border-color: var(--color-ink-light); }
 .og__image {
-  align-items: center; background: linear-gradient(140deg, color-mix(in oklab, var(--tint) 75%, var(--color-canvas)), color-mix(in oklab, var(--tint) 35%, var(--color-ink))); color: oklch(100% 0 0);
+  align-items: center; background: var(--color-ink-lightest); color: var(--color-ink-dark);
   display: grid; font-size: 1.8rem; font-weight: 900; justify-content: center; min-block-size: 5.5rem;
 }
+.og__image--photo { block-size: 100%; inline-size: 100%; object-fit: cover; }
 .og__body { display: grid; gap: 0.15rem; padding: 0.6rem 2.2rem 0.6rem 0.85rem; align-content: center; min-inline-size: 0; }
 .og__site { font-size: var(--text-xx-small); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-ink-dark); }
 .og__title { font-weight: 700; font-size: var(--text-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -892,6 +893,12 @@ html:has(dialog[open]:modal) { overflow: hidden; }
 .message { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); column-gap: 0.75rem; padding-block-start: 0.9rem; position: relative; }
 .message .boosts, .message .og-wrap, .message .files { grid-column: 2; margin-block-start: 0.35rem; min-inline-size: 0; }
 .typing { font-size: var(--text-x-small); color: var(--color-ink-dark); block-size: 1.1rem; padding-inline-start: 0.6rem; display: flex; align-items: center; gap: 0.5rem; }
+.typing__dots { display: inline-flex; gap: 0.2rem; }
+.typing__dots span { inline-size: 0.3rem; block-size: 0.3rem; border-radius: 50%; background: currentColor; animation: typing-dot 1.2s infinite ease-in-out; }
+.typing__dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing__dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing-dot { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-0.15rem); } }
+@media (prefers-reduced-motion: reduce) { .typing__dots span { animation: none; opacity: 0.6; } }
 
 .stage { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 1.4rem 1rem; justify-items: center; }
 .speaker { display: grid; justify-items: center; gap: 0.45rem; text-align: center; position: relative; }
@@ -1282,7 +1289,6 @@ a.origin-note:hover { filter: brightness(0.98); }
 }
 .listen-count svg { block-size: 0.8rem; inline-size: 0.8rem; }
 .cover { background: var(--color-ink-lightest); }
-.og__image { background: color-mix(in oklab, var(--tint) 22%, var(--color-canvas)); color: var(--tint); }
 .listen-count { line-height: 1; }
 .listen-count > span { align-items: center; display: inline-flex; line-height: 1; }
 .listen-count svg { display: block; flex: none; }

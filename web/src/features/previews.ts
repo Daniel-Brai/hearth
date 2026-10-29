@@ -1,70 +1,28 @@
-import type { LinkPreviewData } from '@/design-system';
-import { parseLink, stripSuffix } from '@/domain/links';
+import { useEffect, useState } from 'react';
+import { useGateway } from '@/app/gateway-context';
+import type { LinkPreview } from '@/domain/types';
 import { firstLink } from '@/features/markdown/plain-text';
 
-type Known = { site: string; title: string | null; desc: string; hue: string };
+export const firstUrl = (text: string): string | null => firstLink(text);
 
-const KNOWN: Record<string, Known> = {
-  'elixirforum.com': {
-    site: 'Elixir Forum',
-    title: null,
-    desc: 'The place to talk about Elixir, Phoenix, Nerves and the BEAM.',
-    hue: 'violet',
-  },
-  'github.com': {
-    site: 'GitHub',
-    title: null,
-    desc: 'Releases, changelog and source on GitHub.',
-    hue: 'ink',
-  },
-  'hexdocs.pm': {
-    site: 'HexDocs',
-    title: null,
-    desc: 'Documentation for Elixir and Erlang packages on Hex.',
-    hue: 'violet',
-  },
-};
+// Nothing shows until the page answers, and a page without one never gets a card
+export function useLinkPreview(url: string | null): LinkPreview | null {
+  const gateway = useGateway();
+  const [preview, setPreview] = useState<{ url: string; data: LinkPreview | null } | null>(null);
 
-const titleCase = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
+  useEffect(() => {
+    if (!url) return;
 
-const lastSegment = (path: string): string | null => {
-  const last = path.split('/').filter(Boolean).at(-1);
+    let current = true;
 
-  if (!last) return null;
+    void gateway.chat.linkPreview(url).then((data) => {
+      if (current) setPreview({ url, data });
+    });
 
-  const seg = decodeURIComponent(last);
+    return () => {
+      current = false;
+    };
+  }, [gateway, url]);
 
-  return stripSuffix(stripSuffix(seg, '.html'), '.htm').replaceAll('-', ' ').replaceAll('_', ' ');
-};
-
-function titleFor(host: string, path: string, known: string | null): string {
-  if (host === 'github.com') return path.split('/').filter(Boolean).slice(0, 3).join(' / ');
-  if (known) return known;
-
-  const segment = lastSegment(path);
-
-  return segment ? titleCase(segment) : host;
-}
-
-export function previewFor(url: string): LinkPreviewData | null {
-  const parsed = parseLink(url);
-
-  if (!parsed) return null;
-
-  const { host, path } = parsed;
-
-  const k = KNOWN[host] ?? {
-    site: host,
-    title: null,
-    desc: "Title, description and image come from the page's Open Graph tags.",
-    hue: 'aqua',
-  };
-
-  const title = titleFor(host, path, k.title);
-
-  return { url, site: k.site, title, desc: k.desc, hue: k.hue, letter: k.site[0]!.toUpperCase() };
-}
-
-export function firstUrl(text: string): string | null {
-  return firstLink(text);
+  return preview && preview.url === url ? preview.data : null;
 }

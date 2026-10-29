@@ -3,6 +3,7 @@ import type {
   Community as ApiCommunity,
   CommunityTemplate,
   CommunityDetail,
+  LinkPreview as ApiLinkPreview,
   Me,
   Media,
   Post as ApiPost,
@@ -18,6 +19,7 @@ import type {
   Attachment,
   Community,
   Hue,
+  LinkPreview,
   Message,
   Permission,
   Person,
@@ -155,7 +157,6 @@ export function toCommunity(
     visibility: OPEN.has(community.visibility) ? 'public' : 'invite',
     audience: AUDIENCE[community.visibility],
     indexed: community.visibility === 'public_indexed',
-    previews: true,
     maintainer: community.owner_id ?? '',
     welcome: community.welcome_message ?? '',
     rooms: rooms
@@ -194,7 +195,6 @@ export function toPost(post: ApiPost, c: string, kind: string, replies: Reply[] 
     age: ageOf(post.inserted_at),
     at: post.inserted_at,
     seen: post.seen,
-    previewHidden: post.preview_hidden,
     pinned: post.pinned,
     watching: post.watching,
     tags: [],
@@ -232,6 +232,14 @@ export const toReply = (reply: ApiReply): Reply => ({
   moderated: reply.status === 'removed',
   files: toAttachments(reply.attachments),
   answerCounts: { direct: reply.child_count, total: reply.descendant_count },
+});
+
+export const toLinkPreview = (preview: ApiLinkPreview): LinkPreview => ({
+  url: preview.url,
+  site: preview.site,
+  title: preview.title,
+  desc: preview.description,
+  image: preview.image_url,
 });
 
 export const toMessage = (message: ChatMessage): Message => ({

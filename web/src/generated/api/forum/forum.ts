@@ -19,7 +19,6 @@ import type {
   Post,
   PostIndex200,
   PostIndexParams,
-  PreviewBody,
   PromoteBody,
   ReactionBody,
   Reply,
@@ -938,82 +937,6 @@ export const postPin = async (
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(pinBody),
-  });
-};
-
-export type postPreviewResponse204 = {
-  data: NoContentResponse;
-  status: 204;
-};
-
-export type postPreviewResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type postPreviewResponse403 = {
-  data: ForbiddenResponse;
-  status: 403;
-};
-
-export type postPreviewResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type postPreviewResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type postPreviewResponseSuccess = postPreviewResponse204 & {
-  headers: Headers;
-};
-export type postPreviewResponseError = (
-  postPreviewResponse401 | postPreviewResponse403 | postPreviewResponse404 | postPreviewResponse422
-) & {
-  headers: Headers;
-};
-
-export type postPreviewResponse = postPreviewResponseSuccess | postPreviewResponseError;
-
-export const getPostPreviewUrl = (id: string) => {
-  return `/api/posts/${id}/preview`;
-};
-
-/**
- * Its author can, and so can anyone with content.remove
- * @summary Take a post's link card off, or put it back
- */
-export const postPreview = async (
-  id: string,
-  previewBody: PreviewBody,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<postPreviewResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit['headers']>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  return customFetch<postPreviewResponse>(getPostPreviewUrl(id), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(previewBody),
   });
 };
 

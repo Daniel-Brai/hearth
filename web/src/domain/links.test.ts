@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { cleanUrl, dedupeLinks, isValidLink, linkKind, linkText, normalizeUrl } from './links';
+import {
+  cleanUrl,
+  dedupeLinks,
+  isValidLink,
+  linkKind,
+  linkText,
+  normalizeUrl,
+  shortLink,
+} from './links';
 
 describe('linkKind', () => {
   it('recognises common sites from the host, ignoring www and the scheme', () => {
@@ -43,5 +51,23 @@ describe('labels and validity', () => {
         (l) => l.url,
       ),
     ).toEqual(['https://a.dev', 'https://b.dev']);
+  });
+});
+
+describe('shortLink', () => {
+  it('leaves a short address whole, without the scheme or www', () => {
+    expect(shortLink('https://www.github.com/Daniel-Brai')).toBe('github.com/Daniel-Brai');
+  });
+
+  it('keeps the host and the last part of a long path', () => {
+    expect(
+      shortLink('https://github.com/phoenixframework/phoenix_live_view/blob/main/guides/releases'),
+    ).toBe('github.com/phoenixframework/phoenix_li…/releases');
+  });
+
+  it('cuts the end when the last part is long too', () => {
+    const long = 'https://example.com/' + 'a'.repeat(80);
+
+    expect(shortLink(long)).toBe('example.com/' + 'a'.repeat(35) + '…');
   });
 });

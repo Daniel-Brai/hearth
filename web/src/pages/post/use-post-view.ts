@@ -30,7 +30,6 @@ export function usePostView(id: string) {
       communityName: c.name,
       communityImage: c.banner ?? c.logo,
       joined: c.joined,
-      previews: c.previews,
       kindHue: kindInfo(state, p.c, p.kind).hue,
       live: live ? { id: live.id, listeners: live.listeners, mode: live.mode ?? 'stage' } : null,
       transcript: transcript

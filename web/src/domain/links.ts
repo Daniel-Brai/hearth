@@ -125,6 +125,23 @@ export function cleanUrl(u: string): string {
   return stripSuffix(parsed.host + parsed.path, '/');
 }
 
+// Keeps the host and the last part of the path, which say the most about where a link goes
+export function shortLink(url: string, max = 48): string {
+  if (!URL.canParse(url)) return url;
+
+  const u = new URL(url);
+  const clean = stripSuffix(u.host.replace(/^www\./, '') + u.pathname + u.search + u.hash, '/');
+
+  if (clean.length <= max) return clean;
+
+  const slash = clean.lastIndexOf('/');
+  const tail = slash > clean.indexOf('/') ? clean.slice(slash) : '';
+
+  if (!tail || tail.length > max / 2) return clean.slice(0, max - 1) + '…';
+
+  return clean.slice(0, max - tail.length - 1) + '…' + tail;
+}
+
 export function linkText(l: { url: string; label?: string | null }): string {
   const label = l.label?.trim();
   if (label) return label;

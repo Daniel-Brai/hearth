@@ -59,7 +59,7 @@ function PostView({ id }: { readonly id: string }) {
             <>
               <PostHeading post={post} view={view} />
               <PostOrigins post={post} view={view} />
-              <PostBody post={post} view={view} />
+              <PostBody post={post} />
             </>
           )}
           <PostActions post={post} view={view} />

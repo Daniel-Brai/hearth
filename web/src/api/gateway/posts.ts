@@ -12,7 +12,6 @@ import {
   postCommunitySeen,
   postLock,
   postPin,
-  postPreview,
   postReact,
   postSeen,
   postShow,
@@ -426,22 +425,6 @@ export function createPostsGateway(ctx: GatewayContext) {
 
       return answered(answer);
     },
-    hidePreview: async (id) => {
-      const setHidden = (hidden: boolean) =>
-        ctx.store.set((state) => {
-          const post = state.posts.find((p) => p.id === id);
-          if (post) post.previewHidden = hidden;
-        });
-
-      setHidden(true);
-
-      const answer = await call(() => postPreview(id, { hidden: true }));
-
-      if (answer.status !== 204) setHidden(false);
-
-      return answered(answer);
-    },
-
     loadReplies: (postId, parent) => fetchReplies(postId, parent),
 
     create: async (spec) => {

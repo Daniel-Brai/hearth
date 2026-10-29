@@ -41,8 +41,6 @@ export interface Post {
   live: PostLive;
   locked: boolean;
   pinned: boolean;
-  /** Its link card was taken off */
-  preview_hidden: boolean;
   reactions: Reaction[];
   /** @minimum 0 */
   reply_count: number;

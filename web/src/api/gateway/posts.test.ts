@@ -312,18 +312,6 @@ describe('posts.markAllSeen', () => {
   });
 });
 
-describe('posts.hidePreview', () => {
-  it('takes the link card off', async () => {
-    const { gateway: g, store } = await openPost([]);
-
-    routes['PUT /api/posts/p1/preview'] = { status: 204, body: undefined };
-
-    expect((await g.posts.hidePreview('p1')).ok).toBe(true);
-    expect(sent.at(-1)?.body).toEqual({ hidden: true });
-    expect(store.get().posts[0]?.previewHidden).toBe(true);
-  });
-});
-
 describe('posts.toggleLock', () => {
   it('locks the post here and on the server', async () => {
     const { gateway: g, store } = await openPost([]);

@@ -1,8 +1,10 @@
 import { Button, Icon, IconButton, OriginNote } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { SOUNDS } from '@/domain/catalog';
-import { plural } from '@/domain/format';
+import { plural, typingLine } from '@/domain/format';
 import type { Message } from '@/domain/types';
+import { useAppState } from '@/data/store';
+import { displayName } from '@/domain/selectors';
 import { Composer } from '@/features/composer/Composer';
 import { useUi } from '@/runtime/ui-store';
 import type { ChatTarget } from './chat-select';
@@ -45,6 +47,27 @@ export function SelectBar({
   );
 }
 
+function TypingNote({ chatKey }: { readonly chatKey: string }) {
+  const line = useAppState((state) =>
+    typingLine((state.typing[chatKey] ?? []).map((id) => displayName(state, id))),
+  );
+
+  return (
+    <div className="typing" id="typing-note" aria-live="polite">
+      {line ? (
+        <>
+          <span className="typing__dots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+          {line}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export function MessageBox({
   target,
   title,
@@ -73,7 +96,7 @@ export function MessageBox({
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-1">
-      <div className="typing" aria-live="polite" />
+      <TypingNote chatKey={target.key} />
 
       {canChat ? (
         <Composer

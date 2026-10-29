@@ -68,6 +68,7 @@ export type ChannelEvents = {
   room_access_changed: { community_id: string };
   // Sent on a room or voice topic to someone who can no longer see the room
   room_hidden: { room_id: string };
+  typing: { user_id: string; typing: boolean };
 };
 
 export type VoiceEvents = {
@@ -120,6 +121,11 @@ export class Realtime {
       entry.channel.off(event, ref);
       this.release(topic);
     };
+  }
+
+  // Only goes out on a topic already joined, so typing never opens a channel of its own
+  send(topic: Topic, event: string, payload: Record<string, unknown>) {
+    this.joined.get(topic)?.channel.push(event, payload);
   }
 
   private join(topic: Topic): Joined {

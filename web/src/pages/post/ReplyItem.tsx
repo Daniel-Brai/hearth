@@ -1,15 +1,5 @@
 import { useState } from 'react';
-import {
-  Button,
-  FileList,
-  Icon,
-  IconButton,
-  LinkPreview,
-  Menu,
-  MenuItem,
-  Pill,
-  cn,
-} from '@/design-system';
+import { Button, FileList, Icon, IconButton, Menu, MenuItem, Pill, cn } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import type { ReplyPatch } from '@/data/gateway';
 import { useAppState } from '@/data/store';
@@ -25,7 +15,6 @@ import {
 import { attachmentSrc, type Post, type Reply } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
 import { Markdown } from '@/features/markdown/Markdown';
-import { firstUrl, previewFor } from '@/features/previews';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
 import { useUi } from '@/runtime/ui-store';
 import { useGuest } from '@/shell/use-guest';
@@ -54,7 +43,6 @@ export function ReplyItem({
   const view = useAppState((state) => ({
     admin: community(state, post.c)?.maintainer === reply.who,
     authorShort: shortName(state, post.author),
-    previews: !!community(state, post.c)?.previews,
   }));
 
   const [editing, setEditing] = useState(false);
@@ -111,7 +99,7 @@ export function ReplyItem({
         ) : (
           <>
             <Markdown text={reply.body} community={post.c} files={reply.files ?? []} />
-            <ReplyAttachments reply={reply} previews={view.previews} />
+            <ReplyAttachments reply={reply} />
           </>
         )}
 
@@ -174,32 +162,20 @@ function ReplyEditor({
   );
 }
 
-function ReplyAttachments({
-  reply,
-  previews,
-}: {
-  readonly reply: Reply;
-  readonly previews: boolean;
-}) {
+function ReplyAttachments({ reply }: { readonly reply: Reply }) {
   const openImage = useUi((s) => s.openImage);
-
-  const previewUrl = previews && !reply.removed ? firstUrl(reply.body.join('\n')) : null;
-  const preview = previewUrl ? previewFor(previewUrl) : null;
 
   const looseFiles = (reply.files ?? []).filter(
     (f) => !reply.body.join('\n').includes(`attachment:${f.id}`),
   );
 
+  if (!looseFiles.length) return null;
+
   return (
-    <>
-      {looseFiles.length ? (
-        <FileList
-          files={looseFiles}
-          onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)}
-        />
-      ) : null}
-      {preview ? <LinkPreview preview={preview} /> : null}
-    </>
+    <FileList
+      files={looseFiles}
+      onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)}
+    />
   );
 }
 

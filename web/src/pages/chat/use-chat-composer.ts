@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { displayName } from '@/domain/selectors';
@@ -33,6 +33,14 @@ export function useChatComposer({
   const replyingName = useAppState((state) => (replying ? displayName(state, replying.who) : null));
   const [editing, setEditing] = useState<Message | null>(null);
   const [draft, setDraft] = useState<{ text: string; files: Attachment[] } | null>(null);
+
+  // Leaving the chat stops the indicator for the others at once
+  useEffect(() => () => gateway.chat.typing(target.key, false), [gateway, target.key]);
+
+  const changeText = (value: string) => {
+    setText(value);
+    if (!editing) gateway.chat.typing(target.key, value.trim() !== '');
+  };
 
   const startEdit = (id: string) => {
     const m = messages.find((x) => x.id === id);
@@ -128,7 +136,7 @@ export function useChatComposer({
 
   return {
     text,
-    setText,
+    setText: changeText,
     files,
     setFiles,
     error,

@@ -69,6 +69,7 @@ import {
 import { slugify } from '@/runtime/routes';
 import { visibilityOf } from '@/domain/audience';
 import { sfx } from '@/runtime/sounds';
+import { mockLinkPreview } from './link-previews';
 import { profileActivity } from './activity';
 import { rememberTourDone } from './tour-memory';
 import { grantPermissions } from './permissions';
@@ -814,14 +815,6 @@ export class MockGateway implements HearthGateway {
 
       return ok(undefined);
     },
-    hidePreview: async (id: string): Promise<Result> => {
-      this.store.set((state) => {
-        const p = state.posts.find((x) => x.id === id);
-        if (p) p.previewHidden = true;
-      });
-
-      return ok(undefined);
-    },
     create: async (spec: {
       c: string;
       kind: string;
@@ -1113,6 +1106,7 @@ export class MockGateway implements HearthGateway {
           if (r) r.unread = 0;
         }
       }),
+    typing: (_key: string, _typing: boolean) => undefined,
     openDm: (who: string) =>
       this.store.set((state) => {
         if (!state.directs.find((d) => d.who === who))
@@ -1271,6 +1265,7 @@ export class MockGateway implements HearthGateway {
         const m = state.chats[key]?.find((x) => x.id === id);
         if (m) m.previewHidden = true;
       }),
+    linkPreview: async (url: string) => mockLinkPreview(url),
     promote: async (
       key: string,
       ids: string[],
@@ -2113,7 +2108,6 @@ function buildCommunity(state: AppState, store: Store, spec: CommunitySpec, owne
     permissions: [],
     visibility: visibilityOf(spec.audience),
     audience: spec.audience,
-    previews: true,
     maintainer: owner,
     welcome:
       "Welcome. You're the first one here. Say hi in #general and invite the people you want around.",

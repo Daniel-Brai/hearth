@@ -91,6 +91,8 @@ export * from './invite-preview';
 export * from './invite';
 export * from './level-body-level';
 export * from './level-body';
+export * from './link-preview-show-params';
+export * from './link-preview';
 export * from './link';
 export * from './lock-body';
 export * from './me';

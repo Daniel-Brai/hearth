@@ -15,7 +15,7 @@ import { useAppState } from '@/data/store';
 import { displayName } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
 import { InlineMarkdown, Markdown } from '@/features/markdown/Markdown';
-import { firstUrl, previewFor } from '@/features/previews';
+import { firstUrl, useLinkPreview } from '@/features/previews';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { useModerationActions } from '@/features/moderation/use-moderation-actions';
@@ -215,7 +215,7 @@ function MessagePreview({
 }) {
   const gateway = useGateway();
   const previewUrl = chat.previews && !m.previewHidden ? firstUrl(m.text) : null;
-  const preview = previewUrl ? previewFor(previewUrl) : null;
+  const preview = useLinkPreview(previewUrl);
 
   if (!preview) return null;
 

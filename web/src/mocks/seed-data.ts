@@ -215,7 +215,6 @@ export const SEED = {
       online: 312,
       joined: true,
       visibility: 'public',
-      previews: true,
       maintainer: 'ada',
       welcome:
         "Glad you're here. This is where people building with Elixir and OTP help each other out. Ask anything, show what you made, and mark the reply that solved your problem so the next person finds it faster. Office hours run every Thursday in the voice room. Come say hi.",
@@ -262,7 +261,6 @@ export const SEED = {
       online: 188,
       joined: true,
       visibility: 'public',
-      previews: true,
       maintainer: 'marco',
       welcome:
         'Welcome to the Phoenix community. Share LiveView tricks, ask about contexts and Ecto, and keep it kind. Check the pinned posts before asking about deployment.',
@@ -305,7 +303,6 @@ export const SEED = {
       online: 57,
       joined: true,
       visibility: 'public',
-      previews: true,
       maintainer: 'dan',
       welcome:
         'Welcome. Tell us what you are building, even if it is a toy. Questions about parsing, types and code generation all belong here.',
@@ -344,7 +341,6 @@ export const SEED = {
       online: 420,
       joined: false,
       visibility: 'public',
-      previews: true,
       maintainer: 'lin',
       welcome:
         'Welcome to Tauri. Show us what you are shipping and ask about bundling, signing and updates.',
@@ -375,7 +371,6 @@ export const SEED = {
       online: 64,
       joined: true,
       visibility: 'public',
-      previews: true,
       maintainer: 'tobi',
       welcome:
         "Welcome to the club. Say hi in Introductions, check this week's meetup, and come run with us on Saturday. Every pace is welcome.",
@@ -417,7 +412,6 @@ export const SEED = {
       online: 22,
       joined: true,
       visibility: 'public',
-      previews: true,
       maintainer: 'ngozi',
       welcome:
         "So glad you're here. Grab this month's book, post in Discussion as you go, and join the call at the end of the month.",
@@ -458,7 +452,6 @@ export const SEED = {
       online: 120,
       joined: false,
       visibility: 'public',
-      previews: true,
       maintainer: 'priya',
       welcome: 'Welcome. Post your favourite frame and tell us the stock.',
       rooms: [{ id: 'general', name: 'general', unread: 0 }],
@@ -484,7 +477,6 @@ export const SEED = {
       online: 9,
       joined: false,
       visibility: 'public',
-      previews: true,
       maintainer: 'ngozi',
       welcome: 'Welcome. Tell us how old your starter is.',
       rooms: [{ id: 'general', name: 'general', unread: 0 }],
@@ -510,7 +502,6 @@ export const SEED = {
       online: 210,
       joined: false,
       visibility: 'public',
-      previews: true,
       maintainer: 'marco',
       welcome: 'Welcome. Share what you are making.',
       rooms: [{ id: 'general', name: 'general', unread: 0 }],
@@ -546,7 +537,6 @@ export const SEED = {
       online: 6,
       joined: false,
       visibility: 'public',
-      previews: true,
       maintainer: 'tobi',
       welcome: 'Welcome. Bring a board if you have one.',
       rooms: [{ id: 'general', name: 'general', unread: 0 }],
@@ -573,7 +563,6 @@ export const SEED = {
       online: 88,
       joined: false,
       visibility: 'public',
-      previews: true,
       maintainer: 'ada',
       welcome: 'You are welcome here. Share as much or as little as you like.',
       rooms: [{ id: 'general', name: 'general', unread: 0 }],
@@ -1217,6 +1206,7 @@ export const SEED = {
       download: '/mock/recording-voice.m4a',
     },
   },
+  typing: {},
   chats: {
     'elixir/help': [
       {

@@ -106,3 +106,15 @@ export function dateText(iso: string, zone?: string, withTime = false): string {
 
   return format.format(new Date(iso));
 }
+
+// Three names fit before the rest become a count
+export function typingLine(names: readonly string[]): string | null {
+  const [first, second, third] = names;
+
+  if (!first) return null;
+  if (!second) return `${first} is typing`;
+  if (!third) return `${first} and ${second} are typing`;
+  if (names.length === 3) return `${first}, ${second} and ${third} are typing`;
+
+  return `${first}, ${second} and ${plural(names.length - 2, 'other')} are typing`;
+}

@@ -122,7 +122,6 @@ export const post = {
   transcript: null,
   reactions: [],
   seen: false,
-  preview_hidden: false,
 } satisfies Post;
 
 export const reply = (id: string, body: string, parent: string | null = null) => ({

@@ -1,13 +1,4 @@
-import {
-  ButtonLink,
-  FileList,
-  Icon,
-  Link,
-  LinkPreview,
-  LiveDot,
-  OriginNote,
-  Pill,
-} from '@/design-system';
+import { ButtonLink, FileList, Icon, Link, LiveDot, OriginNote, Pill } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useDisplayZone } from '@/app/request-context';
 import { TITLE_LONG } from '@/domain/catalog';
@@ -17,7 +8,6 @@ import { useAppState } from '@/data/store';
 import { recordingsFor } from '@/domain/selectors';
 import { Boosts } from '@/features/boosts/BoostMenu';
 import { Markdown } from '@/features/markdown/Markdown';
-import { firstUrl, previewFor } from '@/features/previews';
 import { RecordingList } from '@/features/recordings/RecordingList';
 import { toRow } from '@/features/recordings/recording-row';
 import { routes } from '@/runtime/routes';
@@ -179,15 +169,11 @@ function LiveNote({
   );
 }
 
-export function PostBody({ post, view }: PostProps) {
+export function PostBody({ post }: { readonly post: Post }) {
   const gateway = useGateway();
   const settle = useFlashFailure();
   const openImage = useUi((s) => s.openImage);
   const { guest, signIn } = useGuest();
-  const mine = post.author === view.me;
-
-  const previewUrl = view.previews && !post.previewHidden ? firstUrl(post.body.join('\n')) : null;
-  const preview = previewUrl ? previewFor(previewUrl) : null;
 
   const looseFiles = (post.files ?? []).filter(
     (f) => !post.body.join('\n').includes(`attachment:${f.id}`),
@@ -207,17 +193,6 @@ export function PostBody({ post, view }: PostProps) {
           <FileList
             files={looseFiles}
             onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)}
-          />
-        </div>
-      ) : null}
-
-      {preview ? (
-        <div className="mt-3">
-          <LinkPreview
-            preview={preview}
-            onRemove={
-              mine || view.mod ? () => settle(gateway.posts.hidePreview(post.id)) : undefined
-            }
           />
         </div>
       ) : null}

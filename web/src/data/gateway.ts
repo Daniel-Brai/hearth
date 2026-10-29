@@ -7,6 +7,7 @@ import type {
   EventWhere,
   Hue,
   InviteLink,
+  LinkPreview,
   ModerationLevel,
   Permission,
   Post,
@@ -254,7 +255,6 @@ export interface HearthGateway {
     toggleLock(id: string): Promise<Result>;
     toggleWatch(id: string): Promise<Result>;
     toggleBoost(id: string, emoji: string): Promise<Result>;
-    hidePreview(id: string): Promise<Result>;
     loadReplies(postId: string, parent: string): Promise<Result>;
     create(spec: {
       c: string;
@@ -280,6 +280,7 @@ export interface HearthGateway {
   readonly chat: {
     open(key: string): void;
     openDm(who: string): void;
+    typing(key: string, typing: boolean): void;
     send(
       key: string,
       text: string,
@@ -290,6 +291,7 @@ export interface HearthGateway {
     remove(key: string, id: string): void;
     toggleBoost(key: string, id: string, emoji: string): void;
     hidePreview(key: string, id: string): void;
+    linkPreview(url: string): Promise<LinkPreview | null>;
     loadReplies(key: string, parent: string): Promise<Result>;
     promote(
       key: string,

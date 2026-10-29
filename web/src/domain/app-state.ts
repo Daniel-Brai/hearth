@@ -39,6 +39,8 @@ export type AppState = {
   transcripts: Record<string, Transcript>;
   recordings: Record<string, Recording>;
   chats: Record<string, Message[]>;
+  // Who else is typing in each chat right now, by chat key
+  typing: Record<string, string[]>;
   directs: Direct[];
   queue: QueueItem[];
   queueCounts: Record<string, number>;

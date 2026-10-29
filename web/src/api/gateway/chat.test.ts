@@ -355,6 +355,44 @@ describe('chat.hidePreview', () => {
   });
 });
 
+describe('chat.linkPreview', () => {
+  it('finds nothing for a page without a card', async () => {
+    routes['GET /api/link-preview'] = { status: 404, body: { message: 'Not Found' } };
+
+    const { gateway: g } = gateway();
+
+    expect(await g.chat.linkPreview('https://example.com/none')).toBeNull();
+  });
+
+  it("reads the page's card once for every message with the link", async () => {
+    routes['GET /api/link-preview'] = {
+      status: 200,
+      body: {
+        url: 'https://github.com/Daniel-Brai',
+        site: 'GitHub',
+        title: 'Daniel-Brai - Overview',
+        description: 'Software Engineer',
+        image_url: 'https://avatars.githubusercontent.com/u/88239970?v=4',
+      },
+    };
+
+    const { gateway: g } = gateway();
+    const url = 'https://github.com/Daniel-Brai';
+
+    const [first, second] = await Promise.all([g.chat.linkPreview(url), g.chat.linkPreview(url)]);
+
+    expect(first).toEqual({
+      url,
+      site: 'GitHub',
+      title: 'Daniel-Brai - Overview',
+      desc: 'Software Engineer',
+      image: 'https://avatars.githubusercontent.com/u/88239970?v=4',
+    });
+    expect(second).toBe(first);
+    expect(sent.filter((r) => r.path === '/api/link-preview')).toHaveLength(1);
+  });
+});
+
 describe('chat.promote', () => {
   const open = async () => {
     routes['GET /api/communities/gardeners'] = {

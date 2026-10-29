@@ -140,3 +140,24 @@ describe('carousels', () => {
     stop();
   });
 });
+
+describe('links', () => {
+  const long = 'https://github.com/phoenixframework/phoenix_live_view/blob/main/guides/releases';
+
+  it('shortens a pasted address but still links to all of it', () => {
+    const html = renderMarkdown(`See ${long}`, { state, community: null });
+    const link = new DOMParser().parseFromString(html, 'text/html').querySelector('a')!;
+
+    expect(link.textContent).toBe('github.com/phoenixframework/phoenix_li…/releases');
+    expect(link.getAttribute('href')).toBe(long);
+    expect(link.getAttribute('title')).toBe(long);
+  });
+
+  it('leaves a link with its own words alone', () => {
+    const html = renderMarkdown(`[the guide](${long})`, { state, community: null });
+    const link = new DOMParser().parseFromString(html, 'text/html').querySelector('a')!;
+
+    expect(link.textContent).toBe('the guide');
+    expect(link.getAttribute('title')).toBeNull();
+  });
+});
