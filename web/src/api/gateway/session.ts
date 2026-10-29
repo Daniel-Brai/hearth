@@ -22,6 +22,7 @@ import { parseProviderReturn } from '../provider-return';
 import { toSettings } from '../settings';
 import { dataUrlToBlob, uploadFile } from '../upload';
 import { accessToken, onAccessToken, setAccessToken } from '../session-token';
+import { rememberSignedIn } from '@/app/request-context';
 import { onServer } from '@/data/env';
 import { useUi } from '@/runtime/ui-store';
 import type { GatewayContext } from './context';
@@ -30,7 +31,8 @@ import { UNREACHABLE, call, errorCode, failed } from './context';
 const WRONG_CODE = "That code didn't work. Try again or send a new one.";
 
 export type SignInHooks = {
-  onSignIn: () => void;
+  /** Settles once everything the sidebar reads has loaded, whether or not each load worked */
+  onSignIn: () => Promise<unknown>;
   onNotice: (kind: string) => void;
   onSignOut: () => void;
 };
@@ -72,6 +74,7 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
     }
 
     ctx.store.set((state) => {
+      state.session = 'loading';
       state.me = me.id;
       state.people[me.id] = toPerson(me);
       state.instance.isAdmin = me.is_instance_admin;
@@ -88,15 +91,24 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
       const stopNotices = realtime.onPush(topic, 'NotificationCreated', ({ kind }) =>
         hooks.onNotice(kind),
       );
+      const stopPresence = realtime.onPush(topic, 'presence_changed', ({ online, offline }) =>
+        ctx.store.set((state) => {
+          for (const id of online) state.online[id] = true;
+          for (const id of offline) state.online[id] = false;
+        }),
+      );
 
       return () => {
         stopMedia();
         stopFailed();
         stopNotices();
+        stopPresence();
       };
     });
 
-    hooks.onSignIn();
+    rememberSignedIn(true);
+
+    void hooks.onSignIn().finally(() => ctx.store.set((state) => (state.session = 'ready')));
 
     if (!ctx.store.get().templates.length) void loadTemplates();
   };
@@ -134,8 +146,13 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
       if (token) return;
 
       loaded = null;
+      rememberSignedIn(false);
       ctx.stopWatching();
-      ctx.store.set((state) => (state.me = null));
+
+      ctx.store.set((state) => {
+        state.me = null;
+        state.session = 'out';
+      });
     });
 
   const loadSession = async () => {
@@ -161,7 +178,11 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
     const refreshed = accessToken() || onServer ? null : await refreshSession();
 
     if (refreshed === 'unreachable') return fail(UNREACHABLE);
-    if (!accessToken()) return ok(undefined);
+    if (!accessToken()) {
+      if (!onServer) rememberSignedIn(false);
+
+      return ok(undefined);
+    }
 
     const me = await call(() => authMe());
 
@@ -174,9 +195,14 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
 
   let loaded: Promise<Result> | null = null;
 
+  // A restore that ends with nobody signed in leaves nothing to wait for
+  const settle = () => {
+    if (!onServer && ctx.store.get().me === null) ctx.store.set((state) => (state.session = 'out'));
+  };
+
   const load = {
     session: () => {
-      loaded ??= loadSession();
+      loaded ??= loadSession().finally(settle);
       ctx.sessionLoaded = loaded;
 
       return loaded;

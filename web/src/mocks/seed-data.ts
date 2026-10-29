@@ -1396,6 +1396,7 @@ export const SEED = {
     ],
   },
   sharedCommunities: {},
+  online: {},
   directs: [
     { who: 'tobi', unread: false },
     { who: 'ada', unread: 3, age: '15m' },
@@ -1561,6 +1562,7 @@ export const SEED = {
         'post.pin',
         'post.answer',
         'chat.promote',
+        'mention.all',
         'content.remove',
         'member.ban',
       ],
@@ -1581,6 +1583,7 @@ export const SEED = {
         'post.pin',
         'post.answer',
         'chat.promote',
+        'mention.all',
         'content.remove',
       ],
     },

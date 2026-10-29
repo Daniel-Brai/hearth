@@ -22,6 +22,7 @@ import type {
   ReplyCreated,
   RoomActivity,
   RoomChanged,
+  SoundPlayed,
   TranscriptReady,
   VoiceAttendance,
   VoiceCaption,
@@ -43,6 +44,7 @@ export type ChannelEvents = {
   MessageEdited: MessageEdited;
   MessageReacted: MessageReacted;
   MessageRemoved: MessageRemoved;
+  SoundPlayed: SoundPlayed;
   ContentRemoved: ContentRemoved;
   ContentRestored: ContentRestored;
   PostCreated: PostCreated;
@@ -72,6 +74,7 @@ export type ChannelEvents = {
   room_hidden: { room_id: string };
   typing: { user_id: string; typing: boolean };
   online_count: { community_id: string; count: number };
+  presence_changed: { online: string[]; offline: string[] };
 };
 
 export type VoiceEvents = {

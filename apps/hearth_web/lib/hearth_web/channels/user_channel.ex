@@ -2,6 +2,7 @@ defmodule HearthWeb.UserChannel do
   use HearthWeb, :channel
 
   alias Hearth.Accounts
+  alias HearthWeb.OnlineCounts
   alias HearthWeb.Presence
   alias Phoenix.Socket
 
@@ -17,6 +18,9 @@ defmodule HearthWeb.UserChannel do
   def handle_info(:track, %Socket{assigns: %{auth: auth}} = socket) do
     {:ok, _ref} = Presence.track_user(self(), auth.id)
     :ok = Accounts.touch_last_seen(auth)
+
+    :ok =
+      push(socket, "presence_changed", %{online: OnlineCounts.online_for(auth.id), offline: []})
 
     {:noreply, socket}
   end

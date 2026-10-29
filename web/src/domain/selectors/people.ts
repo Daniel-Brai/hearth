@@ -35,6 +35,10 @@ export const displayName = (state: AppState, id: string) => {
   return canSeeName(state, id) ? p.name : '@' + p.username;
 };
 
+/** Content someone wrote names them as You to themselves */
+export const authorName = (state: AppState, id: string) =>
+  id === state.me ? 'You' : displayName(state, id);
+
 export const shortName = (state: AppState, id: string) => {
   const p = person(state, id);
   return canSeeName(state, id) ? p.name.split(' ')[0]! : '@' + p.username;
@@ -76,9 +80,13 @@ export const commsVisOf = (state: AppState, id: string) =>
 export function presence(state: AppState, id: string) {
   const p = state.people[id];
 
-  if (!p || !p.lastSeen || !canSeeVis(state, id, 'presence')) return null;
-  if (p.lastSeen === 'online') return { online: true, label: 'Online now' };
-  if (p.lastSeen === 'now') return { online: false, label: 'Last seen just now' };
+  if (!p || !canSeeVis(state, id, 'presence')) return null;
+
+  const live = state.online[id];
+
+  if (live ?? p.lastSeen === 'online') return { online: true, label: 'Online now' };
+  if (live === false || p.lastSeen === 'now') return { online: false, label: 'Last seen just now' };
+  if (!p.lastSeen) return null;
 
   return { online: false, label: 'Last seen ' + p.lastSeen + ' ago' };
 }

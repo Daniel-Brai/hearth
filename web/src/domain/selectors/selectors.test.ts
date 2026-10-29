@@ -1,17 +1,21 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { createSeedState } from '@/mocks/seed';
-import type { Post } from '@/domain/types';
+import type { Post, RoomSettings } from '@/domain/types';
 import {
   CATCHUP_PER_COMMUNITY,
+  authorName,
   canDo,
   catchupCommunities,
+  displayName,
   feed,
   feedEmpty,
   isMod,
   modLevel,
   myRolesIn,
+  presence,
   sharesCommunity,
+  soundAccess,
   unseenCount,
 } from '.';
 
@@ -31,6 +35,34 @@ describe('permissions follow roles per community', () => {
   it('refuses everything in a community the person has not joined', () => {
     expect(canDo(state, 'tauri', 'post.create')).toBe(false);
     expect(isMod(state, 'tauri')).toBe(false);
+  });
+});
+
+describe('who can play sounds', () => {
+  const settings = (patch: Partial<RoomSettings['sounds']>): RoomSettings => ({
+    topic: null,
+    previews: true,
+    sounds: { enabled: true, mode: 'roles', roles: [], people: [], ...patch },
+  });
+
+  it("matches a picked role by the server's id", () => {
+    const roomState = structuredClone(state);
+    const mine = roomState.roles.find(
+      (r) => r.c === 'elixir' && r.members.includes(roomState.me!),
+    )!;
+
+    mine.uid = 'server-role';
+    roomState.roomSettings['elixir/general'] = settings({ roles: ['server-role'] });
+
+    expect(soundAccess(roomState, 'elixir/general')).toEqual({ ok: true });
+  });
+
+  it('refuses someone without a picked role', () => {
+    const roomState = structuredClone(state);
+
+    roomState.roomSettings['elixir/general'] = settings({ roles: ['someone-else'] });
+
+    expect(soundAccess(roomState, 'elixir/general')).toMatchObject({ ok: false });
   });
 });
 
@@ -140,5 +172,48 @@ describe('sharesCommunity', () => {
   it('is false for someone with no shared community and true for a shared maintainer', () => {
     expect(sharesCommunity(state, 'kai')).toBe(false);
     expect(sharesCommunity(state, 'tobi')).toBe(true);
+  });
+});
+
+describe('authorName', () => {
+  it('names someone else as usual', () => {
+    const other = Object.keys(state.people).find((id) => id !== state.me)!;
+
+    expect(authorName(state, other)).toBe(displayName(state, other));
+  });
+
+  it('calls the person signed in You', () => {
+    expect(authorName(state, state.me!)).toBe('You');
+  });
+});
+
+describe('presence', () => {
+  const seed = createSeedState();
+  const id = Object.keys(seed.people).find((x) => x !== seed.me)!;
+  const { lastSeen: _seen, ...person } = seed.people[id]!;
+
+  const someone = (seen: { lastSeen?: string }, online: Record<string, boolean> = {}) =>
+    presence(
+      { ...seed, online, people: { ...seed.people, [id]: { ...person, ...seen, show: {} } } },
+      id,
+    );
+
+  it('shows nothing for someone never seen', () => {
+    expect(someone({})).toBeNull();
+  });
+
+  it('shows someone as gone the moment the server says so', () => {
+    expect(someone({ lastSeen: 'online' }, { [id]: false })).toEqual({
+      online: false,
+      label: 'Last seen just now',
+    });
+  });
+
+  it('shows someone online the moment the server says so', () => {
+    expect(someone({}, { [id]: true })).toEqual({ online: true, label: 'Online now' });
+  });
+
+  it('falls back to when they were last seen', () => {
+    expect(someone({ lastSeen: '3h' })).toEqual({ online: false, label: 'Last seen 3h ago' });
   });
 });

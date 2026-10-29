@@ -2,6 +2,7 @@ defmodule HearthWeb.ChannelsTest do
   use HearthWeb.ChannelCase, async: false
 
   alias Faker.Lorem
+  alias Hearth.Accounts
   alias Hearth.Chat
   alias Hearth.Communities
   alias Hearth.Forum
@@ -23,6 +24,73 @@ defmodule HearthWeb.ChannelsTest do
     test "fails for someone else", %{owner: owner, outsider: outsider} do
       assert {:error, %{reason: "unauthorized"}} =
                outsider |> connected_socket() |> subscribe_and_join("user:#{owner.id}")
+    end
+
+    test "skips outsiders", %{
+      owner: owner,
+      outsider: outsider
+    } do
+      start_supervised!({OnlineCounts, start: true})
+
+      {:ok, _reply, socket} =
+        owner |> connected_socket() |> subscribe_and_join("user:#{owner.id}")
+
+      {:ok, _ref} = Presence.track_user(self(), outsider.id)
+
+      refute_push "presence_changed", %{online: [_ | _]}, 300
+
+      :ok = stop_online_counts()
+      true = Process.unlink(socket.channel_pid)
+      :ok = close(socket)
+    end
+
+    test "skips someone who hides it", %{owner: owner, community: community} do
+      start_supervised!({OnlineCounts, start: true})
+      member = TestUtils.join_random_member!(community)
+      {:ok, _privacy} = Accounts.update_privacy(member, %{presence: :nobody})
+
+      {:ok, _reply, socket} =
+        owner |> connected_socket() |> subscribe_and_join("user:#{owner.id}")
+
+      {:ok, _ref} = Presence.track_user(self(), member.id)
+
+      refute_push "presence_changed", %{online: [_ | _]}, 300
+
+      :ok = stop_online_counts()
+      true = Process.unlink(socket.channel_pid)
+      :ok = close(socket)
+    end
+
+    test "pushes who is online on join", %{owner: owner, community: community} do
+      %{id: member_id} = TestUtils.join_random_member!(community)
+      {:ok, _ref} = Presence.track_user(self(), member_id)
+
+      {:ok, _reply, socket} =
+        owner |> connected_socket() |> subscribe_and_join("user:#{owner.id}")
+
+      assert_push "presence_changed", %{online: [^member_id], offline: []}
+
+      true = Process.unlink(socket.channel_pid)
+      :ok = close(socket)
+    end
+
+    test "pushes who comes online", %{
+      owner: owner,
+      community: community
+    } do
+      start_supervised!({OnlineCounts, start: true})
+      %{id: member_id} = TestUtils.join_random_member!(community)
+
+      {:ok, _reply, socket} =
+        owner |> connected_socket() |> subscribe_and_join("user:#{owner.id}")
+
+      {:ok, _ref} = Presence.track_user(self(), member_id)
+
+      assert_push "presence_changed", %{online: [^member_id], offline: []}, 2_000
+
+      :ok = stop_online_counts()
+      true = Process.unlink(socket.channel_pid)
+      :ok = close(socket)
     end
 
     test "joins one's own and shows as online", %{owner: owner} do
@@ -80,6 +148,7 @@ defmodule HearthWeb.ChannelsTest do
 
       assert_push "online_count", %{community_id: ^community_id, count: 1}, 2_000
 
+      :ok = stop_online_counts()
       # Closing writes last seen, so the channel goes before the test's database does
       true = Process.unlink(socket.channel_pid)
       :ok = close(socket)
@@ -100,6 +169,17 @@ defmodule HearthWeb.ChannelsTest do
 
       assert_push "MessageCreated", %{message_id: message_id}
       assert message_id == message.id
+    end
+  end
+
+  describe "room:<id> sounds" do
+    test "pushes a played sound", %{owner: owner, room: room} do
+      topic = "room:#{room.id}"
+      {:ok, _reply, _socket} = owner |> connected_socket() |> subscribe_and_join(topic)
+
+      {:ok, _message} = Chat.send_message(owner, room, %{body: "tada", kind: :sound})
+
+      assert_push "SoundPlayed", %{sound: "tada"}
     end
   end
 

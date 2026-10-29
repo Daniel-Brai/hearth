@@ -26,7 +26,14 @@ import type {
   UserSettings,
 } from './types';
 
+/**
+ * Where the browser's session restore stands. The sidebar shows skeleton rows until `ready`,
+ * and the server, which restores nothing, always leaves it at `pending`
+ */
+export type SessionPhase = 'pending' | 'out' | 'loading' | 'ready';
+
 export type AppState = {
+  session: SessionPhase;
   me: string | null;
   people: Record<string, Person>;
   // Which joined communities each person shares with me, by slug
@@ -39,6 +46,8 @@ export type AppState = {
   transcripts: Record<string, Transcript>;
   recordings: Record<string, Recording>;
   chats: Record<string, Message[]>;
+  // Who the server says is online right now, ahead of any last seen loaded earlier
+  online: Record<string, boolean>;
   // Who else is typing in each chat right now, by chat key
   typing: Record<string, string[]>;
   directs: Direct[];

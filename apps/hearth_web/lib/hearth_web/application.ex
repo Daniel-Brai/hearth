@@ -38,6 +38,7 @@ defmodule HearthWeb.Application do
         {HearthWeb.Telemetry, :all},
         {{HearthWeb.FloodGuard, clean_period: :timer.minutes(1)}, [:web]},
         {HearthWeb.Presence, [:web]},
+        {{Task.Supervisor, name: HearthWeb.OnlineCounts.Tasks}, [:web]},
         {HearthWeb.OnlineCounts, [:web]},
         {Endpoint, [:web]},
         {HearthWeb.MetricsEndpoint, :all},

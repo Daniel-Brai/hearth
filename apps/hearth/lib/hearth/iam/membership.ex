@@ -75,6 +75,22 @@ defmodule Hearth.IAM.Membership do
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
   end
 
+  @spec sharing([T.id()], [T.id()]) :: %{T.id() => [T.id()]}
+  def sharing(user_ids, viewer_ids) do
+    query =
+      from(m in __MODULE__,
+        join: v in __MODULE__,
+        on: v.community_id == m.community_id and v.user_id != m.user_id,
+        where: m.user_id in ^user_ids and v.user_id in ^viewer_ids,
+        distinct: true,
+        select: {v.user_id, m.user_id}
+      )
+
+    query
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+  end
+
   @spec community_ids(T.id()) :: [T.id()]
   @spec role_keys(T.id()) :: %{T.id() => [String.t()]}
   def role_keys(community_id) do

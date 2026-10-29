@@ -93,6 +93,11 @@ defmodule Hearth.IAMTest do
       refute "content.remove" in member.permissions
       assert "post.create" in member.permissions
     end
+
+    test "give mention.all to moderators only", %{roles: roles} do
+      assert "mention.all" in roles["moderator"].permissions
+      refute "mention.all" in roles["member"].permissions
+    end
   end
 
   describe "create_role/2" do

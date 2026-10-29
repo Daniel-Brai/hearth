@@ -3,9 +3,11 @@ import type { AppState } from '@/domain/app-state';
 
 export function emptyState(): AppState {
   return {
+    session: 'pending',
     me: null,
     people: {},
     sharedCommunities: {},
+    online: {},
     communities: {},
     roomSettings: {},
     archivedRooms: {},

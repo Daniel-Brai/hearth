@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SIGN_IN_AGAIN } from '@/data/gateway';
 import { reloadApp } from '@/runtime/reload';
-import { gateway, me, routes, sent, session } from './test-support';
+import { gateway, instance, me, routes, sent, session } from './test-support';
 
 vi.mock('../realtime', () => ({ getRealtime: () => ({ onPush: () => () => undefined }) }));
 
@@ -198,28 +198,7 @@ describe('session', () => {
   });
 
   it('keeps the instance name, the ways to sign in and whether it screens and transcribes', async () => {
-    routes['GET /api/instance'] = {
-      status: 200,
-      body: {
-        name: 'Gardeners',
-        logo: null,
-        icon: null,
-        sign_in: ['email', 'github'],
-        community_creation: 'request',
-        push_public_key: null,
-        upload_limits: {
-          content_types: [],
-          max_image_bytes: 1,
-          max_video_bytes: 1,
-          max_video_seconds: 1,
-          max_file_bytes: 1,
-        },
-        screening: { enabled: true, image_floor: false },
-        transcription: { enabled: false },
-        voice: { enabled: true },
-        recording: { enabled: true },
-      },
-    };
+    routes['GET /api/instance'] = { status: 200, body: instance };
 
     routes['POST /api/auth/refresh'] = { status: 401, body: { code: 'invalid_refresh' } };
 
@@ -238,6 +217,81 @@ describe('session', () => {
     });
 
     expect(store.get().me).toBeNull();
+  });
+});
+
+describe('signed in hint', () => {
+  const hint = () => document.cookie.includes('hearth-signed-in=1');
+
+  beforeEach(() => {
+    document.cookie = 'hearth-signed-in=; path=/; max-age=0';
+  });
+
+  it('is cleared when the refresh is refused', async () => {
+    document.cookie = 'hearth-signed-in=1; path=/';
+    routes['GET /api/instance'] = { status: 200, body: instance };
+    routes['POST /api/auth/refresh'] = { status: 401, body: { code: 'invalid_refresh' } };
+
+    const { store, gateway: g } = gateway();
+
+    await g.load.session();
+
+    expect(hint()).toBe(false);
+    expect(store.get().session).toBe('out');
+  });
+
+  it('is kept when the server can not be reached', async () => {
+    document.cookie = 'hearth-signed-in=1; path=/';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))),
+    );
+
+    const { gateway: g } = gateway();
+
+    await g.load.session();
+
+    expect(hint()).toBe(true);
+  });
+
+  it('is set when a session is restored', async () => {
+    routes['GET /api/instance'] = { status: 200, body: instance };
+    routes['POST /api/auth/refresh'] = { status: 200, body: session };
+    routes['GET /api/auth/me'] = { status: 200, body: me };
+
+    const { store, gateway: g } = gateway();
+
+    await g.load.session();
+
+    expect(hint()).toBe(true);
+    expect(store.get().me).toBe('u1');
+  });
+
+  it('is set when someone signs in and the sidebar waits for the first loads', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { store, gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(hint()).toBe(true);
+    expect(store.get().session).toBe('loading');
+
+    await vi.waitFor(() => expect(store.get().session).toBe('ready'));
+  });
+
+  it('is cleared when the person signs out', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+    routes['DELETE /api/auth/session'] = { status: 204 };
+
+    const { store, gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    g.session.signOut();
+
+    expect(hint()).toBe(false);
+    expect(store.get().session).toBe('out');
   });
 });
 

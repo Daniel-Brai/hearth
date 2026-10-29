@@ -21,6 +21,7 @@ export const DEFAULT_PERMISSIONS: Record<'member' | 'moderator', Permission[]> =
     'post.pin',
     'post.answer',
     'chat.promote',
+    'mention.all',
     'content.remove',
     'invite.create',
     'invite.update',
@@ -127,7 +128,11 @@ function blankToNull(state: AppState) {
 
 export function createSeedState(overrides: Partial<AppState> = {}): AppState {
   // Fields the seed file leaves out keep the empty defaults
-  const state = { ...emptyState(), ...(clone(SEED) as unknown as Partial<AppState>) };
+  const state = {
+    ...emptyState(),
+    session: 'ready' as const,
+    ...(clone(SEED) as unknown as Partial<AppState>),
+  };
 
   ensureRoles(state);
   resolveHrefs(state);

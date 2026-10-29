@@ -25,6 +25,7 @@ defmodule HearthWeb.ApplicationTest do
                HearthWeb.Telemetry,
                HearthWeb.FloodGuard,
                HearthWeb.Presence,
+               Task.Supervisor,
                HearthWeb.OnlineCounts,
                HearthWeb.Endpoint,
                HearthWeb.MetricsEndpoint,

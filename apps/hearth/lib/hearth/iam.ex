@@ -87,6 +87,11 @@ defmodule Hearth.IAM do
     Membership.co_members(id, ids)
   end
 
+  # For each viewer, the given people who share a community with them
+  @spec sharing([T.id()], [T.id()]) :: %{T.id() => [T.id()]}
+  def sharing(user_ids, viewer_ids) when is_list(user_ids) and is_list(viewer_ids),
+    do: Membership.sharing(user_ids, viewer_ids)
+
   @spec member_roles(T.id()) :: %{T.id() => [String.t()]}
   def member_roles(community_id) when is_binary(community_id) do
     default = community_id |> Role.for_community() |> Enum.find(& &1.is_default)
