@@ -1,6 +1,6 @@
 # Hearth web
 
-The React PWA for Hearth. It holds the forum, chat, voice rooms and events of a self hosted community. Built with Vite, React 19, TypeScript, Tailwind 4, React Router 7 and Zustand.
+The React PWA for Hearth. It holds the forum, chat, voice rooms and events of a self hosted community. Built with Vite, React 19, TypeScript, Tailwind 4, React Router 8 and Zustand.
 
 ## Commands
 
