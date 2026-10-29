@@ -236,16 +236,6 @@ defmodule Hearth.Forum do
     with :ok <- authorize(user, :pin, :post, post.community_id), do: Post.pin(post, pinned?)
   end
 
-  # The author takes their own link card off, and a moderator anyone's
-  @spec hide_preview(User.t(), Post.t(), boolean()) :: {:ok, Post.t()} | {:error, :forbidden}
-  def hide_preview(%User{id: id}, %Post{author_id: id} = post, hidden?) when is_boolean(hidden?),
-    do: Post.hide_preview(post, hidden?)
-
-  def hide_preview(%User{} = user, %Post{} = post, hidden?) when is_boolean(hidden?) do
-    with :ok <- authorize(user, :remove, :content, post.community_id),
-         do: Post.hide_preview(post, hidden?)
-  end
-
   @spec lock_post(User.t(), Post.t(), boolean()) :: {:ok, Post.t()} | {:error, :forbidden}
   def lock_post(%User{} = user, %Post{} = post, locked?) when is_boolean(locked?) do
     with :ok <- authorize(user, :remove, :content, post.community_id),

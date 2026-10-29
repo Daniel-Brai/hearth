@@ -50,8 +50,7 @@ defmodule HearthWeb.PostJSON do
       from_chat: from_chat(post, authors),
       transcript: transcript(assigns, post),
       reactions: reactions(assigns, post),
-      seen: flagged?(assigns, :seen, post),
-      preview_hidden: post.preview_hidden_at != nil
+      seen: flagged?(assigns, :seen, post)
     })
   end
 

@@ -580,28 +580,6 @@ defmodule Hearth.ForumTest do
     end
   end
 
-  describe "hide_preview/3" do
-    test "fails for someone else's post", %{owner: owner, community: community} do
-      post = TestUtils.create_random_post!(owner, community)
-      stranger = TestUtils.join_random_member!(community)
-
-      assert {:error, :forbidden} = Forum.hide_preview(stranger, post, true)
-    end
-
-    test "hide own preview", %{member: member, community: community} do
-      post = TestUtils.create_random_post!(member, community)
-
-      assert {:ok, %Post{preview_hidden_at: %DateTime{}}} = Forum.hide_preview(member, post, true)
-      assert {:ok, %Post{preview_hidden_at: nil}} = Forum.hide_preview(member, post, false)
-    end
-
-    test "hide any preview as a moderator", %{owner: owner, member: member, community: community} do
-      post = TestUtils.create_random_post!(member, community)
-
-      assert {:ok, %Post{preview_hidden_at: %DateTime{}}} = Forum.hide_preview(owner, post, true)
-    end
-  end
-
   describe "watch_post/3" do
     test "nobody watches signed out", %{member: member, community: community} do
       post = TestUtils.create_random_post!(member, community)

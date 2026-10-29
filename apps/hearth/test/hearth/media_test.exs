@@ -1,18 +1,25 @@
 defmodule Hearth.MediaTest do
   use Hearth.DataCase, async: true
 
+  import Req.Test
+
   alias Faker.Company
   alias Faker.Lorem
   alias Hearth.Forum
   alias Hearth.Media
   alias Hearth.Media.Asset
+  alias Hearth.Media.LinkFetch
+  alias Hearth.Media.LinkPreview
   alias Hearth.Media.MediaReady
   alias Hearth.Media.Worker.ProcessImage
   alias Hearth.Media.Worker.ProcessVideo
   alias Hearth.Storage
   alias Hearth.TestUtils
+  alias Plug.Conn
 
   @pdf "application/pdf"
+
+  setup {Req.Test, :set_req_test_from_context}
 
   setup do
     :ok = Media.subscribe_to_pubsub()
@@ -426,6 +433,100 @@ defmodule Hearth.MediaTest do
       assert small =~ "320"
       assert large =~ "1280"
       assert Media.image_urls([image.id], 5000)[image.id] == large
+    end
+  end
+
+  describe "link_preview/1" do
+    test "fails for an address on the private network" do
+      assert {:error, :not_found} = Media.link_preview("http://127.0.0.1:4000/admin")
+      assert {:error, :not_found} = Media.link_preview("http://169.254.169.254/latest/meta-data")
+    end
+
+    test "fails for a redirect into the private network" do
+      path = "/#{System.unique_integer([:positive])}"
+
+      stub(LinkFetch, fn %Conn{method: "GET", request_path: ^path} = conn ->
+        conn |> Conn.put_resp_header("location", "http://10.0.0.1/") |> Conn.send_resp(302, "")
+      end)
+
+      assert {:error, :not_found} = Media.link_preview("http://203.0.113.7" <> path)
+    end
+
+    test "fails for something that isn't a page" do
+      path = "/#{System.unique_integer([:positive])}.png"
+
+      stub(LinkFetch, fn %Conn{method: "GET", request_path: ^path} = conn ->
+        conn |> Conn.put_resp_content_type("image/png") |> Conn.send_resp(200, "png")
+      end)
+
+      assert {:error, :not_found} = Media.link_preview("http://203.0.113.7" <> path)
+    end
+
+    test "fails for a page with only its own title" do
+      path = "/#{System.unique_integer([:positive])}"
+
+      stub(LinkFetch, fn %Conn{method: "GET", request_path: ^path} = conn ->
+        conn
+        |> Conn.put_resp_content_type("text/html")
+        |> Conn.send_resp(200, "<title>Release notes</title>")
+      end)
+
+      assert {:error, :not_found} = Media.link_preview("http://203.0.113.7" <> path)
+    end
+
+    test "fails for a preview title with nothing to show under it" do
+      path = "/#{System.unique_integer([:positive])}"
+      html = ~s(<meta property="og:title" content="Release notes">)
+
+      stub(LinkFetch, fn %Conn{method: "GET", request_path: ^path} = conn ->
+        conn |> Conn.put_resp_content_type("text/html") |> Conn.send_resp(200, html)
+      end)
+
+      assert {:error, :not_found} = Media.link_preview("http://203.0.113.7" <> path)
+    end
+
+    test "reads the page's Open Graph tags" do
+      path = "/#{System.unique_integer([:positive])}"
+
+      html = """
+      <html><head>
+        <meta property="og:site_name" content="GitHub">
+        <meta property="og:title" content="Daniel-Brai - Overview">
+        <meta property="og:description" content="Software Engineer">
+        <meta property="og:image" content="/avatar.png">
+      </head></html>
+      """
+
+      stub(LinkFetch, fn %Conn{method: "GET", request_path: ^path} = conn ->
+        conn |> Conn.put_resp_content_type("text/html") |> Conn.send_resp(200, html)
+      end)
+
+      assert {:ok, preview} = Media.link_preview("http://203.0.113.7" <> path)
+
+      assert preview == %LinkPreview{
+               url: "http://203.0.113.7" <> path,
+               site: "GitHub",
+               title: "Daniel-Brai - Overview",
+               description: "Software Engineer",
+               image_url: "http://203.0.113.7/avatar.png"
+             }
+    end
+
+    test "falls back to Twitter tags and the host" do
+      path = "/#{System.unique_integer([:positive])}"
+
+      html = """
+      <meta name="twitter:title" content="  Release   notes ">
+      <meta name="description" content="What changed">
+      """
+
+      stub(LinkFetch, fn %Conn{method: "GET", request_path: ^path} = conn ->
+        conn |> Conn.put_resp_content_type("text/html") |> Conn.send_resp(200, html)
+      end)
+
+      assert {:ok, preview} = Media.link_preview("http://203.0.113.7" <> path)
+      assert preview.title == "Release notes"
+      assert preview.site == "203.0.113.7"
     end
   end
 end

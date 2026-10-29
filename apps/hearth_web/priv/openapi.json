@@ -2124,6 +2124,41 @@
         ],
         "type": "object"
       },
+      "LinkPreview": {
+        "title": "LinkPreview",
+        "description": "A page's own title, description and image. The image loads from the page's site",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "image_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "site": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "site",
+          "title",
+          "description",
+          "image_url"
+        ],
+        "type": "object"
+      },
       "LockBody": {
         "title": "LockBody",
         "additionalProperties": false,
@@ -3503,10 +3538,6 @@
           "pinned": {
             "type": "boolean"
           },
-          "preview_hidden": {
-            "description": "Its link card was taken off",
-            "type": "boolean"
-          },
           "reactions": {
             "items": {
               "$ref": "#/components/schemas/Reaction"
@@ -3588,8 +3619,7 @@
           "from_chat",
           "transcript",
           "reactions",
-          "seen",
-          "preview_hidden"
+          "seen"
         ],
         "type": "object"
       },
@@ -10537,6 +10567,56 @@
         "summary": "Join a community through an invite"
       }
     },
+    "/api/link-preview": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
+          }
+        },
+        "description": "Private addresses, and sites without preview tags, are not found",
+        "operationId": "link_preview_show_LHVEUKA",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "url",
+            "required": true,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Preview a link"
+      }
+    },
     "/api/media/{id}": {
       "delete": {
         "tags": [
@@ -11897,59 +11977,6 @@
           "required": true
         },
         "summary": "Pin or unpin a post"
-      }
-    },
-    "/api/posts/{id}/preview": {
-      "put": {
-        "tags": [
-          "Forum"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "$ref": "#/components/responses/no_content"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "Its author can, and so can anyone with content.remove",
-        "operationId": "post_preview_PKGICIA",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PreviewBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Take a post's link card off, or put it back"
       }
     },
     "/api/posts/{id}/reactions": {

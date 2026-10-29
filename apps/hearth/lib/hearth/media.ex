@@ -1,7 +1,7 @@
 defmodule Hearth.Media do
   events = [MediaFailed, MediaReady]
 
-  default = [Asset, Attachment, TempFile, Variant, Video | events]
+  default = [Asset, Attachment, LinkPreview, TempFile, Variant, Video | events]
 
   exports =
     case Mix.env() do
@@ -26,6 +26,8 @@ defmodule Hearth.Media do
   alias Hearth.Media.Command.RenderShareCard
   alias Hearth.Media.Command.RequestUpload
   alias Hearth.Media.FileType
+  alias Hearth.Media.LinkPreview
+  alias Hearth.Media.LinkPreviews
   alias Hearth.Media.MediaReady
   alias Hearth.Media.ShareCard
   alias Hearth.Media.TempFile
@@ -163,6 +165,9 @@ defmodule Hearth.Media do
 
     with {:ok, key} <- RenderShareCard.execute(card), do: Storage.get_url(key)
   end
+
+  @spec link_preview(String.t()) :: {:ok, LinkPreview.t()} | {:error, :not_found}
+  def link_preview(url) when is_binary(url), do: LinkPreviews.get(url)
 
   @spec get_images([nil | Common.T.id()]) :: %{Common.T.id() => Asset.t()}
   def get_images(ids) when is_list(ids) do

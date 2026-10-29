@@ -111,6 +111,7 @@ defmodule HearthWeb.Router do
     post "/uploads/:id/complete", UploadController, :complete
 
     get "/media/:id", MediaController, :show
+    get "/link-preview", LinkPreviewController, :show
     delete "/media/:id", MediaController, :delete
 
     get "/community-templates", CommunityTemplateController, :index
@@ -211,7 +212,6 @@ defmodule HearthWeb.Router do
     patch "/posts/:id", PostController, :update
     delete "/posts/:id", PostController, :delete
     put "/posts/:id/pin", PostController, :pin
-    put "/posts/:id/preview", PostController, :preview
     post "/posts/seen", PostController, :all_seen
     post "/communities/:community_id/posts/seen", PostController, :community_seen
     put "/posts/:id/lock", PostController, :lock

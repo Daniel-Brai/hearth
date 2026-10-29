@@ -44,6 +44,7 @@ defmodule Hearth.ApplicationTest do
                Hearth.Accounts.Supervisor,
                Hearth.Notifications.Supervisor,
                Hearth.Media.Supervisor,
+               Hearth.Media.LinkPreviews,
                Hearth.Forum.Supervisor,
                Hearth.Chat.Supervisor,
                Hearth.Events.Supervisor

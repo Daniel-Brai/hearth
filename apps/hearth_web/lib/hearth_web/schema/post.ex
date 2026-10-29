@@ -33,7 +33,6 @@ defmodule HearthWeb.Schema.Post do
       transcript
       reactions
       seen
-      preview_hidden
     ]a,
     properties: %{
       id: uuid(),
@@ -64,7 +63,6 @@ defmodule HearthWeb.Schema.Post do
       watching: boolean(description: "False signed out"),
       reactions: array_of(Reaction),
       seen: boolean(description: "The viewer has read it, false signed out"),
-      preview_hidden: boolean(description: "Its link card was taken off"),
       transcript:
         nullable(%{
           type: :object,

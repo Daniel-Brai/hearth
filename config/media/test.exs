@@ -7,3 +7,5 @@ config :hearth, Hearth.Media,
   max_video_minutes: 20,
   multipart_above_mb: 1,
   avif: false
+
+config :hearth, Hearth.Media.LinkFetch, req_options: [plug: {Req.Test, Hearth.Media.LinkFetch}]

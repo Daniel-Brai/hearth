@@ -46,6 +46,7 @@ defmodule Hearth.MixProject do
       {:exla, "~> 1.0", override: true},
       {:faker, "~> 0.19", only: :test},
       {:flop, "~> 0.29"},
+      {:floki, "0.38.4"},
       {:gen_smtp, "~> 1.3"},
       {:gen_stage, "~> 1.3"},
       {:hammer, "~> 7.5"},

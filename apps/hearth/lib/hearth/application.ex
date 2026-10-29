@@ -57,6 +57,7 @@ defmodule Hearth.Application do
           {Hearth.Accounts.Supervisor, [:web]},
           {Hearth.Notifications.Supervisor, [:web]},
           {Hearth.Media.Supervisor, [:web]},
+          {Hearth.Media.LinkPreviews, [:web]},
           {Hearth.Forum.Supervisor, [:web]},
           {Hearth.Chat.Supervisor, [:web]},
           {Hearth.Events.Supervisor, [:web]},

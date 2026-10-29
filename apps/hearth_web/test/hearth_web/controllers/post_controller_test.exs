@@ -396,27 +396,6 @@ defmodule HearthWeb.PostControllerTest do
     end
   end
 
-  describe "preview" do
-    test "fails for someone who can't hide it", %{conn: conn, community: community, post: post} do
-      stranger = TestUtils.join_random_member!(community)
-
-      conn
-      |> auth_conn(stranger)
-      |> put(~p"/api/posts/#{post.id}/preview", %{hidden: true})
-      |> valid_response(403)
-    end
-
-    test "takes the link card off", %{conn: conn, member: member, post: post} do
-      conn
-      |> auth_conn(member)
-      |> put(~p"/api/posts/#{post.id}/preview", %{hidden: true})
-      |> response(204)
-
-      assert %{"preview_hidden" => true} =
-               conn |> get(~p"/api/posts/#{post.id}") |> valid_response(200)
-    end
-  end
-
   describe "watch" do
     test "fails signed out", %{conn: conn, post: post} do
       assert conn

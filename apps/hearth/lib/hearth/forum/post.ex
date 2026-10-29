@@ -29,7 +29,6 @@ defmodule Hearth.Forum.Post do
     field :status, Ecto.Enum, values: ~w[published pending removed]a, default: :published
     field :pinned_at, :utc_datetime_usec
     field :locked_at, :utc_datetime_usec
-    field :preview_hidden_at, :utc_datetime_usec
     field :answer_reply_id, Ecto.UUID
     field :reply_count, :integer, default: 0
     field :helpful_count, :integer, default: 0
@@ -58,7 +57,6 @@ defmodule Hearth.Forum.Post do
           status: :published | :pending | :removed,
           pinned_at: nil | DateTime.t(),
           locked_at: nil | DateTime.t(),
-          preview_hidden_at: nil | DateTime.t(),
           answer_reply_id: nil | T.id(),
           reply_count: integer(),
           helpful_count: integer(),
@@ -196,13 +194,6 @@ defmodule Hearth.Forum.Post do
   def put_status(%__MODULE__{} = post, status) do
     post
     |> change(status: status)
-    |> Repo.update()
-  end
-
-  @spec hide_preview(t(), boolean()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
-  def hide_preview(%__MODULE__{} = record, hidden?) do
-    record
-    |> Ecto.Changeset.change(preview_hidden_at: if(hidden?, do: DateTime.utc_now()))
     |> Repo.update()
   end
 end

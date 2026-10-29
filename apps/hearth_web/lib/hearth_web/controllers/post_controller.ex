@@ -499,31 +499,6 @@ defmodule HearthWeb.PostController do
     end
   end
 
-  operation :preview,
-    summary: "Take a post's link card off, or put it back",
-    description: "Its author can, and so can anyone with content.remove",
-    security: [%{"bearer" => []}],
-    parameters: [id: @id],
-    request_body: Schema.PreviewBody,
-    responses: [
-      no_content: %Reference{"$ref": "#/components/responses/no_content"},
-      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
-      not_found: %Reference{"$ref": "#/components/responses/not_found"},
-      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
-      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
-    ]
-
-  @validate %{"id" => ~V[required|uuid], "hidden" => ~V[required|boolean]}
-
-  def preview(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "hidden" => hidden}) do
-    %Conn{assigns: %{auth: auth}} = conn
-
-    with {:ok, post} <- find_post(id, auth),
-         {:ok, _post} <- Forum.hide_preview(auth, post, hidden) do
-      send_resp(conn, :no_content, "")
-    end
-  end
-
   operation :watch,
     summary: "Watch a post, or stop",
     description: "Watchers hear about every reply",
