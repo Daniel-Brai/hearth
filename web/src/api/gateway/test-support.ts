@@ -61,6 +61,7 @@ export const community = {
   banner_id: null,
   banner_url: null,
   member_count: 1,
+  online_count: 0,
   owner: null,
   visibility: 'public',
   moderation: 'none',
@@ -68,6 +69,7 @@ export const community = {
   template: 'oss',
   owner_id: 'u1',
   links: [],
+  categories: ['tech'],
   rooms: [
     {
       id: 'r1',

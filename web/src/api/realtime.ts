@@ -7,6 +7,7 @@ import type {
   EventCancelled,
   EventScheduled,
   EventUpdated,
+  KindsChanged,
   MediaFailed,
   MediaReady,
   MemberJoined,
@@ -48,6 +49,7 @@ export type ChannelEvents = {
   PostReacted: PostReacted;
   ReplyCreated: ReplyCreated;
   AnswerMarked: AnswerMarked;
+  KindsChanged: KindsChanged;
   MemberJoined: MemberJoined;
   MemberLeft: MemberLeft;
   RoomChanged: RoomChanged;
@@ -69,6 +71,7 @@ export type ChannelEvents = {
   // Sent on a room or voice topic to someone who can no longer see the room
   room_hidden: { room_id: string };
   typing: { user_id: string; typing: boolean };
+  online_count: { community_id: string; count: number };
 };
 
 export type VoiceEvents = {

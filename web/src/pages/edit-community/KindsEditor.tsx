@@ -8,6 +8,14 @@ import { KIND_HUES, KIND_ICONS, asIconName, hexFor } from './colors';
 
 const LIBRARY: PostKind[] = Object.values(KIND_LIB);
 
+// Posts of a removed kind move to Discussion, so the server keeps it
+function removeTip(kind: KindDraft, last: boolean): string {
+  if (kind.key === 'discussion') return 'Discussion stays, since posts of removed kinds move there';
+  if (last) return 'A community needs at least one kind';
+
+  return 'Remove';
+}
+
 function nextKind(used: string[]): KindDraft {
   const taken = new Set(used);
   const fresh = LIBRARY.find((k) => !taken.has(k.name));
@@ -103,10 +111,10 @@ export function KindsEditor({ kinds, uses, focusId, onChange, onAdd }: KindsEdit
               <IconButton
                 variant="borderless"
                 className="kind-row__remove"
-                disabled={kinds.length < 2}
+                disabled={kinds.length < 2 || k.key === 'discussion'}
                 onClick={() => onChange((all) => all.filter((x) => x.id !== k.id))}
                 aria-label={`Remove ${k.name || 'this kind'}`}
-                data-tip={kinds.length < 2 ? 'A community needs at least one kind' : 'Remove'}
+                data-tip={removeTip(k, kinds.length < 2)}
               >
                 <Icon name="x" />
               </IconButton>

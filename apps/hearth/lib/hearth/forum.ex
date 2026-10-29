@@ -1,5 +1,5 @@
 defmodule Hearth.Forum do
-  events = [AnswerMarked, PostCreated, ReplyCreated]
+  events = [AnswerMarked, KindsChanged, PostCreated, ReplyCreated]
 
   default = [Draft, Kind, Post, Reply | events]
 
@@ -39,12 +39,14 @@ defmodule Hearth.Forum do
   alias Hearth.Forum.Command.DeleteReply
   alias Hearth.Forum.Command.EditReply
   alias Hearth.Forum.Command.PromoteMessages
+  alias Hearth.Forum.Command.SaveKinds
   alias Hearth.Forum.Command.ToggleHelpful
   alias Hearth.Forum.Command.UpdatePost
   alias Hearth.Forum.Draft
   alias Hearth.Forum.HelpfulMark
   alias Hearth.Forum.Kind
   alias Hearth.Forum.KindLibrary
+  alias Hearth.Forum.KindsChanged
   alias Hearth.Forum.Post
   alias Hearth.Forum.PostCreated
   alias Hearth.Forum.PostReacted
@@ -75,6 +77,17 @@ defmodule Hearth.Forum do
   @spec list_kinds(T.id()) :: [Kind.t()]
   def list_kinds(community_id) when is_binary(community_id) do
     Kind.for_community(community_id)
+  end
+
+  @spec save_kinds(User.t(), Community.t(), [map()]) ::
+          {:ok, [Kind.t()]}
+          | {:error, :forbidden | :keeps_discussion | :no_discussion | Changeset.t()}
+  def save_kinds(%User{} = user, %Community{} = community, kinds) when is_list(kinds) do
+    with :ok <- authorize(user, :update, :community, community.id),
+         {:ok, saved} <- SaveKinds.execute(community.id, kinds) do
+      broadcast(%KindsChanged{community_id: community.id})
+      {:ok, saved}
+    end
   end
 
   @spec create_post(User.t(), Community.t(), map()) ::

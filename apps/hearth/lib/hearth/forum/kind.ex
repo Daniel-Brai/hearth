@@ -49,6 +49,15 @@ defmodule Hearth.Forum.Kind do
     |> unique_constraint([:community_id, :key], error_key: :key)
   end
 
+  @spec delete_ids([T.id()]) :: :ok
+  def delete_ids(ids) do
+    __MODULE__
+    |> where([k], k.id in ^ids)
+    |> Repo.delete_all()
+
+    :ok
+  end
+
   @spec for_community(T.id()) :: [t()]
   def for_community(community_id) do
     __MODULE__

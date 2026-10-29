@@ -152,6 +152,23 @@ defmodule Hearth.Forum.Post do
     |> Repo.update()
   end
 
+  # Deleted posts move too, since a kind can't go while any post points at it
+  @spec move_kinds([T.id()], T.id()) :: :ok
+  def move_kinds(kind_ids, kind_id) do
+    __MODULE__
+    |> where([p], p.kind_id in ^kind_ids)
+    |> Repo.update_all(set: [kind_id: kind_id])
+
+    :ok
+  end
+
+  @spec with_kinds?([T.id()]) :: boolean()
+  def with_kinds?(kind_ids) do
+    __MODULE__
+    |> where([p], p.kind_id in ^kind_ids)
+    |> Repo.exists?()
+  end
+
   @spec count_helpful(T.id(), integer()) :: :ok
   def count_helpful(id, by) do
     __MODULE__

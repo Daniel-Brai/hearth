@@ -3,11 +3,17 @@
  * Hearth
  * OpenAPI spec version: 2026-10-24
  */
+import type { CreateCommunityBodyCategoriesItem } from './create-community-body-categories-item';
 import type { CreateCommunityBodyHue } from './create-community-body-hue';
 import type { CreateCommunityBodyTemplate } from './create-community-body-template';
 import type { CreateCommunityBodyVisibility } from './create-community-body-visibility';
 
 export interface CreateCommunityBody {
+  /**
+   * Category slugs, at most two
+   * @maxItems 2
+   */
+  categories?: CreateCommunityBodyCategoriesItem[];
   /**
    * @maxLength 2000
    * @nullable

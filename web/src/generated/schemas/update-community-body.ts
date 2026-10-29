@@ -4,12 +4,18 @@
  * OpenAPI spec version: 2026-10-24
  */
 import type { Link } from './link';
+import type { UpdateCommunityBodyCategoriesItem } from './update-community-body-categories-item';
 import type { UpdateCommunityBodyHue } from './update-community-body-hue';
 import type { UpdateCommunityBodyVisibility } from './update-community-body-visibility';
 
 export interface UpdateCommunityBody {
   /** @nullable */
   banner_id?: string | null;
+  /**
+   * Category slugs, at most two
+   * @maxItems 2
+   */
+  categories?: UpdateCommunityBodyCategoriesItem[];
   /**
    * @maxLength 4000
    * @nullable

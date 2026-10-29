@@ -16,7 +16,12 @@ defmodule HearthWeb.Schema.CreateCommunityBody do
       hue: enum(~w[ink blue violet purple pink red orange yellow green aqua]),
       visibility: enum(~w[public_indexed public invite_only private]),
       template: enum(Communities.template_ids()),
-      note: nullable(string(maxLength: 1_000))
+      note: nullable(string(maxLength: 1_000)),
+      categories:
+        array_of(enum(Communities.list_category_slugs()),
+          maxItems: 2,
+          description: "Category slugs, at most two"
+        )
     }
   }
 end

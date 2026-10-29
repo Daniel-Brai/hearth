@@ -25,7 +25,7 @@ export function KindsField({
     <Field
       label="Kinds of post"
       as="div"
-      hint={`Picked when writing a post. Up to ${MAX_KINDS}. Old posts keep theirs.`}
+      hint={`Picked when writing a post. Up to ${MAX_KINDS}. Posts of a removed kind move to Discussion.`}
     >
       <KindsEditor
         kinds={draft.kinds}

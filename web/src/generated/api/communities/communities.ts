@@ -33,8 +33,10 @@ import type {
   MyInvite,
   NoContentResponse,
   NotFoundResponse,
+  PostKind,
   Role,
   Room,
+  SaveKindsBody,
   TooManyRequestsResponse,
   TransferBody,
   UnauthorizedResponse,
@@ -412,6 +414,92 @@ export const inviteCreate = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createInviteBody),
+  });
+};
+
+export type communityKindUpdateResponse200 = {
+  data: PostKind[];
+  status: 200;
+};
+
+export type communityKindUpdateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type communityKindUpdateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type communityKindUpdateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type communityKindUpdateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type communityKindUpdateResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type communityKindUpdateResponseSuccess = communityKindUpdateResponse200 & {
+  headers: Headers;
+};
+export type communityKindUpdateResponseError = (
+  | communityKindUpdateResponse400
+  | communityKindUpdateResponse401
+  | communityKindUpdateResponse403
+  | communityKindUpdateResponse404
+  | communityKindUpdateResponse422
+) & {
+  headers: Headers;
+};
+
+export type communityKindUpdateResponse =
+  communityKindUpdateResponseSuccess | communityKindUpdateResponseError;
+
+export const getCommunityKindUpdateUrl = (communityId: string) => {
+  return `/api/communities/${communityId}/kinds`;
+};
+
+/**
+ * Needs community.update. Kinds left out are removed and their posts move to Discussion
+ * @summary Save a community's kinds of post
+ */
+export const communityKindUpdate = async (
+  communityId: string,
+  saveKindsBody: SaveKindsBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<communityKindUpdateResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<communityKindUpdateResponse>(getCommunityKindUpdateUrl(communityId), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(saveKindsBody),
   });
 };
 

@@ -73,7 +73,9 @@ defmodule HearthWeb.CommunityController do
     "hue" => ~V[allowed:ink,blue,violet,purple,pink,red,orange,yellow,green,aqua],
     "visibility" => ~V[allowed:public_indexed,public,invite_only,private],
     "template" => ~V[template],
-    "note" => ~V[string|max:1000]
+    "note" => ~V[string|max:1000],
+    "categories" => ~V[list|max:2],
+    "categories.*" => ~V[category]
   }
 
   def create(%Conn{assigns: %{auth: %{}}} = conn, params) do
@@ -81,7 +83,7 @@ defmodule HearthWeb.CommunityController do
 
     attrs =
       params
-      |> Map.take(~w[name tagline description logo_id hue visibility template note])
+      |> Map.take(~w[name tagline description logo_id hue visibility template note categories])
       |> Common.atomize_string_keys()
 
     case Communities.start_community(auth, attrs) do
@@ -174,7 +176,9 @@ defmodule HearthWeb.CommunityController do
     "visibility" => ~V[allowed:public_indexed,public,invite_only,private],
     "links" => ~V[list|max:10],
     "links.*.url" => ~V[required|string|max:2000],
-    "links.*.label" => ~V[string|max:40]
+    "links.*.label" => ~V[string|max:40],
+    "categories" => ~V[list|max:2],
+    "categories.*" => ~V[category]
   }
 
   def update(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id} = params) do
@@ -183,7 +187,7 @@ defmodule HearthWeb.CommunityController do
     changes =
       params
       |> Map.take(
-        ~w[name tagline description hue logo_id banner_id welcome_message visibility links]
+        ~w[name tagline description hue logo_id banner_id welcome_message visibility links categories]
       )
       |> Common.atomize_string_keys()
 

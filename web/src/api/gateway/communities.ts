@@ -3,11 +3,12 @@ import type { Result } from '@/data/gateway';
 import { fail, ok } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
 import { visibilityOf } from '@/domain/audience';
-import type { CommunityRequest } from '@/domain/types';
+import type { CommunityRequest, PostKind } from '@/domain/types';
 import {
   communityCreate,
   communityIndex,
   communityJoin,
+  communityKindUpdate,
   communityLeave,
   communityPublic,
   communityRequestDecide,
@@ -24,12 +25,13 @@ import type {
   CommunityRequest as ApiCommunityRequest,
   CreateCommunityBodyTemplate,
   RequestUploadBodyPurpose,
+  UpdateCommunityBodyCategoriesItem,
 } from '@/generated/schemas';
-import { OPEN, SERVER_VISIBILITY, ageOf, toPerson } from '../mappers';
+import { OPEN, SERVER_VISIBILITY, ageOf, toKindInput, toPerson } from '../mappers';
 import { dataUrlToBlob, uploadFile } from '../upload';
 import { accessToken } from '../session-token';
 import type { GatewayContext } from './context';
-import { call, failed } from './context';
+import { call, errorCode, failed } from './context';
 
 const TEMPLATES = {
   club: true,
@@ -84,7 +86,37 @@ const toRequest = (r: ApiCommunityRequest, by: string): CommunityRequest => ({
   ...(r.community_slug ? { communityId: r.community_slug } : {}),
 });
 
+const KIND_ERRORS: Record<string, string> = {
+  keeps_discussion: 'Discussion has to stay, since posts from removed kinds move there.',
+  no_discussion: 'Add a Discussion kind first, so posts from removed kinds have somewhere to go.',
+};
+
+const sameKinds = (a: readonly PostKind[], b: readonly PostKind[]) =>
+  JSON.stringify(a.map(toKindInput)) === JSON.stringify(b.map(toKindInput));
+
 export function createCommunitiesGateway(ctx: GatewayContext) {
+  // Only a changed list goes up, and its answer replaces the kinds shown
+  const saveKinds = async (
+    id: string,
+    cid: string,
+    before: readonly PostKind[],
+    kinds: readonly PostKind[],
+  ): Promise<Result> => {
+    if (sameKinds(before, kinds)) return ok(undefined);
+
+    const answer = await call(() => communityKindUpdate(id, { kinds: kinds.map(toKindInput) }));
+
+    if (answer.status === 200) {
+      ctx.rememberKinds(cid, answer.data);
+      return ok(undefined);
+    }
+
+    const code = errorCode(answer);
+    const known = code ? KIND_ERRORS[code] : undefined;
+
+    return known ? fail(`The rest is saved. ${known}`) : failed(answer);
+  };
+
   const load = {
     home: async () => {
       await ctx.sessionLoaded;
@@ -204,7 +236,14 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
           realtime.onPush(topic, 'ContentRestored', (e) => void refetch(e.subject_id)),
           realtime.onPush(topic, 'MemberJoined', (e) => countMember(e.user_id, 1)),
           realtime.onPush(topic, 'MemberLeft', (e) => countMember(e.user_id, -1)),
+          realtime.onPush(topic, 'online_count', ({ count }) =>
+            ctx.store.set((state) => {
+              const community = state.communities[cid];
+              if (community) community.online = count;
+            }),
+          ),
           realtime.onPush(topic, 'RoomChanged', () => void load.community(cid)),
+          realtime.onPush(topic, 'KindsChanged', () => void load.community(cid)),
           realtime.onPush(topic, 'room_access_changed', () => void load.community(cid)),
         ];
 
@@ -301,8 +340,14 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
 
       if (!id || !before) return fail('That community is not loaded.');
 
-      // The server keeps no categories or image addresses so those stay as picked here
-      const kept = { logo: patch.logo, banner: patch.banner, categories: patch.categories };
+      const kinds = patch.kinds.filter((k) => k.name.trim());
+      const names = kinds.map((k) => k.name.trim().toLowerCase());
+
+      if (!names.length) return fail('Keep at least one kind of post');
+      if (new Set(names).size !== names.length) return fail('Two kinds share a name');
+
+      // The server keeps no image addresses so the picked images stay here
+      const kept = { logo: patch.logo, banner: patch.banner };
 
       const restore = (r: Result<never>) => {
         ctx.store.set((state) => (state.communities[cid] = before));
@@ -316,6 +361,7 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
           name: patch.name.trim(),
           tagline: patch.tagline.trim(),
           intro: patch.intro.trim() || null,
+          categories: patch.categories,
           hue: patch.hue,
           links: patch.links,
           visibility: visibilityOf(patch.audience),
@@ -340,6 +386,7 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
           description: patch.intro.trim() || null,
           hue: patch.hue,
           links: patch.links,
+          categories: patch.categories as UpdateCommunityBodyCategoriesItem[],
           visibility: SERVER_VISIBILITY[patch.audience],
           ...(logo.value.id === undefined ? {} : { logo_id: logo.value.id }),
           ...(banner.value.id === undefined ? {} : { banner_id: banner.value.id }),
@@ -354,6 +401,10 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
         const saved = state.communities[cid];
         if (saved) Object.assign(saved, kept);
       });
+
+      const savedKinds = await saveKinds(id, cid, before.kinds, kinds);
+
+      if (!savedKinds.ok) return savedKinds;
 
       // The level has its own endpoint that logs every change
       if (patch.moderation === answer.data.moderation) return ok(undefined);

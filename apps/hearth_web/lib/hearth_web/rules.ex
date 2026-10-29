@@ -14,6 +14,8 @@ defmodule HearthWeb.Rules do
 
   def template, do: Rules.allowed(Communities.template_ids())
 
+  def category, do: Rules.allowed(Communities.list_category_slugs())
+
   # Like required, but an empty list still counts as sent
   def present do
     %{

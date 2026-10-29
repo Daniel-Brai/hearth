@@ -1,6 +1,7 @@
 import type {
   ChatMessage,
   Community as ApiCommunity,
+  KindInput,
   CommunityTemplate,
   CommunityDetail,
   LinkPreview as ApiLinkPreview,
@@ -118,7 +119,8 @@ export function toPerson(user: UserSummary | Me): Person {
   };
 }
 
-const toKind = (kind: ApiPostKind): PostKind => ({
+export const toKind = (kind: ApiPostKind): PostKind => ({
+  key: kind.key,
   name: kind.label,
   icon: kind.icon,
   hue: kind.hue,
@@ -127,6 +129,18 @@ const toKind = (kind: ApiPostKind): PostKind => ({
   answers: kind.answers,
   mods: !kind.postable,
   desc: kind.description,
+});
+
+export const toKindInput = (kind: PostKind): KindInput => ({
+  key: kind.key ?? null,
+  label: kind.name.trim(),
+  icon: kind.icon,
+  hue: kind.hue,
+  description: kind.desc,
+  title_hint: kind.hint || null,
+  body_hint: kind.body || null,
+  answers: kind.answers,
+  postable: !kind.mods,
 });
 
 const toPermissions = (permissions: readonly string[]): Permission[] =>
@@ -151,7 +165,7 @@ export function toCommunity(
     intro: community.description,
     links: community.links.map((l) => ({ label: l.label ?? l.url, url: l.url })),
     members: community.member_count,
-    online: 0,
+    online: community.online_count,
     joined: detail === null || detail.membership !== null,
     permissions: detail?.membership ? toPermissions(detail.membership.permissions) : [],
     visibility: OPEN.has(community.visibility) ? 'public' : 'invite',
@@ -176,7 +190,7 @@ export function toCommunity(
       })),
     summary: null,
     kinds: detail ? detail.kinds.map(toKind) : [],
-    categories: [],
+    categories: community.categories,
     place: null,
     listed: community.visibility === 'public_indexed',
     verified: null,

@@ -37,6 +37,7 @@ defmodule Hearth.Communities do
   alias Hearth.Common
   alias Hearth.Common.T
   alias Hearth.Communities.Ban
+  alias Hearth.Communities.Category
   alias Hearth.Communities.Command.ApproveRequest
   alias Hearth.Communities.Command.BanMember
   alias Hearth.Communities.Command.CreateCommunity
@@ -44,7 +45,9 @@ defmodule Hearth.Communities do
   alias Hearth.Communities.Command.RevokeEmailInvite
   alias Hearth.Communities.Command.SaveRoom
   alias Hearth.Communities.Command.TransferOwnership
+  alias Hearth.Communities.Command.UpdateCommunity
   alias Hearth.Communities.Community
+  alias Hearth.Communities.CommunityCategory
   alias Hearth.Communities.CommunityCreated
   alias Hearth.Communities.InstanceSettings
   alias Hearth.Communities.Invite
@@ -83,6 +86,9 @@ defmodule Hearth.Communities do
   @spec template_ids() :: [String.t()]
   def template_ids, do: Template.ids()
 
+  @spec list_category_slugs() :: [String.t()]
+  def list_category_slugs, do: Category.slugs()
+
   @spec list_templates() :: [Template.t()]
   def list_templates, do: Template.all()
 
@@ -114,7 +120,13 @@ defmodule Hearth.Communities do
           {:ok, Community.t()}
           | {:requested, Request.t()}
           | {:error,
-             :forbidden | :unconfirmed_email | :account_too_new | :too_many_owned | Changeset.t()}
+             :forbidden
+             | :unconfirmed_email
+             | :account_too_new
+             | :too_many_owned
+             | :too_many_categories
+             | :unknown_category
+             | Changeset.t()}
   def start_community(%User{is_instance_admin: true} = user, params), do: create(user, params)
 
   def start_community(%User{} = user, %{} = params) do
@@ -189,6 +201,10 @@ defmodule Hearth.Communities do
     |> Community.joined()
   end
 
+  @spec category_slugs([T.id()]) :: %{T.id() => [String.t()]}
+  def category_slugs(community_ids) when is_list(community_ids),
+    do: CommunityCategory.slugs_by_community(community_ids)
+
   @spec get_community(keyword()) :: {:ok, Community.t()} | {:error, :not_found}
   def get_community(opts) when is_list(opts) do
     case Community.get(opts) do
@@ -220,10 +236,11 @@ defmodule Hearth.Communities do
   def readable?(%Community{}, nil), do: false
 
   @spec update_community(User.t(), Community.t(), map()) ::
-          {:ok, Community.t()} | {:error, :forbidden | Changeset.t()}
+          {:ok, Community.t()}
+          | {:error, :forbidden | :too_many_categories | :unknown_category | Changeset.t()}
   def update_community(%User{} = user, %Community{} = community, %{} = params) do
     with :ok <- authorize(user, :update, :community, community),
-         do: Community.update(community, params)
+         do: UpdateCommunity.execute(community, params)
   end
 
   @spec join(User.t(), Community.t()) ::

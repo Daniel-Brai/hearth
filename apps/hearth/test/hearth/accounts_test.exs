@@ -52,6 +52,19 @@ defmodule Hearth.AccountsTest do
     end
   end
 
+  describe "presence_shown/1" do
+    test "leaves out someone hiding their presence" do
+      hidden = TestUtils.register_random_user!()
+      {:ok, _privacy} = Accounts.update_privacy(hidden, %{presence: :nobody})
+
+      assert Accounts.presence_shown([hidden.id]) == []
+    end
+
+    test "keeps someone who shows it", %{user: user} do
+      assert Accounts.presence_shown([user.id]) == [user.id]
+    end
+  end
+
   describe "register_user/1" do
     test "fails if username is invalid" do
       params = %{username: "no spaces", email: Internet.email()}

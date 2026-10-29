@@ -4,6 +4,7 @@ defmodule HearthWeb.CommunityControllerTest do
 
   alias Faker.Company
   alias Faker.Lorem
+  alias Hearth.Accounts
   alias Hearth.Auth
   alias Hearth.Auth.TransferCodeRequested
   alias Hearth.Common
@@ -11,6 +12,7 @@ defmodule HearthWeb.CommunityControllerTest do
   alias Hearth.Forum
   alias Hearth.Media.Worker.ProcessImage
   alias Hearth.TestUtils
+  alias HearthWeb.Presence
 
   setup do
     owner = TestUtils.register_random_user!()
@@ -94,6 +96,30 @@ defmodule HearthWeb.CommunityControllerTest do
                |> auth_conn(TestUtils.register_random_user!())
                |> post(~p"/api/communities", %{name: Company.name()})
                |> valid_response(403)
+    end
+
+    test "fails for an unknown category", %{conn: conn} do
+      admin = TestUtils.register_random_user!(admin: true)
+      body = %{name: Company.name(), categories: ["nope"]}
+
+      assert %{"errors" => %{"categories.0" => _message}} =
+               conn
+               |> auth_conn(admin)
+               |> post(~p"/api/communities", body)
+               |> valid_response(422)
+    end
+
+    test "starts one in the picked categories", %{conn: conn} do
+      admin = TestUtils.register_random_user!(admin: true)
+      body = %{name: Company.name(), categories: ~w[tech games]}
+
+      assert response =
+               conn
+               |> auth_conn(admin)
+               |> post(~p"/api/communities", body)
+               |> valid_response(201)
+
+      assert response["categories"] == body.categories
     end
 
     test "starts one with its description and logo", %{conn: conn} do
@@ -212,6 +238,21 @@ defmodule HearthWeb.CommunityControllerTest do
       assert [%{"key" => "owner"}] = roles
       assert "post.pin" in permissions
     end
+
+    test "counts members online, leaving out anyone hiding it", %{
+      conn: conn,
+      community: community
+    } do
+      online = TestUtils.join_random_member!(community)
+      hidden = TestUtils.join_random_member!(community)
+      {:ok, _privacy} = Accounts.update_privacy(hidden, %{presence: :nobody})
+      {:ok, _ref} = Presence.track_user(self(), online.id)
+      {:ok, _ref} = Presence.track_user(self(), hidden.id)
+
+      response = conn |> get(~p"/api/communities/#{community.id}") |> valid_response(200)
+
+      assert response["community"]["online_count"] == 1
+    end
   end
 
   describe "update" do
@@ -224,6 +265,16 @@ defmodule HearthWeb.CommunityControllerTest do
                |> auth_conn(member)
                |> patch(~p"/api/communities/#{community.id}", %{tagline: Lorem.sentence()})
                |> valid_response(403)
+    end
+
+    test "fails for more than two categories", %{conn: conn, owner: owner, community: community} do
+      body = %{categories: ~w[tech games art]}
+
+      assert %{"errors" => %{"categories" => _message}} =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/communities/#{community.id}", body)
+               |> valid_response(422)
     end
 
     test "clears a field sent as null", %{conn: conn, owner: owner, community: community} do
@@ -239,6 +290,18 @@ defmodule HearthWeb.CommunityControllerTest do
                |> valid_response(200)
 
       assert response["tagline"] == nil
+    end
+
+    test "replaces the categories", %{conn: conn, owner: owner, community: community} do
+      body = %{categories: ~w[music art]}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/communities/#{community.id}", body)
+               |> valid_response(200)
+
+      assert response["categories"] == body.categories
     end
   end
 

@@ -7,14 +7,13 @@ defmodule Hearth.Communities.Community do
   alias Hearth.Common
   alias Hearth.Common.Link
   alias Hearth.Common.T
-  alias Hearth.Communities.Category
   alias Hearth.Communities.Room
   alias Hearth.Communities.Template
 
   @hues ~w[ink blue violet purple pink red orange yellow green aqua]a
   @visibilities ~w[public_indexed public invite_only private]a
   @levels ~w[full reports none]a
-  @profile ~w[name tagline description hue logo_id banner_id welcome_message category_id]a
+  @profile ~w[name tagline description hue logo_id banner_id welcome_message]a
   # The moderation level changes through Hearth.Moderation.set_level/3, which logs it
   @changeable [:visibility, :links | @profile]
 
@@ -34,7 +33,6 @@ defmodule Hearth.Communities.Community do
     field :creator_id, Ecto.UUID
     field :archived_at, :utc_datetime_usec
 
-    belongs_to :category, Category
     has_many :rooms, Room, preload_order: [asc: :position]
     embeds_many :links, Link, on_replace: :delete
 
@@ -58,7 +56,6 @@ defmodule Hearth.Communities.Community do
           owner_id: T.id(),
           creator_id: nil | T.id(),
           archived_at: nil | DateTime.t(),
-          category_id: nil | T.id(),
           links: [Link.t()]
         }
 

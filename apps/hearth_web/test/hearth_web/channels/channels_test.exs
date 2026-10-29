@@ -6,6 +6,7 @@ defmodule HearthWeb.ChannelsTest do
   alias Hearth.Communities
   alias Hearth.Forum
   alias Hearth.TestUtils
+  alias HearthWeb.OnlineCounts
   alias HearthWeb.Presence
 
   setup do
@@ -62,6 +63,26 @@ defmodule HearthWeb.ChannelsTest do
 
       assert_push "PostCreated", %{post_id: post_id}
       assert post_id == post.id
+    end
+
+    test "pushes the online count when a member comes online", %{
+      owner: owner,
+      community: community
+    } do
+      start_supervised!({OnlineCounts, start: true})
+      %{id: community_id} = community
+      member = TestUtils.join_random_member!(community)
+      topic = "community:#{community_id}"
+      {:ok, _reply, _socket} = owner |> connected_socket() |> subscribe_and_join(topic)
+
+      {:ok, _reply, socket} =
+        member |> connected_socket() |> subscribe_and_join("user:#{member.id}")
+
+      assert_push "online_count", %{community_id: ^community_id, count: 1}, 2_000
+
+      # Closing writes last seen, so the channel goes before the test's database does
+      true = Process.unlink(socket.channel_pid)
+      :ok = close(socket)
     end
   end
 

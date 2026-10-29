@@ -40,6 +40,32 @@ defmodule Hearth.IAMTest do
     end
   end
 
+  describe "member_counts/2" do
+    test "leaves out people who aren't members" do
+      community = TestUtils.create_random_community!()
+      outsider = TestUtils.register_random_user!()
+
+      assert IAM.member_counts([community.id], [outsider.id]) == %{}
+    end
+
+    test "counts only the given members" do
+      community = TestUtils.create_random_community!()
+      online = TestUtils.join_random_member!(community)
+      _offline = TestUtils.join_random_member!(community)
+
+      assert IAM.member_counts([community.id], [online.id]) == %{community.id => 1}
+    end
+  end
+
+  describe "shared_community_ids/1" do
+    test "lists the communities a person is in" do
+      community = TestUtils.create_random_community!()
+      member = TestUtils.join_random_member!(community)
+
+      assert IAM.shared_community_ids([member.id]) == [community.id]
+    end
+  end
+
   describe "community_ids/1" do
     test "lists none for someone in no community" do
       assert [] = IAM.community_ids(TestUtils.register_random_user!())

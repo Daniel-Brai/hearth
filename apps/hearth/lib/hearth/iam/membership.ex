@@ -137,6 +137,26 @@ defmodule Hearth.IAM.Membership do
     query |> Repo.all() |> Map.new()
   end
 
+  @spec counts([T.id()], [T.id()]) :: %{T.id() => pos_integer()}
+  def counts(community_ids, user_ids) do
+    query =
+      from(m in __MODULE__,
+        where: m.community_id in ^community_ids and m.user_id in ^user_ids,
+        group_by: m.community_id,
+        select: {m.community_id, count(m.id)}
+      )
+
+    query |> Repo.all() |> Map.new()
+  end
+
+  @spec community_ids_of([T.id()]) :: [T.id()]
+  def community_ids_of(user_ids) do
+    query =
+      from(m in __MODULE__, where: m.user_id in ^user_ids, distinct: true, select: m.community_id)
+
+    Repo.all(query)
+  end
+
   def community_ids(user_id) do
     query = from(m in __MODULE__, where: m.user_id == ^user_id, select: m.community_id)
 

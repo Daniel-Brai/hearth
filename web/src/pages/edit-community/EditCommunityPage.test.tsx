@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
@@ -30,6 +30,8 @@ async function show(cid: string) {
       </StoreContext>,
     ),
   );
+
+  return store;
 }
 
 describe('EditCommunityPage', () => {
@@ -44,5 +46,19 @@ describe('EditCommunityPage', () => {
 
     expect(screen.getByRole('textbox', { name: 'Description' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Transfer ownership' })).toBeTruthy();
+  });
+
+  it('keeps a kind added before saving', async () => {
+    const store = await show('plang');
+
+    await act(async () => fireEvent.click(document.getElementById('edit-kinds-add')!));
+
+    const added = screen
+      .getAllByRole<HTMLInputElement>('textbox', { name: 'Kind name' })
+      .at(-1)!.value;
+
+    await act(async () => fireEvent.submit(document.getElementById('edit-community-form')!));
+
+    expect(store.get().communities.plang?.kinds.map((k) => k.name)).toContain(added);
   });
 });

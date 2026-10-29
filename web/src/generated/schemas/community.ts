@@ -18,6 +18,8 @@ export interface Community {
    * @nullable
    */
   banner_url: string | null;
+  /** Category slugs in the order they were picked */
+  categories: string[];
   /** @nullable */
   description: string | null;
   hue: CommunityHue;
@@ -34,6 +36,11 @@ export interface Community {
   member_count: number;
   moderation: CommunityModeration;
   name: string;
+  /**
+   * Members connected now, leaving out anyone hiding presence
+   * @minimum 0
+   */
+  online_count: number;
   owner: null | UserSummary;
   /** @nullable */
   owner_id: string | null;

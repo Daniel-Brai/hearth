@@ -3,6 +3,7 @@ defmodule HearthWeb.CommunityExtras do
   alias Hearth.IAM
   alias Hearth.Media
   alias HearthWeb.Authors
+  alias HearthWeb.OnlineCounts
 
   @logo_width 0
   @banner_width 1280
@@ -12,7 +13,9 @@ defmodule HearthWeb.CommunityExtras do
     logos = communities |> Enum.map(& &1.logo_id) |> Media.image_urls(@logo_width)
     banners = communities |> Enum.map(& &1.banner_id) |> Media.image_urls(@banner_width)
     counts = communities |> Enum.map(& &1.id) |> IAM.member_counts()
+    online = communities |> Enum.map(& &1.id) |> OnlineCounts.count()
     owners = communities |> Enum.map(& &1.owner_id) |> Authors.people()
+    categories = communities |> Enum.map(& &1.id) |> Communities.category_slugs()
 
     Enum.map(communities, fn community ->
       community
@@ -21,6 +24,8 @@ defmodule HearthWeb.CommunityExtras do
         logo_url: logos[community.logo_id],
         banner_url: banners[community.banner_id],
         member_count: Map.get(counts, community.id, 0),
+        online_count: Map.get(online, community.id, 0),
+        categories: Map.get(categories, community.id, []),
         owner: owners[community.owner_id]
       })
     end)

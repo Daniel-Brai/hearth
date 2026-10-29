@@ -12,6 +12,7 @@ defmodule HearthWeb.Schema.Event do
     Event.PostReacted,
     Event.ReplyCreated,
     Event.AnswerMarked,
+    Event.KindsChanged,
     Event.MemberJoined,
     Event.MemberLeft,
     Event.RoomChanged,

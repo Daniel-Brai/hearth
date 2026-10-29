@@ -5,8 +5,15 @@ import type { Store } from '@/data/store';
 import { lexMarkdown } from '@/features/markdown/markdown';
 import { userIndex } from '@/generated/api/people/people';
 import type { RoomSettings } from '@/domain/types';
-import type { ChatMessage, Community, CommunityDetail, Post, Reply } from '@/generated/schemas';
-import { toCommunity, toMessage, toPerson, toPost, toReply } from '../mappers';
+import type {
+  ChatMessage,
+  Community,
+  CommunityDetail,
+  Post,
+  PostKind,
+  Reply,
+} from '@/generated/schemas';
+import { toCommunity, toKind, toMessage, toPerson, toPost, toReply } from '../mappers';
 import { useUi } from '@/runtime/ui-store';
 import { getRealtime } from '../realtime';
 import type { Realtime, Topic } from '../realtime';
@@ -106,10 +113,7 @@ export class GatewayContext {
     if (detail) this.kindsFor.add(community.id);
     if (detail) this.detailFor.set(community.id, this.store.get().me);
 
-    for (const kind of detail?.kinds ?? []) {
-      this.kindNames.set(kind.id, kind.label);
-      this.kindIds.set(`${slug}/${kind.label}`, kind.id);
-    }
+    this.indexKinds(slug, detail?.kinds ?? []);
 
     this.store.set((state) => {
       const before = state.communities[slug];
@@ -289,6 +293,28 @@ export class GatewayContext {
 
       state.chats[key] = [...kept, ...added];
     });
+  }
+
+  rememberKinds(slug: string, kinds: readonly PostKind[]) {
+    this.indexKinds(slug, kinds);
+
+    this.store.set((state) => {
+      const community = state.communities[slug];
+      if (community) community.kinds = kinds.map(toKind);
+    });
+  }
+
+  // A renamed or removed kind's old label must not lead to an id any more
+  private indexKinds(slug: string, kinds: readonly PostKind[]) {
+    if (!kinds.length) return;
+
+    for (const key of [...this.kindIds.keys()])
+      if (key.startsWith(`${slug}/`)) this.kindIds.delete(key);
+
+    for (const kind of kinds) {
+      this.kindNames.set(kind.id, kind.label);
+      this.kindIds.set(`${slug}/${kind.label}`, kind.id);
+    }
   }
 
   watch(topic: Topic, listen: (realtime: Realtime, topic: Topic) => () => void, as = 'main') {

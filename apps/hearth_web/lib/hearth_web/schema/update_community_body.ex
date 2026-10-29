@@ -1,6 +1,7 @@
 defmodule HearthWeb.Schema.UpdateCommunityBody do
   use JSV.Schema
 
+  alias Hearth.Communities
   alias HearthWeb.Schema.Link
 
   defschema %{
@@ -16,7 +17,12 @@ defmodule HearthWeb.Schema.UpdateCommunityBody do
       banner_id: nullable(uuid()),
       welcome_message: nullable(string(maxLength: 2_000)),
       visibility: enum(~w[public_indexed public invite_only private]),
-      links: array_of(Link, maxItems: 10)
+      links: array_of(Link, maxItems: 10),
+      categories:
+        array_of(enum(Communities.list_category_slugs()),
+          maxItems: 2,
+          description: "Category slugs, at most two"
+        )
     }
   }
 end

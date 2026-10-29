@@ -106,6 +106,15 @@ defmodule Hearth.IAM do
   def member_counts(community_ids) when is_list(community_ids),
     do: Membership.counts(community_ids)
 
+  # Counts only the given people, such as those online now
+  @spec member_counts([T.id()], [T.id()]) :: %{T.id() => pos_integer()}
+  def member_counts(community_ids, user_ids) when is_list(community_ids) and is_list(user_ids),
+    do: Membership.counts(community_ids, user_ids)
+
+  @spec shared_community_ids([T.id()]) :: [T.id()]
+  def shared_community_ids(user_ids) when is_list(user_ids),
+    do: Membership.community_ids_of(user_ids)
+
   @spec member?(User.t(), T.id()) :: boolean()
   def member?(%User{id: user_id}, community_id) do
     Membership.exists?(user_id: user_id, community_id: community_id)

@@ -10,6 +10,7 @@ defmodule Hearth.ForumTest do
   alias Hearth.Forum.AnswerMarked
   alias Hearth.Forum.Draft
   alias Hearth.Forum.Kind
+  alias Hearth.Forum.KindsChanged
   alias Hearth.Forum.Post
   alias Hearth.Forum.PostCreated
   alias Hearth.Forum.PostReacted
@@ -58,6 +59,75 @@ defmodule Hearth.ForumTest do
 
       assert %Kind{answers: true} = kinds["question"]
       assert %Kind{postable: false} = kinds["announcement"]
+    end
+  end
+
+  describe "save_kinds/3" do
+    test "fails if not allowed", %{member: member, community: community} do
+      input = TestUtils.kinds_input(community)
+
+      assert {:error, :forbidden} = Forum.save_kinds(member, community, input)
+    end
+
+    test "fails to remove discussion", %{owner: owner, community: community} do
+      input = TestUtils.kinds_input(community, without: ["discussion"])
+
+      assert {:error, :keeps_discussion} = Forum.save_kinds(owner, community, input)
+    end
+
+    test "fails for a long label", %{owner: owner, community: community} do
+      added = %{label: String.duplicate("a", 31), icon: "chat", hue: "blue"}
+      input = [added | TestUtils.kinds_input(community)]
+
+      assert {:error, changeset} = Forum.save_kinds(owner, community, input)
+      assert %{label: [_message]} = errors_on(changeset)
+    end
+
+    test "add a kind", %{owner: owner, community: community} do
+      added = %{label: "Trip report", icon: "map", hue: "green"}
+      input = [added | TestUtils.kinds_input(community)]
+
+      assert {:ok, kinds} = Forum.save_kinds(owner, community, input)
+      assert "trip-report" in TestUtils.pluck(kinds, :key)
+    end
+
+    test "rename a kind", %{owner: owner, community: community} do
+      input = [%{key: "discussion", label: "Chat", icon: "chat", hue: "blue"}]
+
+      assert {:ok, [kind]} = Forum.save_kinds(owner, community, input)
+      assert kind.key == "discussion"
+      assert kind.label == "Chat"
+    end
+
+    test "reorder kinds", %{owner: owner, community: community} do
+      input = community |> TestUtils.kinds_input() |> Enum.reverse()
+
+      assert {:ok, [first | _kinds]} = Forum.save_kinds(owner, community, input)
+      assert first.key == "announcement"
+    end
+
+    test "move a removed kind's posts to discussion", %{
+      owner: owner,
+      member: member,
+      community: community,
+      kinds: kinds
+    } do
+      post = TestUtils.create_random_post!(member, community, kind_id: kinds["question"].id)
+      input = TestUtils.kinds_input(community, without: ["question"])
+
+      {:ok, _kinds} = Forum.save_kinds(owner, community, input)
+
+      {:ok, moved} = Forum.get_post(id: post.id)
+      assert moved.kind_id == kinds["discussion"].id
+    end
+
+    test "tells the community", %{owner: owner, community: community} do
+      community_id = community.id
+      input = TestUtils.kinds_input(community)
+
+      {:ok, _kinds} = Forum.save_kinds(owner, community, input)
+
+      assert_receive %KindsChanged{community_id: ^community_id}
     end
   end
 

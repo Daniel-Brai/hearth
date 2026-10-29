@@ -26,8 +26,10 @@ defmodule HearthWeb.Schema.Community do
       logo_url
       banner_url
       member_count
+      online_count
       links
       rooms
+      categories
     ]a,
     properties: %{
       id: uuid(),
@@ -47,7 +49,10 @@ defmodule HearthWeb.Schema.Community do
       logo_url: nullable(string(description: "Null without one or while processing")),
       banner_url: nullable(string(description: "Null without one or while processing")),
       member_count: non_neg_integer(),
+      online_count:
+        non_neg_integer(description: "Members connected now, leaving out anyone hiding presence"),
       links: array_of(Link),
+      categories: array_of(string(), description: "Category slugs in the order they were picked"),
       rooms: array_of(Room)
     }
   }

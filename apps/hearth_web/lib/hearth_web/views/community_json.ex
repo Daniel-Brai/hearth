@@ -51,7 +51,9 @@ defmodule HearthWeb.CommunityJSON do
   def serialize(community) do
     community
     |> Map.take(@fields)
-    |> Map.merge(Map.take(community, ~w[logo_url banner_url member_count]a))
+    |> Map.merge(
+      Map.take(community, ~w[logo_url banner_url member_count online_count categories]a)
+    )
     |> Map.put(:owner, UserJSON.summary(community.owner))
     |> Map.put(:links, Enum.map(community.links, &Map.take(&1, [:url, :label])))
     |> Map.put(

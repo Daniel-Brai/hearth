@@ -2,12 +2,15 @@ defmodule Hearth.Communities.Command.CreateCommunity do
   alias Ecto.Changeset
   alias Hearth.Accounts.User
   alias Hearth.Communities.Community
+  alias Hearth.Communities.CommunityCategory
   alias Hearth.Communities.Room
   alias Hearth.Communities.Template
   alias Hearth.IAM
   alias Hearth.Repo
 
-  @spec execute(User.t(), map(), nil | User.t()) :: {:ok, Community.t()} | {:error, Changeset.t()}
+  @spec execute(User.t(), map(), nil | User.t()) ::
+          {:ok, Community.t()}
+          | {:error, :too_many_categories | :unknown_category | Changeset.t()}
   def execute(%User{} = owner, %{} = params, creator \\ nil) do
     creator = creator || owner
     community = %Community{owner_id: owner.id, creator_id: creator.id}
@@ -16,10 +19,20 @@ defmodule Hearth.Communities.Command.CreateCommunity do
       with {:ok, community} <- Community.insert(community, params),
            {:ok, _roles} <- IAM.create_default_roles(community.id),
            {:ok, _membership} <- IAM.join(owner, community.id, ["owner"]),
-           {:ok, rooms} <- create_rooms(community) do
+           {:ok, rooms} <- create_rooms(community),
+           :ok <- CommunityCategory.put(community, categories(community, params)) do
         {:ok, %{community | rooms: rooms}}
       end
     end)
+  end
+
+  # With none picked a community starts in its template's category
+  defp categories(community, params) do
+    case params[:categories] || Template.get(community.template).category do
+      nil -> nil
+      slug when is_binary(slug) -> [slug]
+      slugs -> slugs
+    end
   end
 
   defp create_rooms(community) do

@@ -53,6 +53,32 @@ defmodule Hearth.CommunitiesTest do
       assert %{template: ["is invalid"]} = errors_on(changeset)
     end
 
+    test "fails for more than two categories" do
+      admin = TestUtils.register_random_user!(admin: true)
+      params = %{name: Company.name(), categories: ~w[tech games art]}
+
+      assert {:error, :too_many_categories} = Communities.start_community(admin, params)
+    end
+
+    test "fails for an unknown category" do
+      admin = TestUtils.register_random_user!(admin: true)
+      params = %{name: Company.name(), categories: ["nope"]}
+
+      assert {:error, :unknown_category} = Communities.start_community(admin, params)
+    end
+
+    test "starts in its template's category", %{owner: owner} do
+      community = TestUtils.create_random_community!(owner, template: "club")
+
+      assert Communities.category_slugs([community.id]) == %{community.id => ["hobbies"]}
+    end
+
+    test "starts with picked categories", %{owner: owner} do
+      community = TestUtils.create_random_community!(owner, categories: ~w[tech games])
+
+      assert Communities.category_slugs([community.id]) == %{community.id => ~w[tech games]}
+    end
+
     test "start community as instance admin" do
       %{id: id} = admin = TestUtils.register_random_user!(admin: true)
       params = %{name: "Plant Parents", template: "club"}
@@ -259,6 +285,12 @@ defmodule Hearth.CommunitiesTest do
                Communities.update_community(member, community, %{name: Company.name()})
     end
 
+    test "fails for an unknown category", %{owner: owner, community: community} do
+      params = %{categories: ["nope"]}
+
+      assert {:error, :unknown_category} = Communities.update_community(owner, community, params)
+    end
+
     test "lets anyone with community.update change it", %{community: community} do
       editor = TestUtils.join_with_permissions!(community, ["community.update"])
       params = %{tagline: Lorem.sentence()}
@@ -272,6 +304,24 @@ defmodule Hearth.CommunitiesTest do
 
       assert {:ok, updated} = Communities.update_community(owner, community, params)
       assert updated.slug == community.slug
+    end
+
+    test "replaces the categories", %{owner: owner, community: community} do
+      {:ok, _community} = Communities.update_community(owner, community, %{categories: ["tech"]})
+
+      assert {:ok, _community} =
+               Communities.update_community(owner, community, %{categories: ~w[music art]})
+
+      assert Communities.category_slugs([community.id]) == %{community.id => ~w[music art]}
+    end
+
+    test "keeps the categories on a rename", %{owner: owner, community: community} do
+      {:ok, _community} = Communities.update_community(owner, community, %{categories: ["tech"]})
+
+      assert {:ok, _community} =
+               Communities.update_community(owner, community, %{name: Company.name()})
+
+      assert Communities.category_slugs([community.id]) == %{community.id => ["tech"]}
     end
   end
 

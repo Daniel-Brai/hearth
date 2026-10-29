@@ -398,6 +398,13 @@
               "null"
             ]
           },
+          "categories": {
+            "description": "Category slugs in the order they were picked",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "description": {
             "type": [
               "string",
@@ -455,6 +462,11 @@
           },
           "name": {
             "type": "string"
+          },
+          "online_count": {
+            "description": "Members connected now, leaving out anyone hiding presence",
+            "minimum": 0,
+            "type": "integer"
           },
           "owner": {
             "anyOf": [
@@ -524,8 +536,10 @@
           "logo_url",
           "banner_url",
           "member_count",
+          "online_count",
           "links",
-          "rooms"
+          "rooms",
+          "categories"
         ],
         "type": "object"
       },
@@ -1120,6 +1134,26 @@
         "title": "CreateCommunityBody",
         "additionalProperties": false,
         "properties": {
+          "categories": {
+            "description": "Category slugs, at most two",
+            "items": {
+              "enum": [
+                "hobbies",
+                "games",
+                "art",
+                "music",
+                "books",
+                "sports",
+                "local",
+                "learning",
+                "work",
+                "support",
+                "tech"
+              ]
+            },
+            "maxItems": 2,
+            "type": "array"
+          },
           "description": {
             "maxLength": 2000,
             "type": [
@@ -2081,6 +2115,80 @@
           "role_name",
           "inviter",
           "community"
+        ],
+        "type": "object"
+      },
+      "KindInput": {
+        "title": "KindInput",
+        "additionalProperties": false,
+        "properties": {
+          "answers": {
+            "type": "boolean"
+          },
+          "body_hint": {
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "maxLength": 300,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hue": {
+            "maxLength": 20,
+            "type": "string"
+          },
+          "icon": {
+            "maxLength": 40,
+            "type": "string"
+          },
+          "key": {
+            "description": "Left out for a new kind",
+            "maxLength": 40,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "label": {
+            "maxLength": 30,
+            "type": "string"
+          },
+          "postable": {
+            "description": "Announcements need post.pin",
+            "type": "boolean"
+          },
+          "title_hint": {
+            "maxLength": 120,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "icon",
+          "hue"
+        ],
+        "type": "object"
+      },
+      "KindsChanged": {
+        "title": "KindsChanged",
+        "description": "On community:<id>",
+        "properties": {
+          "community_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "community_id"
         ],
         "type": "object"
       },
@@ -4811,6 +4919,23 @@
         ],
         "type": "object"
       },
+      "SaveKindsBody": {
+        "title": "SaveKindsBody",
+        "additionalProperties": false,
+        "properties": {
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/KindInput"
+            },
+            "maxItems": 8,
+            "type": "array"
+          }
+        },
+        "required": [
+          "kinds"
+        ],
+        "type": "object"
+      },
       "ScheduleEventBody": {
         "title": "ScheduleEventBody",
         "additionalProperties": false,
@@ -5582,6 +5707,26 @@
               "string",
               "null"
             ]
+          },
+          "categories": {
+            "description": "Category slugs, at most two",
+            "items": {
+              "enum": [
+                "hobbies",
+                "games",
+                "art",
+                "music",
+                "books",
+                "sports",
+                "local",
+                "learning",
+                "work",
+                "support",
+                "tech"
+              ]
+            },
+            "maxItems": 2,
+            "type": "array"
           },
           "description": {
             "maxLength": 4000,
@@ -8056,6 +8201,72 @@
           "required": false
         },
         "summary": "Make an invite link"
+      }
+    },
+    "/api/communities/{community_id}/kinds": {
+      "put": {
+        "tags": [
+          "Communities"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PostKind"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs community.update. Kinds left out are removed and their posts move to Discussion",
+        "operationId": "community_kind_update_5W3PZGI",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "community_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveKindsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Save a community's kinds of post"
       }
     },
     "/api/communities/{community_id}/members": {

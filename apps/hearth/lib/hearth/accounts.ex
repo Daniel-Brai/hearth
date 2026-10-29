@@ -68,6 +68,10 @@ defmodule Hearth.Accounts do
   def list_people(query, ids, online_ids, limit) when is_binary(query) and is_list(ids),
     do: query |> String.trim() |> User.directory(ids, online_ids, limit)
 
+  # People who hide their presence are left out, as in the people directory
+  @spec presence_shown([T.id()]) :: [T.id()]
+  def presence_shown(user_ids) when is_list(user_ids), do: User.presence_shown(user_ids)
+
   # Buffered so it is cheap to call on every request
   @spec touch_last_seen(User.t()) :: :ok
   def touch_last_seen(%User{id: id}) do

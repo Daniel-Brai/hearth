@@ -149,6 +149,19 @@ defmodule Hearth.Accounts.User do
     |> Repo.all()
   end
 
+  @spec presence_shown([T.id()]) :: [T.id()]
+  def presence_shown(ids) do
+    query =
+      from(u in __MODULE__,
+        where:
+          u.id in ^ids and is_nil(u.deleted_at) and
+            fragment("coalesce(?->>'presence', 'everyone') <> 'nobody'", u.privacy),
+        select: u.id
+      )
+
+    Repo.all(query)
+  end
+
   # Online people come first unless they hide it then the usual order of the search
   @spec directory(String.t(), [T.id()], [T.id()], pos_integer()) :: [t()]
   def directory(query, ids, online_ids, limit) do

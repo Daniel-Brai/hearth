@@ -172,6 +172,17 @@ defmodule Hearth.TestUtils do
     put_env(Communities, creation: mode)
   end
 
+  def kinds_input(community, opts \\ []) do
+    without = Keyword.get(opts, :without, [])
+
+    community.id
+    |> Forum.list_kinds()
+    |> Enum.reject(&(&1.key in without))
+    |> Enum.map(
+      &Map.take(&1, ~w[key label icon hue description title_hint body_hint answers postable]a)
+    )
+  end
+
   def create_random_post!(author, community, opts \\ []) do
     [kind | _kinds] = Forum.list_kinds(community.id)
 

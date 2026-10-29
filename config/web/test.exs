@@ -34,3 +34,5 @@ config :hearth_web, api_docs: true
 
 # The queue poller runs outside any test's sandbox so tests leave it out
 config :hearth_web, HearthWeb.PromEx, drop_metrics_groups: [:oban_queue_poll_metrics]
+
+config :hearth_web, HearthWeb.OnlineCounts, every_ms: 50, start: false

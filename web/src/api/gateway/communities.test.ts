@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { toPost } from '../mappers';
-import { community, gateway, kind, page, post, routes, sent, session } from './test-support';
+import { toKind, toPost } from '../mappers';
+import { community, file, gateway, kind, page, post, routes, sent, session } from './test-support';
 
 vi.mock('../realtime', () => ({ getRealtime: () => ({ onPush: () => () => undefined }) }));
 
@@ -124,8 +124,8 @@ describe('communities.update', () => {
     banner: null,
     hue: 'aqua' as const,
     links: [{ label: 'Site', url: 'https://growers.example' }],
-    kinds: [],
-    categories: ['Seeds'],
+    kinds: [toKind(kind)],
+    categories: ['games'],
     moderation: 'reports' as const,
     audience: 'indexed' as const,
   };
@@ -171,12 +171,18 @@ describe('communities.update', () => {
     expect(store.get().communities.gardeners?.name).toBe('Growers');
   });
 
-  it('sends only what changed about the images, and keeps the categories picked', async () => {
+  it('sends the categories and keeps what the server saved', async () => {
     const { store, gateway: g } = await loaded();
 
     routes['PATCH /api/communities/c1'] = {
       status: 200,
-      body: { ...community, name: 'Growers', hue: 'aqua', tagline: 'Dirt under the nails' },
+      body: {
+        ...community,
+        name: 'Growers',
+        hue: 'aqua',
+        tagline: 'Dirt under the nails',
+        categories: ['games'],
+      },
     };
 
     routes['PUT /api/communities/c1/moderation'] = {
@@ -192,6 +198,7 @@ describe('communities.update', () => {
       description: null,
       hue: 'aqua',
       links: [{ label: 'Site', url: 'https://growers.example' }],
+      categories: ['games'],
       visibility: 'public_indexed',
     });
 
@@ -200,9 +207,111 @@ describe('communities.update', () => {
 
     expect(store.get().communities.gardeners).toMatchObject({
       name: 'Growers',
-      categories: ['Seeds'],
+      categories: ['games'],
       kinds: [expect.objectContaining({ name: 'Question' })],
     });
+  });
+
+  it('uploads a new logo and banner and sends them', async () => {
+    const { gateway: g } = await loaded();
+    const picked = 'data:image/png;base64,iVBORw0KGgo=';
+
+    routes['POST /api/uploads'] = {
+      status: 201,
+      body: { media: file, upload: { url: 'https://storage.test/put', headers: {} } },
+    };
+
+    routes['PUT /put'] = { status: 200 };
+    routes['POST /api/uploads/' + file.id + '/complete'] = { status: 200, body: file };
+    routes['PATCH /api/communities/c1'] = { status: 200, body: community };
+    routes['PUT /api/communities/c1/moderation'] = { status: 200, body: { level: 'reports' } };
+
+    await g.communities.update('gardeners', { ...patch, logo: picked, banner: picked });
+
+    expect(sent.find((r) => r.method === 'PATCH')?.body).toMatchObject({
+      logo_id: file.id,
+      banner_id: file.id,
+    });
+  });
+
+  it('sends no logo once it is removed', async () => {
+    const { store, gateway: g } = await loaded();
+
+    store.set((state) => void (state.communities.gardeners!.logo = 'https://storage.test/l.webp'));
+    routes['PATCH /api/communities/c1'] = { status: 200, body: community };
+    routes['PUT /api/communities/c1/moderation'] = { status: 200, body: { level: 'reports' } };
+
+    await g.communities.update('gardeners', patch);
+
+    expect(sent.find((r) => r.method === 'PATCH')?.body).toMatchObject({ logo_id: null });
+  });
+
+  it('keeps the rest saved and says why Discussion stays', async () => {
+    const { gateway: g } = await loaded();
+
+    routes['PATCH /api/communities/c1'] = { status: 200, body: community };
+
+    routes['PUT /api/communities/c1/kinds'] = {
+      status: 400,
+      body: { message: 'Keeps discussion.', code: 'keeps_discussion' },
+    };
+
+    const added = {
+      name: 'Trip report',
+      icon: 'map',
+      hue: 'green' as const,
+      hint: '',
+      body: '',
+      answers: false,
+      mods: false,
+      desc: null,
+    };
+
+    expect(await g.communities.update('gardeners', { ...patch, kinds: [added] })).toEqual({
+      ok: false,
+      error:
+        'The rest is saved. Discussion has to stay, since posts from removed kinds move there.',
+    });
+  });
+
+  it('saves added kinds and shows the list the server kept', async () => {
+    const { store, gateway: g } = await loaded();
+
+    routes['PATCH /api/communities/c1'] = { status: 200, body: community };
+
+    routes['PUT /api/communities/c1/kinds'] = {
+      status: 200,
+      body: [kind, { ...kind, id: 'k2', key: 'trip-report', label: 'Trip report' }],
+    };
+
+    routes['PUT /api/communities/c1/moderation'] = {
+      status: 200,
+      body: { level: 'reports', effective: 'reports' },
+    };
+
+    const added = {
+      name: 'Trip report',
+      icon: 'map',
+      hue: 'green' as const,
+      hint: '',
+      body: '',
+      answers: false,
+      mods: false,
+      desc: null,
+    };
+
+    expect(
+      (await g.communities.update('gardeners', { ...patch, kinds: [toKind(kind), added] })).ok,
+    ).toBe(true);
+
+    expect(sent.find((r) => r.path.endsWith('/kinds'))?.body).toMatchObject({
+      kinds: [{ key: 'question' }, { key: null, label: 'Trip report' }],
+    });
+
+    expect(store.get().communities.gardeners?.kinds.map((k) => k.name)).toEqual([
+      'Question',
+      'Trip report',
+    ]);
   });
 });
 

@@ -33,6 +33,8 @@ export type { Permission } from './permissions';
 import type { Permission } from './permissions';
 
 export type PostKind = {
+  // The server's name for it, which stays when the kind is renamed. A new kind has none yet
+  key?: string;
   name: string;
   icon: string;
   hue: Tint;

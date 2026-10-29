@@ -16,6 +16,7 @@ const community: Community = {
   banner_id: null,
   banner_url: null,
   member_count: 3,
+  online_count: 2,
   owner: null,
   visibility: 'invite_only',
   moderation: 'none',
@@ -23,6 +24,7 @@ const community: Community = {
   template: 'blank',
   owner_id: 'u1',
   links: [{ url: 'https://example.com', label: null }],
+  categories: [],
   rooms: [
     {
       id: 'r1',
