@@ -41,6 +41,12 @@ export function useDisplayZone(): string | undefined {
 
 export const ZONE_COOKIE = 'hearth-tz';
 
+/** Saves this browser's time zone so the server writes its next screens in local time */
+export function rememberZone() {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.cookie = `${ZONE_COOKIE}=${encodeURIComponent(zone)}; path=/; max-age=31536000; samesite=lax`;
+}
+
 export function zoneFromCookies(cookies: string | null): string {
   const raw = cookies
     ?.split(';')

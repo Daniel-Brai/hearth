@@ -2,10 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 import stylesheet from '@/design-system/styles/index.css?url';
 import { useGateway } from '@/app/gateway-context';
-import { ZONE_COOKIE } from '@/app/request-context';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
-import { printConsoleBanner } from '@/runtime/console-banner';
-import { installImageFade } from '@/runtime/image-fade';
 
 /* Applies the saved theme before first paint so the screen never flashes the wrong colours */
 const THEME_SCRIPT = `(() => {
@@ -59,19 +56,10 @@ export function Layout({ children }: { readonly children: ReactNode }) {
   );
 }
 
-/** Saves this browser's time zone so the server writes its next screens in local time */
-function rememberZone() {
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  document.cookie = `${ZONE_COOKIE}=${encodeURIComponent(zone)}; path=/; max-age=31536000; samesite=lax`;
-}
-
 function BrowserStart() {
   const gateway = useGateway();
 
   useEffect(() => {
-    printConsoleBanner();
-    installImageFade();
-    rememberZone();
     void gateway.load.session();
   }, [gateway]);
 
