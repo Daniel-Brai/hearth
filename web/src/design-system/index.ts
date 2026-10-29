@@ -39,7 +39,7 @@ export { Dialog, DialogBody, DialogClose, DialogFooter, DialogTitle } from './co
 
 export { TooltipLayer } from './components/tooltip';
 
-export { EmptyState, Skeleton, Toasts } from './components/feedback';
+export { EmptyState, Skeleton, Toasts, type SkeletonKind } from './components/feedback';
 
 export { Measure, OriginNote, Panel, Separator, SettingsRow } from './components/layout';
 

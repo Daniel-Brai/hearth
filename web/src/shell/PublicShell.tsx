@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useGateway } from '@/app/gateway-context';
 import { Outlet } from 'react-router';
-import { Button, Link, Skeleton, Toasts, TooltipLayer } from '@/design-system';
+import { Button, Link, Toasts, TooltipLayer } from '@/design-system';
 import { useAppState } from '@/data/store';
 import { codeBlockClick } from '@/features/markdown/code-block';
 import { brandFor } from '@/runtime/brand';
@@ -9,6 +9,7 @@ import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { DialogHost } from './dialogs/DialogHost';
 import { NavProgress } from './NavProgress';
+import { RouteSkeleton } from './RouteSkeleton';
 import { useGuest } from './use-guest';
 
 export function PublicShell() {
@@ -51,15 +52,7 @@ export function PublicShell() {
       </header>
 
       <div className="main-col">
-        <Suspense
-          fallback={
-            <main id="main">
-              <div className="measure">
-                <Skeleton kind="feed" />
-              </div>
-            </main>
-          }
-        >
+        <Suspense fallback={<RouteSkeleton />}>
           <Outlet />
         </Suspense>
       </div>
