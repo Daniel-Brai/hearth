@@ -10,7 +10,10 @@ defmodule HearthWeb.RoomJSON do
   # Room roles are loaded only for people who manage rooms
   @spec serialize(map()) :: map()
   def serialize(%{room_roles: room_roles} = room) when is_list(room_roles),
-    do: room |> Map.take(@fields) |> Map.put(:role_ids, Enum.map(room_roles, & &1.role_id))
+    do: room |> base() |> Map.put(:role_ids, Enum.map(room_roles, & &1.role_id))
 
-  def serialize(room), do: Map.take(room, @fields)
+  def serialize(room), do: base(room)
+
+  defp base(room),
+    do: room |> Map.take(@fields) |> Map.put(:settings, Map.from_struct(room.settings))
 end

@@ -12,7 +12,7 @@ import {
 import { useGateway } from '@/app/gateway-context';
 import { BoostMenu, Boosts } from '@/features/boosts/BoostMenu';
 import { useAppState } from '@/data/store';
-import { displayName } from '@/domain/selectors';
+import { authorName, displayName } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
 import { InlineMarkdown, Markdown } from '@/features/markdown/Markdown';
 import { firstUrl, useLinkPreview } from '@/features/previews';
@@ -43,7 +43,7 @@ function SystemMessage({
   readonly message: Message;
   readonly chat: ChatContext;
 }) {
-  const name = useAppState((state) => displayName(state, m.who));
+  const name = useAppState((state) => authorName(state, m.who));
   const { restore } = useModerationActions();
 
   if (m.moderated)
@@ -101,6 +101,7 @@ function ChatMessage({ message: m, grouped, chat, answers }: MessageItemProps) {
   const editing = chat.editingId === m.id;
 
   const name = useAppState((state) => displayName(state, m.who));
+  const author = useAppState((state) => authorName(state, m.who));
 
   const hasText = !!m.text;
   const tools = chat.selectMode ? null : <MessageTools message={m} chat={chat} />;
@@ -123,7 +124,7 @@ function ChatMessage({ message: m, grouped, chat, answers }: MessageItemProps) {
       </PersonLink>
 
       <div className="message__meta">
-        <strong>{name}</strong>
+        <strong>{author}</strong>
         {answers ? <ReplyingTo who={answers.who} target={'msg-' + answers.id} /> : null}
         <span>{m.time}</span>
         {m.edited ? <span>edited</span> : null}
@@ -184,7 +185,12 @@ function MessageBubble({
       onClick={clickBubble}
       style={chat.selectMode ? { cursor: 'pointer' } : undefined}
     >
-      <Markdown text={m.text} community={chat.target.cid} files={m.files ?? []} />
+      <Markdown
+        text={m.text}
+        community={chat.target.cid}
+        files={m.files ?? []}
+        everyone={m.mentionsAll}
+      />
     </div>
   );
 }

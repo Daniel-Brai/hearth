@@ -63,9 +63,9 @@ describe('Thread', () => {
       vi.fn(() => new Promise<undefined>(() => undefined)),
     );
 
-    fireEvent.click(screen.getByText('4 replies'));
+    const more = screen.getByText('4 replies').closest('button')!;
 
-    const more = screen.getByText('4 replies');
+    fireEvent.click(more);
 
     expect(more.getAttribute('aria-busy')).toBe('true');
     expect(more.querySelector('.loading-dots')).not.toBeNull();

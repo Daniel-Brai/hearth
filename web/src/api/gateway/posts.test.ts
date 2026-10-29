@@ -9,6 +9,7 @@ import {
   page,
   post,
   reply,
+  roomSettings,
   routes,
   sent,
   session,
@@ -494,6 +495,7 @@ const voiceRoom = {
   topic: null,
   position: 1,
   moderation: null,
+  settings: roomSettings,
   archived_at: null,
 };
 

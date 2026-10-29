@@ -1,6 +1,6 @@
 import type { HearthGateway, Result } from '@/data/gateway';
 import { fail, ok } from '@/data/gateway';
-import type { ArchivedRoom, ModerationLevel } from '@/domain/types';
+import type { ArchivedRoom, ModerationLevel, RoomSettings } from '@/domain/types';
 import {
   roomArchive,
   roomArchived,
@@ -11,12 +11,31 @@ import {
 } from '@/generated/api/communities/communities';
 import { messageRead } from '@/generated/api/chat/chat';
 import { moderationRoomLevel } from '@/generated/api/moderation/moderation';
-import type { Room as ApiRoom } from '@/generated/schemas';
+import type { Room as ApiRoom, UpdateRoomBody } from '@/generated/schemas';
 import { slugify } from '@/runtime/routes';
 import type { GatewayContext } from './context';
 import { NOT_READY, call, errorCode, failed, roomDefaults } from './context';
 
 const READ_AFTER_MS = 1000;
+
+const toUpdateBody = (patch: Partial<RoomSettings>): UpdateRoomBody => {
+  const body: UpdateRoomBody = {};
+  const settings: NonNullable<UpdateRoomBody['settings']> = {};
+
+  if (patch.topic !== undefined) body.topic = patch.topic;
+  if (patch.previews !== undefined) settings.link_previews = patch.previews;
+
+  if (patch.sounds) {
+    settings.sounds_enabled = patch.sounds.enabled;
+    settings.sounds_mode = patch.sounds.mode;
+    settings.sounds_role_ids = patch.sounds.roles;
+    settings.sounds_user_ids = patch.sounds.people;
+  }
+
+  if (Object.keys(settings).length > 0) body.settings = settings;
+
+  return body;
+};
 
 const toArchivedRoom = (room: ApiRoom): ArchivedRoom => ({
   id: room.slug,
@@ -102,7 +121,6 @@ export function createRoomsGateway(
   const rooms: HearthGateway['rooms'] = {
     settings: (key) => ctx.store.get().roomSettings[key] ?? roomDefaults(),
 
-    // The server keeps a room's topic and previews and sounds stay in this browser
     updateSettings: (key, patch) => {
       const before = ctx.store.get().roomSettings[key];
 
@@ -111,10 +129,11 @@ export function createRoomsGateway(
       });
 
       const target = ctx.roomIds.get(key);
+      const body = toUpdateBody(patch);
 
-      if (!('topic' in patch) || !target) return;
+      if (!target || Object.keys(body).length === 0) return;
 
-      void call(() => roomUpdate(target, { topic: patch.topic ?? null })).then((answer) => {
+      void call(() => roomUpdate(target, body)).then((answer) => {
         if (answer.status === 200) return;
 
         ctx.store.set((state) => {

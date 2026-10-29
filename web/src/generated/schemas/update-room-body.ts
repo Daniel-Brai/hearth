@@ -4,6 +4,7 @@
  * OpenAPI spec version: 2026-10-24
  */
 import type { UpdateRoomBodyAccess } from './update-room-body-access';
+import type { UpdateRoomBodySettings } from './update-room-body-settings';
 
 export interface UpdateRoomBody {
   access?: UpdateRoomBodyAccess;
@@ -15,6 +16,8 @@ export interface UpdateRoomBody {
   /** @minimum 0 */
   position?: number;
   role_ids?: string[];
+  /** Only the choices sent change */
+  settings?: UpdateRoomBodySettings;
   /**
    * @maxLength 200
    * @nullable

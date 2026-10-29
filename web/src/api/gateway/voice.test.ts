@@ -1,7 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getRoomSession } from '@/data/voice-session';
 import { useUi } from '@/runtime/ui-store';
-import { at, community, gateway, me, page, routes, sent, session } from './test-support';
+import {
+  at,
+  community,
+  gateway,
+  me,
+  page,
+  roomSettings,
+  routes,
+  sent,
+  session,
+} from './test-support';
 
 type Handler = (payload: unknown) => void;
 
@@ -75,6 +85,7 @@ const voiceRoom = {
   topic: null,
   position: 1,
   moderation: null,
+  settings: roomSettings,
   archived_at: null,
 };
 

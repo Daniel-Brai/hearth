@@ -39,9 +39,12 @@ defmodule HearthWeb.MessageJSON do
       deleted: deleted,
       attachments: if(hidden, do: [], else: Map.get(attachments, message.id, [])),
       reactions: if(hidden, do: [], else: reactions(assigns, message)),
-      preview_hidden: message.preview_hidden_at != nil
+      preview_hidden: message.preview_hidden_at != nil,
+      mentions_all: not hidden and assigns |> mentions_all() |> MapSet.member?(message.id)
     })
   end
+
+  defp mentions_all(assigns), do: Map.get(assigns, :mentions_all, MapSet.new())
 
   # Views that don't load reactions, such as a new message, have none
   defp reactions(assigns, message),

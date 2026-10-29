@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { playTune } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import {
   community,
@@ -13,15 +14,22 @@ import {
   session,
 } from './test-support';
 
-const pushes = vi.hoisted(() => new Map<string, (payload: { message_id: string }) => void>());
+type Push = { message_id?: string; reply_to_id?: string | null; sound?: string };
+
+const pushes = vi.hoisted(() => new Map<string, (payload: Push) => void>());
 
 vi.mock('../realtime', () => ({
   getRealtime: () => ({
-    onPush: (topic: string, event: string, handler: (payload: { message_id: string }) => void) => {
+    onPush: (topic: string, event: string, handler: (payload: Push) => void) => {
       pushes.set(`${topic} ${event}`, handler);
       return () => pushes.delete(`${topic} ${event}`);
     },
   }),
+}));
+
+vi.mock('@/runtime/sounds', async (original) => ({
+  ...(await original<typeof import('@/runtime/sounds')>()),
+  playTune: vi.fn(),
 }));
 
 describe('chat.send', () => {
@@ -72,6 +80,185 @@ describe('chat.send', () => {
     g.chat.send('gardeners/general', 'Hello');
 
     await vi.waitFor(() => expect(store.get().chats['gardeners/general']).toEqual([]));
+  });
+});
+
+describe('chat.send with a command', () => {
+  it('refuses a command that does not exist', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { store, gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(g.chat.send('gardeners/general', '/dance')).toMatchObject({ ok: false });
+    expect(store.get().chats['gardeners/general']).toBeUndefined();
+  });
+
+  it('refuses /topic to someone who cannot manage rooms', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(g.chat.send('gardeners/general', '/topic Seeds')).toEqual({
+      ok: false,
+      error: "You can't change the topic here.",
+    });
+  });
+
+  it('refuses /topic in a direct message', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(g.chat.send('dm/u2', '/topic Seeds')).toMatchObject({ ok: false });
+  });
+
+  it('refuses /play in a direct message', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(g.chat.send('dm/u2', '/play tada')).toEqual({
+      ok: false,
+      error: 'Not available in direct messages.',
+    });
+  });
+
+  it('refuses /play without a sound or with one that does not exist', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(g.chat.send('gardeners/general', '/play')).toMatchObject({ ok: false });
+    expect(g.chat.send('gardeners/general', '/play kazoo')).toMatchObject({ ok: false });
+  });
+
+  it('refuses /me without an action', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(g.chat.send('gardeners/general', '/me')).toMatchObject({ ok: false });
+  });
+
+  it('refuses /play where sounds are off', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    const { store, gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    store.set((state) => {
+      state.roomSettings['gardeners/general'] = {
+        topic: null,
+        previews: true,
+        sounds: { enabled: false, mode: 'everyone', roles: [], people: [] },
+      };
+    });
+
+    expect(g.chat.send('gardeners/general', '/play tada')).toMatchObject({ ok: false });
+  });
+
+  it('offers the commands in a room', () => {
+    const { gateway: g } = gateway();
+
+    expect(g.chat.commands('gardeners/general').map((c) => c.cmd)).toEqual([
+      'play',
+      'me',
+      'shrug',
+      'topic',
+    ]);
+  });
+
+  it('sends /shrug as a message with the shrug added', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+    routes['POST /api/rooms/r1/messages'] = { status: 201, body: message('m1', 'ok ¯\\_(ツ)_/¯') };
+
+    const { gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    expect(g.chat.send('gardeners/general', '/shrug ok').ok).toBe(true);
+
+    await vi.waitFor(() => expect(sent.at(-1)).toMatchObject({ body: { body: 'ok ¯\\_(ツ)_/¯' } }));
+  });
+});
+
+describe('chat.send with a command that says something', () => {
+  const ready = async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+
+    const g = gateway();
+
+    await g.gateway.session.verifyCode('ada@example.com', '123456');
+
+    return g;
+  };
+
+  it('sends /me as an action', async () => {
+    routes['POST /api/rooms/r1/messages'] = {
+      status: 201,
+      body: { ...message('m1', 'is reviewing'), kind: 'action' },
+    };
+
+    const { store, gateway: g } = await ready();
+
+    expect(g.chat.send('gardeners/general', '/me is reviewing').ok).toBe(true);
+    expect(store.get().chats['gardeners/general']?.[0]).toMatchObject({ system: true });
+
+    await vi.waitFor(() =>
+      expect(sent.at(-1)).toMatchObject({ body: { body: 'is reviewing', kind: 'action' } }),
+    );
+  });
+
+  it('sends /play as a sound shown as a line', async () => {
+    routes['POST /api/rooms/r1/messages'] = {
+      status: 201,
+      body: { ...message('m1', 'tada'), kind: 'sound' },
+    };
+
+    const { store, gateway: g } = await ready();
+
+    expect(g.chat.send('gardeners/general', '/play TADA').ok).toBe(true);
+
+    await vi.waitFor(() =>
+      expect(sent.at(-1)).toMatchObject({ body: { body: 'tada', kind: 'sound' } }),
+    );
+
+    await vi.waitFor(() =>
+      expect(store.get().chats['gardeners/general']?.[0]).toMatchObject({
+        id: 'm1',
+        text: 'played “tada”',
+        system: true,
+      }),
+    );
   });
 });
 
@@ -197,6 +384,74 @@ describe('load.chat', () => {
     pushes.get('room:r1 MessageRemoved')?.({ message_id: 'm1' });
 
     await vi.waitFor(() => expect(store.get().chats['gardeners/general']).toEqual([]));
+  });
+
+  it('plays a sound someone played in the room', async () => {
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([]) };
+
+    const { gateway: g } = gateway();
+
+    await g.load.chat('gardeners/general');
+
+    pushes.get('room:r1 SoundPlayed')?.({ sound: 'tada' });
+
+    expect(playTune).toHaveBeenCalledWith('tada');
+  });
+
+  it('stays quiet when the person turned play sounds off', async () => {
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([]) };
+
+    const { store, gateway: g } = gateway();
+
+    store.set((state) => {
+      state.settings.sounds = false;
+    });
+
+    await g.load.chat('gardeners/general');
+
+    pushes.get('room:r1 SoundPlayed')?.({ sound: 'tada' });
+
+    expect(playTune).not.toHaveBeenCalled();
+  });
+
+  it('shows a reply as soon as it is sent', async () => {
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([message('m1', 'Hi')]) };
+
+    const { store, gateway: g } = gateway();
+
+    await g.load.chat('gardeners/general');
+
+    const parent = { ...message('m1', 'Hi'), child_count: 1 };
+    const reply = { ...message('m2', 'Hello back'), reply_to_id: 'm1', depth: 1 };
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([reply, parent]) };
+    pushes.get('room:r1 MessageCreated')?.({ message_id: 'm2', reply_to_id: 'm1' });
+
+    await vi.waitFor(() => {
+      const chat = store.get().chats['gardeners/general'] ?? [];
+      expect(chat.find((m) => m.id === 'm2')?.parent).toBe('m1');
+      expect(chat.find((m) => m.id === 'm1')?.answerCounts?.direct).toBe(1);
+    });
   });
 
   it('drops a room its viewer can no longer see', async () => {

@@ -40,6 +40,8 @@ export type SuggestOptions = {
   readonly commands?: readonly Command[] | undefined;
   readonly sounds?: readonly string[] | undefined;
   readonly chat: boolean;
+  /** Offers @all, for a room composer whose writer holds mention.all */
+  readonly mentionAll?: boolean | undefined;
 };
 
 const esc = (s: string) =>
@@ -79,6 +81,14 @@ function looselyIn(name: string, typed: string): boolean {
 
 const inCommunity = (state: AppState, cid: string | null, id: string) =>
   cid !== null && state.roles.some((r) => r.c === cid && r.members.includes(id));
+
+const EVERYONE: Suggestion = {
+  label: 'all',
+  sub: null,
+  hint: 'Notify everyone in this room',
+  insert: '@all ',
+  icon: 'users',
+};
 
 export function suggest(state: AppState, text: string, caret: number, opts: SuggestOptions) {
   const before = text.slice(0, caret);
@@ -153,6 +163,9 @@ export function suggest(state: AppState, text: string, caret: number, opts: Sugg
         icon: 'user',
         person: id,
       }));
+
+    if (opts.mentionAll && 'all'.startsWith(typed)) items.unshift(EVERYONE);
+
     return items.length ? { kind: '@' as const, items, start: w.start, end: caret } : null;
   }
 
@@ -200,7 +213,7 @@ const tokenClass = (valid: boolean, typing: boolean) => {
   return 'tok tok--bad';
 };
 
-type HighlightOptions = Pick<SuggestOptions, 'commands' | 'sounds' | 'chat'>;
+type HighlightOptions = Pick<SuggestOptions, 'commands' | 'sounds' | 'chat' | 'mentionAll'>;
 
 export function highlight(state: AppState, text: string, opts: HighlightOptions): string {
   let rest = text;
@@ -247,7 +260,10 @@ export function highlight(state: AppState, text: string, opts: HighlightOptions)
         spans.push({
           start: at,
           end: at + t.raw.length,
-          cls: findPerson(state, handleText) ? 'tok tok--mention' : 'tok',
+          cls:
+            findPerson(state, handleText) || (opts.mentionAll && handleText === 'all')
+              ? 'tok tok--mention'
+              : 'tok',
         });
         cursor = at + t.raw.length;
       } else if (t.type === 'ref') {

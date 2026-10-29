@@ -69,6 +69,32 @@ defmodule HearthWeb.MessageControllerTest do
       assert [_message] = errors["body"]
     end
 
+    test "fails to play if not allowed", %{
+      conn: conn,
+      member: member,
+      community: community,
+      room: room
+    } do
+      TestUtils.put_room_settings!(community, room, %{sounds_mode: :people})
+      body = %{body: "tada", kind: "sound"}
+
+      assert %{"code" => "forbidden"} =
+               conn
+               |> auth_conn(member)
+               |> post(~p"/api/rooms/#{room.id}/messages", body)
+               |> valid_response(403)
+    end
+
+    test "fails with another kind", %{conn: conn, member: member, room: room} do
+      body = %{body: Lorem.sentence(), kind: "promoted"}
+
+      assert %{"errors" => %{"kind" => [_error]}} =
+               conn
+               |> auth_conn(member)
+               |> post(~p"/api/rooms/#{room.id}/messages", body)
+               |> valid_response(422)
+    end
+
     test "fails with someone else's file", %{conn: conn, owner: owner, member: member, room: room} do
       [theirs] = TestUtils.upload_random_attachments!(owner, 1)
       body = %{body: Lorem.sentence(), attachment_ids: [theirs.id]}
@@ -78,6 +104,31 @@ defmodule HearthWeb.MessageControllerTest do
                |> auth_conn(member)
                |> post(~p"/api/rooms/#{room.id}/messages", body)
                |> valid_response(400)
+    end
+
+    test "leaves @all plain without mention.all", %{conn: conn, member: member, room: room} do
+      body = %{body: "Hello @all"}
+
+      assert %{"mentions_all" => false} =
+               conn
+               |> auth_conn(member)
+               |> post(~p"/api/rooms/#{room.id}/messages", body)
+               |> valid_response(201)
+    end
+
+    test "marks @all from someone with mention.all", %{
+      conn: conn,
+      community: community,
+      room: room
+    } do
+      announcer = TestUtils.join_with_permissions!(community, ~w[message.create mention.all])
+      body = %{body: "Hello @all"}
+
+      assert %{"mentions_all" => true} =
+               conn
+               |> auth_conn(announcer)
+               |> post(~p"/api/rooms/#{room.id}/messages", body)
+               |> valid_response(201)
     end
 
     test "sends files with no text", %{conn: conn, member: member, room: room} do
@@ -104,6 +155,30 @@ defmodule HearthWeb.MessageControllerTest do
 
       assert response["body"] == body.body
       assert response["room_id"] == room.id
+    end
+
+    test "sends an action", %{conn: conn, member: member, room: room} do
+      body = %{body: Lorem.sentence(), kind: "action"}
+
+      assert response =
+               conn
+               |> auth_conn(member)
+               |> post(~p"/api/rooms/#{room.id}/messages", body)
+               |> valid_response(201)
+
+      assert response["kind"] == "action"
+    end
+
+    test "plays a sound", %{conn: conn, member: member, room: room} do
+      body = %{body: "tada", kind: "sound"}
+
+      assert response =
+               conn
+               |> auth_conn(member)
+               |> post(~p"/api/rooms/#{room.id}/messages", body)
+               |> valid_response(201)
+
+      assert response["kind"] == "sound"
     end
 
     test "answers a message", %{conn: conn, owner: owner, member: member, room: room} do

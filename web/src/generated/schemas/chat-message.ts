@@ -28,8 +28,10 @@ export interface ChatMessage {
   edited_at: string | null;
   id: string;
   inserted_at: string;
-  /** A promoted message is the room's note about a new post */
+  /** A promoted message is the room's note about a new post, an action is a /me line and a sound is a /play whose body is its name */
   kind: ChatMessageKind;
+  /** Its @all notified everyone who can see the room */
+  mentions_all: boolean;
   /**
    * The post a promoted note points at
    * @nullable

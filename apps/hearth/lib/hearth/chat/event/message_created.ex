@@ -3,7 +3,7 @@ defmodule Hearth.Chat.MessageCreated do
 
   alias Hearth.Common.T
 
-  @fields ~w[message_id room_id conversation_id author_id reply_to_author_id]a
+  @fields ~w[message_id room_id conversation_id author_id reply_to_id reply_to_author_id]a
   @enforce_keys @fields
   defstruct @fields
 
@@ -12,6 +12,7 @@ defmodule Hearth.Chat.MessageCreated do
           room_id: nil | T.id(),
           conversation_id: nil | T.id(),
           author_id: T.id(),
+          reply_to_id: nil | T.id(),
           reply_to_author_id: nil | T.id()
         }
 

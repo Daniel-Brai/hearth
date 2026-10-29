@@ -25,6 +25,7 @@ defmodule Hearth.Chat do
     exports: exports
 
   alias Ecto.Changeset
+  alias Hearth.Accounts
   alias Hearth.Accounts.User
   alias Hearth.Buffer
   alias Hearth.Chat.Command.DeleteMessage
@@ -41,6 +42,9 @@ defmodule Hearth.Chat do
   alias Hearth.Chat.Reaction
   alias Hearth.Chat.ReadMarkers
   alias Hearth.Chat.RoomActivity
+  alias Hearth.Chat.SoundPlayed
+  alias Hearth.Common
+  alias Hearth.Common.T
   alias Hearth.Communities
   alias Hearth.Communities.Room
   alias Hearth.IAM
@@ -66,20 +70,26 @@ defmodule Hearth.Chat do
              | Changeset.t()}
   def send_message(%User{} = user, place, %{} = params) do
     reply_to_id = params[:reply_to_id] || params["reply_to_id"]
+    kind = Map.get(params, :kind, :text)
 
     with :ok <- may_write(user, place),
+         :ok <- may_say(user, place, kind),
          {:ok, parent} <- fetch_parent(place, reply_to_id),
-         {:ok, message} <- SendMessage.execute(user, where_in(place), parent, params) do
+         {:ok, message} <-
+           SendMessage.execute(user, [kind: kind] ++ where_in(place), parent, params) do
       broadcast(%MessageCreated{
         message_id: message.id,
         room_id: message.room_id,
         conversation_id: message.conversation_id,
         author_id: user.id,
+        reply_to_id: message.reply_to_id,
         reply_to_author_id: get_in(parent.author_id)
       })
 
       with %Room{} <- place,
            do: broadcast(%RoomActivity{room_id: place.id, community_id: place.community_id})
+
+      played(message)
 
       {:ok, message}
     end
@@ -107,6 +117,8 @@ defmodule Hearth.Chat do
           {:ok, Message.t()}
           | {:error,
              :forbidden | :not_found | :too_many_attachments | :invalid_attachment | Changeset.t()}
+  def edit_message(%User{}, %Message{kind: :sound}, %{}), do: {:error, :forbidden}
+
   def edit_message(%User{id: id} = user, %Message{author_id: id} = message, %{} = params) do
     with {:ok, place} <- place_of(message),
          :ok <- may_read(user, place),
@@ -287,6 +299,7 @@ defmodule Hearth.Chat do
         room_id: room.id,
         conversation_id: nil,
         author_id: user.id,
+        reply_to_id: nil,
         reply_to_author_id: nil
       })
 
@@ -311,6 +324,25 @@ defmodule Hearth.Chat do
   @spec can_write?(User.t(), place()) :: boolean()
   def can_write?(%User{} = user, place), do: may_write(user, place) == :ok
 
+  # @all reaches everyone only from someone who holds mention.all there, otherwise it is plain text
+  @spec mentions_all?(User.t(), Room.t(), String.t()) :: boolean()
+  def mentions_all?(%User{} = author, %Room{} = room, body) when is_binary(body) do
+    "all" in Common.mentions(body) and
+      IAM.can?(author, :all, %{type: :mention, community_id: room.community_id})
+  end
+
+  # Authors load in one query and each room once, so a page of messages never asks per message
+  @spec mentions_all([Message.t()]) :: MapSet.t(T.id())
+  def mentions_all(messages) when is_list(messages) do
+    said = Enum.filter(messages, &said_all?/1)
+    authors = said |> Enum.map(& &1.author_id) |> Accounts.list_users() |> Map.new(&{&1.id, &1})
+    rooms = said |> Enum.map(& &1.room_id) |> Enum.uniq() |> Map.new(&{&1, room(&1)})
+
+    said
+    |> Enum.filter(&allowed_all?(&1, authors[&1.author_id], rooms[&1.room_id]))
+    |> MapSet.new(& &1.id)
+  end
+
   @spec list_conversations(User.t()) :: [Conversation.t()]
   def list_conversations(%User{id: id}) do
     Conversation.for_member(id)
@@ -331,6 +363,24 @@ defmodule Hearth.Chat do
   end
 
   # Held messages show to their author, and in a room to whoever can remove content
+  defp said_all?(%Message{room_id: room_id, body: body})
+       when is_binary(room_id) and is_binary(body),
+       do: "all" in Common.mentions(body)
+
+  defp said_all?(%Message{}), do: false
+
+  defp room(id) do
+    case Communities.get_room(id: id) do
+      {:ok, room} -> room
+      {:error, :not_found} -> nil
+    end
+  end
+
+  defp allowed_all?(%Message{} = message, %User{} = author, %Room{} = room),
+    do: mentions_all?(author, room, message.body)
+
+  defp allowed_all?(%Message{}, _author, _room), do: false
+
   defp viewing(user, %Room{community_id: community_id}) do
     case IAM.can?(user, :remove, %{type: :content, community_id: community_id}) do
       true -> :all
@@ -360,6 +410,27 @@ defmodule Hearth.Chat do
       false -> {:error, :forbidden}
     end
   end
+
+  defp may_say(_user, _place, kind) when kind in [:text, :action], do: :ok
+  defp may_say(_user, %Conversation{}, :sound), do: {:error, :forbidden}
+
+  defp may_say(user, %Room{} = room, :sound) do
+    case Communities.can_play?(user, room) do
+      true -> :ok
+      false -> {:error, :forbidden}
+    end
+  end
+
+  defp played(%Message{kind: :sound} = message) do
+    broadcast(%SoundPlayed{
+      message_id: message.id,
+      room_id: message.room_id,
+      author_id: message.author_id,
+      sound: message.body
+    })
+  end
+
+  defp played(%Message{}), do: :ok
 
   defp may_post(user, %Room{archived_at: nil, community_id: community_id}) do
     case IAM.can?(user, :create, %{type: :message, community_id: community_id}) do

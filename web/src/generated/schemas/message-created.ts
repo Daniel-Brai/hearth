@@ -15,5 +15,7 @@ export interface MessageCreated {
   /** @nullable */
   reply_to_author_id: string | null;
   /** @nullable */
+  reply_to_id: string | null;
+  /** @nullable */
   room_id: string | null;
 }

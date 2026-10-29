@@ -4,7 +4,10 @@ defmodule Hearth.Chat.Command.QueueScreening do
   alias Hearth.Media
   alias Hearth.ScreeningPolicy
 
+  # A sound is one of a fixed list of names so there is nothing to screen
   @spec message(Message.t()) :: :ok | {:error, term()}
+  def message(%Message{kind: :sound}), do: :ok
+
   def message(%Message{} = message) do
     ScreeningPolicy.enqueue(:message, message.id, files?(message), fn -> level(message) end)
   end

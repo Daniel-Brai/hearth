@@ -1,7 +1,7 @@
 import type { AppState } from '../app-state';
 import type { RoomAccess, RoomSettings } from '../types';
 import { ROOM_DEFAULTS } from '@/domain/catalog';
-import { canDo, isOwner, myRolesIn, roleName } from './access';
+import { canDo, isOwner, myRolesIn, roleName, roleRef, rolesOf } from './access';
 import { community } from './communities';
 
 export const findRoom = (state: AppState, name: string, cid: string | null | undefined) => {
@@ -36,7 +36,10 @@ export function soundAccess(state: AppState, key: string) {
 
   if (s.sounds.mode === 'roles') {
     const allowed = new Set(s.sounds.roles);
-    if (myRolesIn(state, cid).some((r) => allowed.has(r))) return { ok: true as const };
+    const mine = new Set(myRolesIn(state, cid));
+
+    if (rolesOf(state, cid).some((r) => mine.has(r.id) && allowed.has(roleRef(r))))
+      return { ok: true as const };
 
     const roles =
       s.sounds.roles.map((r) => `${roleName(state, cid, r)}s`).join(' and ') || 'picked roles';

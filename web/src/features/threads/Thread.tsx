@@ -149,13 +149,15 @@ function Branch<T>(props: ThreadProps<T> & { readonly composer: ReactNode }) {
             disabled={loading}
             aria-busy={loading}
           >
-            <span className="avatar-stack">
-              {node.authors.map((who) => (
-                <PersonAvatar key={who} id={who} size="xs" />
-              ))}
+            <span className="thread__more-label">
+              <span className="avatar-stack">
+                {node.authors.map((who) => (
+                  <PersonAvatar key={who} id={who} size="xs" />
+                ))}
+              </span>
+              {count}
+              {loading ? <span className="loading-dots" aria-hidden="true" /> : null}
             </span>
-            {count}
-            {loading ? <span className="loading-dots" aria-hidden="true" /> : null}
           </button>
         ) : (
           <>
@@ -178,8 +180,10 @@ function Branch<T>(props: ThreadProps<T> & { readonly composer: ReactNode }) {
 
             {hidden > 0 ? (
               <button type="button" className="thread__more" onClick={() => setShowAll(true)}>
-                <Icon name="chevron" />
-                Show {plural(hidden, 'more reply', 'more replies')}
+                <span className="thread__more-label">
+                  <Icon name="chevron" />
+                  Show {plural(hidden, 'more reply', 'more replies')}
+                </span>
               </button>
             ) : null}
 

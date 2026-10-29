@@ -80,6 +80,10 @@
   operation: promote
   roles: [community.owner, community.moderator]
 
+- resource: mention
+  operation: all
+  roles: [community.owner, community.moderator]
+
 # Moderation
 
 # Remove and restore content, review the queue.

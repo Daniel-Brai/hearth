@@ -5,6 +5,7 @@
  */
 import type { RoomAccess } from './room-access';
 import type { RoomModeration } from './room-moderation';
+import type { RoomSettings } from './room-settings';
 import type { RoomType } from './room-type';
 
 export interface Room {
@@ -18,6 +19,7 @@ export interface Room {
   position: number;
   /** Who can see a private room, for people with room.update */
   role_ids?: string[];
+  settings: RoomSettings;
   slug: string;
   /** @nullable */
   topic: string | null;

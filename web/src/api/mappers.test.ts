@@ -1,6 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import type { ChatMessage, Community, CommunityDetail, Post, Reply } from '@/generated/schemas';
-import { ageOf, hueOf, paragraphs, toCommunity, toMessage, toPost, toReply } from './mappers';
+import type {
+  ChatMessage,
+  Community,
+  CommunityDetail,
+  Post,
+  Reply,
+  RoomSettings,
+} from '@/generated/schemas';
+import {
+  ageOf,
+  hueOf,
+  paragraphs,
+  toCommunity,
+  toMessage,
+  toPost,
+  toReply,
+  toRoomSettings,
+} from './mappers';
+
+const settings = {
+  link_previews: true,
+  sounds_enabled: true,
+  sounds_mode: 'everyone',
+  sounds_role_ids: [],
+  sounds_user_ids: [],
+} satisfies RoomSettings;
 
 const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString();
 
@@ -36,6 +60,7 @@ const community: Community = {
       position: 0,
       moderation: null,
       access: 'everyone',
+      settings,
       archived_at: null,
     },
     {
@@ -48,6 +73,7 @@ const community: Community = {
       position: 1,
       moderation: null,
       access: 'everyone',
+      settings,
       archived_at: null,
     },
     {
@@ -60,6 +86,7 @@ const community: Community = {
       position: 2,
       moderation: null,
       access: 'everyone',
+      settings,
       archived_at: at(5),
     },
   ],
@@ -193,6 +220,27 @@ describe('toPost and toReply', () => {
 });
 
 describe('toMessage', () => {
+  const sample = {
+    id: 'm4',
+    room_id: 'r1',
+    conversation_id: null,
+    reply_to_id: null,
+    author: { id: 'u1', username: 'ada', display_name: 'Ada', avatar_id: null, avatar_url: null },
+    body: 'Hello',
+    depth: 0,
+    child_count: 0,
+    status: 'published',
+    kind: 'text',
+    post_id: null,
+    deleted: false,
+    edited_at: null,
+    inserted_at: at(1),
+    attachments: [],
+    reactions: [],
+    preview_hidden: false,
+    mentions_all: false,
+  } satisfies ChatMessage;
+
   it('keeps the message it answers', () => {
     const message = {
       id: 'm2',
@@ -212,6 +260,7 @@ describe('toMessage', () => {
       attachments: [],
       reactions: [{ emoji: '🔥', count: 2, mine: true }],
       preview_hidden: false,
+      mentions_all: false,
     } satisfies ChatMessage;
 
     expect(toMessage(message)).toMatchObject({
@@ -242,11 +291,41 @@ describe('toMessage', () => {
       attachments: [],
       reactions: [],
       preview_hidden: false,
+      mentions_all: false,
     } satisfies ChatMessage;
 
     expect(toMessage(message)).toMatchObject({
       system: true,
       promoted: { id: 'p9', title: 'GenServer state after a restart' },
+    });
+  });
+
+  it('shows an action as a line with what they did', () => {
+    const message = { ...sample, body: 'is reviewing', kind: 'action' } satisfies ChatMessage;
+
+    expect(toMessage(message)).toMatchObject({ system: true, text: 'is reviewing' });
+  });
+
+  it('shows a played sound as a line naming it', () => {
+    const message = { ...sample, body: 'tada', kind: 'sound' } satisfies ChatMessage;
+
+    expect(toMessage(message)).toMatchObject({ system: true, text: 'played “tada”' });
+  });
+});
+
+describe('toRoomSettings', () => {
+  it('turns the server names into the ones the app uses', () => {
+    const settings = {
+      link_previews: false,
+      sounds_enabled: true,
+      sounds_mode: 'roles',
+      sounds_role_ids: ['r1'],
+      sounds_user_ids: [],
+    } satisfies RoomSettings;
+
+    expect(toRoomSettings(settings)).toEqual({
+      previews: false,
+      sounds: { enabled: true, mode: 'roles', roles: ['r1'], people: [] },
     });
   });
 });

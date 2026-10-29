@@ -3,6 +3,7 @@
  * Hearth
  * OpenAPI spec version: 2026-10-24
  */
+import type { SendMessageBodyKind } from './send-message-body-kind';
 
 export interface SendMessageBody {
   /** On an edit, left out keeps the current files */
@@ -12,6 +13,8 @@ export interface SendMessageBody {
    * @maxLength 4000
    */
   body: string;
+  /** An action is a /me line and a sound is a /play, whose body is the sound's name */
+  kind?: SendMessageBodyKind;
   /** @nullable */
   reply_to_id?: string | null;
 }

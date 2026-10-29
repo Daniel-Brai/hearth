@@ -189,7 +189,11 @@ export class MockGateway implements HearthGateway {
         (p) => p.email?.toLowerCase() === email.toLowerCase(),
       );
 
-      if (known) this.store.set((state) => (state.me = 'dan'));
+      if (known)
+        this.store.set((state) => {
+          state.me = 'dan';
+          state.session = 'ready';
+        });
 
       return ok({ known });
     },
@@ -207,6 +211,7 @@ export class MockGateway implements HearthGateway {
 
       this.store.set((state) => {
         state.me = 'dan';
+        state.session = 'ready';
 
         const me = state.people.dan!;
 
@@ -1195,7 +1200,13 @@ export class MockGateway implements HearthGateway {
         return fail('Unknown command');
       }
 
-      push({ who: this.me(), text: body, parent: opts.parent ?? null, files: opts.files ?? [] });
+      push({
+        who: this.me(),
+        text: body,
+        parent: opts.parent ?? null,
+        files: opts.files ?? [],
+        mentionsAll: cid !== 'dm' && /(^|\s)@all\b/i.test(body) && canDo(state, cid, 'mention.all'),
+      });
       void rid;
 
       return ok({});

@@ -8,11 +8,12 @@ defmodule Hearth.Communities.Room do
   alias Hearth.Common.T
   alias Hearth.Communities.Community
   alias Hearth.Communities.RoomRole
+  alias Hearth.Communities.RoomSettings
 
   @levels ~w[full reports none]a
   # The moderation level changes through Hearth.Moderation.set_level/3, which logs it
-  @fields ~w[type name topic position settings access]a
-  @changeable @fields -- [:type]
+  @fields ~w[type name topic position access]a
+  @changeable [:settings | @fields -- [:type]]
 
   schema "rooms" do
     field :type, Ecto.Enum, values: [:text, :voice], default: :text
@@ -21,9 +22,10 @@ defmodule Hearth.Communities.Room do
     field :topic, :string
     field :position, :integer, default: 0
     field :moderation, Ecto.Enum, values: @levels
-    field :settings, :map, default: %{}
     field :archived_at, :utc_datetime_usec
     field :access, Ecto.Enum, values: [:everyone, :roles], default: :everyone
+
+    embeds_one :settings, RoomSettings, on_replace: :update
 
     belongs_to :community, Community
     has_many :room_roles, RoomRole
@@ -39,7 +41,7 @@ defmodule Hearth.Communities.Room do
           topic: nil | String.t(),
           position: integer(),
           moderation: nil | :full | :reports | :none,
-          settings: map(),
+          settings: RoomSettings.t(),
           archived_at: nil | DateTime.t(),
           access: :everyone | :roles,
           community_id: T.id(),
@@ -53,6 +55,8 @@ defmodule Hearth.Communities.Room do
   def changeset(%__MODULE__{} = room, %{} = params) do
     room
     |> cast(params, @fields)
+    |> cast_embed(:settings)
+    |> default_settings()
     |> validate_required([:name])
     |> validate_length(:name, max: 40)
     |> validate_length(:topic, max: 200)
@@ -60,6 +64,13 @@ defmodule Hearth.Communities.Room do
     |> put_slug()
     |> validate_required([:slug])
     |> unique_constraint([:community_id, :slug], error_key: :name)
+  end
+
+  defp default_settings(changeset) do
+    case get_field(changeset, :settings) do
+      nil -> put_embed(changeset, :settings, %RoomSettings{})
+      %RoomSettings{} -> changeset
+    end
   end
 
   defp put_slug(%Changeset{data: %{slug: nil}} = changeset) do

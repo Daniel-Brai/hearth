@@ -73,7 +73,8 @@ defmodule HearthWeb.MessageController do
     "body" => ~V[string|max:4000],
     "attachment_ids" => ~V[list],
     "attachment_ids.*" => ~V[uuid],
-    "reply_to_id" => ~V[uuid]
+    "reply_to_id" => ~V[uuid],
+    "kind" => ~V[allowed:text,action,sound]
   }
 
   rate_limit :room_create, limit: 30, scale: :timer.seconds(30), by: :user
@@ -134,7 +135,8 @@ defmodule HearthWeb.MessageController do
     "body" => ~V[string|max:4000],
     "attachment_ids" => ~V[list],
     "attachment_ids.*" => ~V[uuid],
-    "reply_to_id" => ~V[uuid]
+    "reply_to_id" => ~V[uuid],
+    "kind" => ~V[allowed:text,action,sound]
   }
 
   rate_limit :conversation_create, limit: 30, scale: :timer.seconds(30), by: :user
@@ -184,7 +186,8 @@ defmodule HearthWeb.MessageController do
         message: message,
         authors: Authors.load(message),
         attachments: Attachments.load(message, :message),
-        reactions: Chat.list_reactions(auth, [message])
+        reactions: Chat.list_reactions(auth, [message]),
+        mentions_all: Chat.mentions_all([message])
       )
     end
   end
@@ -298,14 +301,20 @@ defmodule HearthWeb.MessageController do
         page: page,
         authors: Authors.load(messages),
         attachments: Attachments.load(messages, :message),
-        reactions: Chat.list_reactions(auth, messages)
+        reactions: Chat.list_reactions(auth, messages),
+        mentions_all: Chat.mentions_all(messages)
       )
     end
   end
 
   defp send_message(conn, params, auth, place) do
+    kind = Common.to_atom(params["kind"] || "text")
+
     attrs =
-      params |> Map.take(~w[body attachment_ids reply_to_id]) |> Common.atomize_string_keys()
+      params
+      |> Map.take(~w[body attachment_ids reply_to_id])
+      |> Common.atomize_string_keys()
+      |> Map.put(:kind, kind)
 
     with {:ok, message} <- Chat.send_message(auth, place, attrs) do
       conn
@@ -313,7 +322,8 @@ defmodule HearthWeb.MessageController do
       |> render(:create,
         message: message,
         authors: Authors.load(message),
-        attachments: Attachments.load(message, :message)
+        attachments: Attachments.load(message, :message),
+        mentions_all: Chat.mentions_all([message])
       )
     end
   end

@@ -15,6 +15,10 @@ defmodule Hearth.Common.TextTest do
       refute Text.valid_username?(nil)
     end
 
+    test "fails for a reserved name" do
+      refute Text.valid_username?("all")
+    end
+
     test "accepts valid username" do
       assert Text.valid_username?("ada")
       assert Text.valid_username?("lin_chen_2026")

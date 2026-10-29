@@ -47,6 +47,7 @@ export type ComposerProps = {
       }[]
     | undefined;
   readonly sounds?: readonly string[] | undefined;
+  readonly mentionAll?: boolean | undefined;
   // Without a handler there is no attach button and pasted or dropped files are ignored
   readonly attachments?: readonly Attachment[] | undefined;
   readonly onAttachmentsChange?: ((next: Attachment[]) => void) | undefined;
@@ -257,6 +258,7 @@ export function Composer({
   community,
   commands,
   sounds,
+  mentionAll,
   label = placeholder,
   attachments = NO_FILES,
   onAttachmentsChange,
@@ -277,7 +279,7 @@ export function Composer({
 
   const tech = isTech(state, community);
   const chat = variant === 'chat';
-  const options = { community, commands, sounds, chat };
+  const options = { community, commands, sounds, chat, mentionAll };
 
   useEffect(() => {
     if (autoFocus) textarea.current?.focus();
@@ -347,7 +349,7 @@ export function Composer({
             className="composer__mirror"
             aria-hidden="true"
             dangerouslySetInnerHTML={{
-              __html: highlight(state, value, { commands, sounds, chat }),
+              __html: highlight(state, value, { commands, sounds, chat, mentionAll }),
             }}
           />
           <textarea

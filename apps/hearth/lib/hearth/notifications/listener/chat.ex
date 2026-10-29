@@ -8,6 +8,7 @@ defmodule Hearth.Notifications.Listener.Chat do
   alias Hearth.Notifications
   alias Hearth.Notifications.Mentions
   alias Hearth.Notifications.Notices
+  alias Hearth.Notifications.Worker.TellRoom
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(_opts) do
@@ -44,15 +45,21 @@ defmodule Hearth.Notifications.Listener.Chat do
          {:ok, %{kind: :text} = message} <- Chat.get_message(event.message_id),
          {:ok, room} <- Communities.get_room(id: room_id),
          {:ok, community} <- Communities.get_community(id: room.community_id) do
-      Mentions.notify(%{
-        actor: actor,
-        community: community,
-        room: room,
-        body: message.body,
-        subject: {"message", message.id},
-        data: %{message_id: message.id, room_slug: room.slug},
-        url: "/c/#{community.slug}/#{place(room)}/#{room.slug}"
-      })
+      url = "/c/#{community.slug}/#{place(room)}/#{room.slug}"
+
+      told =
+        Mentions.notify(%{
+          actor: actor,
+          community: community,
+          room: room,
+          body: message.body,
+          subject: {"message", message.id},
+          data: %{message_id: message.id, room_slug: room.slug},
+          url: url
+        })
+
+      if Chat.mentions_all?(actor, room, message.body),
+        do: {:ok, _job} = TellRoom.enqueue(message.id, url, told)
     end
 
     {:noreply, state}

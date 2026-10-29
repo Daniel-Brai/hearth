@@ -1,6 +1,8 @@
 import type { HearthGateway, Result } from '@/data/gateway';
 import { fail, ok } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
+import { SOUNDS } from '@/domain/catalog';
+import { canDo, soundAccess } from '@/domain/selectors';
 import type { Attachment, LinkPreview, Message } from '@/domain/types';
 import {
   conversationCreate,
@@ -17,6 +19,8 @@ import {
 } from '@/generated/api/chat/chat';
 import { postPromote } from '@/generated/api/forum/forum';
 import { linkPreviewShow } from '@/generated/api/media/media';
+import type { SendMessageBodyKind } from '@/generated/schemas';
+import { isTune, playTune } from '@/runtime/sounds';
 import { sendFiles } from '../attachments';
 import { toAttachments, toLinkPreview, toMessage, toPerson, timeOf } from '../mappers';
 import { getRealtime } from '../realtime';
@@ -27,7 +31,14 @@ import { call, errorCode, failed } from './context';
 
 type Place = { kind: 'room' | 'conversation'; id: string };
 type Paging = { parent_id?: string };
-type Body = { body: string; reply_to_id: string | null; attachment_ids: string[] };
+type Body = {
+  body: string;
+  reply_to_id: string | null;
+  attachment_ids: string[];
+  kind: SendMessageBodyKind;
+};
+
+type Outgoing = { text: string; kind: SendMessageBodyKind };
 
 const topicOf = (place: Place): Topic => `${place.kind}:${place.id}`;
 
@@ -67,10 +78,88 @@ const setBoost = (state: AppState, key: string, id: string, emoji: string, on: b
   if (message) setMine(message, emoji, on);
 };
 
+const SHRUG = '¯\\_(ツ)_/¯';
+
+const DM_ONLY = 'Not available in direct messages';
+
 export function createChatGateway(
   ctx: GatewayContext,
   loadCommunity: (cid: string) => Promise<Result>,
+  setTopic: (key: string, topic: string) => void,
 ) {
+  const commands = (key: string) => {
+    const dm = key.startsWith('dm/');
+    const state = ctx.store.get();
+    const manages = !dm && canDo(state, key.split('/')[0], 'room.update');
+    const sound = dm ? ({ ok: false, reason: DM_ONLY } as const) : soundAccess(state, key);
+
+    return [
+      {
+        cmd: 'play',
+        args: 'sound',
+        desc: 'Play a sound for everyone here',
+        ok: sound.ok,
+        reason: sound.ok ? undefined : sound.reason,
+        icon: 'music',
+      },
+      { cmd: 'me', args: 'action', desc: "Say what you're doing", ok: true, icon: 'user' },
+      { cmd: 'shrug', args: 'message', desc: 'Add ' + SHRUG, ok: true, icon: 'smile' },
+      {
+        cmd: 'topic',
+        args: 'new topic',
+        desc: 'Change the room topic',
+        ok: manages,
+        reason: dm ? DM_ONLY : "You can't change the topic here",
+        icon: 'pencil',
+      },
+    ];
+  };
+
+  /** What to send for a command, or null when the command did all its work here */
+  const runCommand = (key: string, text: string): Result<Outgoing | null> => {
+    const [, name = '', arg = ''] = /^\/(\S*)\s*([\s\S]*)$/.exec(text) ?? [];
+    const cmd = commands(key).find((c) => c.cmd === name.toLowerCase());
+    const rest = arg.trim();
+
+    if (!cmd)
+      return fail(
+        name
+          ? "There's no /" + name + ' command. Type / to see the ones you can use.'
+          : 'Type a command after the slash, like /play tada.',
+      );
+
+    if (!cmd.ok) return fail(cmd.reason + '.');
+
+    if (cmd.cmd === 'shrug')
+      return ok({ text: [rest, SHRUG].filter(Boolean).join(' '), kind: 'text' });
+
+    if (cmd.cmd === 'me') {
+      if (!rest) return fail("Say what you're doing, like /me is reviewing the PR.");
+
+      return ok({ text: rest, kind: 'action' });
+    }
+
+    if (cmd.cmd === 'play') {
+      const sound = rest.toLowerCase();
+
+      if (!sound) return fail('Pick a sound, like /play tada.');
+
+      if (!SOUNDS.includes(sound)) {
+        const examples = SOUNDS.slice(0, 4).join(', ');
+
+        return fail(`“${rest}” isn't a sound. Try ${examples} or another from the list.`);
+      }
+
+      return ok({ text: sound, kind: 'sound' });
+    }
+
+    if (!rest) return fail('Write the new topic after /topic.');
+
+    setTopic(key, rest);
+
+    return ok(null);
+  };
+
   const placeOf = async (key: string): Promise<Result<Place>> => {
     if (key.startsWith('dm/')) {
       const who = key.slice(3);
@@ -176,12 +265,17 @@ export function createChatGateway(
 
       ctx.watch(topicOf(place.value), (realtime, t) => {
         const stops = [
+          // A reply isn't in the room's top level, so its parent's answers load too
           realtime.onPush(t, 'MessageCreated', (e) => {
             setTyping(key, e.author_id, false);
             void fetchInto(key, null);
+            if (e.reply_to_id) void fetchInto(key, e.reply_to_id);
           }),
           realtime.onPush(t, 'typing', (e) => {
             if (e.user_id !== ctx.store.get().me) setTyping(key, e.user_id, e.typing);
+          }),
+          realtime.onPush(t, 'SoundPlayed', (e) => {
+            if (ctx.store.get().settings.sounds && isTune(e.sound)) playTune(e.sound);
           }),
           realtime.onPush(t, 'MessageEdited', (e) => void refresh(key, e.message_id, false)),
           // The reactor's own screen changed when they tapped, so only others take the count
@@ -295,23 +389,35 @@ export function createChatGateway(
       getRealtime().send(topic, 'typing', { typing: on });
     },
 
-    send: (key, text, opts) => {
+    send: (key, typed, opts) => {
       const me = ctx.store.get().me;
 
       if (!me) return fail('Sign in to send messages.');
 
+      const command: Result<Outgoing | null> = typed.startsWith('/')
+        ? runCommand(key, typed)
+        : ok({ text: typed, kind: 'text' });
+
+      if (!command.ok) return command;
+
+      if (command.value === null) return ok({});
+
+      const { text, kind } = command.value;
+
       // The message itself clears the others' indicator, so the next word starts a new one
       typingSent.delete(key);
 
-      const files = opts?.files ?? [];
+      const files = kind === 'text' ? (opts?.files ?? []) : [];
+      const parent = kind === 'text' ? (opts?.parent ?? null) : null;
 
       const draft: Message = {
         id: 'pending-' + ctx.store.nextId('m'),
         who: me,
-        text,
+        text: kind === 'sound' ? `played “${text}”` : text,
         time: timeOf(new Date().toISOString()),
         boosts: [],
-        parent: opts?.parent ?? null,
+        parent,
+        ...(kind === 'text' ? {} : { system: true }),
         ...(files.length ? { files } : {}),
       };
 
@@ -324,8 +430,9 @@ export function createChatGateway(
             ? await call(() =>
                 createMessage(place.value, {
                   body: sent.value.body,
-                  reply_to_id: opts?.parent ?? null,
+                  reply_to_id: parent,
                   attachment_ids: sent.value.ids,
+                  kind,
                 }),
               )
             : null;
@@ -346,7 +453,7 @@ export function createChatGateway(
       return ok({});
     },
 
-    commands: () => [],
+    commands,
 
     edit: (key, id, patch) => {
       if (!patch.text.trim() && patch.files.length === 0)

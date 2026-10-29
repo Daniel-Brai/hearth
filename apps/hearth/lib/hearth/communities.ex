@@ -62,6 +62,7 @@ defmodule Hearth.Communities do
   alias Hearth.Communities.Room
   alias Hearth.Communities.RoomAccessChanged
   alias Hearth.Communities.RoomChanged
+  alias Hearth.Communities.RoomSettings
   alias Hearth.Communities.Template
   alias Hearth.IAM
   alias Hearth.IAM.Membership
@@ -394,6 +395,15 @@ defmodule Hearth.Communities do
     nil
     |> hidden_room_ids(community_ids)
     |> Enum.reject(&MapSet.member?(seen, &1))
+  end
+
+  # People who manage rooms can play whenever sounds are on
+  @spec can_play?(User.t(), Room.t()) :: boolean()
+  def can_play?(%User{}, %Room{settings: %{sounds_enabled: false}}), do: false
+
+  def can_play?(%User{id: id} = user, %Room{} = room) do
+    IAM.can?(user, :update, %{type: :room, community_id: room.community_id}) or
+      RoomSettings.sound_allowed?(room.settings, id, IAM.role_ids(user, [room.community_id]))
   end
 
   @spec moderation_level(Community.t(), nil | Room.t()) :: :full | :reports | :none

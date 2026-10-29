@@ -10,6 +10,7 @@ defmodule Hearth.Chat.Message do
   alias Hearth.Common.T
 
   @changeable [:body, :attachment_ids]
+  @sounds ~w[tada rimshot trombone yodel crickets drama horn 56k]
 
   @flop_options [
     filterable: ~w[room_id conversation_id reply_to_id]a,
@@ -31,7 +32,7 @@ defmodule Hearth.Chat.Message do
     field :descendant_count, :integer, default: 0
     field :recent_repliers, {:array, Ecto.UUID}, default: []
     field :status, Ecto.Enum, values: ~w[published pending removed]a, default: :published
-    field :kind, Ecto.Enum, values: [:text, :promoted], default: :text
+    field :kind, Ecto.Enum, values: ~w[text promoted action sound]a, default: :text
     field :post_id, Ecto.UUID
     field :edited_at, :utc_datetime_usec
     field :preview_hidden_at, :utc_datetime_usec
@@ -55,7 +56,7 @@ defmodule Hearth.Chat.Message do
           descendant_count: integer(),
           recent_repliers: [T.id()],
           status: :published | :pending | :removed,
-          kind: :text | :promoted,
+          kind: :text | :promoted | :action | :sound,
           post_id: nil | T.id(),
           edited_at: nil | DateTime.t(),
           preview_hidden_at: nil | DateTime.t(),
@@ -63,11 +64,15 @@ defmodule Hearth.Chat.Message do
           attachment_ids: nil | [T.id()]
         }
 
+  @spec sounds() :: [String.t()]
+  def sounds, do: @sounds
+
   @spec changeset(struct(), map()) :: Changeset.t()
   def changeset(%__MODULE__{} = message, %{} = params) do
     message
     |> cast(params, @changeable)
     |> validate_body()
+    |> validate_kind()
     |> validate_length(:body, max: 4_000)
     |> check_constraint(:reply_to_id,
       name: :parent_same_place,
@@ -91,6 +96,19 @@ defmodule Hearth.Chat.Message do
       _none -> validate_required(changeset, [:body])
     end
   end
+
+  defp validate_kind(changeset) do
+    case get_field(changeset, :kind) do
+      :sound -> validate_inclusion(changeset, :body, @sounds)
+      :action -> validate_change(changeset, :attachment_ids, &no_files/2)
+      _other -> changeset
+    end
+  end
+
+  defp no_files(:attachment_ids, []), do: []
+
+  defp no_files(:attachment_ids, [_file | _rest]),
+    do: [attachment_ids: "can't come with an action"]
 
   @type viewer :: nil | :all | T.id()
 

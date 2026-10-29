@@ -13,7 +13,15 @@ import type {
   PostKind,
   Reply,
 } from '@/generated/schemas';
-import { toCommunity, toKind, toMessage, toPerson, toPost, toReply } from '../mappers';
+import {
+  toCommunity,
+  toKind,
+  toMessage,
+  toPerson,
+  toPost,
+  toReply,
+  toRoomSettings,
+} from '../mappers';
 import { useUi } from '@/runtime/ui-store';
 import { getRealtime } from '../realtime';
 import type { Realtime, Topic } from '../realtime';
@@ -143,15 +151,13 @@ export class GatewayContext {
       state.communities[slug] = next;
       if (community.owner) state.people[community.owner.id] ??= toPerson(community.owner);
 
-      // The server keeps only the topic and the rest of a room's settings stay in this browser
       for (const room of community.rooms) {
-        if (room.type !== 'text') continue;
-
         const key = `${slug}/${room.slug}`;
 
         const settings = {
           ...(state.roomSettings[key] ?? roomDefaults()),
           topic: room.topic,
+          ...toRoomSettings(room.settings),
         };
 
         // A room with no level of its own follows the community
@@ -268,7 +274,7 @@ export class GatewayContext {
     this.store.set((state) => {
       for (const m of messages) if (m.author) state.people[m.author.id] ??= toPerson(m.author);
 
-      // Messages already here take the server's text so edits and deletes show
+      // Messages already here take the server's text and answer counts so edits, deletes and new replies show
       const fresh = new Map(messages.map((m) => [m.id, toMessage(m)]));
 
       const kept = (state.chats[key] ?? []).map((m) => {
@@ -280,6 +286,7 @@ export class GatewayContext {
               edited: now.edited ?? false,
               system: now.system ?? false,
               moderated: now.moderated ?? false,
+              ...(now.answerCounts ? { answerCounts: now.answerCounts } : {}),
             }
           : m;
       });

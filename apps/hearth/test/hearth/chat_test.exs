@@ -13,6 +13,7 @@ defmodule Hearth.ChatTest do
   alias Hearth.Chat.MessageRemoved
   alias Hearth.Chat.RoomActivity
   alias Hearth.Chat.RoomRead
+  alias Hearth.Chat.SoundPlayed
   alias Hearth.Communities
   alias Hearth.Media
   alias Hearth.Repo.Page
@@ -98,6 +99,72 @@ defmodule Hearth.ChatTest do
       assert attachment.media_id == file.id
     end
 
+    test "fails to play a sound in a direct message", %{owner: owner, member: member} do
+      {:ok, conversation} = Chat.start_direct(member, owner)
+
+      assert {:error, :forbidden} =
+               Chat.send_message(member, conversation, %{body: "tada", kind: :sound})
+    end
+
+    test "fails to play a sound that isn't one", %{member: member, room: room} do
+      assert {:error, changeset} = Chat.send_message(member, room, %{body: "x", kind: :sound})
+      assert %{body: ["is invalid"]} = errors_on(changeset)
+    end
+
+    test "fails to play when sounds are off", %{owner: owner, community: community, room: room} do
+      room = TestUtils.put_room_settings!(community, room, %{sounds_enabled: false})
+
+      assert {:error, :forbidden} = Chat.send_message(owner, room, %{body: "tada", kind: :sound})
+    end
+
+    test "fails to play if not picked", %{member: member, community: community, room: room} do
+      room = TestUtils.put_room_settings!(community, room, %{sounds_mode: :people})
+
+      assert {:error, :forbidden} = Chat.send_message(member, room, %{body: "tada", kind: :sound})
+    end
+
+    test "fails to send an action with files", %{member: member, room: room} do
+      [file] = TestUtils.upload_random_attachments!(member, 1)
+      params = %{body: Lorem.sentence(), kind: :action, attachment_ids: [file.id]}
+
+      assert {:error, changeset} = Chat.send_message(member, room, params)
+      assert %{attachment_ids: [_error]} = errors_on(changeset)
+    end
+
+    test "sends an action", %{member: member, room: room} do
+      params = %{body: Lorem.sentence(), kind: :action}
+
+      assert {:ok, %Message{kind: :action}} = Chat.send_message(member, room, params)
+      assert_receive %MessageCreated{}
+      refute_receive %SoundPlayed{}
+    end
+
+    test "plays a sound", %{member: member, room: room} do
+      %{id: room_id} = room
+
+      assert {:ok, %Message{kind: :sound} = message} =
+               Chat.send_message(member, room, %{body: "tada", kind: :sound})
+
+      assert_receive %SoundPlayed{room_id: ^room_id, sound: "tada"} = event
+      assert event.message_id == message.id
+    end
+
+    test "plays a sound in a voice room's chat", %{member: member, community: community} do
+      voice = TestUtils.get_room!(community, type: :voice)
+
+      assert {:ok, %Message{kind: :sound}} =
+               Chat.send_message(member, voice, %{body: "horn", kind: :sound})
+    end
+
+    test "plays a sound for a picked role", %{member: member, community: community, room: room} do
+      role_id = TestUtils.get_role_id!(community, "member")
+      settings = %{sounds_mode: :roles, sounds_role_ids: [role_id]}
+      room = TestUtils.put_room_settings!(community, room, settings)
+
+      assert {:ok, %Message{kind: :sound}} =
+               Chat.send_message(member, room, %{body: "tada", kind: :sound})
+    end
+
     test "send message", %{member: member, room: room} do
       %{id: author_id} = member
       params = %{body: Lorem.sentence()}
@@ -120,13 +187,14 @@ defmodule Hearth.ChatTest do
     test "answer a message", %{owner: owner, member: member, room: room} do
       %{id: member_id} = member
       {:ok, question} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+      %{id: question_id} = question
       params = %{body: Lorem.sentence(), reply_to_id: question.id}
 
       assert {:ok, %Message{depth: 1} = answer} = Chat.send_message(owner, room, params)
       assert answer.thread_root_id == question.id
       assert {:ok, %Message{child_count: 1} = question} = Chat.get_message(question.id)
       assert question.recent_repliers == [owner.id]
-      assert_receive %MessageCreated{reply_to_author_id: ^member_id}
+      assert_receive %MessageCreated{reply_to_id: ^question_id, reply_to_author_id: ^member_id}
     end
   end
 
@@ -179,6 +247,12 @@ defmodule Hearth.ChatTest do
       {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["member"])
 
       assert {:error, :not_found} = Chat.edit_message(member, message, %{body: Lorem.sentence()})
+    end
+
+    test "fails on a sound", %{member: member, room: room} do
+      {:ok, message} = Chat.send_message(member, room, %{body: "tada", kind: :sound})
+
+      assert {:error, :forbidden} = Chat.edit_message(member, message, %{body: "horn"})
     end
 
     test "replaces the files", %{member: member, room: room} do
@@ -409,6 +483,22 @@ defmodule Hearth.ChatTest do
 
       assert group.name == name
       assert [%Conversation{}] = Chat.list_conversations(user)
+    end
+  end
+
+  describe "mentions_all?/3" do
+    test "returns false without mention.all", %{member: member, room: room} do
+      refute Chat.mentions_all?(member, room, "Hello @all")
+    end
+
+    test "returns false without @all", %{owner: owner, room: room} do
+      refute Chat.mentions_all?(owner, room, "Hello everyone")
+    end
+
+    test "returns true for someone with mention.all", %{community: community, room: room} do
+      announcer = TestUtils.join_with_permissions!(community, ~w[message.create mention.all])
+
+      assert Chat.mentions_all?(announcer, room, "Hello @all")
     end
   end
 

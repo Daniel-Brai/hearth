@@ -90,6 +90,37 @@ defmodule HearthWeb.RoomControllerTest do
       assert response["access"] == "everyone"
     end
 
+    test "fails with an unknown sound mode", %{conn: conn, owner: owner, community: community} do
+      room = TestUtils.get_room!(community, type: :text)
+      body = %{settings: %{sounds_mode: "nobody"}}
+
+      assert %{"errors" => errors} =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/rooms/#{room.id}", body)
+               |> valid_response(422)
+
+      assert [_error] = errors["settings.sounds_mode"]
+    end
+
+    test "changes the settings", %{conn: conn, owner: owner, community: community} do
+      room = TestUtils.get_room!(community, type: :text)
+
+      body = %{
+        settings: %{link_previews: false, sounds_mode: "people", sounds_user_ids: [owner.id]}
+      }
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/rooms/#{room.id}", body)
+               |> valid_response(200)
+
+      assert response["settings"]["sounds_mode"] == "people"
+      assert response["settings"]["sounds_user_ids"] == [owner.id]
+      assert response["settings"]["sounds_enabled"]
+    end
+
     test "changes a room", %{conn: conn, owner: owner, community: community} do
       {:ok, room} = Communities.create_room(owner, community, %{name: Lorem.word()})
       body = %{topic: Lorem.sentence()}

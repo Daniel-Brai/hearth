@@ -208,6 +208,8 @@ export type Message = {
   answerCounts?: AnswerCounts;
   edited?: boolean;
   previewHidden?: boolean;
+  // Its @all came from someone allowed to ping everyone in the room
+  mentionsAll?: boolean;
   system?: boolean;
   moderated?: boolean;
   promoted?: { id: string; title: string };

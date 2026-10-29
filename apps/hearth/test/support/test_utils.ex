@@ -687,6 +687,17 @@ defmodule Hearth.TestUtils do
     room
   end
 
+  def put_room_settings!(community, room, changes) do
+    {:ok, owner} = Accounts.get_user(id: community.owner_id)
+    {:ok, room} = Communities.update_room(owner, room, %{settings: changes})
+
+    room
+  end
+
+  def get_role_id!(community, key) do
+    community.id |> IAM.list_roles() |> Enum.find(&(&1.key == key)) |> Map.fetch!(:id)
+  end
+
   def create_random_voice_room!(community) do
     {:ok, owner} = Accounts.get_user(id: community.owner_id)
 

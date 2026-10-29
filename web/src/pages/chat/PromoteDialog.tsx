@@ -16,7 +16,7 @@ import {
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { tintStyle } from '@/domain/format';
-import { displayName, initials, person, photoOf, postableKinds } from '@/domain/selectors';
+import { authorName, initials, person, photoOf, postableKinds } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
 import { Markdown } from '@/features/markdown/Markdown';
 import { plainTextWithoutCode } from '@/features/markdown/plain-text';
@@ -140,7 +140,7 @@ function PickedMessage({
   readonly cid: string | null;
 }) {
   const view = useAppState((state) => ({
-    name: displayName(state, message.who),
+    name: authorName(state, message.who),
     hue: person(state, message.who).hue,
     initials: initials(state, message.who),
     photo: photoOf(state, message.who),

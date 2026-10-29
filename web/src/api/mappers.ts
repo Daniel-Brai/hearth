@@ -10,6 +10,7 @@ import type {
   Post as ApiPost,
   PostKind as ApiPostKind,
   Reply as ApiReply,
+  RoomSettings as ApiRoomSettings,
   Transcript as ApiTranscript,
   UserSummary,
   VoiceRecording,
@@ -29,6 +30,7 @@ import type {
   Recording,
   Reply,
   Room,
+  RoomSettings,
   Template,
   Transcript,
   VoiceRoom,
@@ -256,17 +258,37 @@ export const toLinkPreview = (preview: ApiLinkPreview): LinkPreview => ({
   image: preview.image_url,
 });
 
+function textOf(message: ChatMessage): string {
+  if (message.status === 'removed') return 'Removed by a moderator';
+  if (message.body === null) return 'Message deleted';
+  if (message.kind === 'sound') return `played “${message.body}”`;
+
+  return message.body;
+}
+
+export const toRoomSettings = (
+  settings: ApiRoomSettings,
+): Pick<RoomSettings, 'previews' | 'sounds'> => ({
+  previews: settings.link_previews,
+  sounds: {
+    enabled: settings.sounds_enabled,
+    mode: settings.sounds_mode,
+    roles: settings.sounds_role_ids,
+    people: settings.sounds_user_ids,
+  },
+});
+
 export const toMessage = (message: ChatMessage): Message => ({
   id: message.id,
   who: message.author?.id ?? '',
-  text:
-    message.status === 'removed' ? 'Removed by a moderator' : (message.body ?? 'Message deleted'),
+  text: textOf(message),
   time: timeOf(message.inserted_at),
   boosts: message.reactions.map((r) => ({ e: r.emoji, n: r.count, mine: r.mine })),
   previewHidden: message.preview_hidden,
+  mentionsAll: message.mentions_all,
   parent: message.reply_to_id,
   edited: message.edited_at !== null,
-  system: message.deleted || message.status === 'removed' || message.kind === 'promoted',
+  system: message.deleted || message.status === 'removed' || message.kind !== 'text',
   moderated: message.status === 'removed',
   ...(message.kind === 'promoted' && message.post_id
     ? { promoted: { id: message.post_id, title: message.body ?? '' } }

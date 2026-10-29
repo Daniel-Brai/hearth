@@ -9,13 +9,14 @@ defmodule Hearth.Chat.Command.SendMessage do
 
   @tree [parent: :reply_to_id, root: :thread_root_id]
 
+  # Fields is the place and the kind, such as [room_id: id, kind: :action]
   @spec execute(User.t(), keyword(), nil | Message.t(), map()) ::
           {:ok, Message.t()}
           | {:error, :too_many_attachments | :invalid_attachment | Changeset.t()}
-  def execute(%User{} = author, place, parent, %{} = params) when is_list(place) do
+  def execute(%User{} = author, fields, parent, %{} = params) when is_list(fields) do
     message =
       %Message{author_id: author.id}
-      |> struct!(place)
+      |> struct!(fields)
       |> struct!(Tree.place(parent, @tree))
 
     Repo.transact(fn ->

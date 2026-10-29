@@ -42,14 +42,16 @@ export type ChatThread = {
 export function chatThreads(list: readonly Message[]): ChatThread[] {
   const byId = new Map(list.map((m) => [m.id, m]));
 
-  const rootOf = (m: Message) => {
+  /** A reply whose thread hasn't loaded has no root yet, so it waits for that thread instead of showing alone */
+  const rootOf = (m: Message): string | null => {
     let current = m;
     const seen = new Set([m.id]);
 
     while (current.parent) {
       const parent = byId.get(current.parent);
 
-      if (!parent || seen.has(parent.id)) break;
+      if (!parent) return null;
+      if (seen.has(parent.id)) break;
 
       seen.add(parent.id);
       current = parent;
@@ -66,6 +68,8 @@ export function chatThreads(list: readonly Message[]): ChatThread[] {
     if (m.day) pendingDay = m.day;
 
     const root = rootOf(m);
+
+    if (root === null) continue;
 
     if (root !== m.id) {
       const replies = repliesOf.get(root);

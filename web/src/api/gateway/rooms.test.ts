@@ -108,13 +108,65 @@ describe('rooms.updateSettings', () => {
     await vi.waitFor(() => expect(store.get().roomSettings['gardeners/general']?.topic).toBeNull());
   });
 
-  it('keeps previews in this browser without asking the server', async () => {
-    const { gateway: g } = await loaded();
+  it('puts the previews back when the server refuses them', async () => {
+    const { store, gateway: g } = await loaded();
+
+    routes['PATCH /api/rooms/r1'] = {
+      status: 403,
+      body: { message: "You can't do that.", code: 'forbidden' },
+    };
 
     g.rooms.updateSettings('gardeners/general', { previews: false });
-
     expect(g.rooms.settings('gardeners/general').previews).toBe(false);
-    expect(sent.some((r) => r.method === 'PATCH')).toBe(false);
+
+    await vi.waitFor(() =>
+      expect(store.get().roomSettings['gardeners/general']?.previews).toBe(true),
+    );
+  });
+
+  it('saves who can play sounds with the room', async () => {
+    const { gateway: g } = await loaded();
+    const sounds = { enabled: true, mode: 'people' as const, roles: [], people: ['u2'] };
+
+    routes['PATCH /api/rooms/r1'] = { status: 200, body: room };
+
+    g.rooms.updateSettings('gardeners/general', { sounds });
+
+    await vi.waitFor(() =>
+      expect(sent).toContainEqual({
+        method: 'PATCH',
+        path: '/api/rooms/r1',
+        body: {
+          settings: {
+            sounds_enabled: true,
+            sounds_mode: 'people',
+            sounds_role_ids: [],
+            sounds_user_ids: ['u2'],
+          },
+        },
+      }),
+    );
+  });
+
+  it('shows the settings the server kept when the community loads', async () => {
+    const { gateway: g } = await loaded();
+    const settings = { ...room.settings, link_previews: false, sounds_enabled: false };
+
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: {
+        community: { ...community, rooms: [{ ...room, settings }] },
+        kinds: [kind],
+        membership: null,
+      },
+    };
+
+    await g.load.community('gardeners');
+
+    expect(g.rooms.settings('gardeners/general')).toMatchObject({
+      previews: false,
+      sounds: { enabled: false },
+    });
   });
 
   it('saves the topic, which shows when the community loads again', async () => {

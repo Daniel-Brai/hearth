@@ -1,6 +1,9 @@
 defmodule Hearth.Common.Text do
   @username_chars ~c"abcdefghijklmnopqrstuvwxyz0123456789_"
 
+  # @all mentions everyone in a room, so nobody can take it as a name
+  @reserved ["all"]
+
   @spec normalize(String.t()) :: String.t()
   def normalize(value) when is_binary(value) do
     value
@@ -10,9 +13,10 @@ defmodule Hearth.Common.Text do
 
   @spec valid_username?(term()) :: boolean()
   def valid_username?(value) when is_binary(value) and byte_size(value) in 3..20 do
-    value
-    |> String.to_charlist()
-    |> Enum.all?(&(&1 in @username_chars))
+    value not in @reserved and
+      value
+      |> String.to_charlist()
+      |> Enum.all?(&(&1 in @username_chars))
   end
 
   def valid_username?(_value), do: false

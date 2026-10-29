@@ -299,11 +299,17 @@
             "type": "string"
           },
           "kind": {
-            "description": "A promoted message is the room's note about a new post",
+            "description": "A promoted message is the room's note about a new post, an action is a /me line and a sound is a /play whose body is its name",
             "enum": [
               "text",
-              "promoted"
+              "promoted",
+              "action",
+              "sound"
             ]
+          },
+          "mentions_all": {
+            "description": "Its @all notified everyone who can see the room",
+            "type": "boolean"
           },
           "post_id": {
             "description": "The post a promoted note points at",
@@ -363,7 +369,8 @@
           "inserted_at",
           "attachments",
           "reactions",
-          "preview_hidden"
+          "preview_hidden",
+          "mentions_all"
         ],
         "type": "object"
       },
@@ -2682,6 +2689,7 @@
                 "invite.create",
                 "invite.update",
                 "member.ban",
+                "mention.all",
                 "message.create",
                 "post.answer",
                 "post.create",
@@ -2772,6 +2780,13 @@
               "null"
             ]
           },
+          "reply_to_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "room_id": {
             "format": "uuid",
             "type": [
@@ -2785,6 +2800,7 @@
           "room_id",
           "conversation_id",
           "author_id",
+          "reply_to_id",
           "reply_to_author_id"
         ],
         "type": "object"
@@ -4851,6 +4867,9 @@
             },
             "type": "array"
           },
+          "settings": {
+            "$ref": "#/components/schemas/RoomSettings"
+          },
           "slug": {
             "type": "string"
           },
@@ -4877,6 +4896,7 @@
           "position",
           "moderation",
           "access",
+          "settings",
           "archived_at"
         ],
         "type": "object"
@@ -4916,6 +4936,54 @@
         "required": [
           "community_id",
           "room_id"
+        ],
+        "type": "object"
+      },
+      "RoomSettings": {
+        "title": "RoomSettings",
+        "additionalProperties": false,
+        "properties": {
+          "link_previews": {
+            "description": "Show link cards under messages",
+            "type": "boolean"
+          },
+          "sounds_enabled": {
+            "description": "Off stops /play for everyone",
+            "type": "boolean"
+          },
+          "sounds_mode": {
+            "description": "Who can use /play",
+            "enum": [
+              "everyone",
+              "roles",
+              "people"
+            ]
+          },
+          "sounds_role_ids": {
+            "description": "The roles who can when the mode is roles",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "sounds_user_ids": {
+            "description": "The people who can when the mode is people",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "type": "array"
+          }
+        },
+        "required": [
+          "link_previews",
+          "sounds_enabled",
+          "sounds_mode",
+          "sounds_role_ids",
+          "sounds_user_ids"
         ],
         "type": "object"
       },
@@ -5099,6 +5167,14 @@
             "maxLength": 4000,
             "type": "string"
           },
+          "kind": {
+            "description": "An action is a /me line and a sound is a /play, whose body is the sound's name",
+            "enum": [
+              "text",
+              "action",
+              "sound"
+            ]
+          },
           "reply_to_id": {
             "format": "uuid",
             "type": [
@@ -5256,6 +5332,34 @@
         "required": [
           "url",
           "headers"
+        ],
+        "type": "object"
+      },
+      "SoundPlayed": {
+        "title": "SoundPlayed",
+        "description": "On room:<id>, for everyone in the room to hear",
+        "properties": {
+          "author_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "message_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "room_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sound": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message_id",
+          "room_id",
+          "author_id",
+          "sound"
         ],
         "type": "object"
       },
@@ -6062,6 +6166,47 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "settings": {
+            "additionalProperties": false,
+            "description": "Only the choices sent change",
+            "properties": {
+              "link_previews": {
+                "description": "Show link cards under messages",
+                "type": "boolean"
+              },
+              "sounds_enabled": {
+                "description": "Off stops /play for everyone",
+                "type": "boolean"
+              },
+              "sounds_mode": {
+                "description": "Who can use /play",
+                "enum": [
+                  "everyone",
+                  "roles",
+                  "people"
+                ]
+              },
+              "sounds_role_ids": {
+                "description": "The roles who can when the mode is roles",
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              "sounds_user_ids": {
+                "description": "The people who can when the mode is people",
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 200,
+                "type": "array"
+              }
+            },
+            "type": "object"
           },
           "topic": {
             "maxLength": 200,

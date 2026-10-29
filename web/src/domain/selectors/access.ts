@@ -34,7 +34,7 @@ export const canAny = (state: AppState, perm: Permission) =>
   joinedCids(state).some((k) => canDo(state, k, perm));
 
 export const roleName = (state: AppState, cid: string, id: string) =>
-  rolesOf(state, cid).find((r) => r.id === id)?.name ?? id;
+  rolesOf(state, cid).find((r) => r.id === id || roleRef(r) === id)?.name ?? id;
 
 export const isInstanceAdmin = (state: AppState) => !!state.me && state.instance.isAdmin;
 

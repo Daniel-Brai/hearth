@@ -15,6 +15,7 @@ export const PERMISSIONS = [
   'post.pin',
   'post.answer',
   'chat.promote',
+  'mention.all',
   'content.remove',
   'member.ban',
   'role.update',

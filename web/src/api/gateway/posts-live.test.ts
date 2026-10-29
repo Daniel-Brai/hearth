@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { useUi } from '@/runtime/ui-store';
-import { community, gateway, kind, page, post, routes } from './test-support';
+import { community, gateway, kind, page, post, roomSettings, routes } from './test-support';
 
 type Handler = (payload: Record<string, unknown>) => void;
 
@@ -30,6 +30,7 @@ const voiceRoom = {
   topic: null,
   position: 1,
   moderation: null,
+  settings: roomSettings,
   archived_at: null,
 };
 

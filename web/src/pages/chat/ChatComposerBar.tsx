@@ -4,7 +4,7 @@ import { SOUNDS } from '@/domain/catalog';
 import { plural, typingLine } from '@/domain/format';
 import type { Message } from '@/domain/types';
 import { useAppState } from '@/data/store';
-import { displayName } from '@/domain/selectors';
+import { canDo, displayName } from '@/domain/selectors';
 import { Composer } from '@/features/composer/Composer';
 import { useUi } from '@/runtime/ui-store';
 import type { ChatTarget } from './chat-select';
@@ -86,6 +86,9 @@ export function MessageBox({
   const gateway = useGateway();
   const flash = useUi((s) => s.flash);
   const { editing, replying, replyingName } = composer;
+  const mentionAll = useAppState(
+    (state) => target.room !== null && canDo(state, target.cid, 'mention.all'),
+  );
 
   const join = () => {
     if (!target.cid) return;
@@ -109,6 +112,7 @@ export function MessageBox({
           sendLabel={editing ? 'Save' : 'Send'}
           maxLength={4000}
           community={target.cid}
+          mentionAll={mentionAll}
           commands={gateway.chat.commands(target.key)}
           sounds={SOUNDS}
           attachments={composer.files}

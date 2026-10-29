@@ -9,7 +9,12 @@ import { createSeedState } from '@/mocks/seed';
 import { useUi } from '@/runtime/ui-store';
 import { Composer } from './Composer';
 
-const request = { origin: 'https://hearth.example', zone: 'UTC', setStatus: () => undefined };
+const request = {
+  origin: 'https://hearth.example',
+  zone: 'UTC',
+  signedIn: false,
+  setStatus: () => undefined,
+};
 
 const files = (n: number) =>
   Array.from(

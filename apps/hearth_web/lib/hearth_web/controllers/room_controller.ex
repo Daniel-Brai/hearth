@@ -96,7 +96,15 @@ defmodule HearthWeb.RoomController do
     "position" => ~V[integer|min:0],
     "access" => ~V[allowed:everyone,roles],
     "role_ids" => ~V[list],
-    "role_ids.*" => ~V[uuid]
+    "role_ids.*" => ~V[uuid],
+    "settings" => ~V[map],
+    "settings.link_previews" => ~V[boolean],
+    "settings.sounds_enabled" => ~V[boolean],
+    "settings.sounds_mode" => ~V[allowed:everyone,roles,people],
+    "settings.sounds_role_ids" => ~V[list|max:50],
+    "settings.sounds_role_ids.*" => ~V[uuid],
+    "settings.sounds_user_ids" => ~V[list|max:200],
+    "settings.sounds_user_ids.*" => ~V[uuid]
   }
 
   def update(%Conn{assigns: %{auth: %{}}} = conn, params) do
@@ -104,7 +112,9 @@ defmodule HearthWeb.RoomController do
     %{"id" => id} = params
 
     changes =
-      params |> Map.take(~w[name topic position access role_ids]) |> Common.atomize_string_keys()
+      params
+      |> Map.take(~w[name topic position access role_ids settings])
+      |> Common.atomize_string_keys()
 
     with {:ok, room} <- Communities.view_room(auth, id: id, archived_at: nil),
          {:ok, room} <- Communities.update_room(auth, room, changes) do

@@ -8,6 +8,7 @@ defmodule Hearth.Notifications.Listener.ChatTest do
   alias Hearth.Notifications
   alias Hearth.Notifications.Listener.Chat, as: Listener
   alias Hearth.Notifications.Notification
+  alias Hearth.Notifications.Worker.TellRoom
   alias Hearth.Repo.Page
   alias Hearth.TestUtils
 
@@ -36,6 +37,7 @@ defmodule Hearth.Notifications.Listener.ChatTest do
       room_id: nil,
       conversation_id: conversation.id,
       author_id: member.id,
+      reply_to_id: nil,
       reply_to_author_id: nil
     }
 
@@ -62,6 +64,7 @@ defmodule Hearth.Notifications.Listener.ChatTest do
       room_id: room.id,
       conversation_id: nil,
       author_id: owner.id,
+      reply_to_id: nil,
       reply_to_author_id: nil
     }
 
@@ -82,11 +85,49 @@ defmodule Hearth.Notifications.Listener.ChatTest do
       room_id: room.id,
       conversation_id: nil,
       author_id: owner.id,
+      reply_to_id: nil,
       reply_to_author_id: nil
     }
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
     assert %Page{data: []} = Notifications.list_notifications(member)
+  end
+
+  test "ignores @all from someone without mention.all", %{member: member, community: community} do
+    room = TestUtils.get_room!(community, type: :text)
+    {:ok, message} = Chat.send_message(member, room, %{body: "Hello @all"})
+
+    event = %MessageCreated{
+      message_id: message.id,
+      room_id: room.id,
+      conversation_id: nil,
+      author_id: member.id,
+      reply_to_id: nil,
+      reply_to_author_id: nil
+    }
+
+    assert {:noreply, nil} = Listener.handle_info(event, nil)
+
+    refute_enqueued(worker: TellRoom)
+  end
+
+  test "tells the room about @all from someone with mention.all", %{community: community} do
+    announcer = TestUtils.join_with_permissions!(community, ~w[message.create mention.all])
+    room = TestUtils.get_room!(community, type: :text)
+    {:ok, message} = Chat.send_message(announcer, room, %{body: "Hello @all"})
+
+    event = %MessageCreated{
+      message_id: message.id,
+      room_id: room.id,
+      conversation_id: nil,
+      author_id: announcer.id,
+      reply_to_id: nil,
+      reply_to_author_id: nil
+    }
+
+    assert {:noreply, nil} = Listener.handle_info(event, nil)
+
+    assert_enqueued(worker: TellRoom, args: %{message_id: message.id})
   end
 
   test "tells the people a room message mentions", %{
@@ -102,6 +143,7 @@ defmodule Hearth.Notifications.Listener.ChatTest do
       room_id: room.id,
       conversation_id: nil,
       author_id: owner.id,
+      reply_to_id: nil,
       reply_to_author_id: nil
     }
 
@@ -126,6 +168,7 @@ defmodule Hearth.Notifications.Listener.ChatTest do
       room_id: room.id,
       conversation_id: nil,
       author_id: owner.id,
+      reply_to_id: nil,
       reply_to_author_id: nil
     }
 

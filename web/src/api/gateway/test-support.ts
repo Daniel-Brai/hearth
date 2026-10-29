@@ -49,6 +49,14 @@ export const me = {
 
 export const session = { access_token: 'token', token_type: 'Bearer', expires_in: 900, user: me };
 
+export const roomSettings = {
+  link_previews: true,
+  sounds_enabled: true,
+  sounds_mode: 'everyone',
+  sounds_role_ids: [],
+  sounds_user_ids: [],
+};
+
 export const community = {
   id: 'c1',
   slug: 'gardeners',
@@ -80,6 +88,8 @@ export const community = {
       topic: null,
       position: 0,
       moderation: null,
+      access: 'everyone',
+      settings: roomSettings,
       archived_at: null,
     },
   ],
@@ -153,12 +163,15 @@ export const message = (id: string, body: string) => ({
   depth: 0,
   child_count: 0,
   status: 'published',
+  kind: 'text',
+  post_id: null,
   deleted: false,
   edited_at: null,
   inserted_at: at,
   attachments: [],
   reactions: [],
   preview_hidden: false,
+  mentions_all: false,
 });
 
 export const file = {
@@ -180,6 +193,26 @@ export const file = {
       { width: 800, height: 600, format: 'webp', url: 'https://storage.test/plot.webp' },
     ],
   },
+};
+
+export const instance = {
+  name: 'Gardeners',
+  logo: null,
+  icon: null,
+  sign_in: ['email', 'github'],
+  community_creation: 'request',
+  push_public_key: null,
+  upload_limits: {
+    content_types: [],
+    max_image_bytes: 1,
+    max_video_bytes: 1,
+    max_video_seconds: 1,
+    max_file_bytes: 1,
+  },
+  screening: { enabled: true, image_floor: false },
+  transcription: { enabled: false },
+  voice: { enabled: true },
+  recording: { enabled: true },
 };
 
 export const page = (data: unknown[]) => ({

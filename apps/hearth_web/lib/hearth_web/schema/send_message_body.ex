@@ -12,7 +12,12 @@ defmodule HearthWeb.Schema.SendMessageBody do
         array_of(uuid(),
           description: "On an edit, left out keeps the current files"
         ),
-      reply_to_id: nullable(uuid())
+      reply_to_id: nullable(uuid()),
+      kind:
+        enum(~w[text action sound],
+          description:
+            "An action is a /me line and a sound is a /play, whose body is the sound's name"
+        )
     }
   }
 end

@@ -578,6 +578,25 @@ defmodule Hearth.CommunitiesTest do
       assert_receive %RoomAccessChanged{room_id: ^room_id}
     end
 
+    test "fails with an unknown sound mode", %{owner: owner, community: community} do
+      [room | _rooms] = Communities.list_rooms(community)
+
+      assert {:error, changeset} =
+               Communities.update_room(owner, room, %{settings: %{sounds_mode: "nobody"}})
+
+      assert %{settings: %{sounds_mode: ["is invalid"]}} = errors_on(changeset)
+    end
+
+    test "changes only the settings sent", %{owner: owner, community: community} do
+      [room | _rooms] = Communities.list_rooms(community)
+
+      assert {:ok, updated} =
+               Communities.update_room(owner, room, %{settings: %{link_previews: false}})
+
+      refute updated.settings.link_previews
+      assert updated.settings.sounds_enabled
+    end
+
     test "keeps the roles on a rename", %{owner: owner, community: community} do
       %{id: community_id} = community
       room = TestUtils.create_random_private_room!(community, ["moderator"])
@@ -585,6 +604,50 @@ defmodule Hearth.CommunitiesTest do
       assert {:ok, renamed} = Communities.update_room(owner, room, %{name: Lorem.word()})
       assert renamed.room_roles == room.room_roles
       refute_receive %RoomAccessChanged{community_id: ^community_id}
+    end
+  end
+
+  describe "can_play?/2" do
+    test "returns false when sounds are off", %{owner: owner, community: community} do
+      [room | _rooms] = Communities.list_rooms(community)
+      changed = TestUtils.put_room_settings!(community, room, %{sounds_enabled: false})
+
+      refute Communities.can_play?(owner, changed)
+    end
+
+    test "returns false for someone not picked", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      [room | _rooms] = Communities.list_rooms(community)
+      changed = TestUtils.put_room_settings!(community, room, %{sounds_mode: :people})
+
+      refute Communities.can_play?(member, changed)
+    end
+
+    test "returns false without the picked roles", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      [room | _rooms] = Communities.list_rooms(community)
+      role_id = TestUtils.get_role_id!(community, "moderator")
+
+      settings = %{sounds_mode: :roles, sounds_role_ids: [role_id]}
+      changed = TestUtils.put_room_settings!(community, room, settings)
+
+      refute Communities.can_play?(member, changed)
+    end
+
+    test "returns true for someone picked", %{community: community} do
+      member = TestUtils.join_random_member!(community)
+      [room | _rooms] = Communities.list_rooms(community)
+      settings = %{sounds_mode: :people, sounds_user_ids: [member.id]}
+      changed = TestUtils.put_room_settings!(community, room, settings)
+
+      assert Communities.can_play?(member, changed)
+    end
+
+    test "returns true for who manages rooms", %{owner: owner, community: community} do
+      [room | _rooms] = Communities.list_rooms(community)
+      changed = TestUtils.put_room_settings!(community, room, %{sounds_mode: :people})
+
+      assert Communities.can_play?(owner, changed)
     end
   end
 

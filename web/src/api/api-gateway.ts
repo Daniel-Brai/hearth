@@ -43,16 +43,21 @@ export class ApiGateway implements HearthGateway {
 
     // The hooks run after sign in, once every part below exists
     const session = createSessionGateway(ctx, {
-      onSignIn: () => {
-        void communities.loadJoined().then(() => {
-          void moderation.loadCounts();
-          void posts.loadDrafts();
-          void chat.loadInbox();
-          void voice.loadLive();
-        });
-        void notifications.load();
-        void invites.load.myInvites();
-      },
+      onSignIn: () =>
+        Promise.all([
+          communities
+            .loadJoined()
+            .then(() =>
+              Promise.all([
+                moderation.loadCounts(),
+                posts.loadDrafts(),
+                chat.loadInbox(),
+                voice.loadLive(),
+              ]),
+            ),
+          notifications.load(),
+          invites.load.myInvites(),
+        ]),
       onNotice: (kind) => {
         void notifications.load();
         if (kind === 'invite') void invites.load.myInvites();
@@ -63,7 +68,6 @@ export class ApiGateway implements HearthGateway {
     });
 
     const posts = createPostsGateway(ctx);
-    const chat = createChatGateway(ctx, communities.load.community);
     const { profile } = createProfileGateway(ctx);
     const { settings, load: settingsLoad } = createSettingsGateway(ctx);
     const roles = createRolesGateway(ctx, communities.load.community);
@@ -71,6 +75,9 @@ export class ApiGateway implements HearthGateway {
     const people = createPeopleGateway(ctx, roles.list);
     const events = createEventsGateway(ctx, communities.load.community);
     const rooms = createRoomsGateway(ctx, communities.load.community);
+    const chat = createChatGateway(ctx, communities.load.community, (key, topic) =>
+      rooms.rooms.updateSettings(key, { topic }),
+    );
     const moderation = createModerationGateway(ctx, communities.load.community);
     const voice = createVoiceGateway(ctx, communities.load.community);
 

@@ -49,6 +49,24 @@ defmodule Hearth.Notifications.Notices do
     })
   end
 
+  @spec mention_all(map()) :: Notice.t()
+  def mention_all(%{actor: actor, community: community, room: room, message: message, url: url}) do
+    notice(:mention, "mentions", %{
+      actor: actor,
+      community: community,
+      subject: {"message", message.id},
+      data: %{
+        excerpt: Common.excerpt(message.body, @excerpt),
+        url: url,
+        message_id: message.id,
+        room_slug: room.slug
+      },
+      title: "#{name(actor)} mentioned everyone in ##{room.name}",
+      body: Common.excerpt(message.body, @excerpt),
+      url: url
+    })
+  end
+
   @spec direct_message(map()) :: Notice.t()
   def direct_message(%{actor: actor, message: message}) do
     %Notice{
