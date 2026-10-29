@@ -52,7 +52,7 @@ dev.api:
 
 # Runs the API sending traces, logs and dashboards to the local Grafana that make observe starts
 dev.api.observe:
-	@$(MAKE) --no-print-directory dev.api OBSERVE_ENV="LOG_FILE=$(CURDIR)/tmp/log/hearth.jsonl OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 GRAFANA_HOST=http://localhost:3000 GRAFANA_USERNAME=admin GRAFANA_PASSWORD=admin"
+	@$(MAKE) --no-print-directory dev.api OBSERVE_ENV='LOG_FILE=$(CURDIR)/tmp/log/hearth.jsonl OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 GRAFANA_HOST=http://localhost:3000 GRAFANA_USERNAME=$$$${GRAFANA_USERNAME:-admin} GRAFANA_PASSWORD=$$$${GRAFANA_PASSWORD:-admin}'
 
 # Runs the web app against the local API
 dev.web:
