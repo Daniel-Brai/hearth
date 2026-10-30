@@ -1,6 +1,12 @@
-// Markdown HTML is set as a string so React never hydrates it and one document listener can mark it
-// Images React renders use fadeIn instead since a listener here would add an attribute the server's markup lacks
+let installed = false;
+
+// One document listener marks Markdown images once they load and starts after hydration
+// since React compares that HTML and an attribute added sooner reads as a mismatch
+// Images React renders use fadeIn instead
 export function installImageFade() {
+  if (installed) return;
+  installed = true;
+
   const settle = (e: Event) => {
     const el = e.target;
     if (el instanceof HTMLImageElement && el.dataset.fade === 'html') el.dataset.loaded = '';

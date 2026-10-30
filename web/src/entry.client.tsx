@@ -8,7 +8,6 @@ import { createRuntime } from '@/app/runtime';
 import { setStore } from '@/data/store';
 import { browserLoads } from '@/data/use-load';
 import { printConsoleBanner } from '@/runtime/console-banner';
-import { installImageFade } from '@/runtime/image-fade';
 
 declare global {
   interface Window {
@@ -18,7 +17,6 @@ declare global {
 
 // Once per page, outside React, so StrictMode's second effect run in development doesn't repeat them
 printConsoleBanner();
-installImageFade();
 rememberZone();
 
 const hydration = window[HYDRATION_KEY] ?? null;

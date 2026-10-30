@@ -3,6 +3,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 import stylesheet from '@/design-system/styles/index.css?url';
 import { useGateway } from '@/app/gateway-context';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { installImageFade } from '@/runtime/image-fade';
 
 /* Applies the saved theme before first paint so the screen never flashes the wrong colours */
 const THEME_SCRIPT = `(() => {
@@ -60,6 +61,7 @@ function BrowserStart() {
   const gateway = useGateway();
 
   useEffect(() => {
+    installImageFade();
     void gateway.load.session();
   }, [gateway]);
 
