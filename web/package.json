@@ -1,7 +1,7 @@
 {
   "name": "@hearth/web",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "license": "MIT",
   "homepage": "https://github.com/daniel-brai/hearth",
   "repository": {
