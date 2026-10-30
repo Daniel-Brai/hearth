@@ -325,7 +325,9 @@ export type ModLogAction =
   | 'server_muted'
   | 'server_mute_lifted'
   | 'disconnected'
-  | 'moved_to_listeners';
+  | 'moved_to_listeners'
+  | 'recording_started'
+  | 'recording_stopped';
 
 export type ModLogEntry = {
   id: string;

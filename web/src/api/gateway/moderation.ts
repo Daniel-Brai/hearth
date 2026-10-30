@@ -84,6 +84,8 @@ const LOG_TEXT: Record<ModLogAction, string> = {
   server_mute_lifted: 'lifted the server mute on',
   disconnected: 'disconnected',
   moved_to_listeners: 'moved',
+  recording_started: 'started recording',
+  recording_stopped: 'stopped recording',
 };
 
 const ON_PERSON = new Set<ModLogAction>([

@@ -6,6 +6,7 @@ defmodule HearthWeb.ModerationControllerTest do
   alias Hearth.Forum
   alias Hearth.Moderation
   alias Hearth.TestUtils
+  alias Hearth.Voice.Command.StartRecording
 
   setup do
     owner = TestUtils.register_random_user!()
@@ -316,6 +317,18 @@ defmodule HearthWeb.ModerationControllerTest do
       assert %{"action" => "removed", "reason" => ^reason} = response
       assert response["actor"]["username"] == owner.username
       assert response["target"]["username"] == author.username
+    end
+
+    test "shows a recording started in a room", %{conn: conn, community: community} do
+      session = TestUtils.insert_random_voice_session!(community)
+      {:ok, _recording} = StartRecording.execute(session, session.host_id)
+
+      assert %{"data" => [response]} =
+               conn
+               |> get(~p"/api/communities/#{community.id}/moderation/log")
+               |> valid_response(200)
+
+      assert response["action"] == "recording_started"
     end
   end
 end

@@ -21,6 +21,8 @@ defmodule HearthWeb.Schema.ModerationAction do
         server_mute_lifted
         disconnected
         moved_to_listeners
+        recording_started
+        recording_stopped
         pinned
         locked
         changed
