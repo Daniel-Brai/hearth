@@ -334,6 +334,24 @@ describe('toRoomSettings', () => {
 });
 
 describe('toAttachments', () => {
+  it('keeps the blurhash for a placeholder while the image loads', () => {
+    const blurred: Media = {
+      ...file,
+      purpose: 'attachment',
+      status: 'ready',
+      urls: {
+        original: file.urls.original,
+        download: file.urls.original,
+        variants: [
+          { width: 400, height: 300, format: 'webp', url: 'https://storage.test/plot.webp' },
+        ],
+      },
+      blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
+    };
+
+    expect(toAttachments([blurred])[0]?.blurhash).toBe('LEHV6nWB2yk8pyo0adR*.7kCMdnj');
+  });
+
   it('keeps the local preview of a file still processing under its server id', () => {
     const processing: Media = { ...file, purpose: 'attachment', status: 'processing', urls: null };
     const preview = {

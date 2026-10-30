@@ -35,6 +35,7 @@ export function FileList({
             alt: f.name,
             width: f.width,
             height: f.height,
+            blurhash: f.blurhash,
           }))}
           onOpen={(i) => onOpenImage(images[i]!)}
         />
@@ -57,6 +58,7 @@ export function FileList({
                 alt={f.name}
                 width={f.width}
                 height={f.height}
+                blurhash={f.blurhash}
               />
             </button>
           ) : null}

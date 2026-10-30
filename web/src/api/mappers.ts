@@ -344,6 +344,7 @@ function toAttachment(media: Media): Attachment | null {
     ...(media.urls ? { download: media.urls.download } : {}),
     ...(media.width === null ? {} : { width: media.width }),
     ...(media.height === null ? {} : { height: media.height }),
+    ...(media.blurhash === null ? {} : { blurhash: media.blurhash }),
   };
 }
 

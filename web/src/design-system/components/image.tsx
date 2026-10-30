@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { blurUrl } from './blur';
 import { fadeIn } from './fade';
 
 export type ImgProps = {
@@ -8,11 +9,16 @@ export type ImgProps = {
   readonly height?: number | undefined;
   readonly lazy?: boolean | undefined;
   readonly className?: string | undefined;
+  readonly blurhash?: string | undefined;
 };
 
-export function Img({ src, alt, width, height, lazy = true, className }: ImgProps) {
-  const style: CSSProperties | undefined =
-    width && height ? { aspectRatio: `${width} / ${height}` } : undefined;
+export function Img({ src, alt, width, height, lazy = true, className, blurhash }: ImgProps) {
+  const blur = blurhash ? blurUrl(blurhash, width, height) : null;
+
+  const style = {
+    ...(width && height ? { aspectRatio: `${width} / ${height}` } : {}),
+    ...(blur ? { '--blur': `url(${blur})` } : {}),
+  } as CSSProperties;
 
   return (
     <img
@@ -23,6 +29,7 @@ export function Img({ src, alt, width, height, lazy = true, className }: ImgProp
       loading={lazy ? 'lazy' : 'eager'}
       decoding="async"
       {...fadeIn}
+      data-blur={blur ? '' : undefined}
       className={className}
       style={style}
     />

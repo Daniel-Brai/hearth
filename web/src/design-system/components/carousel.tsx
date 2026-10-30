@@ -10,6 +10,7 @@ export type CarouselImage = {
   readonly alt: string;
   readonly width?: number | undefined;
   readonly height?: number | undefined;
+  readonly blurhash?: string | undefined;
 };
 
 export function Carousel({
@@ -106,6 +107,7 @@ export function Carousel({
                   alt={image.alt}
                   width={image.width}
                   height={image.height}
+                  blurhash={image.blurhash}
                   lazy={i !== 0}
                 />
               </button>
@@ -116,6 +118,7 @@ export function Carousel({
                 alt={image.alt}
                 width={image.width}
                 height={image.height}
+                blurhash={image.blurhash}
                 lazy={i !== 0}
               />
             )}

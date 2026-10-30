@@ -1408,6 +1408,9 @@ a.origin-note:hover { filter: brightness(0.98); }
 /* The late animation reveals the image if the load event is missed */
 img[data-fade] { opacity: 0; transition: opacity 260ms ease; animation: reveal-late 0s 4s forwards; }
 img[data-fade][data-loaded] { opacity: 1; animation: none; }
+/* An image with a blurhash shows it at once and drops it on load so a transparent image shows no blur behind it */
+img[data-fade][data-blur] { opacity: 1; animation: none; }
+img[data-blur]:not([data-loaded]) { background: var(--blur) center / cover no-repeat; }
 .file-image:not([data-loaded]), .md .md-image:not([data-loaded]), .post-row__thumb:not([data-loaded]) { background: var(--color-ink-lightest); }
 .file-image[width] { block-size: auto; }
 /* Sized from --ratio so a tall image is not stretched to full width */

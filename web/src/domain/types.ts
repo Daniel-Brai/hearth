@@ -130,6 +130,7 @@ export type Attachment = {
   width?: number | undefined;
   height?: number | undefined;
   durationMs?: number | undefined;
+  blurhash?: string | undefined;
   // Saves the file under its name, where `url` would open it in the browser
   download?: string | undefined;
 } & ({ url: string; data?: undefined } | { data: string; url?: undefined });

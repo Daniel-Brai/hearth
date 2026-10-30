@@ -4,6 +4,7 @@ import type { AppState } from '@/domain/app-state';
 import { canSeeName, findPerson, findRoom, person } from '@/domain/selectors';
 import { shortLink } from '@/domain/links';
 import { attachmentDownload, attachmentSrc, type Attachment } from '@/domain/types';
+import { blurUrl } from '@/design-system/components/blur';
 import { ICONS } from '@/design-system/icons/icons';
 import { routes } from '@/runtime/routes';
 import { splitImageHref, type ImageAlign } from './image-align';
@@ -100,6 +101,7 @@ type ResolvedImage = {
   readonly align: ImageAlign;
   readonly width?: number | undefined;
   readonly height?: number | undefined;
+  readonly blurhash?: string | undefined;
 };
 
 const attachmentFor = (href: string) =>
@@ -115,19 +117,38 @@ function resolveImage(rawHref: string, text: string): ResolvedImage | null {
 
   if (f?.kind !== 'image') return null;
 
-  return { src: attachmentSrc(f), alt: text || f.name, align, width: f.width, height: f.height };
+  return {
+    src: attachmentSrc(f),
+    alt: text || f.name,
+    align,
+    width: f.width,
+    height: f.height,
+    blurhash: f.blurhash,
+  };
 }
 
 const sizeAttrs = ({ width, height }: ResolvedImage) =>
   width && height ? ` width="${width}" height="${height}"` : '';
 
-function imageHtml(image: ResolvedImage) {
-  const ratio =
-    image.width && image.height
-      ? ` style="--ratio: ${(image.width / image.height).toFixed(4)}"`
-      : '';
+const blurOf = (image: ResolvedImage) =>
+  image.blurhash ? blurUrl(image.blurhash, image.width, image.height) : null;
 
-  return `<img class="md-image md-image--${image.align}" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)}${ratio} loading="lazy" decoding="async" data-fade="html">`;
+const blurAttrs = (image: ResolvedImage) => {
+  const blur = blurOf(image);
+  return blur ? ` data-blur style="--blur: url(${blur})"` : '';
+};
+
+function imageHtml(image: ResolvedImage) {
+  const blur = blurOf(image);
+
+  const styles = [
+    image.width && image.height ? `--ratio: ${(image.width / image.height).toFixed(4)}` : null,
+    blur ? `--blur: url(${blur})` : null,
+  ].filter(Boolean);
+
+  const style = styles.length ? ` style="${styles.join('; ')}"` : '';
+
+  return `<img class="md-image md-image--${image.align}" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)}${style}${blur ? ' data-blur' : ''} loading="lazy" decoding="async" data-fade="html">`;
 }
 
 /** Images on one line each with no blank line between show as one carousel, placed by the first */
@@ -140,7 +161,7 @@ function carouselHtml(images: readonly ResolvedImage[]) {
       `<div class="carousel__slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${images.length}"${i === 0 ? '' : ' inert'}>` +
       `<img class="carousel__backdrop" src="${esc(image.src)}" alt="" loading="lazy" decoding="async">` +
       `<button type="button" class="carousel__open" data-open-image aria-label="Open ${esc(image.alt)}">` +
-      `<img class="carousel__image" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)} loading="lazy" decoding="async" data-fade="html"></button></div>`,
+      `<img class="carousel__image" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)}${blurAttrs(image)} loading="lazy" decoding="async" data-fade="html"></button></div>`,
   );
 
   const step = (by: number, label: string, disabled: boolean) =>
