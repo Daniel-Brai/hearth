@@ -9,8 +9,8 @@
 .float-zone { position: relative; block-size: 0; }
 .float-emoji { position: absolute; font-size: 1.8rem; animation: float-up 1800ms ease-out forwards; pointer-events: none; }
 .live-lines { display: grid; gap: 0.7rem; max-block-size: 22rem; overflow-y: auto; padding-inline-end: 0.4rem; }
-.live-line { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 0.7rem; animation: slide-up-fade-in 300ms var(--ease-out-expo); }
-.live-line .t { font-family: var(--font-mono); font-size: var(--text-x-small); color: var(--color-ink-medium); padding-block-start: 0.15rem; }
+.live-line { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); gap: 0.7rem; animation: slide-up-fade-in 300ms var(--ease-out-expo); }
+.live-line .t { font-family: var(--font-mono); font-size: var(--text-x-small); color: var(--color-ink-medium); padding-block-start: 0.15rem; text-align: end; white-space: nowrap; }
 .rec-banner {
   align-items: center; background: color-mix(in oklab, var(--hue-red) 14%, var(--color-canvas)); border: 1px solid color-mix(in oklab, var(--hue-red) 45%, transparent);
   border-radius: 99rem; display: flex; gap: 0.7rem; justify-self: center; min-block-size: 2.2rem; padding: 0.3rem 1rem; font-size: var(--text-small); font-weight: 600;
