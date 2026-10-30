@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { emptyState } from '@/data/empty-state';
 import { plainText } from './plain-text';
 import { codeBlockClick } from './code-block';
@@ -122,7 +122,7 @@ describe('carousels', () => {
 
   it('steps with the buttons and the arrow keys', () => {
     const root = mount(two);
-    const stop = wireCarousels(root);
+    const stop = wireCarousels(root, vi.fn());
     const carousel = root.querySelector<HTMLElement>('[data-carousel]')!;
     const next = carousel.querySelector<HTMLButtonElement>('.carousel__next')!;
     const count = carousel.querySelector('.carousel__count')!;
@@ -136,6 +136,19 @@ describe('carousels', () => {
 
     expect(count.textContent).toBe('1 / 2');
     expect(carousel.querySelector<HTMLButtonElement>('.carousel__prev')!.disabled).toBe(true);
+
+    stop();
+  });
+
+  it('opens the image that is showing', () => {
+    const root = mount(two);
+    const open = vi.fn();
+    const stop = wireCarousels(root, open);
+
+    root.querySelector<HTMLButtonElement>('.carousel__next')!.click();
+    root.querySelectorAll<HTMLButtonElement>('.carousel__open')[1]!.click();
+
+    expect(open).toHaveBeenCalledWith(expect.any(String), 'beach.png');
 
     stop();
   });

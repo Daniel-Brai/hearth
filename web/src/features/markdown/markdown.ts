@@ -137,9 +137,10 @@ function carouselHtml(images: readonly ResolvedImage[]) {
 
   const slides = images.map(
     (image, i) =>
-      `<div class="carousel__slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${images.length}">` +
+      `<div class="carousel__slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${images.length}"${i === 0 ? '' : ' inert'}>` +
       `<img class="carousel__backdrop" src="${esc(image.src)}" alt="" loading="lazy" decoding="async">` +
-      `<img class="carousel__image" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)} loading="lazy" decoding="async" data-fade="html"></div>`,
+      `<button type="button" class="carousel__open" data-open-image aria-label="Open ${esc(image.alt)}">` +
+      `<img class="carousel__image" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)} loading="lazy" decoding="async" data-fade="html"></button></div>`,
   );
 
   const step = (by: number, label: string, disabled: boolean) =>

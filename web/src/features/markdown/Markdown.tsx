@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useAppState, useStore } from '@/data/store';
 import type { Attachment } from '@/domain/types';
 import { cn } from '@/design-system/index';
+import { useUi } from '@/runtime/ui-store';
 import { wireCarousels } from './carousel-block';
 import { lexMarkdown, markdownKey, renderInline, renderMarkdown } from './markdown';
 
@@ -31,6 +32,7 @@ export function Markdown({
   readonly className?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const openImage = useUi((s) => s.openImage);
   const key = useMarkdownKey(text, community);
   const store = useStore();
 
@@ -55,8 +57,8 @@ export function Markdown({
     const el = root.current;
     if (!el?.querySelector('[data-carousel]')) return;
 
-    return wireCarousels(el);
-  }, [html]);
+    return wireCarousels(el, openImage);
+  }, [html, openImage]);
 
   return (
     <div ref={root} className={cn('md', className)} dangerouslySetInnerHTML={{ __html: html }} />

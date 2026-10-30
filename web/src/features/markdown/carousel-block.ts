@@ -1,6 +1,15 @@
 /** Carousels in rendered text are HTML strings with no handlers, so the text's root listens for them */
-export function wireCarousels(root: HTMLElement) {
+export function wireCarousels(root: HTMLElement, open: (src: string, alt: string) => void) {
   const onClick = (e: MouseEvent) => {
+    const image = (e.target as Element | null)
+      ?.closest?.('[data-open-image]')
+      ?.querySelector<HTMLImageElement>('img');
+
+    if (image) {
+      open(image.src, image.alt);
+      return;
+    }
+
     const button = (e.target as Element | null)?.closest?.<HTMLElement>('[data-carousel-step]');
     const carousel = button?.closest<HTMLElement>('[data-carousel]');
 
@@ -69,7 +78,7 @@ function show(carousel: HTMLElement, to: number): number {
 
   if (count) count.textContent = `${at + 1} / ${all.length}`;
 
-  all.forEach((slide, i) => slide.setAttribute('aria-hidden', String(i !== at)));
+  all.forEach((slide, i) => slide.toggleAttribute('inert', i !== at));
 
   carousel
     .querySelectorAll('.carousel__dots i')
