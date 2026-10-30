@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   Community,
   CommunityDetail,
+  Media,
   Post,
   Reply,
   RoomSettings,
@@ -15,8 +16,10 @@ import {
   toMessage,
   toPost,
   toReply,
+  toAttachments,
   toRoomSettings,
 } from './mappers';
+import { file } from './gateway/test-support';
 
 const settings = {
   link_previews: true,
@@ -327,5 +330,20 @@ describe('toRoomSettings', () => {
       previews: false,
       sounds: { enabled: true, mode: 'roles', roles: ['r1'], people: [] },
     });
+  });
+});
+
+describe('toAttachments', () => {
+  it('keeps the local preview of a file still processing under its server id', () => {
+    const processing: Media = { ...file, purpose: 'attachment', status: 'processing', urls: null };
+    const preview = {
+      id: 'local-1',
+      name: 'plot.png',
+      kind: 'image' as const,
+      size: 3,
+      url: 'blob:plot',
+    };
+
+    expect(toAttachments([processing], [preview])).toEqual([{ ...preview, id: file.id }]);
   });
 });

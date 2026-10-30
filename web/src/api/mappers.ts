@@ -351,8 +351,10 @@ export function toAttachments(
   media: readonly Media[],
   local: readonly Attachment[] = [],
 ): Attachment[] {
+  // A file still processing shows its local preview under the server id the text points at
   return media.flatMap((m, i) => {
-    const shown = toAttachment(m) ?? local[i];
+    const preview = local[i];
+    const shown = toAttachment(m) ?? (preview ? { ...preview, id: m.id } : null);
     return shown ? [shown] : [];
   });
 }
