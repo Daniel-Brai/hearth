@@ -176,8 +176,10 @@ export function createChatGateway(
       return ok({ kind: 'conversation', id: answer.data.id });
     }
 
-    if (!ctx.roomIds.has(key)) {
-      const loaded = await loadCommunity(key.slice(0, key.indexOf('/')));
+    const cid = key.slice(0, key.indexOf('/'));
+
+    if (!ctx.roomIds.has(key) || ctx.needsDetail(cid)) {
+      const loaded = await loadCommunity(cid);
       if (!loaded.ok) return loaded;
     }
 

@@ -32,6 +32,29 @@ const signedIn = async () => {
   return { g, store };
 };
 
+describe('load.events', () => {
+  it('learns who may schedule in a community only seen in a list', async () => {
+    routes['GET /api/events'] = { status: 200, body: [] };
+
+    const { g, store } = await signedIn();
+
+    await g.load.events(null);
+
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: {
+        community,
+        kinds: [],
+        membership: { joined_at: at, roles: [], permissions: ['event.create'] },
+      },
+    };
+
+    await g.load.events('gardeners');
+
+    expect(store.get().communities['gardeners']?.permissions).toContain('event.create');
+  });
+});
+
 describe('events', () => {
   it('shows each event in its room, at its next time', async () => {
     routes['GET /api/events'] = { status: 200, body: [event] };

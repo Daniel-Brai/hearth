@@ -80,7 +80,7 @@ export function createEventsGateway(
   };
 
   const loadOne = async (cid: string): Promise<Result> => {
-    if (!ctx.communityIds.has(cid)) await loadCommunity(cid);
+    if (ctx.needsDetail(cid)) await loadCommunity(cid);
 
     const id = ctx.communityIds.get(cid);
 

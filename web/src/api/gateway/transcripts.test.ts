@@ -114,8 +114,8 @@ describe('transcripts', () => {
       true,
     );
 
-    expect(sent.at(-1)).toEqual(
-      expect.objectContaining({ body: { text: 'Cut just above the bud' } }),
+    expect(sent).toContainEqual(
+      expect.objectContaining({ method: 'PUT', body: { text: 'Cut just above the bud' } }),
     );
     expect(store.get().transcripts['s1']?.lines[0]?.text).toBe('Cut just above the bud');
   });

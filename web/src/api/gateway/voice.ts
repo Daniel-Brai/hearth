@@ -710,11 +710,9 @@ export function createVoiceGateway(
 
       if (!id) return fail('That room does not exist.');
 
-      const communityId = ctx.communityIds.get(cid);
+      if (ctx.needsDetail(cid)) await loadCommunity(cid);
 
-      // Who may start or record a session comes with the community's detail,
-      // which a list answer or a signed out render doesn't carry
-      if (communityId && !ctx.hasDetailFor(communityId)) await loadCommunity(cid);
+      const communityId = ctx.communityIds.get(cid);
 
       if (communityId) follow(communityId);
 

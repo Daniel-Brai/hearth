@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { playTune } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import {
+  at,
   community,
   file,
   gateway,
@@ -360,6 +361,34 @@ describe('load.chat', () => {
     slug: 'hangout',
     name: 'Hangout',
   };
+
+  it('learns who may post when the room was only seen in a list', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+    routes['GET /api/communities'] = { status: 200, body: [community] };
+    routes['GET /api/events'] = { status: 200, body: [] };
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([]) };
+
+    const { store, gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+    await g.load.events(null);
+
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: {
+        community,
+        kinds: [],
+        membership: { joined_at: at, roles: [], permissions: ['message.create'] },
+      },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+
+    await g.load.chat('gardeners/general');
+
+    expect(store.get().communities['gardeners']?.permissions).toContain('message.create');
+  });
 
   it('fetches again when a message is edited or deleted', async () => {
     routes['GET /api/communities/gardeners'] = {

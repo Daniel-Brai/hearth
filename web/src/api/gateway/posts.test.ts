@@ -430,12 +430,6 @@ describe('load.post', () => {
     routes['GET /api/communities'] = { status: 200, body: [community] };
     routes['GET /api/events'] = { status: 200, body: [] };
     routes['GET /api/posts/p1'] = { status: 200, body: post };
-
-    routes['GET /api/communities/c1'] = {
-      status: 200,
-      body: { community, kinds: [kind], membership: null },
-    };
-
     routes['GET /api/posts/p1/replies'] = { status: 200, body: page([]) };
 
     const { gateway: g, store } = gateway();
@@ -444,6 +438,11 @@ describe('load.post', () => {
     // The events screen learns communities from the list, which carries no kinds
     await g.load.events(null);
     expect(store.get().communities['gardeners']?.kinds).toEqual([]);
+
+    routes['GET /api/communities/c1'] = {
+      status: 200,
+      body: { community, kinds: [kind], membership: null },
+    };
 
     await g.load.post('p1');
 

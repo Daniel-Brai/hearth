@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { toKind, toPost } from '../mappers';
-import { community, file, gateway, kind, page, post, routes, sent, session } from './test-support';
+import {
+  at,
+  community,
+  file,
+  gateway,
+  kind,
+  page,
+  post,
+  routes,
+  sent,
+  session,
+} from './test-support';
 
 vi.mock('../realtime', () => ({ getRealtime: () => ({ onPush: () => () => undefined }) }));
 
@@ -40,6 +51,30 @@ describe('load.community', () => {
 
     expect(store.get().communities.gardeners?.kinds.map((k) => k.name)).toEqual(['Question']);
     expect(store.get().posts[0]).toMatchObject({ id: 'p1', c: 'gardeners', kind: 'Question' });
+  });
+});
+
+describe('signing in', () => {
+  it('learns who may post in each joined community', async () => {
+    routes['POST /api/auth/sessions'] = { status: 200, body: session };
+    routes['GET /api/communities'] = { status: 200, body: [community] };
+
+    routes['GET /api/communities/c1'] = {
+      status: 200,
+      body: {
+        community,
+        kinds: [],
+        membership: { joined_at: at, roles: [], permissions: ['invite.create'] },
+      },
+    };
+
+    const { store, gateway: g } = gateway();
+
+    await g.session.verifyCode('ada@example.com', '123456');
+
+    await vi.waitFor(() =>
+      expect(store.get().communities['gardeners']?.permissions).toContain('invite.create'),
+    );
   });
 });
 

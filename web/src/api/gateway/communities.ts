@@ -22,6 +22,7 @@ import {
 import { postIndex, postPinned, postShow } from '@/generated/api/forum/forum';
 import { moderationCommunityLevel } from '@/generated/api/moderation/moderation';
 import type {
+  Community,
   CommunityRequest as ApiCommunityRequest,
   CreateCommunityBodyTemplate,
   RequestUploadBodyPurpose,
@@ -117,6 +118,20 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
     return known ? fail(`The rest is saved. ${known}`) : failed(answer);
   };
 
+  // Permissions come only with each community's details
+  const rememberJoined = async (joined: readonly Community[]) => {
+    for (const community of joined) ctx.rememberCommunity(community, null);
+
+    await Promise.all(
+      joined
+        .filter((c) => !ctx.hasDetailFor(c.id))
+        .map(async (c) => {
+          const shown = await call(() => communityShow(c.id));
+          if (shown.status === 200) ctx.rememberCommunity(shown.data.community, shown.data);
+        }),
+    );
+  };
+
   const load = {
     home: async () => {
       await ctx.sessionLoaded;
@@ -170,17 +185,7 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
 
       if (answer.status !== 200) return failed(answer);
 
-      for (const community of answer.data) ctx.rememberCommunity(community, null);
-
-      // Who may post, and in which kinds, comes only with each community's details
-      await Promise.all(
-        answer.data
-          .filter((c) => !ctx.hasDetailFor(c.id))
-          .map(async (c) => {
-            const shown = await call(() => communityShow(c.id));
-            if (shown.status === 200) ctx.rememberCommunity(shown.data.community, shown.data);
-          }),
-      );
+      await rememberJoined(answer.data);
 
       return ok(undefined);
     },
@@ -472,7 +477,7 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
 
   const loadJoined = async () => {
     const answer = await call(() => communityIndex());
-    if (answer.status === 200) for (const c of answer.data) ctx.rememberCommunity(c, null);
+    if (answer.status === 200) await rememberJoined(answer.data);
   };
 
   return { load, communities, loadJoined };

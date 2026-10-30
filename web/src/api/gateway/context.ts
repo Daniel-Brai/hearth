@@ -208,6 +208,13 @@ export class GatewayContext {
     );
   }
 
+  /** The sidebar list knows every joined community but only its details carry your permissions */
+  needsDetail(cid: string): boolean {
+    const id = this.communityIds.get(cid);
+
+    return !id || !this.hasDetailFor(id);
+  }
+
   // A post made from a room that is gone no longer says where it started
   private fromChat({ from_chat }: Post) {
     const room = from_chat?.room_id ? this.roomsById.get(from_chat.room_id) : undefined;

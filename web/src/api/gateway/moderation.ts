@@ -101,7 +101,7 @@ export function createModerationGateway(
   loadCommunity: (cid: string) => Promise<Result>,
 ) {
   const communityId = async (cid: string) => {
-    if (!ctx.communityIds.has(cid)) await loadCommunity(cid);
+    if (ctx.needsDetail(cid)) await loadCommunity(cid);
     return ctx.communityIds.get(cid) ?? null;
   };
 
