@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { GatewayContext } from '@/app/gateway-context';
+import { ok } from '@/data/gateway';
 import { Store, StoreContext } from '@/data/store';
 import { LoadCache, LoadCacheContext } from '@/data/use-load';
 import { displayName } from '@/domain/selectors';
@@ -116,5 +117,44 @@ describe('ChatPage', () => {
 
     expect(router.state.location.pathname).toBe(routes.community('plang'));
     expect(useUi.getState().hiddenRoom).toBeNull();
+  });
+});
+
+describe('ChatPage direct message', () => {
+  it('waits for someone not loaded yet instead of saying they are not found', async () => {
+    const store = new Store(createSeedState());
+    const gateway = new MockGateway(store);
+    const ada = store.get().people.ada!;
+
+    store.set((state) => {
+      delete state.people.ada;
+    });
+
+    gateway.load.profile = async () => {
+      store.set((state) => {
+        state.people.ada = ada;
+      });
+      return ok(undefined);
+    };
+
+    const router = createMemoryRouter([{ path: '/dm/:handle', element: <ChatPage /> }], {
+      initialEntries: [routes.dm(ada.username)],
+    });
+
+    await act(async () =>
+      render(
+        <LoadCacheContext value={new LoadCache()}>
+          <StoreContext value={store}>
+            <GatewayContext value={gateway}>
+              <Suspense fallback={null}>
+                <RouterProvider router={router} />
+              </Suspense>
+            </GatewayContext>
+          </StoreContext>
+        </LoadCacheContext>,
+      ),
+    );
+
+    expect(screen.getByRole('heading', { name: new RegExp(ada.name) })).toBeInTheDocument();
   });
 });

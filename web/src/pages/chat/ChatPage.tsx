@@ -14,14 +14,8 @@ import './ChatPage.css';
 
 export function ChatPage() {
   const params = useParams();
-  const handle = params.handle ?? null;
-  const dmId = useAppState((state) => (handle ? personIdByHandle(state, handle) : null));
 
-  if (handle) {
-    if (!dmId) return <ErrorPage code={404} />;
-
-    return <ChatRoute target={{ key: 'dm/' + dmId, cid: null, room: null, dm: dmId }} />;
-  }
+  if (params.handle) return <DirectChat handle={params.handle} />;
 
   const cid = params.community;
   const room = params.room;
@@ -29,6 +23,17 @@ export function ChatPage() {
   if (!cid || !room) return <ErrorPage code={404} />;
 
   return <ChatRoute target={{ key: `${cid}/${room}`, cid, room, dm: null }} />;
+}
+
+/** The person may not be known yet on a reload so they load before counting as not found */
+function DirectChat({ handle }: { readonly handle: string }) {
+  const gateway = useGateway();
+  useLoad(() => gateway.load.profile(handle), 'profile:' + handle);
+  const dmId = useAppState((state) => personIdByHandle(state, handle));
+
+  if (!dmId) return <ErrorPage code={404} />;
+
+  return <ChatRoute target={{ key: 'dm/' + dmId, cid: null, room: null, dm: dmId }} />;
 }
 
 function ChatRoute({ target }: { readonly target: ChatTarget }) {
