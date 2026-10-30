@@ -871,12 +871,14 @@ html:has(dialog[open]:modal) { overflow: hidden; }
 .dialog__close { position: absolute; inset: 0.85rem 0.85rem auto auto; z-index: 2; }
 .dialog__footer { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
 
-.dialog--lightbox { --dialog-width: 64rem; background: transparent; box-shadow: none; display: grid; gap: 0.6rem; justify-items: center; cursor: zoom-out; overflow: visible; }
+.dialog--lightbox { --dialog-width: 64rem; background: transparent; box-shadow: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.6rem; justify-items: center; cursor: zoom-out; overflow: visible; }
 .dialog--lightbox:not([open]) { display: none; }
-.dialog--lightbox img { border-radius: 0.6rem; max-block-size: 80dvh; inline-size: auto; }
-.lightbox__image { background: none; border: 0; border-radius: 0.6rem; cursor: zoom-out; display: block; padding: 0; }
+.dialog--lightbox img { border-radius: 0.6rem; max-block-size: 80dvh; max-inline-size: 100%; inline-size: auto; block-size: auto; }
+.lightbox__image { background: none; border: 0; border-radius: 0.6rem; cursor: zoom-out; display: block; max-inline-size: 100%; padding: 0; }
 .lightbox__image:focus-visible { outline: var(--focus-ring); outline-offset: 4px; }
 .lightbox__bar { align-items: center; background: var(--color-canvas); border-radius: 99rem; display: flex; gap: 0.8rem; max-inline-size: 100%; padding: 0.3rem 0.3rem 0.3rem 1rem; font-size: var(--text-small); font-weight: 600; }
+.lightbox__bar > .truncate { min-inline-size: 0; }
+.lightbox__bar > a { flex: none; }
 
 .letter { background: var(--color-canvas); padding: 2.2rem 2rem 1.8rem; display: grid; gap: 0.9rem; line-height: 1.6; text-wrap: pretty; }
 
