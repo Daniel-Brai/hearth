@@ -5,6 +5,21 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.2](https://github.com/daniel-brai/hearth/compare/v0.0.1...v0.0.2) (2026-10-31)
+
+
+
+
+### Features:
+
+* web: show blurhash placeholders while images load
+
+### Bug Fixes:
+
+* web: mark loaded images after hydration
+
+* name recordings in the moderation log
+
 ## [v0.0.1](https://github.com/daniel-brai/hearth/compare/v0.0.1...v0.0.1) (2026-10-30)
 
 
