@@ -17,6 +17,8 @@ pnpm-debug.log
 /storage/
 .env
 
+/.juno/
+
 # AppRole credentials for infra/compose.vault.yml
 infra/vault-role-id
 infra/vault-secret-id
