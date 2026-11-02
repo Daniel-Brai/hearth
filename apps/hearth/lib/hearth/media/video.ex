@@ -38,8 +38,8 @@ defmodule Hearth.Media.Video do
           ~w[-c copy]
 
         false ->
-          ~w[-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -vf #{@scale}] ++
-            ~w[-c:a aac -b:a 128k]
+          ~w[-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p] ++
+            ["-vf", @scale] ++ ~w[-c:a aac -b:a 128k]
       end
 
     args =
@@ -61,8 +61,8 @@ defmodule Hearth.Media.Video do
       Enum.concat([
         ["-v", "error", "-y", "-i", input],
         ~w[-map 0:v -map 0:a? -map_metadata -1 -map_metadata:s -1 -map_chapters -1],
-        ~w[-c copy -fflags +bitexact -f #{container}],
-        [output]
+        ~w[-c copy -fflags +bitexact],
+        ["-f", container, output]
       ])
     )
   end

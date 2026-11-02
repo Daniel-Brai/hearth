@@ -249,8 +249,8 @@ defmodule Hearth.TestUtils do
       end
 
     sources =
-      ~w[-f lavfi -i testsrc=duration=#{seconds}:size=#{size}:rate=5] ++
-        ~w[-f lavfi -i sine=duration=#{seconds}]
+      ["-f", "lavfi", "-i", "testsrc=duration=#{seconds}:size=#{size}:rate=5"] ++
+        ["-f", "lavfi", "-i", "sine=duration=#{seconds}"]
 
     :ok = ffmpeg!(sources ++ codecs ++ List.flatten(metadata) ++ ["-shortest", path])
     data = File.read!(path)
@@ -307,7 +307,7 @@ defmodule Hearth.TestUtils do
   def write_sideways_video!(dir) do
     input = write_file!(dir, random_file!(:video), "in.mp4")
     output = Path.join(dir, "out.mp4")
-    :ok = ffmpeg!(~w[-display_rotation 90 -i #{input} -c copy #{output}])
+    :ok = ffmpeg!(["-display_rotation", "90", "-i", input, "-c", "copy", output])
 
     output
   end
@@ -879,7 +879,14 @@ defmodule Hearth.TestUtils do
   end
 
   defp random_rtp!(:audio, source, seconds) do
-    ffmpeg!(~w[-f lavfi -i sine=frequency=440:duration=#{seconds} -c:a libopus -f ogg #{source}])
+    ffmpeg!(
+      Enum.concat([
+        ["-f", "lavfi", "-i", "sine=frequency=440:duration=#{seconds}"],
+        ~w[-c:a libopus -f ogg],
+        [source]
+      ])
+    )
+
     {:ok, reader} = Ogg.Reader.open(source)
 
     reader
@@ -889,8 +896,11 @@ defmodule Hearth.TestUtils do
 
   defp random_rtp!(:video, source, seconds) do
     ffmpeg!(
-      ~w[-f lavfi -i testsrc=duration=#{seconds}:size=640x360:rate=10 -c:v libvpx -g 10] ++
-        ~w[-f ivf #{source}]
+      Enum.concat([
+        ["-f", "lavfi", "-i", "testsrc=duration=#{seconds}:size=640x360:rate=10"],
+        ~w[-c:v libvpx -g 10 -f ivf],
+        [source]
+      ])
     )
 
     {:ok, header, reader} = IVF.Reader.open(source)
