@@ -14,6 +14,21 @@ defmodule Hearth.Release do
     :ok
   end
 
+  # Data migrations run by hand after a deploy
+  @spec migrate_data() :: :ok
+  def migrate_data do
+    load_app()
+
+    for repo <- repos() do
+      path = Application.app_dir(@app, "priv/repo/data_migrations")
+
+      {:ok, _result, _apps} =
+        Migrator.with_repo(repo, &Migrator.run(&1, path, :up, all: true))
+    end
+
+    :ok
+  end
+
   @spec rollback(module(), integer()) :: :ok
   def rollback(repo, version) do
     load_app()

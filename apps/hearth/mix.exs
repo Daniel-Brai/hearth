@@ -84,6 +84,7 @@ defmodule Hearth.MixProject do
       setup: ["deps.get", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run #{__DIR__}/priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "ecto.migrate_data": ["ecto.migrate --migrations-path priv/repo/data_migrations"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
     ]
   end

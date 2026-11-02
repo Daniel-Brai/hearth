@@ -1,7 +1,7 @@
 defmodule Hearth.Repo do
   use Boundary,
     deps: [Hearth.Common],
-    exports: [Changeset, Flop, Page, Schema, Tree]
+    exports: [Changeset, Flop, Migration, Page, Schema, Tree]
 
   use Ecto.Repo,
     otp_app: :hearth,
