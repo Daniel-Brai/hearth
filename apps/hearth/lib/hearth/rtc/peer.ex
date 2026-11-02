@@ -16,6 +16,8 @@ defmodule Hearth.RTC.Peer do
   alias Hearth.Common.T
   alias Hearth.RTC
   alias Hearth.RTC.Recorder
+  alias Hearth.RTC.Route
+  alias Hearth.RTC.Speech
 
   require Logger
 
@@ -23,17 +25,8 @@ defmodule Hearth.RTC.Peer do
   @mid_uri "urn:ietf:params:rtp-hdrext:sdes:mid"
   @rid_uri "urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id"
 
-  # A packet at or under this level in -dBov counts as speech
-  # and speech stops counting this long after the last one
-  @loud_level 50
-  @speaking_ms 400
   @keyframe_ms 500
   @failed_ms 10_000
-
-  # While captions are on a stretch of speech goes for captioning when the speaker pauses or
-  # reaches the longest stretch, and one shorter than the least is a cough or a click
-  @phrase_max_ms 6_000
-  @phrase_min_ms 600
 
   @type route :: %{
           send_audio: boolean(),
@@ -112,9 +105,7 @@ defmodule Hearth.RTC.Peer do
       ice_restart?: false,
       new_watch?: false,
       level_id: nil,
-      loud_at: nil,
-      speaking?: false,
-      phrase: nil,
+      speech: Speech.new(),
       keyframe_at: nil,
       keyframe_due?: false,
       connected?: false,
@@ -191,7 +182,9 @@ defmodule Hearth.RTC.Peer do
   @impl GenServer
   def handle_info({:ex_webrtc, pc, message}, %{pc: pc} = state), do: on_pc(message, state)
 
-  def handle_info(:check_speaking, state), do: {:noreply, check_speaking(state)}
+  def handle_info(:check_speaking, state) do
+    {:noreply, speak(state, Speech.check(state.speech, now()))}
+  end
 
   def handle_info(:ready_timeout, %{connected?: true} = state), do: {:noreply, state}
 
@@ -251,50 +244,44 @@ defmodule Hearth.RTC.Peer do
   defp on_pc(_message, state), do: {:noreply, state}
 
   defp apply_route(state) do
-    {inbound, changed_in?} = sync_inbound(state)
-    {synced, changed_out?} = sync_outbound(inbound)
+    changes = Route.changes(state.route, Map.keys(state.inbound), Map.keys(state.outbound))
+    new_watch? = Enum.any?(changes.subscribe, &match?({_user, :video}, &1))
 
-    if changed_in? or changed_out? or synced.ice_restart?, do: offer(synced), else: synced
-  end
-
-  defp sync_inbound(state) do
-    wanted = %{audio: state.route.send_audio, video: state.route.send_video}
-
-    Enum.reduce(wanted, {state, false}, fn {kind, wanted?}, {state, changed?} ->
-      case {wanted?, Map.get(state.inbound, kind)} do
-        {true, nil} ->
-          {:ok, tr} = PeerConnection.add_transceiver(state.pc, kind, direction: :recvonly)
-          track_id = tr.receiver.track.id
-          entry = %{transceiver: tr.id, track: track_id, seen?: false}
-          inbound = Map.put(state.inbound, kind, entry)
-          {%{state | inbound: inbound, in_tracks: Map.put(state.in_tracks, track_id, kind)}, true}
-
-        {false, %{transceiver: id, track: track_id}} ->
-          :ok = PeerConnection.stop_transceiver(state.pc, id)
-          inbound = Map.delete(state.inbound, kind)
-          state = close_segment(state, kind)
-          {%{state | inbound: inbound, in_tracks: Map.delete(state.in_tracks, track_id)}, true}
-
-        _same ->
-          {state, changed?}
-      end
-    end)
-  end
-
-  defp sync_outbound(state) do
-    wanted = MapSet.new(state.route.receive)
-    have = state.outbound |> Map.keys() |> MapSet.new()
-    removed = MapSet.difference(have, wanted)
-    added = MapSet.difference(wanted, have)
-    new_watch? = Enum.any?(added, &match?({_user, :video}, &1))
-
-    synced =
-      removed
-      |> Enum.reduce(state, &unsubscribe(&2, &1))
-      |> then(&Enum.reduce(added, &1, fn source, acc -> subscribe(acc, source) end))
+    state =
+      state
+      |> reduce(changes.close, &close_inbound/2)
+      |> reduce(changes.open, &open_inbound/2)
+      |> reduce(changes.unsubscribe, &unsubscribe/2)
+      |> reduce(changes.subscribe, &subscribe/2)
       |> Map.update!(:new_watch?, &(&1 or new_watch?))
 
-    {synced, MapSet.size(added) > 0 or MapSet.size(removed) > 0}
+    if Route.changed?(changes) or state.ice_restart?, do: offer(state), else: state
+  end
+
+  defp reduce(state, items, fun), do: Enum.reduce(items, state, &fun.(&2, &1))
+
+  defp open_inbound(state, kind) do
+    {:ok, tr} = PeerConnection.add_transceiver(state.pc, kind, direction: :recvonly)
+    track_id = tr.receiver.track.id
+    entry = %{transceiver: tr.id, track: track_id, seen?: false}
+
+    %{
+      state
+      | inbound: Map.put(state.inbound, kind, entry),
+        in_tracks: Map.put(state.in_tracks, track_id, kind)
+    }
+  end
+
+  defp close_inbound(state, kind) do
+    %{transceiver: id, track: track_id} = Map.fetch!(state.inbound, kind)
+    :ok = PeerConnection.stop_transceiver(state.pc, id)
+    state = close_segment(state, kind)
+
+    %{
+      state
+      | inbound: Map.delete(state.inbound, kind),
+        in_tracks: Map.delete(state.in_tracks, track_id)
+    }
   end
 
   defp subscribe(state, {publisher, kind} = source) do
@@ -424,77 +411,37 @@ defmodule Hearth.RTC.Peer do
     end
   end
 
-  defp phrase(%{route: %{caption: true}, speaking?: true} = state, :audio, packet) do
-    now = System.monotonic_time(:millisecond)
-    phrase = state.phrase || %{started_at: now, packets: []}
-    state = %{state | phrase: %{phrase | packets: [packet | phrase.packets]}}
-
-    if now - phrase.started_at >= @phrase_max_ms, do: hand_over_phrase(state), else: state
-  end
-
-  defp phrase(%{route: %{caption: false}, phrase: %{}} = state, _kind, _packet),
-    do: %{state | phrase: nil}
-
-  defp phrase(state, _kind, _packet), do: state
-
-  defp hand_over_phrase(%{phrase: nil} = state), do: state
-
-  defp hand_over_phrase(%{phrase: phrase} = state) do
-    long_enough? = System.monotonic_time(:millisecond) - phrase.started_at >= @phrase_min_ms
-    if long_enough?, do: notify(state, {:phrase, Enum.reverse(phrase.packets)})
-
-    %{state | phrase: nil}
+  defp phrase(state, kind, packet) do
+    speak(state, Speech.keep(state.speech, state.route.caption, kind, packet, now()))
   end
 
   defp hear(state, :video, _packet), do: state
 
   defp hear(state, :audio, packet) do
-    case loud?(state.level_id, packet) do
-      true ->
-        now = System.monotonic_time(:millisecond)
-        state = %{state | loud_at: now}
-
-        case state.speaking? do
-          true ->
-            state
-
-          false ->
-            notify(state, {:speaking, true})
-            Process.send_after(self(), :check_speaking, @speaking_ms)
-            %{state | speaking?: true}
-        end
-
-      false ->
-        state
-    end
+    speak(state, Speech.heard(state.speech, level(state.level_id, packet), now()))
   end
 
-  defp loud?(nil, _packet), do: true
+  defp speak(state, {speech, events}) do
+    Enum.each(events, fn
+      {:check_in, ms} -> Process.send_after(self(), :check_speaking, ms)
+      event -> notify(state, event)
+    end)
 
-  defp loud?(id, packet) do
+    %{state | speech: speech}
+  end
+
+  defp level(nil, _packet), do: nil
+
+  defp level(id, packet) do
     with {:ok, raw} <- Packet.fetch_extension(packet, id),
          {:ok, %AudioLevel{level: level}} <- AudioLevel.from_raw(raw) do
-      level <= @loud_level
+      level
     else
-      _missing -> true
+      _missing -> nil
     end
   end
 
-  defp check_speaking(%{speaking?: false} = state), do: state
-
-  defp check_speaking(state) do
-    quiet_for = System.monotonic_time(:millisecond) - (state.loud_at || 0)
-
-    case quiet_for >= @speaking_ms do
-      true ->
-        notify(state, {:speaking, false})
-        hand_over_phrase(%{state | speaking?: false})
-
-      false ->
-        Process.send_after(self(), :check_speaking, @speaking_ms - quiet_for)
-        state
-    end
-  end
+  defp now, do: System.monotonic_time(:millisecond)
 
   defp ask_sharer_for_keyframe(state) do
     for {publisher, :video} <- Map.keys(state.outbound),
@@ -507,7 +454,7 @@ defmodule Hearth.RTC.Peer do
   # A keyframe asked for before the first video packet waits for it, since
   # the connection can't address the sharer's stream until then
   defp request_keyframe(state) do
-    now = System.monotonic_time(:millisecond)
+    now = now()
 
     case {state.inbound, state.keyframe_at} do
       {%{video: %{seen?: false}}, _at} ->
