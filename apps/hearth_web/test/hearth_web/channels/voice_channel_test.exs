@@ -146,7 +146,7 @@ defmodule HearthWeb.VoiceChannelTest do
       :ok = Voice.leave(member, session)
 
       assert_push "Disconnected", %{reason: :left}, 1_000
-      assert_receive {:DOWN, ^ref, :process, _pid, _reason}, 1_000
+      assert_receive {:DOWN, ^ref, :process, _pid, _reason}
     end
 
     test "drops reactions past five a second", %{member: member, session: session} do
@@ -187,12 +187,12 @@ defmodule HearthWeb.VoiceChannelTest do
       {_listener, _reply} =
         member |> connected_socket() |> FakeBrowser.start!(session.id, :listener)
 
-      assert_receive {:browser, :host, :connected}, 5_000
-      assert_receive {:browser, :listener, :connected}, 5_000
+      assert_receive {:browser, :host, :connected}
+      assert_receive {:browser, :listener, :connected}
 
       FakeBrowser.stream(host, :audio, "hello", 100)
 
-      assert_receive {:browser, :listener, {:rtp, ^owner_id, :audio, "hello"}}, 5_000
+      assert_receive {:browser, :listener, {:rtp, ^owner_id, :audio, "hello"}}
     end
 
     test "drops a server muted speaker's audio", %{
@@ -206,10 +206,10 @@ defmodule HearthWeb.VoiceChannelTest do
       {_listener, _reply} =
         member |> connected_socket() |> FakeBrowser.start!(session.id, :listener)
 
-      assert_receive {:browser, :host, :connected}, 5_000
-      assert_receive {:browser, :listener, :connected}, 5_000
+      assert_receive {:browser, :host, :connected}
+      assert_receive {:browser, :listener, :connected}
       FakeBrowser.stream(host, :audio, "before", 100)
-      assert_receive {:browser, :listener, {:rtp, ^owner_id, :audio, "before"}}, 5_000
+      assert_receive {:browser, :listener, {:rtp, ^owner_id, :audio, "before"}}
 
       :ok = Voice.server_mute(owner, session, owner_id, true)
       FakeBrowser.stream(host, :audio, "muted", 25)
@@ -224,17 +224,17 @@ defmodule HearthWeb.VoiceChannelTest do
     } do
       %{id: owner_id} = owner
       {host, _reply} = owner |> connected_socket() |> FakeBrowser.start!(session.id, :host)
-      assert_receive {:browser, :host, :connected}, 5_000
+      assert_receive {:browser, :host, :connected}
       :ok = Voice.start_share(owner, session)
-      assert_receive {:browser, :host, {:push, "VoiceShareChanged", _payload}}, 5_000
+      assert_receive {:browser, :host, {:push, "VoiceShareChanged", _payload}}
       FakeBrowser.stream(host, :video, "frame", 250)
 
       {_watcher, _reply} =
         member |> connected_socket() |> FakeBrowser.start!(session.id, :watcher)
 
-      assert_receive {:browser, :watcher, :connected}, 5_000
-      assert_receive {:browser, :host, :pli}, 5_000
-      assert_receive {:browser, :watcher, {:rtp, ^owner_id, :video, "frame"}}, 5_000
+      assert_receive {:browser, :watcher, :connected}
+      assert_receive {:browser, :host, :pli}
+      assert_receive {:browser, :watcher, {:rtp, ^owner_id, :video, "frame"}}
     end
   end
 end

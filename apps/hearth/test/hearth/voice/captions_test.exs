@@ -25,7 +25,7 @@ defmodule Hearth.Voice.CaptionsTest do
     test "sends what was said to the room", %{session_id: s, user_id: u} do
       assert :ok = Captions.caption(s, u, TestUtils.opus_packets(25))
 
-      assert_receive %VoiceCaption{session_id: ^s, user_id: ^u, text: "Hello there"}, 2_000
+      assert_receive %VoiceCaption{session_id: ^s, user_id: ^u, text: "Hello there"}
     end
   end
 end

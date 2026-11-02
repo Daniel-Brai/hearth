@@ -5,6 +5,7 @@ defmodule Hearth.Notifications.WebPushTest do
 
   alias Faker.Internet
   alias Hearth.Notifications.WebPush
+  alias JOSE.JWT
   alias Plug.Conn
 
   setup {Req.Test, :set_req_test_from_context}
@@ -12,16 +13,16 @@ defmodule Hearth.Notifications.WebPushTest do
 
   test "generate_vapid_keys/0" do
     assert keys = WebPush.generate_vapid_keys()
-    assert is_binary(keys.public)
-    assert is_binary(keys.private)
+    assert <<4, _point::binary-size(64)>> = Base.url_decode64!(keys.public, padding: false)
+    assert <<_scalar::binary-size(32)>> = Base.url_decode64!(keys.private, padding: false)
   end
 
   test "generate_jwt!/2" do
-    endpoint = Internet.url()
+    host = Internet.domain_name()
     keys = WebPush.generate_vapid_keys()
 
-    assert token = WebPush.generate_jwt!(endpoint, keys)
-    assert is_binary(token)
+    assert token = WebPush.generate_jwt!("https://#{host}/push/#{Internet.slug()}", keys)
+    assert %JWT{fields: %{"aud" => "https://" <> ^host}} = JWT.peek_payload(token)
   end
 
   # A real browser's keys, which Hearth keeps flat beside the endpoint

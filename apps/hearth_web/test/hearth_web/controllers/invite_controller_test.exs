@@ -64,7 +64,7 @@ defmodule HearthWeb.InviteControllerTest do
                |> post(~p"/api/communities/#{community.id}/invites", body)
                |> valid_response(201)
 
-      assert is_binary(response["code"])
+      assert response["code"] =~ ~r/^[2-9a-km-z]{10}$/
       assert response["max_uses"] == body.max_uses
     end
   end

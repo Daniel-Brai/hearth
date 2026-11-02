@@ -69,7 +69,7 @@ defmodule HearthWeb.CommunityControllerTest do
                response
 
       assert owner_id == owner.id
-      assert is_binary(response["logo_url"])
+      assert %{"logo_url" => "http" <> _logo} = response
     end
   end
 

@@ -186,8 +186,7 @@ defmodule Hearth.VoiceTest do
 
       assert {:ok, _joined} = Voice.join(owner, session, channel)
 
-      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :offer, %{sdp: "v=0" <> _sdp}}},
-                     1_000
+      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :offer, %{sdp: "v=0" <> _sdp}}}
 
       assert {:ok, _joined} = Voice.join(member, session, TestUtils.start_fake_channel!())
 
@@ -219,7 +218,7 @@ defmodule Hearth.VoiceTest do
 
       send(channel, :stop)
 
-      assert_receive %VoiceParticipantChanged{user_id: ^member_id, left: true}, 1_000
+      assert_receive %VoiceParticipantChanged{user_id: ^member_id, left: true}
       session_id = session.id
       assert_receive %VoiceAttendance{session_id: ^session_id, people: 0, user_ids: []}
     end
@@ -242,7 +241,7 @@ defmodule Hearth.VoiceTest do
 
       :ok = Voice.leave(member, session)
 
-      assert_receive %VoiceSessionEnded{session_id: ^id, reason: :ended}, 1_000
+      assert_receive %VoiceSessionEnded{session_id: ^id, reason: :ended}
       assert_receive {:DOWN, ^ref, :process, ^live, :normal}
       assert %Session{ended_at: %DateTime{}} = Session.get(id: id)
     end
@@ -285,7 +284,7 @@ defmodule Hearth.VoiceTest do
 
       assert :ok = Voice.leave(member, session)
       assert_receive %VoiceParticipantChanged{user_id: ^member_id, left: true}
-      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :left}}, 1_000
+      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :left}}
     end
   end
 
@@ -471,7 +470,7 @@ defmodule Hearth.VoiceTest do
       {:ok, _joined} = Voice.join(member, session, channel)
 
       assert :ok = Voice.disconnect(owner, session, member_id)
-      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :disconnected}}, 1_000
+      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :disconnected}}
       assert_receive %VoiceParticipantChanged{user_id: ^member_id, left: true}
       assert Action.exists?(target_id: member_id, action: :disconnected)
     end
@@ -669,7 +668,7 @@ defmodule Hearth.VoiceTest do
       {:ok, _room} = Communities.update_room(owner, room, %{role_ids: []})
 
       assert :ok = Voice.remove_hidden(community.id, room.id, nil)
-      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :no_access}}, 1_000
+      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :no_access}}
       assert {:ok, snapshot} = Voice.snapshot(owner, session)
       assert TestUtils.pluck(snapshot.participants, :user_id) == [owner.id]
     end
@@ -808,7 +807,7 @@ defmodule Hearth.VoiceTest do
 
       assert :ok = Voice.end_session(owner, session)
       assert_receive %VoiceSessionEnded{session_id: ^id, reason: :ended}
-      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :ended}}, 1_000
+      assert_receive {:voice_channel, ^channel, {:hearth_rtc, :closed, :ended}}
       assert {:ok, %Session{ended_at: %DateTime{}}} = Voice.get_session(id: id)
     end
 
@@ -862,7 +861,7 @@ defmodule Hearth.VoiceTest do
       assert participant.user_id == member.id
 
       Process.exit(again, :kill)
-      assert_receive %VoiceSessionEnded{session_id: ^id, reason: :lost}, 1_000
+      assert_receive %VoiceSessionEnded{session_id: ^id, reason: :lost}
     end
 
     test "broadcasts who is speaking", %{owner: owner, community: community} do
@@ -872,7 +871,7 @@ defmodule Hearth.VoiceTest do
 
       send(TestUtils.live_of!(session), {:hearth_rtc_peer, owner_id, {:speaking, true}})
 
-      assert_receive %VoiceSpeakingChanged{user_ids: [^owner_id]}, 1_000
+      assert_receive %VoiceSpeakingChanged{user_ids: [^owner_id]}
     end
 
     test "never shows the server muted speaking", %{
@@ -890,7 +889,7 @@ defmodule Hearth.VoiceTest do
       send(live, {:hearth_rtc_peer, speaker.id, {:speaking, true}})
       send(live, {:hearth_rtc_peer, owner_id, {:speaking, true}})
 
-      assert_receive %VoiceSpeakingChanged{user_ids: [^owner_id]}, 1_000
+      assert_receive %VoiceSpeakingChanged{user_ids: [^owner_id]}
     end
   end
 end
