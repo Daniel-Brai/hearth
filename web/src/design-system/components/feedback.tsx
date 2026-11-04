@@ -1,6 +1,18 @@
 import type { ReactNode } from 'react';
 import { cn } from './cn';
 import { Illo, type IlloName } from '@/design-system/icons/Icon';
+import {
+  CardsShape,
+  CatchUpShape,
+  EventsShape,
+  FormShape,
+  ListShape,
+  RolesShape,
+  SettingsShape,
+  TemplatesShape,
+  TranscriptShape,
+  VoiceShape,
+} from './skeleton-shapes';
 
 export type ToastItem = { readonly id: number; readonly msg: string; readonly show: boolean };
 
@@ -53,9 +65,40 @@ export function EmptyState({
   );
 }
 
-export type SkeletonKind = 'feed' | 'post' | 'compose' | 'chat' | 'queue' | 'profile';
+export type SkeletonKind =
+  | 'feed'
+  | 'post'
+  | 'compose'
+  | 'chat'
+  | 'queue'
+  | 'profile'
+  | 'voice'
+  | 'events'
+  | 'form'
+  | 'settings'
+  | 'list'
+  | 'roles'
+  | 'cards'
+  | 'transcript'
+  | 'catchup'
+  | 'templates';
+
+const SHAPES: Partial<Record<SkeletonKind, () => ReactNode>> = {
+  voice: VoiceShape,
+  events: EventsShape,
+  form: FormShape,
+  settings: SettingsShape,
+  list: ListShape,
+  roles: RolesShape,
+  cards: CardsShape,
+  transcript: TranscriptShape,
+  catchup: CatchUpShape,
+  templates: TemplatesShape,
+};
 
 export function Skeleton({ kind }: { readonly kind: SkeletonKind }) {
+  const Shape = SHAPES[kind];
+
   return (
     <div className={cn('skeleton', `skeleton--${kind}`)} aria-busy="true" aria-label="Loading">
       {kind === 'feed' ? (
@@ -151,6 +194,7 @@ export function Skeleton({ kind }: { readonly kind: SkeletonKind }) {
           ))}
         </div>
       ) : null}
+      {Shape ? <Shape /> : null}
       {kind === 'profile' ? (
         <div className="grid gap-3 justify-items-center" style={{ paddingBlock: '1.5rem' }}>
           <span

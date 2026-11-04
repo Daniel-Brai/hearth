@@ -179,6 +179,7 @@ function setup(overrides: Partial<VoiceClientDeps> = {}) {
     onEvent: vi.fn(),
     onConnection: vi.fn(),
     onAudioBlocked: vi.fn(),
+    onMicBlocked: vi.fn(),
     onDisconnected: vi.fn(),
     onRejoined: vi.fn(),
     onSpeaking: vi.fn(),
@@ -268,6 +269,27 @@ describe('VoiceClient offers', () => {
     expect(peer().transceivers[0]!.direction).toBe('sendonly');
     expect(peer().transceivers[0]!.sender.track).toBe(mic);
     expect(mic.enabled).toBe(false);
+  });
+
+  it('reports a blocked microphone without a toast', async () => {
+    const getMic = vi.fn(() => Promise.reject(new DOMException('denied', 'NotAllowedError')));
+    const { join, offer, on } = setup({ getMic });
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await join(true);
+    await offer({ '0': { kind: 'audio', direction: 'send', user_id: 'me' } });
+
+    expect(on.onMicBlocked).toHaveBeenCalledWith(true);
+    expect(on.onError).not.toHaveBeenCalled();
+  });
+
+  it('reports the microphone open once it is', async () => {
+    const { join, offer, on } = setup();
+
+    await join(true);
+    await offer({ '0': { kind: 'audio', direction: 'send', user_id: 'me' } });
+
+    expect(on.onMicBlocked).toHaveBeenCalledWith(false);
   });
 
   it('caps a shared screen for sharp text at one upload', async () => {

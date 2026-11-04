@@ -1066,6 +1066,16 @@ mark { background: var(--color-highlight); color: inherit; border-radius: 0.2em;
 .skel--avatar-lg { block-size: 3.4rem; inline-size: 3.4rem; border-radius: 50%; }
 .skel--short { inline-size: 5.5rem; }
 .skel--tiny { inline-size: 2.4rem; block-size: 0.6rem; }
+.skel--field { block-size: 2.6rem; inline-size: 100%; border-radius: 0.7rem; }
+.skel--area { block-size: 7rem; }
+.skel--switch { block-size: 1.4rem; inline-size: 2.4rem; border-radius: 99rem; flex-shrink: 0; }
+.skel--tile { block-size: 3.25rem; inline-size: 3.25rem; border-radius: 0.9rem; flex-shrink: 0; }
+.skel--thumb { block-size: 3.4rem; inline-size: 5.6rem; border-radius: 0.6rem; flex-shrink: 0; }
+.skel--mark { block-size: 2.6rem; inline-size: 2.6rem; border-radius: 0.7rem; flex-shrink: 0; }
+.skel--avatar-md { block-size: 2.6rem; inline-size: 2.6rem; border-radius: 50%; flex-shrink: 0; }
+.skel--dot { block-size: 0.7rem; inline-size: 0.7rem; border-radius: 50%; flex-shrink: 0; }
+.skel-row { align-items: center; display: flex; gap: 0.75rem; }
+.skel-row--foot { border-block-start: 1px solid var(--color-ink-lighter); padding-block-start: 0.75rem; }
 .sidebar__me .skel--line { inline-size: 7rem; }
 @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 .skel-card { border: 1px solid var(--color-ink-lighter); border-radius: 0.9em; display: grid; gap: 0.7rem; padding: 1rem 1.15rem; }

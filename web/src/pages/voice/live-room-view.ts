@@ -27,6 +27,7 @@ export function useLiveRoomView(cid: string, rid: string) {
       captions: transcriptionOn(state) && state.settings.captions,
       muteKey: keyOf('voice_mute', state.settings.keys),
       audioBlocked: !!state.live.audioBlocked,
+      micBlocked: !!state.live.micBlocked,
       connection: state.live.connection ?? null,
     };
   });

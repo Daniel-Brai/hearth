@@ -57,6 +57,7 @@ const REFUSALS: Record<string, string> = {
   already_recording: 'This room is already being recorded.',
   not_recording: 'Nothing is being recorded.',
   not_on_stage: 'Only people on stage can do that.',
+  mic_blocked: "Hearth can't use your microphone. Allow it for this site and join again.",
   same_mode: 'The room is already like that.',
   invalid_transition: "That can't change right now.",
   not_live: 'This room has ended.',
@@ -477,6 +478,10 @@ export function createVoiceGateway(
         ctx.store.set((state) => {
           if (state.live.key === key) state.live.audioBlocked = blocked;
         }),
+      onMicBlocked: (blocked) =>
+        ctx.store.set((state) => {
+          if (state.live.key === key) state.live.micBlocked = blocked;
+        }),
       onDisconnected: (reason) => {
         if (reason === 'lost' && joined === j) {
           const stage = ctx.store.get().live.role !== 'listener';
@@ -528,6 +533,7 @@ export function createVoiceGateway(
         session,
         hostTools: false,
         audioBlocked: false,
+        micBlocked: false,
         connection: 'connecting',
       };
     });
@@ -799,6 +805,7 @@ export function createVoiceGateway(
       const live = ctx.store.get().live;
 
       if (!joined || !mayTalk(ctx.store.get())) return fail(REFUSALS['not_on_stage']!);
+      if (live.muted && live.micBlocked) return fail(REFUSALS['mic_blocked']!);
 
       const muted = !live.muted;
 

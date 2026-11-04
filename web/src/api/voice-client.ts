@@ -47,6 +47,7 @@ export type VoiceClientEvents = {
   readonly onEvent: <E extends keyof VoiceEvents>(name: E, payload: VoiceEvents[E]) => void;
   readonly onConnection: (state: 'connecting' | 'connected' | 'reconnecting') => void;
   readonly onAudioBlocked: (blocked: boolean) => void;
+  readonly onMicBlocked: (blocked: boolean) => void;
   readonly onDisconnected: (reason: DisconnectReason) => void;
   readonly onRejoined: (reply: JoinReply) => void;
   readonly onSpeaking: (userIds: string[]) => void;
@@ -83,9 +84,6 @@ export const JOIN_REFUSALS: Record<string, string> = {
   unavailable: 'Voice rooms are not available right now. Try again in a bit.',
   timeout: "The room didn't answer. Check your connection and try again.",
 };
-
-const MIC_FAILED =
-  "Hearth couldn't use your microphone. Check this site's microphone permission, then try again.";
 
 const CALL_FAILED = "The call couldn't connect. Leave and join again.";
 
@@ -352,9 +350,11 @@ export class VoiceClient {
         this.mic = await this.deps.getMic();
       } catch (error) {
         console.warn('Hearth could not open the microphone.', error);
-        this.on.onError(MIC_FAILED);
+        this.on.onMicBlocked(true);
         return null;
       }
+
+      this.on.onMicBlocked(false);
     }
 
     const track = this.mic.getAudioTracks()[0] ?? null;

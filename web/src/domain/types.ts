@@ -534,6 +534,7 @@ export type LiveState = {
   session?: string | null;
   hostTools?: boolean;
   audioBlocked?: boolean;
+  micBlocked?: boolean;
   connection?: 'connecting' | 'connected' | 'reconnecting';
 };
 

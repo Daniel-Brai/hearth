@@ -10,6 +10,7 @@ defmodule Hearth.InstanceTest do
   alias Plug.Conn
 
   @latest "/repos/daniel-brai/hearth/releases/latest"
+  @version :hearth |> Application.spec(:vsn) |> to_string()
 
   setup {Req.Test, :set_req_test_from_context}
   setup {Req.Test, :verify_on_exit!}
@@ -22,7 +23,7 @@ defmodule Hearth.InstanceTest do
 
   describe "update_status/0" do
     test "returns running version before check" do
-      assert %{current_version: "0.1.0", latest_version: nil, update_available: false} =
+      assert %{current_version: @version, latest_version: nil, update_available: false} =
                Instance.update_status()
     end
   end
@@ -53,10 +54,10 @@ defmodule Hearth.InstanceTest do
 
     test "finds nothing if up to date" do
       stub(Releases, fn %Conn{method: "GET", request_path: @latest} = conn ->
-        json(conn, TestUtils.random_github_release("v0.1.0"))
+        json(conn, TestUtils.random_github_release("v" <> @version))
       end)
 
-      assert {:ok, %{latest_version: "0.1.0", update_available: false}} =
+      assert {:ok, %{latest_version: @version, update_available: false}} =
                Instance.check_for_update()
     end
 

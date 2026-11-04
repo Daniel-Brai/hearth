@@ -165,18 +165,28 @@ function RoomHeading({
 function CallNotices({ view }: { readonly view: LiveRoomView }) {
   const gateway = useGateway();
 
-  if (view.audioBlocked)
-    return (
-      <OriginNote id="voice-audio-blocked">
-        <span className="origin-note__text">
-          <Icon name="volume" />
-          Your browser held back the room's sound until you tap.
-        </span>
-        <Button size="tiny" variant="reversed" onClick={() => gateway.voice.resumeAudio()}>
-          Tap to hear
-        </Button>
-      </OriginNote>
-    );
+  return (
+    <>
+      {view.audioBlocked ? (
+        <OriginNote id="voice-audio-blocked">
+          <span className="origin-note__text">
+            <Icon name="volume" />
+            Your browser held back the room's sound until you tap.
+          </span>
+          <Button size="tiny" variant="reversed" onClick={() => gateway.voice.resumeAudio()}>
+            Tap to hear
+          </Button>
+        </OriginNote>
+      ) : null}
 
-  return null;
+      {view.onStage && view.micBlocked ? (
+        <OriginNote id="voice-mic-blocked">
+          <span className="origin-note__text">
+            <Icon name="micoff" />
+            No microphone access. Allow it for this site and join again.
+          </span>
+        </OriginNote>
+      ) : null}
+    </>
+  );
 }

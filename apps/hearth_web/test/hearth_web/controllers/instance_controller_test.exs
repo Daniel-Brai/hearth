@@ -8,6 +8,7 @@ defmodule HearthWeb.InstanceControllerTest do
   alias Plug.Conn
 
   @latest "/repos/daniel-brai/hearth/releases/latest"
+  @version :hearth_web |> Application.spec(:vsn) |> to_string()
 
   setup {Req.Test, :set_req_test_from_context}
   setup {Req.Test, :verify_on_exit!}
@@ -72,7 +73,7 @@ defmodule HearthWeb.InstanceControllerTest do
     end
 
     test "shows running version before check", %{conn: conn} do
-      assert %{"current_version" => "0.1.0", "update_available" => false} =
+      assert %{"current_version" => @version, "update_available" => false} =
                conn
                |> auth_conn(TestUtils.register_random_user!(admin: true))
                |> get(~p"/api/instance/update")

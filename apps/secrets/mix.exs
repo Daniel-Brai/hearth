@@ -1,10 +1,19 @@
 defmodule Secrets.MixProject do
   use Mix.Project
 
+  # Releases bump the version in the umbrella's mix.exs and every app reports that one
+  @version "../../mix.exs"
+           |> Path.expand(__DIR__)
+           |> File.read!()
+           |> String.split(~s(@version "), parts: 2)
+           |> List.last()
+           |> String.split(~s("), parts: 2)
+           |> List.first()
+
   def project do
     [
       app: :secrets,
-      version: "0.1.0",
+      version: @version,
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",

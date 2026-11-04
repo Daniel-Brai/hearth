@@ -184,16 +184,21 @@ function MuteButton({
   readonly view: LiveRoomView;
   readonly actions: VoiceActions;
 }) {
+  const locked = view.muted && view.micBlocked;
+
   return (
     <Button
       id="voice-mute"
       circle
       variant={view.muted ? 'default' : 'positive'}
       onClick={actions.toggleMute}
+      disabled={locked}
       aria-pressed={!view.muted}
       aria-label={view.muted ? 'Unmute' : 'Mute'}
       aria-keyshortcuts={view.muteKey}
-      data-tip={`${view.muted ? 'Unmute' : 'Mute'} (${view.muteKey})`}
+      data-tip={
+        locked ? 'No microphone access' : `${view.muted ? 'Unmute' : 'Mute'} (${view.muteKey})`
+      }
     >
       <Icon name={view.muted ? 'micoff' : 'mic'} />
     </Button>

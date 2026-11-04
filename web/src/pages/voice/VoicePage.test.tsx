@@ -84,6 +84,31 @@ describe('VoicePage', () => {
     await waitFor(() => expect(document.querySelector('#voice-live')).toBeNull());
   });
 
+  it('locks unmute and says why when the microphone is blocked', async () => {
+    await show((state) => {
+      state.live = {
+        ...state.live,
+        joined: true,
+        key: 'elixir/office-hours',
+        role: 'speaker',
+        muted: true,
+        micBlocked: true,
+      };
+    });
+
+    expect(document.querySelector('#voice-mute')).toBeDisabled();
+    expect(document.querySelector('#voice-mic-blocked')).not.toBeNull();
+  });
+
+  it('lets a speaker with a microphone unmute', async () => {
+    await show((state) => {
+      state.live = { ...state.live, joined: true, key: 'elixir/office-hours', role: 'speaker' };
+    });
+
+    expect(document.querySelector('#voice-mute')).toBeEnabled();
+    expect(document.querySelector('#voice-mic-blocked')).toBeNull();
+  });
+
   it('says voice rooms are off instead of showing a room', async () => {
     await show((state) => {
       state.instance.voice = false;
