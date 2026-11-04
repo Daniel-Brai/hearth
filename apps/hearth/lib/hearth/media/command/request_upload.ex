@@ -14,7 +14,7 @@ defmodule Hearth.Media.Command.RequestUpload do
   @spec execute(User.t(), map()) ::
           {:ok, Asset.t()} | {:error, :too_many_unfinished | :rate_limited | Changeset.t()}
   def execute(%User{id: uploader_id}, %{} = params) do
-    key = params[:idempotency_key] || params["idempotency_key"]
+    key = params[:idempotency_key]
 
     case existing(uploader_id, key) do
       %Asset{} = media ->

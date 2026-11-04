@@ -99,7 +99,7 @@ defmodule Hearth.Forum do
              | :invalid_attachment
              | Changeset.t()}
   def create_post(%User{} = user, %Community{} = community, %{} = params) do
-    kind_id = params[:kind_id] || params["kind_id"]
+    kind_id = params[:kind_id]
 
     with :ok <- authorize(user, :create, :post, community.id),
          {:ok, kind} <- fetch_kind(community.id, kind_id),
@@ -117,7 +117,7 @@ defmodule Hearth.Forum do
           | {:error,
              :forbidden | :private_room | :unknown_kind | :invalid_messages | Changeset.t()}
   def promote(%User{} = user, %Room{} = room, message_ids, %{} = params) do
-    kind_id = params[:kind_id] || params["kind_id"]
+    kind_id = params[:kind_id]
 
     with :ok <- authorize(user, :promote, :chat, room.community_id),
          :ok <- open_room(room),
@@ -266,7 +266,7 @@ defmodule Hearth.Forum do
              | :invalid_attachment
              | Changeset.t()}
   def reply(%User{} = user, %Post{} = post, %{} = params) do
-    parent_id = params[:parent_reply_id] || params["parent_reply_id"]
+    parent_id = params[:parent_reply_id]
 
     with :ok <- authorize(user, :create, :reply, post.community_id),
          :ok <- open?(post),

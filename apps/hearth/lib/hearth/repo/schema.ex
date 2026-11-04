@@ -120,7 +120,6 @@ defmodule Hearth.Repo.Schema do
   defmacro __before_compile__(_env) do
     quote do
       @changeable_fields @changeable || []
-      @changeable_keys @changeable_fields ++ Enum.map(@changeable_fields, &Atom.to_string/1)
 
       if Module.defines?(__MODULE__, {:changeset, 2}) and
            not Module.defines?(__MODULE__, {:insert, 2}) do
@@ -136,7 +135,7 @@ defmodule Hearth.Repo.Schema do
            not Module.defines?(__MODULE__, {:update, 2}) do
         @spec update(struct(), map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
         def update(%__MODULE__{} = schema, %{} = params) do
-          changes = Map.take(params, @changeable_keys)
+          changes = Map.take(params, @changeable_fields)
 
           schema
           |> changeset(changes)

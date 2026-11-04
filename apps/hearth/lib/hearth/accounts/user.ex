@@ -13,7 +13,6 @@ defmodule Hearth.Accounts.User do
 
   @profile ~w[display_name bio pronouns location timezone locale avatar_id]a
   @changeable @profile
-  @profile_keys @profile ++ Enum.map(@profile, &Atom.to_string/1)
 
   schema "users" do
     field :username, :string
@@ -118,14 +117,11 @@ defmodule Hearth.Accounts.User do
   @spec update_profile(t(), map()) :: {:ok, t()} | {:error, Changeset.t()}
   def update_profile(%__MODULE__{} = user, %{} = params) do
     embeds =
-      for key <- [:links, :privacy],
-          value = params[key] || params[Atom.to_string(key)],
-          value != nil,
-          into: %{},
-          do: {key, value}
+      params |> Map.take([:links, :privacy]) |> Map.reject(fn {_key, value} -> is_nil(value) end)
 
     user
-    |> changeset(Map.take(params, @profile_keys))
+    |> cast(params, @profile)
+    |> validate_profile()
     |> cast(Link.unique(embeds), [])
     |> cast_embed(:links, with: &Link.changeset/2)
     |> cast_embed(:privacy)

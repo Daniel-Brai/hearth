@@ -69,7 +69,7 @@ defmodule Hearth.Chat do
              | :invalid_attachment
              | Changeset.t()}
   def send_message(%User{} = user, place, %{} = params) do
-    reply_to_id = params[:reply_to_id] || params["reply_to_id"]
+    reply_to_id = params[:reply_to_id]
     kind = Map.get(params, :kind, :text)
 
     with :ok <- may_write(user, place),

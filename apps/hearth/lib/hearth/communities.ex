@@ -518,14 +518,12 @@ defmodule Hearth.Communities do
   @spec create_invite(User.t(), Community.t(), map()) ::
           {:ok, Invite.t()} | {:error, :forbidden | Changeset.t()}
   def create_invite(%User{} = user, %Community{} = community, %{} = params) do
-    role_key = params[:role_key] || params["role_key"] || "member"
+    role_key = params[:role_key] || "member"
 
     with :ok <- authorize(user, :create, :invite, community),
          :ok <- may_grant?(user, community, role_key) do
       invite = %Invite{community_id: community.id, created_by_id: user.id}
-      params = Map.new(params, fn {key, value} -> {to_string(key), value} end)
-
-      Invite.insert(invite, Map.put(params, "role_key", role_key))
+      Invite.insert(invite, Map.put(params, :role_key, role_key))
     end
   end
 
@@ -606,7 +604,7 @@ defmodule Hearth.Communities do
   @spec update_invite(User.t(), Invite.t(), map()) ::
           {:ok, Invite.t()} | {:error, :forbidden | Changeset.t()}
   def update_invite(%User{} = user, %Invite{} = invite, %{} = params) do
-    role_key = params[:role_key] || params["role_key"] || invite.role_key
+    role_key = params[:role_key] || invite.role_key
 
     with :ok <- authorize(user, :update, :invite, invite),
          :ok <- may_grant?(user, %Community{id: invite.community_id}, role_key) do
@@ -766,7 +764,7 @@ defmodule Hearth.Communities do
 
   # Unknown role ids and roles from another community are dropped, as set_roles does with keys
   defp role_ids_in(community_id, params) do
-    case params[:role_ids] || params["role_ids"] do
+    case params[:role_ids] do
       nil -> nil
       ids -> community_id |> IAM.list_roles() |> Enum.map(& &1.id) |> Enum.filter(&(&1 in ids))
     end

@@ -249,7 +249,7 @@ defmodule Hearth.Events do
 
   # Voice rooms default to Stage, and chat rooms have no talk mode
   defp with_room(user, community_id, params) do
-    room_id = params[:room_id] || params["room_id"]
+    room_id = params[:room_id]
 
     room = if room_id, do: Communities.get_room(id: room_id, community_id: community_id)
 

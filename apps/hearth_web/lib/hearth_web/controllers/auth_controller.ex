@@ -8,6 +8,7 @@ defmodule HearthWeb.AuthController do
 
   alias Hearth.Accounts
   alias Hearth.Auth
+  alias Hearth.Common
   alias Hearth.Media
   alias HearthWeb.Avatars
   alias HearthWeb.ErrorResponse
@@ -234,7 +235,9 @@ defmodule HearthWeb.AuthController do
     %Conn{assigns: %{auth: auth}} = conn
 
     changes =
-      Map.take(params, ~w[display_name bio pronouns location timezone links privacy avatar_id])
+      params
+      |> Map.take(~w[display_name bio pronouns location timezone links privacy avatar_id])
+      |> Common.atomize_string_keys()
 
     with :ok <- check_avatar(auth, params["avatar_id"]),
          {:ok, user} <- Accounts.update_profile(auth, changes) do
