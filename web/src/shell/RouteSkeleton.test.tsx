@@ -1,7 +1,9 @@
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { routes } from '@/runtime/routes';
+
 import { RouteSkeleton } from './RouteSkeleton';
 
 function show(path: string) {

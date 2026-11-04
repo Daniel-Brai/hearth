@@ -1,5 +1,5 @@
-import type { Audience } from '@/domain/audience';
 import type { AppState } from '@/domain/app-state';
+import type { Audience } from '@/domain/audience';
 import type {
   Attachment,
   CommunityEvent,

@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
+
 import { buildForest, buildTree } from './tree';
 
 type Item = { id: string; parent: string | null; who: string };

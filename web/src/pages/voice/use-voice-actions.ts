@@ -1,15 +1,17 @@
 import { useNavigate } from 'react-router';
+
 import { useGateway } from '@/app/gateway-context';
 import { getStore, useAppState } from '@/data/store';
 import { mayTalk, recordingOn, shortName, transcriptionOn } from '@/domain/selectors';
 import type { VoiceMode } from '@/domain/types';
-import { routes } from '@/runtime/routes';
 import { feel, TAP } from '@/runtime/haptics';
+import { routes } from '@/runtime/routes';
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
+
 import { keptForLater } from './voice-copy';
+import { screenStream, SHARE_BLOCK_TEXT, startScreen, stopScreen } from './voice-media';
 import { clockLabel, getRoomSession, useVoiceSession } from './voice-session';
-import { SHARE_BLOCK_TEXT, screenStream, startScreen, stopScreen } from './voice-media';
 
 const nameOf = (id: string) => shortName(getStore().get(), id);
 

@@ -1,7 +1,9 @@
 import { useEffect, useRef, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { cn } from './cn';
+
 import { Icon } from '@/design-system/icons/Icon';
+
 import { IconButton } from './button';
+import { cn } from './cn';
 
 export type DialogProps = {
   readonly open: boolean;

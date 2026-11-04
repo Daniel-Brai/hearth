@@ -2,14 +2,16 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
-import type { AppState } from '@/domain/app-state';
 import { Store, StoreContext } from '@/data/store';
 import { LoadCache, LoadCacheContext } from '@/data/use-load';
+import type { AppState } from '@/domain/app-state';
 import { MockGateway } from '@/mocks/gateway';
 import { createSeedState } from '@/mocks/seed';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
+
 import { VoicePage } from './VoicePage';
 
 async function show(change: (state: AppState) => void) {

@@ -1,6 +1,6 @@
-import { audienceOf } from '@/domain/audience';
 import { useSignedInHint } from '@/app/request-context';
 import { useAppState } from '@/data/store';
+import { audienceOf } from '@/domain/audience';
 import {
   canDo,
   community,

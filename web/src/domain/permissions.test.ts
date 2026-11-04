@@ -1,9 +1,11 @@
 // @vitest-environment node
+import source from '@apps/hearth/priv/permissions.yml?raw';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+
 import { DEFAULT_PERMISSIONS } from '@/mocks/seed';
+
 import { PERMISSIONS } from './permissions';
-import source from '@apps/hearth/priv/permissions.yml?raw';
 
 type Rule = {
   resource: string;

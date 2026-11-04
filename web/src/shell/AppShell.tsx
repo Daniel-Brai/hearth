@@ -1,23 +1,25 @@
-import { Suspense, lazy, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Outlet, useNavigate } from 'react-router';
-import { TooltipLayer, cn } from '@/design-system';
-import { useAppState } from '@/data/store';
+
 import { useGateway } from '@/app/gateway-context';
 import { useHydrated } from '@/app/request-context';
+import { useAppState } from '@/data/store';
+import { cn, TooltipLayer } from '@/design-system';
 import { canAny, isInstanceAdmin, person, unreadNotifications } from '@/domain/selectors';
+import { codeBlockClick } from '@/features/markdown/code-block';
+import { setHapticsEnabled } from '@/runtime/haptics';
 import { BINDINGS, comboFromEvent, keyOf } from '@/runtime/keys';
 import { routes } from '@/runtime/routes';
-import { setHapticsEnabled } from '@/runtime/haptics';
 import { setSoundsEnabled, sfx, sfxQuiet } from '@/runtime/sounds';
 import { applyTheme } from '@/runtime/theme';
 import { useUi } from '@/runtime/ui-store';
-import { codeBlockClick } from '@/features/markdown/code-block';
+
 import { Bar } from './Bar';
 import { DialogHost } from './dialogs/DialogHost';
+import { useKeyActions } from './key-actions';
 import { NavProgress } from './NavProgress';
 import { Sidebar } from './Sidebar';
 import { UpdateBanner } from './UpdateBanner';
-import { useKeyActions } from './key-actions';
 import { useRouteContext } from './use-route-context';
 
 const Tour = lazy(() => import('./Tour').then((m) => ({ default: m.Tour })));

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { SettingsRow, Switch } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import type { PushStatus } from '@/data/gateway';
+import { SettingsRow, Switch } from '@/design-system';
 import { useUi } from '@/runtime/ui-store';
 
 const SUBS: Record<PushStatus, string> = {

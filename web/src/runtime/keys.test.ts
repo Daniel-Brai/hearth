@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
+
 import { assignKey, keyOf } from './keys';
 
 describe('assignKey', () => {

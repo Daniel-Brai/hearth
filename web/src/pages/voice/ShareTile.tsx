@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { Badge, cn, Emoji, Icon, IconButton } from '@/design-system';
 import { useFullscreen } from '@/design-system/components/video-fullscreen';
 import { pipSupported, popOutShare } from '@/runtime/share-pip';
-import { useVoiceStream } from '@/runtime/voice-streams';
 import { useUi } from '@/runtime/ui-store';
+import { useVoiceStream } from '@/runtime/voice-streams';
 import { usePageKeys } from '@/shell/key-actions';
 import { PersonAvatar, PersonName } from '@/shell/people';
+
 import type { ChatToggle } from './LiveRoomControls';
 import { FloatZone } from './LiveRoomStage';
 import { QUICK_REACTIONS } from './share-view';
-import { VoiceChat } from './VoiceChat';
 import { screenStream } from './voice-media';
 import type { RoomSession } from './voice-session';
+import { VoiceChat } from './VoiceChat';
 
 type Talker = { readonly id: string; readonly speaking: boolean };
 

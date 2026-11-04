@@ -1,7 +1,7 @@
-import { useDisplayZone } from '@/app/request-context';
-import { Button, ButtonLink, cn, ExternalButtonLink, Icon, Link } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
+import { useDisplayZone } from '@/app/request-context';
 import { useAppState } from '@/data/store';
+import { Button, ButtonLink, cn, ExternalButtonLink, Icon, Link } from '@/design-system';
 import { evDay, evRel, evState, evWhere } from '@/domain/events';
 import { isInterested } from '@/domain/selectors';
 import type { CommunityEvent } from '@/domain/types';

@@ -1,16 +1,18 @@
-import { useState, type FormEvent } from 'react';
 import { format } from 'date-fns';
+import { useState, type FormEvent } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import type { EventSpec } from '@/data/gateway';
 import { useAppState } from '@/data/store';
-import { voiceOn } from '@/domain/selectors';
 import { evNext, evProvider } from '@/domain/events';
+import { voiceOn } from '@/domain/selectors';
 import type { CommunityEvent, EventRepeat, VoiceMode } from '@/domain/types';
-import { useUi } from '@/runtime/ui-store';
 import { combine, dayKey } from '@/features/date-time/date-time';
+import { useUi } from '@/runtime/ui-store';
+
 import {
-  flashText,
   alreadyPassed,
+  flashText,
   initialPlace,
   initialRoom,
   resolveWhere,

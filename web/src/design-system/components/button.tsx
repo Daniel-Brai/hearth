@@ -1,7 +1,8 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 import { type LinkProps } from 'react-router';
-import { Link } from './link';
+
 import { buttonClass, type Look } from './button-class';
+import { Link } from './link';
 
 type NativeButton = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'>;
 

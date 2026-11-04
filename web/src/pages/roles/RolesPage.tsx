@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Button,
   ButtonLink,
@@ -11,9 +15,7 @@ import {
   Select,
   Switch,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
+import { PERMS } from '@/domain/catalog';
 import {
   canDo,
   community,
@@ -24,11 +26,11 @@ import {
 } from '@/domain/selectors';
 import type { Permission } from '@/domain/types';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
-import { PERMS } from '@/domain/catalog';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar, PersonName } from '@/shell/people';
+
 import './RolesPage.css';
 
 const MEMBER_ROLE = 'member';

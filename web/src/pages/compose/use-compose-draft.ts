@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import { getStore } from '@/data/store';
 import type { AppState } from '@/domain/app-state';

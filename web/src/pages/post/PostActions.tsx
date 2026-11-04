@@ -1,12 +1,13 @@
-import { Button, Icon, Keys } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
+import { Button, Icon, Keys } from '@/design-system';
 import { plural } from '@/domain/format';
 import type { Post } from '@/domain/types';
 import { BoostMenu } from '@/features/boosts/BoostMenu';
-import { useGuest } from '@/shell/use-guest';
-import type { PostViewData } from './use-post-view';
-import { usePostActions } from './use-post-actions';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
+import { useGuest } from '@/shell/use-guest';
+
+import { usePostActions } from './use-post-actions';
+import type { PostViewData } from './use-post-view';
 
 export function PostActions({ post, view }: { readonly post: Post; readonly view: PostViewData }) {
   const { viewer, signIn } = useGuest();

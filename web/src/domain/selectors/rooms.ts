@@ -1,6 +1,7 @@
+import { ROOM_DEFAULTS } from '@/domain/catalog';
+
 import type { AppState } from '../app-state';
 import type { RoomAccess, RoomSettings } from '../types';
-import { ROOM_DEFAULTS } from '@/domain/catalog';
 import { canDo, isOwner, myRolesIn, roleName, roleRef, rolesOf } from './access';
 import { community } from './communities';
 

@@ -1,5 +1,6 @@
 import { Button, Icon, type IconName } from '@/design-system';
 import type { Template } from '@/domain/types';
+
 import { kindName } from './form';
 
 export function ChosenTemplate({

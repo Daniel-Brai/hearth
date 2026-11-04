@@ -1,12 +1,13 @@
 import { startTransition, useState } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import type { Result } from '@/data/gateway';
 import { useLoad } from '@/data/use-load';
 import { Button, EmptyState, Icon, Link, Pill, Segmented } from '@/design-system';
 import { InlineMarkdown } from '@/features/markdown/Markdown';
 import { PostRow } from '@/pages/shared/PostRow';
-import type { ProfileReply } from './use-profile-view';
-import { useProfileActivity } from './use-profile-view';
+
+import { useProfileActivity, type ProfileReply } from './use-profile-view';
 
 type Tab = 'posts' | 'replies';
 

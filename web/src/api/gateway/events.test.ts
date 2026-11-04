@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import type { EventSpec } from '@/data/gateway';
+
 import { at, community, gateway, routes, sent, session } from './test-support';
 
 const event = {

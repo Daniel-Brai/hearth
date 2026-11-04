@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
+
 import type { Message } from '@/domain/types';
+
 import { chatThreads } from './chat-select';
 
 const message = (id: string, parent: string | null = null): Message => ({

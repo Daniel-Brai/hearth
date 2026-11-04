@@ -2,9 +2,10 @@ import { emptyState } from '@/data/empty-state';
 import type { AppState } from '@/domain/app-state';
 import type { Permission } from '@/domain/types';
 import { routes } from '@/runtime/routes';
+
+import { grantPermissions } from './permissions';
 import { SEED } from './seed-data';
 import { tourDoneRemembered } from './tour-memory';
-import { grantPermissions } from './permissions';
 
 const clone = <T>(o: T): T => structuredClone(o);
 

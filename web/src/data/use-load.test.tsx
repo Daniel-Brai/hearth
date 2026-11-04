@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+
 import { fail, ok, type Result } from './gateway';
 import { useLoad } from './use-load';
 

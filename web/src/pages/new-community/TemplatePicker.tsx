@@ -1,6 +1,7 @@
-import { Icon, Separator, type IconName } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Icon, Separator, type IconName } from '@/design-system';
 import type { Template } from '@/domain/types';
+
 import { kindName } from './form';
 
 const BLANK = 'blank';

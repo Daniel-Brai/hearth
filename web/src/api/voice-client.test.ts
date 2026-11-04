@@ -1,5 +1,6 @@
 import type { Channel } from 'phoenix';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import {
   SCREEN_LIMITS,
   VoiceClient,

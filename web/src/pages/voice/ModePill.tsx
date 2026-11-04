@@ -1,5 +1,6 @@
-import { Icon } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Icon } from '@/design-system';
+
 import { modeInfo } from './voice-session';
 
 type ModePillProps = {

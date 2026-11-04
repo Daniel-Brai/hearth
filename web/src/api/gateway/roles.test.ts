@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import { community, gateway, kind, page, post, routes, sent } from './test-support';
 
 vi.mock('../realtime', () => ({ getRealtime: () => ({ onPush: () => () => undefined }) }));

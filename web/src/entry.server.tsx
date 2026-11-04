@@ -2,6 +2,7 @@ import { PassThrough } from 'node:stream';
 import { JSDOM } from 'jsdom';
 import { renderToPipeableStream } from 'react-dom/server';
 import { ServerRouter, type EntryContext } from 'react-router';
+
 import { OUTAGES } from '@/api/gateway/context';
 import { AppProviders } from '@/app/AppProviders';
 import { hydrationScript } from '@/app/hydration';

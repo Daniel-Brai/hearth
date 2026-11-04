@@ -48,7 +48,7 @@ defmodule HearthWeb.TranscriptController do
     summary: "Fix a line of a transcript",
     description: "The person who said it can, and so can anyone with content.remove",
     security: [%{"bearer" => []}],
-    parameters: [id: @id],
+    parameters: [id: @id, segment_id: @id],
     request_body: Schema.EditSegmentBody,
     responses: [
       ok: {Schema.TranscriptSegment, description: "OK"},
@@ -58,10 +58,16 @@ defmodule HearthWeb.TranscriptController do
       unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
     ]
 
-  @validate %{"id" => ~V[required|uuid], "text" => ~V[required|string|max:5000]}
+  @validate %{
+    "id" => ~V[required|uuid],
+    "segment_id" => ~V[required|uuid],
+    "text" => ~V[required|string|max:5000]
+  }
 
-  def update_segment(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id, "text" => text}) do
-    with {:ok, segment} <- Transcripts.edit_segment(auth, id, %{text: text}) do
+  def update_segment(%Conn{assigns: %{auth: auth}} = conn, params) do
+    %{"id" => id, "segment_id" => segment_id, "text" => text} = params
+
+    with {:ok, segment} <- Transcripts.edit_segment(auth, id, segment_id, %{text: text}) do
       render(conn, :update_segment, segment: segment)
     end
   end

@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Button,
   Dialog,
@@ -9,8 +12,6 @@ import {
   IconButton,
   Keys,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
 import {
   assignKey,
   bindingFor,
@@ -21,6 +22,7 @@ import {
   keyOf,
 } from '@/runtime/keys';
 import { useUi } from '@/runtime/ui-store';
+
 import './ShortcutsDialog.css';
 
 type Recording = { id: string; combo: string | null; error: string | null };

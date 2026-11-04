@@ -4,6 +4,7 @@ defmodule HearthWeb.EventControllerTest do
   alias Faker.Lorem
   alias Hearth.Common
   alias Hearth.Communities
+  alias Hearth.Events
   alias Hearth.TestUtils
 
   setup do
@@ -165,19 +166,25 @@ defmodule HearthWeb.EventControllerTest do
   end
 
   describe "cancel" do
-    test "calls off an event and brings it back", %{conn: conn, owner: owner, event: event} do
+    test "calls off an event", %{conn: conn, owner: owner, event: event} do
       assert %{"cancelled_at" => cancelled_at} =
                conn
                |> auth_conn(owner)
-               |> put(~p"/api/events/#{event.id}/cancelled", %{cancelled: true})
+               |> post(~p"/api/events/#{event.id}/cancellation")
                |> valid_response(200)
 
       assert cancelled_at
+    end
+  end
+
+  describe "restore" do
+    test "brings a called off event back", %{conn: conn, owner: owner, event: event} do
+      {:ok, _cancelled} = Events.cancel_event(owner, event)
 
       assert %{"cancelled_at" => nil} =
                conn
                |> auth_conn(owner)
-               |> put(~p"/api/events/#{event.id}/cancelled", %{cancelled: false})
+               |> delete(~p"/api/events/#{event.id}/cancellation")
                |> valid_response(200)
     end
   end

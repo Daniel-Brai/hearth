@@ -1,8 +1,9 @@
 import { Avatar, cn, Emoji, Label } from '@/design-system';
 import { PersonAvatar } from '@/shell/people';
+
+import type { LiveRoomView, RoomSession } from './live-room-view';
 import { StageSpeaker } from './StageSpeaker';
 import { audibleSpeakers, stagePeople, stageTalkers, youSpeaking } from './talkers';
-import type { LiveRoomView, RoomSession } from './live-room-view';
 import type { useVoiceActions } from './use-voice-actions';
 
 type VoiceActions = ReturnType<typeof useVoiceActions>;

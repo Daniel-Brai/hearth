@@ -1,8 +1,9 @@
-import { Panel, SettingsRow } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Panel, SettingsRow } from '@/design-system';
 import type { ScreeningDay, ScreeningSummary } from '@/domain/types';
+
 import './ScreeningPanel.css';
 
 const COUNTS = ['screened', 'held', 'kept', 'removed'] as const;

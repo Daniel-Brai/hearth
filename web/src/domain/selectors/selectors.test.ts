@@ -1,11 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { createSeedState } from '@/mocks/seed';
+
 import type { Post, RoomSettings } from '@/domain/types';
+import { createSeedState } from '@/mocks/seed';
+
 import {
-  CATCHUP_PER_COMMUNITY,
   authorName,
   canDo,
+  CATCHUP_PER_COMMUNITY,
   catchupCommunities,
   displayName,
   feed,

@@ -1,12 +1,14 @@
 import { Suspense, useEffect, useState } from 'react';
-import { useGateway } from '@/app/gateway-context';
 import { Outlet } from 'react-router';
-import { Button, Link, Toasts, TooltipLayer } from '@/design-system';
+
+import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { Button, Link, Toasts, TooltipLayer } from '@/design-system';
 import { codeBlockClick } from '@/features/markdown/code-block';
 import { brandFor } from '@/runtime/brand';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
+
 import { DialogHost } from './dialogs/DialogHost';
 import { NavProgress } from './NavProgress';
 import { RouteSkeleton } from './RouteSkeleton';

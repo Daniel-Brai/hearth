@@ -1,7 +1,8 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
+
+import { cap, tintStyle } from '@/domain/format';
+
 import { cn } from './cn';
-import { tintStyle } from '@/domain/format';
-import { cap } from '@/domain/format';
 
 type Base = Omit<HTMLAttributes<HTMLSpanElement>, 'className'> & { readonly className?: string };
 

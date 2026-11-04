@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { gateway, me, routes, sent, session } from './test-support';
 
 const admin = { ...session, user: { ...session.user, is_instance_admin: true } };

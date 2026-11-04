@@ -4,10 +4,10 @@ import {
   notificationRead,
   notificationReadAll,
 } from '@/generated/api/notifications/notifications';
+
 import { toPerson } from '../mappers';
 import { toNotification } from '../notifications';
-import type { GatewayContext } from './context';
-import { call } from './context';
+import { call, type GatewayContext } from './context';
 
 const PAGE = 20;
 

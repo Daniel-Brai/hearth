@@ -1,5 +1,5 @@
-import { Icon } from '@/design-system';
 import { useDisplayZone } from '@/app/request-context';
+import { Icon } from '@/design-system';
 import { dateText } from '@/domain/format';
 import type { InstanceUpdate } from '@/domain/types';
 import { Markdown } from '@/features/markdown/Markdown';

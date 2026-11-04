@@ -1,18 +1,21 @@
-import { type FormEvent, useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Button, ButtonLink, Field, Icon, Input, Measure, Panel, Textarea } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Button, ButtonLink, Field, Icon, Input, Measure, Panel, Textarea } from '@/design-system';
 import { canDo, canManageEvent, community } from '@/domain/selectors';
 import type { CommunityEvent } from '@/domain/types';
-import { idFromSegment, routes } from '@/runtime/routes';
-import { PageHeader } from '@/shell/PageHeader';
 import { LeaveDialog } from '@/pages/compose/LeaveDialog';
 import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { idFromSegment, routes } from '@/runtime/routes';
+import { PageHeader } from '@/shell/PageHeader';
+
 import { TalkField, WhenFields, WhereFields } from './ScheduleFields';
 import { useScheduleForm } from './use-schedule-form';
+
 import './EventsPage.css';
 import './ScheduleEventPage.css';
 

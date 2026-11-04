@@ -1,14 +1,15 @@
+import { useAppState } from '@/data/store';
 import {
   Badge,
   Button,
+  EmojiPicker,
   Icon,
   Menu,
-  useMenu,
-  EmojiPicker,
   preloadEmojiPicker,
+  useMenu,
 } from '@/design-system';
-import { useAppState } from '@/data/store';
 import { displayName } from '@/domain/selectors';
+
 import type { LiveRoomView, RoomSession } from './live-room-view';
 import type { useVoiceActions } from './use-voice-actions';
 

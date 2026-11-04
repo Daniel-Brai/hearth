@@ -1,6 +1,7 @@
 import type { Notification, NotificationKind } from '@/domain/types';
 import type { Notification as ApiNotification } from '@/generated/schemas';
 import { routes } from '@/runtime/routes';
+
 import { ageOf } from './mappers';
 
 type Data = Record<string, unknown>;

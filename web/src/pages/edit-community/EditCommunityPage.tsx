@@ -1,5 +1,9 @@
 import { useState, type KeyboardEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Button,
   ButtonLink,
@@ -12,18 +16,16 @@ import {
   Segmented,
   Swatches,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
-import { AudienceField } from '@/features/community/AudienceField';
-import { DescriptionField } from '@/features/composer/DescriptionField';
 import { canDo, community, isOwner } from '@/domain/selectors';
 import type { ModerationLevel } from '@/domain/types';
-import { routes } from '@/runtime/routes';
-import { PageHeader } from '@/shell/PageHeader';
+import { AudienceField } from '@/features/community/AudienceField';
+import { DescriptionField } from '@/features/composer/DescriptionField';
 import { LeaveDialog } from '@/pages/compose/LeaveDialog';
 import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { routes } from '@/runtime/routes';
+import { PageHeader } from '@/shell/PageHeader';
+
 import { CategoriesField } from './CategoriesField';
 import { ImageFields } from './ImageFields';
 import { KindsField } from './KindsField';
@@ -31,6 +33,7 @@ import { LinksEditor } from './LinksEditor';
 import { OwnershipField } from './OwnershipField';
 import { useCommunityDraft, type CommunityDraft } from './use-community-draft';
 import { useSaveCommunity } from './use-save-community';
+
 import './EditCommunityPage.css';
 
 const LEVELS: { value: ModerationLevel; label: string }[] = [

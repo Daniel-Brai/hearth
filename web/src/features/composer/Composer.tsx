@@ -8,12 +8,14 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
-import { Icon, Keys, cn } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { cn, Icon, Keys } from '@/design-system';
 import { countText } from '@/domain/format';
 import { isTech } from '@/domain/selectors';
 import type { Attachment } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
+
 import { ACCEPT, prepareAttachment, withinAttachmentCap } from './composer-files';
 import { highlight } from './composer-text';
 import { ComposerAttachments } from './ComposerAttachments';

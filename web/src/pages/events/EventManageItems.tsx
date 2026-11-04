@@ -1,5 +1,6 @@
 import { MenuItem } from '@/design-system';
 import type { CommunityEvent } from '@/domain/types';
+
 import type { useEventActions } from './use-event-actions';
 
 export function EventManageItems({

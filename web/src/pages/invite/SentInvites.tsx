@@ -1,10 +1,12 @@
 import type { CSSProperties } from 'react';
-import { Avatar, Icon, IconButton, Menu, MenuItem, Pill, Panel } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
-import { rolesOf, roleName } from '@/domain/selectors';
+import { Avatar, Icon, IconButton, Menu, MenuItem, Panel, Pill } from '@/design-system';
+import { roleName, rolesOf } from '@/domain/selectors';
 import type { InviteEmail } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
+
 import { joinUrl } from './link-facts';
 
 const STATUS_TINT: Record<InviteEmail['status'], string> = {

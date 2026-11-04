@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router';
-import { ButtonLink, Icon, IconButton, Link, Menu, MenuTitle, useMenu } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { ButtonLink, Icon, IconButton, Link, Menu, MenuTitle, useMenu } from '@/design-system';
 import {
   canDo,
   community,
@@ -17,6 +18,7 @@ import { PrivateLock } from '@/features/rooms/PrivateLock';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar } from '@/shell/people';
+
 import { roomMembers, type ChatTarget } from './chat-select';
 
 type ChatHeaderProps = {

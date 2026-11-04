@@ -1,5 +1,8 @@
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Button,
+  cn,
   FileList,
   Icon,
   IconButton,
@@ -7,20 +10,18 @@ import {
   LinkPreview,
   Menu,
   MenuItem,
-  cn,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { BoostMenu, Boosts } from '@/features/boosts/BoostMenu';
-import { useAppState } from '@/data/store';
 import { authorName, displayName } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
+import { BoostMenu, Boosts } from '@/features/boosts/BoostMenu';
 import { InlineMarkdown, Markdown } from '@/features/markdown/Markdown';
+import { useModerationActions } from '@/features/moderation/use-moderation-actions';
 import { firstUrl, useLinkPreview } from '@/features/previews';
+import { ReplyingTo } from '@/features/threads/ReplyingTo';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
-import { useModerationActions } from '@/features/moderation/use-moderation-actions';
-import { ReplyingTo } from '@/features/threads/ReplyingTo';
 import { PersonAvatar, PersonLink } from '@/shell/people';
+
 import type { ChatContext } from './chat-select';
 
 type MessageItemProps = {

@@ -1,4 +1,5 @@
 import { WebHaptics, type HapticInput } from 'web-haptics';
+
 import type { CueName } from './sounds';
 
 export const TAP: HapticInput = [{ duration: 25, intensity: 0.6 }];

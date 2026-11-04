@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { EmptyState, Measure } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { EmptyState, Measure } from '@/design-system';
 import { isInstanceAdmin } from '@/domain/selectors';
 import type { QueueItem } from '@/domain/types';
-import { QueueCard } from '@/pages/moderation/QueueTab';
-import { DEFAULT_REASON } from '@/pages/moderation/queue-reasons';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { DEFAULT_REASON } from '@/pages/moderation/queue-reasons';
+import { QueueCard } from '@/pages/moderation/QueueTab';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
+
 import '@/pages/moderation/ModerationPage.css';
 
 export function InstanceReportsPage() {

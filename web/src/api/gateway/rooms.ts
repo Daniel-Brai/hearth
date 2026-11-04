@@ -1,6 +1,6 @@
-import type { HearthGateway, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
 import type { ArchivedRoom, ModerationLevel, RoomSettings } from '@/domain/types';
+import { messageRead } from '@/generated/api/chat/chat';
 import {
   roomArchive,
   roomArchived,
@@ -9,12 +9,11 @@ import {
   roomRestore,
   roomUpdate,
 } from '@/generated/api/communities/communities';
-import { messageRead } from '@/generated/api/chat/chat';
 import { moderationRoomLevel } from '@/generated/api/moderation/moderation';
 import type { Room as ApiRoom, UpdateRoomBody } from '@/generated/schemas';
 import { slugify } from '@/runtime/routes';
-import type { GatewayContext } from './context';
-import { NOT_READY, call, errorCode, failed, roomDefaults } from './context';
+
+import { call, errorCode, failed, NOT_READY, roomDefaults, type GatewayContext } from './context';
 
 const READ_AFTER_MS = 1000;
 

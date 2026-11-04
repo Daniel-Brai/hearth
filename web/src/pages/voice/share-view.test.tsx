@@ -1,10 +1,12 @@
 import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { Store, StoreContext } from '@/data/store';
 import { createSeedState } from '@/mocks/seed';
 import { setVoiceStream } from '@/runtime/voice-streams';
-import { ShareTile } from './ShareTile';
+
 import { shareLayout } from './share-view';
+import { ShareTile } from './ShareTile';
 
 describe('shareLayout/3', () => {
   it('shows nothing without a share', () => {

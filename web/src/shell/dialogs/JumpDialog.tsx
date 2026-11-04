@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import { Badge, Button, cn, Dialog, EmptyState, Icon, Keys, Link } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { Badge, Button, cn, Dialog, EmptyState, Icon, Keys, Link } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
 import {
   canDo,
@@ -20,6 +21,7 @@ import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar } from '@/shell/people';
 import { useRouteContext } from '@/shell/use-route-context';
+
 import './JumpDialog.css';
 
 type Item = {

@@ -1,9 +1,9 @@
 /// <reference types="vitest/config" />
-import tailwindcss from '@tailwindcss/vite';
-import { reactRouter } from '@react-router/dev/vite';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
+import { reactRouter } from '@react-router/dev/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 

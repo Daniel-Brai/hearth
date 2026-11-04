@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Button,
   ChoiceTiles,
@@ -11,8 +14,6 @@ import {
   Input,
   InputWithPrefix,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
 import { voiceOn } from '@/domain/selectors';
 import type { RoomAccess } from '@/domain/types';
 import { RoomAccessField } from '@/features/rooms/RoomAccessField';

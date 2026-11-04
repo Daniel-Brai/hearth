@@ -226,19 +226,6 @@
         ],
         "type": "object"
       },
-      "CancelBody": {
-        "title": "CancelBody",
-        "additionalProperties": false,
-        "properties": {
-          "cancelled": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "cancelled"
-        ],
-        "type": "object"
-      },
       "ChatMessage": {
         "title": "ChatMessage",
         "properties": {
@@ -10476,8 +10463,55 @@
         "summary": "Change an event"
       }
     },
-    "/api/events/{id}/cancelled": {
-      "put": {
+    "/api/events/{id}/cancellation": {
+      "delete": {
+        "tags": [
+          "Events"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityEvent"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "event_restore_ALNHU4Q",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Bring a called off event back"
+      },
+      "post": {
         "tags": [
           "Events"
         ],
@@ -10522,17 +10556,7 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CancelBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Call an event off or bring it back"
+        "summary": "Call an event off"
       }
     },
     "/api/events/{id}/interest": {
@@ -12896,69 +12920,6 @@
         "summary": "Mark a post as helpful, or take the mark back"
       }
     },
-    "/api/posts/{id}/live": {
-      "post": {
-        "tags": [
-          "Voice"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VoiceSession"
-                }
-              }
-            },
-            "description": "Already live"
-          },
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VoiceSession"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "400": {
-            "$ref": "#/components/responses/bad_request"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "Needs voice-session.create and the post's author",
-        "operationId": "voice_discuss_I6UWJ5A",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "summary": "Start a live discussion of a post"
-      }
-    },
     "/api/posts/{id}/lock": {
       "put": {
         "tags": [
@@ -13224,6 +13185,69 @@
           }
         ],
         "summary": "Record that a post has been read"
+      }
+    },
+    "/api/posts/{id}/voice-sessions": {
+      "post": {
+        "tags": [
+          "Voice"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceSession"
+                }
+              }
+            },
+            "description": "Already live"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceSession"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs voice-session.create and the post's author",
+        "operationId": "voice_discuss_I6UWJ5A",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Start a live discussion of a post"
       }
     },
     "/api/posts/{id}/watch": {
@@ -14221,53 +14245,6 @@
         "summary": "Restore an archived room"
       }
     },
-    "/api/rooms/{id}/voice-session": {
-      "get": {
-        "tags": [
-          "Voice"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VoiceSession"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "Not found when the room isn't live",
-        "operationId": "voice_live_I6UWJ5A",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "summary": "Show a room's live voice session"
-      }
-    },
     "/api/rooms/{id}/voice-sessions": {
       "post": {
         "tags": [
@@ -14339,6 +14316,53 @@
           "required": true
         },
         "summary": "Start a voice session"
+      }
+    },
+    "/api/rooms/{id}/voice-sessions/current": {
+      "get": {
+        "tags": [
+          "Voice"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceSession"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Not found when the room isn't live",
+        "operationId": "voice_current_I6UWJ5A",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Show a room's live voice session"
       }
     },
     "/api/rooms/{room_id}/messages": {
@@ -14634,66 +14658,6 @@
           "required": true
         },
         "summary": "Turn room messages into a post"
-      }
-    },
-    "/api/transcript-segments/{id}": {
-      "put": {
-        "tags": [
-          "Voice"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TranscriptSegment"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "The person who said it can, and so can anyone with content.remove",
-        "operationId": "transcript_update_segment_PIAOXUI",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EditSegmentBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Fix a line of a transcript"
       }
     },
     "/api/unfurls": {
@@ -15324,6 +15288,50 @@
       }
     },
     "/api/voice-sessions/{id}": {
+      "delete": {
+        "tags": [
+          "Voice"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs the host or content.remove",
+        "operationId": "voice_end_session_I6UWJ5A",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "End a voice session"
+      },
       "get": {
         "tags": [
           "Voice"
@@ -15373,52 +15381,6 @@
           }
         ],
         "summary": "Show a live voice session's state"
-      }
-    },
-    "/api/voice-sessions/{id}/end": {
-      "post": {
-        "tags": [
-          "Voice"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "$ref": "#/components/responses/no_content"
-          },
-          "400": {
-            "$ref": "#/components/responses/bad_request"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "Needs the host or content.remove",
-        "operationId": "voice_end_session_I6UWJ5A",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "summary": "End a voice session"
       }
     },
     "/api/voice-sessions/{id}/hand": {
@@ -15989,6 +15951,75 @@
           }
         ],
         "summary": "Show a voice session's transcript"
+      }
+    },
+    "/api/voice-sessions/{id}/transcript/segments/{segment_id}": {
+      "patch": {
+        "tags": [
+          "Voice"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptSegment"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "The person who said it can, and so can anyone with content.remove",
+        "operationId": "transcript_update_segment_PIAOXUI",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditSegmentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Fix a line of a transcript"
       }
     }
   },

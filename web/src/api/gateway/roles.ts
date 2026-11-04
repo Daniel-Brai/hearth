@@ -1,5 +1,4 @@
-import type { HearthGateway, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
 import type { Hue, Permission, Role } from '@/domain/types';
 import {
   communityMembers,
@@ -11,9 +10,9 @@ import {
 } from '@/generated/api/communities/communities';
 import type { Role as ApiRole } from '@/generated/schemas';
 import { slugify } from '@/runtime/routes';
-import type { GatewayContext } from './context';
-import { NOT_READY, call, failed } from './context';
+
 import { toPerson } from '../mappers';
+import { call, failed, NOT_READY, type GatewayContext } from './context';
 
 const OWNER = 'owner';
 

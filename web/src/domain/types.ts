@@ -1,4 +1,6 @@
 import type { Audience } from './audience';
+import type { Permission } from './permissions';
+
 export type Hue =
   'ink' | 'blue' | 'violet' | 'purple' | 'pink' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua';
 
@@ -29,8 +31,6 @@ export type Person = {
 };
 
 export type { Permission } from './permissions';
-
-import type { Permission } from './permissions';
 
 export type PostKind = {
   // The server's name for it, which stays when the kind is renamed. A new kind has none yet

@@ -1,15 +1,16 @@
 import { useDisplayZone, useOrigin } from '@/app/request-context';
-import { Button, Icon, Menu, MenuItem, Pill, cn, useMenu } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Button, cn, Icon, Menu, MenuItem, Pill, useMenu } from '@/design-system';
 import { evRepeatLabel, evState, evWhen, evWhere } from '@/domain/events';
 import { canManageEvent, displayName, isInterested } from '@/domain/selectors';
 import type { Community, CommunityEvent } from '@/domain/types';
 import { EventDate } from '@/pages/shared/EventMini';
 import { PersonAvatar } from '@/shell/people';
 import { useViewer } from '@/shell/use-guest';
+
+import { eventFile, eventIcs, interestedText, voiceModeInfo } from './event-utils';
 import { EventManageItems } from './EventManageItems';
 import { JoinButton, PlaceLink } from './Place';
-import { eventFile, eventIcs, interestedText, voiceModeInfo } from './event-utils';
 import { useEventActions } from './use-event-actions';
 
 export type EventCardProps = {

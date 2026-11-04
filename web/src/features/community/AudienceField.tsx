@@ -1,5 +1,6 @@
-import { Field, cn } from '@/design-system';
+import { cn, Field } from '@/design-system';
 import { AUDIENCE_LABEL, type Audience } from '@/domain/audience';
+
 import './AudienceField.css';
 
 const OPTIONS: readonly { value: Audience; label: string; text: string }[] = [

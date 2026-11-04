@@ -1,6 +1,7 @@
 import { useAppState } from '@/data/store';
 import { Button, Icon, Input, Separator } from '@/design-system';
 import { CodeBoxes } from '@/features/code-boxes/CodeBoxes';
+
 import type { SignIn } from './use-sign-in';
 
 export function EmailStep({ flow }: { readonly flow: SignIn }) {

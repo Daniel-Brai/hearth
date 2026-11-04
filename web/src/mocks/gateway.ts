@@ -1,5 +1,31 @@
+import {
+  fail,
+  ok,
+  type CommunityPatch,
+  type CommunitySpec,
+  type ContentRef,
+  type EventSpec,
+  type HearthGateway,
+  type PostPatch,
+  type ProfileSpec,
+  type PushStatus,
+  type ReplyPatch,
+  type Result,
+  type SignupSpec,
+} from '@/data/gateway';
+import type { Store } from '@/data/store';
+import {
+  floatReaction,
+  getRoomSession,
+  useVoiceSession,
+  type SessionAction,
+} from '@/data/voice-session';
 import type { AppState } from '@/domain/app-state';
+import { visibilityOf } from '@/domain/audience';
+import { KIND_LIB, ROOM_DEFAULTS, SOUNDS, TEMPLATES, TITLE_MAX } from '@/domain/catalog';
 import { nowTime } from '@/domain/format';
+import { stripPrefix } from '@/domain/links';
+import { MOST_SCHEDULED, sendAtProblem } from '@/domain/schedule';
 import {
   canDo,
   canRequestCommunity,
@@ -8,9 +34,9 @@ import {
   displayName,
   handle,
   isHeld,
-  mayTalk,
   isMod,
   isOwner,
+  mayTalk,
   modLevel,
   modLevelText,
   person,
@@ -18,18 +44,14 @@ import {
   postableKinds,
   reportsOn,
   rolesOf,
-  soundAccess,
   roomAccess,
+  soundAccess,
 } from '@/domain/selectors';
-import { stripPrefix } from '@/domain/links';
-import { MOST_SCHEDULED, sendAtProblem } from '@/domain/schedule';
-import { usernameProblem } from '@/domain/username';
-import { extractTags } from '@/features/markdown/tags';
 import type {
-  Message,
   Attachment,
   Boost,
   CommunityEvent,
+  Message,
   ModerationLevel,
   ModLogAction,
   Permission,
@@ -44,37 +66,16 @@ import type {
   Visibility,
   VoiceMode,
 } from '@/domain/types';
-import { KIND_LIB, ROOM_DEFAULTS, SOUNDS, TEMPLATES, TITLE_MAX } from '@/domain/catalog';
-import type { Store } from '@/data/store';
-import {
-  floatReaction,
-  getRoomSession,
-  useVoiceSession,
-  type SessionAction,
-} from '@/data/voice-session';
-import {
-  fail,
-  ok,
-  type CommunityPatch,
-  type CommunitySpec,
-  type ContentRef,
-  type EventSpec,
-  type HearthGateway,
-  type PostPatch,
-  type PushStatus,
-  type ReplyPatch,
-  type ProfileSpec,
-  type Result,
-  type SignupSpec,
-} from '@/data/gateway';
+import { usernameProblem } from '@/domain/username';
+import { extractTags } from '@/features/markdown/tags';
 import { slugify } from '@/runtime/routes';
-import { visibilityOf } from '@/domain/audience';
 import { sfx } from '@/runtime/sounds';
-import { mockLinkPreview } from './link-previews';
+
 import { profileActivity } from './activity';
-import { rememberTourDone } from './tour-memory';
+import { mockLinkPreview } from './link-previews';
 import { grantPermissions } from './permissions';
 import { showVisibleRooms, type Offstage } from './private-rooms';
+import { rememberTourDone } from './tour-memory';
 
 const SUBJECT_TYPE = { Post: 'post', Reply: 'reply', Message: 'message' } as const;
 

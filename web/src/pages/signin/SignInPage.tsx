@@ -1,12 +1,15 @@
 import { Navigate } from 'react-router';
-import { CommunityMark } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { CommunityMark } from '@/design-system';
 import { community } from '@/domain/selectors';
 import { AuthLogo } from '@/pages/signin/AuthLogo';
 import { PageMeta } from '@/shell/PageMeta';
+
 import { ProfileStep } from './ProfileStep';
 import { CodeStep, EmailStep } from './SignInSteps';
 import { useSignIn } from './use-sign-in';
+
 import './SignInPage.css';
 
 export function SignInPage() {

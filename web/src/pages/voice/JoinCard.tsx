@@ -1,8 +1,9 @@
-import { Button, Icon, Link } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Button, Icon, Link } from '@/design-system';
 import { shortName } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 import { PersonAvatar } from '@/shell/people';
+
 import { ModePill } from './ModePill';
 import { useVoiceActions } from './use-voice-actions';
 import { useRoomSession } from './voice-session';

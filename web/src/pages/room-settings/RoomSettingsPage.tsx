@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Button,
   ButtonLink,
@@ -14,9 +18,6 @@ import {
   SettingsRow,
   Switch,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
 import {
   canDo,
   community,
@@ -27,17 +28,18 @@ import {
   soundAccess,
 } from '@/domain/selectors';
 import type { ModerationLevel, RoomSettings, RoomSoundMode } from '@/domain/types';
+import { RoomAccessSetting } from '@/features/rooms/RoomAccessSetting';
+import { communityPeople, LEVELS } from '@/pages/chat/chat-select';
+import { LeaveDialog } from '@/pages/compose/LeaveDialog';
+import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes, slugify } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar, PersonName } from '@/shell/people';
 import { RoomDangerActions } from '@/shell/RoomDangerActions';
 import { useRoomActions } from '@/shell/use-room-actions';
-import { RoomAccessSetting } from '@/features/rooms/RoomAccessSetting';
-import { communityPeople, LEVELS } from '@/pages/chat/chat-select';
-import { LeaveDialog } from '@/pages/compose/LeaveDialog';
-import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
+
 import './RoomSettingsPage.css';
 
 const LEVEL_OPTIONS = [

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { SIGN_IN_AGAIN } from '@/data/gateway';
 import { reloadApp } from '@/runtime/reload';
+
 import { gateway, instance, me, routes, sent, session } from './test-support';
 
 vi.mock('../realtime', () => ({ getRealtime: () => ({ onPush: () => () => undefined }) }));

@@ -1,7 +1,8 @@
 import { Button, Label } from '@/design-system';
 import { PersonAvatar, PersonName } from '@/shell/people';
-import { MoreButton } from './LiveRoomStage';
+
 import type { LiveRoomView, RoomSession } from './live-room-view';
+import { MoreButton } from './LiveRoomStage';
 import type { useVoiceActions } from './use-voice-actions';
 
 type VoiceActions = ReturnType<typeof useVoiceActions>;

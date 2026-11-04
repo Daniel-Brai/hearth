@@ -1,10 +1,9 @@
-import type { HearthGateway, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
 import { communityShow } from '@/generated/api/communities/communities';
 import { transcriptShow, transcriptUpdateSegment } from '@/generated/api/voice/voice';
+
 import { toPerson, toRecording, toTranscript } from '../mappers';
-import type { GatewayContext } from './context';
-import { call, failed } from './context';
+import { call, failed, type GatewayContext } from './context';
 
 export function createTranscriptsGateway(ctx: GatewayContext) {
   const learnCommunity = async (id: string) => {
@@ -56,7 +55,7 @@ export function createTranscriptsGateway(ctx: GatewayContext) {
   } satisfies Partial<HearthGateway['load']>;
 
   const editLine = async (sessionId: string, lineId: string, text: string): Promise<Result> => {
-    const answer = await call(() => transcriptUpdateSegment(lineId, { text }));
+    const answer = await call(() => transcriptUpdateSegment(sessionId, lineId, { text }));
 
     if (answer.status !== 200) return failed(answer);
 

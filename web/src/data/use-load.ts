@@ -1,4 +1,5 @@
 import { createContext, use, useContext, useEffect, useSyncExternalStore } from 'react';
+
 import type { Result } from '@/data/gateway';
 
 export type LoadState = { status: 'ready' } | { status: 'error'; error: string };

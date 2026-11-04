@@ -2,6 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
 import { RequestContext } from '@/app/request-context';
 import { Store, StoreContext } from '@/data/store';
@@ -11,6 +12,7 @@ import type { CommunityVisibility } from '@/domain/types';
 import { MockGateway } from '@/mocks/gateway';
 import { createSeedState } from '@/mocks/seed';
 import { routes } from '@/runtime/routes';
+
 import { CommunityPage } from './CommunityPage';
 
 type Look = {

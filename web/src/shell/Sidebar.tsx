@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+
+import { useAppState } from '@/data/store';
 import {
   Badge,
   ButtonLink,
@@ -10,7 +12,8 @@ import {
   LiveDot,
   NavLink,
 } from '@/design-system';
-import { useAppState } from '@/data/store';
+import { evState } from '@/domain/events';
+import { cap } from '@/domain/format';
 import {
   canDo,
   canRequestCommunity,
@@ -31,17 +34,16 @@ import {
   upcomingEvents,
   voiceOn,
 } from '@/domain/selectors';
-import { evState } from '@/domain/events';
-import { cap } from '@/domain/format';
+import { PrivateLock } from '@/features/rooms/PrivateLock';
+import { brandFor } from '@/runtime/brand';
 import { keyOf } from '@/runtime/keys';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
-import { brandFor } from '@/runtime/brand';
+
 import { AccountMenu } from './AccountMenu';
 import { PersonAvatar } from './people';
 import { SidebarSkeleton } from './SidebarSkeleton';
 import { useRouteContext } from './use-route-context';
-import { PrivateLock } from '@/features/rooms/PrivateLock';
 
 export function Sidebar() {
   const ready = useAppState((state) => state.session === 'ready');

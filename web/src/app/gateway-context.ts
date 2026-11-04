@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+
 import type { HearthGateway } from '@/data/gateway';
 
 export const GatewayContext = createContext<HearthGateway | null>(null);

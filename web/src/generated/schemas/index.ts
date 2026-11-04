@@ -11,7 +11,6 @@ export * from './authored-reply';
 export * from './bad-request-response';
 export * from './ban-author-body';
 export * from './ban';
-export * from './cancel-body';
 export * from './chat-message-kind';
 export * from './chat-message-status';
 export * from './chat-message';

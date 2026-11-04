@@ -1,6 +1,7 @@
 import { useLocation, useParams } from 'react-router';
-import { idFromSegment } from '@/runtime/routes';
+
 import type { KeyScope } from '@/runtime/keys';
+import { idFromSegment } from '@/runtime/routes';
 
 export type RouteContext = {
   readonly community: string | null;

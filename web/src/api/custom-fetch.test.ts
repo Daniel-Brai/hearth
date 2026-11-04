@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { customFetch, refreshSession } from './custom-fetch';
 import { accessToken, setAccessToken } from './session-token';
 

@@ -1,6 +1,7 @@
 import { Chip, Field, Icon } from '@/design-system';
 import { CATEGORIES } from '@/domain/catalog';
 import { useUi } from '@/runtime/ui-store';
+
 import { asIconName } from './colors';
 import type { CommunityDraft } from './use-community-draft';
 

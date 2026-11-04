@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import type {
   ChatMessage,
   Community,
@@ -8,18 +9,19 @@ import type {
   Reply,
   RoomSettings,
 } from '@/generated/schemas';
+
+import { file } from './gateway/test-support';
 import {
   ageOf,
   hueOf,
   paragraphs,
+  toAttachments,
   toCommunity,
   toMessage,
   toPost,
   toReply,
-  toAttachments,
   toRoomSettings,
 } from './mappers';
-import { file } from './gateway/test-support';
 
 const settings = {
   link_previews: true,

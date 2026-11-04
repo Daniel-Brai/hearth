@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { Button, Icon, Textarea } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import type { PostPatch } from '@/data/gateway';
 import { useAppState } from '@/data/store';
+import { Button, Icon, Textarea } from '@/design-system';
 import { isTech, kindInfo, postableKinds } from '@/domain/selectors';
 import type { Attachment, Post } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
-import { useUi } from '@/runtime/ui-store';
 import { ModeToggle, PostPreview } from '@/pages/compose/ComposeParts';
 import { KindPicker } from '@/pages/compose/KindPicker';
 import { LeaveDialog } from '@/pages/compose/LeaveDialog';
 import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
+import { useUi } from '@/runtime/ui-store';
+
 import '@/pages/compose/ComposePage.css';
+
 import { TITLE_MAX } from '@/domain/catalog';
 
 const sameFiles = (a: readonly Attachment[], b: readonly Attachment[]) =>

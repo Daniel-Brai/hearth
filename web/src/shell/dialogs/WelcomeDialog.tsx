@@ -1,9 +1,10 @@
-import { Button, ButtonLink, CommunityMark, Dialog, DialogClose } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Button, ButtonLink, CommunityMark, Dialog, DialogClose } from '@/design-system';
 import { displayName, shortName } from '@/domain/selectors';
+import { Markdown } from '@/features/markdown/Markdown';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
-import { Markdown } from '@/features/markdown/Markdown';
+
 import './WelcomeDialog.css';
 
 export function WelcomeDialog() {

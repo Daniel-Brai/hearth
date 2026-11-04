@@ -1,7 +1,7 @@
 import { ButtonLink, Icon, Label, Link } from '@/design-system';
 import type { CommunityEvent } from '@/domain/types';
-import { routes } from '@/runtime/routes';
 import { EventMini } from '@/pages/shared/EventMini';
+import { routes } from '@/runtime/routes';
 
 export function CommunityEventsStrip({
   cid,

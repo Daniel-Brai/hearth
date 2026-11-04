@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+
 import { Icon } from '@/design-system/icons/Icon';
+
 import { IconButton } from './button';
 import { Img } from './image';
+
 import './carousel.css';
 
 export type CarouselImage = {

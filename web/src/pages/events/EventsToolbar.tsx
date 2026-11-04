@@ -1,7 +1,7 @@
 import { useDisplayZone } from '@/app/request-context';
 import { Button, CommunityMark, Icon, Segmented } from '@/design-system';
-import type { Hue } from '@/domain/types';
 import { evZone } from '@/domain/events';
+import type { Hue } from '@/domain/types';
 
 export type EventsTab = 'upcoming' | 'past';
 

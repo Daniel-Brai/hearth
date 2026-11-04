@@ -1,6 +1,6 @@
+import type { RoomSession } from '@/data/voice-session';
 import type { IconName } from '@/design-system';
 import type { VoiceMode } from '@/domain/types';
-import type { RoomSession } from '@/data/voice-session';
 
 export {
   getRoomSession,

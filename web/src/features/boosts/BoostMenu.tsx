@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { Button, Emoji, EmojiPicker, Menu, cn, preloadEmojiPicker, useMenu } from '@/design-system';
+
+import { Button, cn, Emoji, EmojiPicker, Menu, preloadEmojiPicker, useMenu } from '@/design-system';
 import type { Boost } from '@/domain/types';
 
 export type BoostMenuProps = {

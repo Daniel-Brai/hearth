@@ -1,20 +1,3 @@
-import type {
-  ChatMessage,
-  Community as ApiCommunity,
-  KindInput,
-  CommunityTemplate,
-  CommunityDetail,
-  LinkPreview as ApiLinkPreview,
-  Me,
-  Media,
-  Post as ApiPost,
-  PostKind as ApiPostKind,
-  Reply as ApiReply,
-  RoomSettings as ApiRoomSettings,
-  Transcript as ApiTranscript,
-  UserSummary,
-  VoiceRecording,
-} from '@/generated/schemas';
 import type { Audience } from '@/domain/audience';
 import { PERMISSIONS } from '@/domain/permissions';
 import type {
@@ -35,6 +18,23 @@ import type {
   Transcript,
   VoiceRoom,
 } from '@/domain/types';
+import type {
+  Community as ApiCommunity,
+  LinkPreview as ApiLinkPreview,
+  Post as ApiPost,
+  PostKind as ApiPostKind,
+  Reply as ApiReply,
+  RoomSettings as ApiRoomSettings,
+  Transcript as ApiTranscript,
+  ChatMessage,
+  CommunityDetail,
+  CommunityTemplate,
+  KindInput,
+  Me,
+  Media,
+  UserSummary,
+  VoiceRecording,
+} from '@/generated/schemas';
 
 const HUES: readonly Hue[] = [
   'blue',

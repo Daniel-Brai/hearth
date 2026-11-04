@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
+
 import { Icon, Label, Panel } from '@/design-system';
 import { PersonName } from '@/shell/people';
+
 import type { RoomSession } from './live-room-view';
 
 export function LiveRoomCaptions({ captions }: { readonly captions: RoomSession['captions'] }) {

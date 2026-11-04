@@ -79,23 +79,35 @@ defmodule Hearth.TranscriptsTest do
     end
   end
 
-  describe "edit_segment/3" do
+  describe "edit_segment/4" do
     test "fails for a line someone else said", %{member: member, transcript: transcript} do
       [welcome, _thanks] = transcript.segments
 
-      assert {:error, :forbidden} = Transcripts.edit_segment(member, welcome.id, %{text: "Hi"})
+      assert {:error, :forbidden} =
+               Transcripts.edit_segment(member, transcript.session_id, welcome.id, %{text: "Hi"})
     end
 
     test "fails for empty text", %{member: member, transcript: transcript} do
       [_welcome, thanks] = transcript.segments
 
-      assert {:error, changeset} = Transcripts.edit_segment(member, thanks.id, %{text: "  "})
+      assert {:error, changeset} =
+               Transcripts.edit_segment(member, transcript.session_id, thanks.id, %{text: "  "})
+
       assert %{text: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "fails for a missing line", %{member: member} do
+    test "fails for a missing line", %{member: member, transcript: transcript} do
       assert {:error, :not_found} =
-               Transcripts.edit_segment(member, Common.new_id(), %{text: "Hi"})
+               Transcripts.edit_segment(member, transcript.session_id, Common.new_id(), %{
+                 text: "Hi"
+               })
+    end
+
+    test "fails for a line of another session", %{member: member, transcript: transcript} do
+      [_welcome, thanks] = transcript.segments
+
+      assert {:error, :not_found} =
+               Transcripts.edit_segment(member, Common.new_id(), thanks.id, %{text: "Hi"})
     end
 
     test "fix own line", %{member: member, transcript: transcript} do
@@ -103,7 +115,7 @@ defmodule Hearth.TranscriptsTest do
       params = %{text: " Thank you "}
 
       assert {:ok, %Segment{text: "Thank you"} = edited} =
-               Transcripts.edit_segment(member, thanks.id, params)
+               Transcripts.edit_segment(member, transcript.session_id, thanks.id, params)
 
       assert edited.edited_by_id == member.id
     end
@@ -112,7 +124,9 @@ defmodule Hearth.TranscriptsTest do
       [_welcome, thanks] = transcript.segments
 
       assert {:ok, %Segment{text: "Thanks all"}} =
-               Transcripts.edit_segment(owner, thanks.id, %{text: "Thanks all"})
+               Transcripts.edit_segment(owner, transcript.session_id, thanks.id, %{
+                 text: "Thanks all"
+               })
     end
   end
 end

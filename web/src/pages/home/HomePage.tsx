@@ -1,4 +1,9 @@
 import { useNavigate } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useDisplayZone } from '@/app/request-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Button,
   ButtonLink,
@@ -13,10 +18,6 @@ import {
   OriginNote,
   Separator,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useDisplayZone } from '@/app/request-context';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
 import { fmt, noun, plural, todayIn } from '@/domain/format';
 import {
   canRequestCommunity,
@@ -33,12 +34,13 @@ import {
   unseenCount,
 } from '@/domain/selectors';
 import { InlineMarkdown } from '@/features/markdown/Markdown';
+import { EventMini } from '@/pages/shared/EventMini';
+import { PostRow } from '@/pages/shared/PostRow';
 import { routes } from '@/runtime/routes';
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
-import { EventMini } from '@/pages/shared/EventMini';
-import { PostRow } from '@/pages/shared/PostRow';
+
 import './HomePage.css';
 
 function timeOfDayGreeting(hour: number) {

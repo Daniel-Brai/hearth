@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { shareNetworks, shareUrl } from './share-links';
 
 const target = {

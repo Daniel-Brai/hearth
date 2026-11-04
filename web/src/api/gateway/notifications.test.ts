@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import { unreadNotifications } from '@/domain/selectors';
+
 import { at, gateway, routes, sent, session } from './test-support';
 
 const notification = (id: string, kind: string, data: Record<string, unknown>) => ({

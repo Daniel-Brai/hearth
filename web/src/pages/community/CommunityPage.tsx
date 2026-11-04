@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Icon, ButtonLink, EmptyState, Measure } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
+import { shareImage } from '@/app/share-image';
+import { communityGraph, indexable, useStructuredData } from '@/app/structured-data';
 import { fail } from '@/data/gateway';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { ButtonLink, EmptyState, Icon, Measure } from '@/design-system';
 import {
   comingUp,
   community,
@@ -15,21 +18,22 @@ import {
 } from '@/domain/selectors';
 import type { Post } from '@/domain/types';
 import { ShareButton } from '@/features/share/ShareButton';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes } from '@/runtime/routes';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
 import { GateScreen } from '@/shell/GuestWall';
-import { useGate, useGuest } from '@/shell/use-guest';
-import { communityGraph, indexable, useStructuredData } from '@/app/structured-data';
-import { PageHeader } from '@/shell/PageHeader';
-import { shareImage } from '@/app/share-image';
 import { usePageKeys } from '@/shell/key-actions';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { PageHeader } from '@/shell/PageHeader';
+import { useGate, useGuest } from '@/shell/use-guest';
+
 import { CommunityEventsStrip } from './CommunityEventsStrip';
 import { FeedControls, GuestNote, MainFeed, PinnedFeed, TagNote } from './CommunityFeed';
 import { CommunityHero } from './CommunityHero';
 import { useCommunityView, type CommunityViewData } from './use-community-view';
 import { useJoinToggle } from './use-join-toggle';
+
 import './CommunityPage.css';
+
 import { ScheduledPosts } from '@/features/schedule/ScheduledPosts';
 
 export function CommunityPage() {

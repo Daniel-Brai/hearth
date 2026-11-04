@@ -22,11 +22,12 @@ defmodule Hearth.TranscriptsOffTest do
     end
   end
 
-  describe "edit_segment/3" do
+  describe "edit_segment/4" do
     test "hides lines while off", %{owner: owner, transcript: transcript} do
       [segment] = transcript.segments
 
-      assert {:error, :not_found} = Transcripts.edit_segment(owner, segment.id, %{text: "Hello"})
+      assert {:error, :not_found} =
+               Transcripts.edit_segment(owner, transcript.session_id, segment.id, %{text: "Hello"})
     end
   end
 end

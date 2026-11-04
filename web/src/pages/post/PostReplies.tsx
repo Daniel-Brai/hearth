@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { Button, EmptyState, Icon, OriginNote } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
+import { Button, EmptyState, Icon, OriginNote } from '@/design-system';
 import { plural } from '@/domain/format';
 import type { Attachment, Post } from '@/domain/types';
-import { Thread } from '@/features/threads/Thread';
-import { useThreadDepth } from '@/features/threads/use-thread-depth';
-import { buildForest } from '@/features/threads/tree';
 import { Composer } from '@/features/composer/Composer';
+import { Thread } from '@/features/threads/Thread';
+import { buildForest } from '@/features/threads/tree';
+import { useThreadDepth } from '@/features/threads/use-thread-depth';
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import { useGuest } from '@/shell/use-guest';
+
 import { ReplyItem } from './ReplyItem';
-import type { PostViewData } from './use-post-view';
 import { usePostActions } from './use-post-actions';
+import type { PostViewData } from './use-post-view';
 
 const TOP_PAGE = 20;
 

@@ -1,5 +1,4 @@
-import type { ContentRef, HearthGateway, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type ContentRef, type HearthGateway, type Result } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
 import type { Ban, ModLogAction, ModLogEntry, QueueItem } from '@/domain/types';
 import {
@@ -14,19 +13,19 @@ import {
   moderationQueue,
   moderationRemove,
   moderationRemoveContent,
+  moderationReport,
   moderationRestoreContent,
   moderationUndo,
-  moderationReport,
 } from '@/generated/api/moderation/moderation';
 import type {
   Ban as ApiBan,
-  ModerationAction,
   QueueItem as ApiQueueItem,
+  ModerationAction,
   QueueItemSubjectType,
 } from '@/generated/schemas';
+
 import { ageOf, toPerson } from '../mappers';
-import type { GatewayContext } from './context';
-import { call, errorCode, failed } from './context';
+import { call, errorCode, failed, type GatewayContext } from './context';
 
 const KINDS = { post: 'Post', reply: 'Reply', message: 'Message' } as const satisfies Record<
   QueueItemSubjectType,

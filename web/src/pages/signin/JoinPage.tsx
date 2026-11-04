@@ -1,16 +1,17 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
-import { Button, ButtonLink, CommunityMark, EmptyState, Icon, Link } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
 import { ok } from '@/data/gateway';
+import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Button, ButtonLink, CommunityMark, EmptyState, Icon, Link } from '@/design-system';
 import { fmt, noun } from '@/domain/format';
 import { community, displayName, roleName } from '@/domain/selectors';
+import { AuthLogo } from '@/pages/signin/AuthLogo';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
-import { PersonAvatar } from '@/shell/people';
-import { AuthLogo } from '@/pages/signin/AuthLogo';
 import { PageMeta } from '@/shell/PageMeta';
+import { PersonAvatar } from '@/shell/people';
 import { useViewer } from '@/shell/use-guest';
 import { useSignedIn } from '@/shell/use-signed-in';
 

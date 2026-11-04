@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+
 import type { HearthGateway } from '@/data/gateway';
+
 import { GatewayContext } from './gateway-context';
 
 export function GatewayProvider({

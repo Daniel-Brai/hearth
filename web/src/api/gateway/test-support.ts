@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, vi } from 'vitest';
+
 import { emptyState } from '@/data/empty-state';
 import { Store } from '@/data/store';
+import type { Post } from '@/generated/schemas';
+
 import { ApiGateway } from '../api-gateway';
 import { setAccessToken } from '../session-token';
-import type { Post } from '@/generated/schemas';
 
 type Route = { status: number; body?: unknown };
 
@@ -251,7 +253,11 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => vi.unstubAllGlobals());
+// Loads a test started without waiting still finish after it, so they get an answer here and never reach the network
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.stubGlobal('fetch', () => Promise.resolve(new Response(null, { status: 404 })));
+});
 
 export const gateway = () => {
   const store = new Store(emptyState());

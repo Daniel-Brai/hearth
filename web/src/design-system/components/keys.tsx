@@ -1,6 +1,8 @@
 import { Fragment, useSyncExternalStore } from 'react';
-import { cn } from './cn';
+
 import { IS_MAC, keyLabel } from '@/runtime/keys';
+
+import { cn } from './cn';
 
 export function Keys({
   combo,

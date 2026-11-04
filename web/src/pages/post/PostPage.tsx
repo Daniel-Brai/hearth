@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
+
 import { useGateway } from '@/app/gateway-context';
 import { fail } from '@/data/gateway';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
 import { post as selectPost } from '@/domain/selectors';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { idFromSegment } from '@/runtime/routes';
 import { GateScreen } from '@/shell/GuestWall';
 import { useGate } from '@/shell/use-guest';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
+
 import { PostActions } from './PostActions';
 import { PostBody, PostHeading, PostOrigins } from './PostContent';
 import { PostEditor } from './PostEditor';
@@ -16,6 +18,7 @@ import { PostHeaderBar } from './PostHeaderBar';
 import { PostReplies, ReplyFooter } from './PostReplies';
 import { usePostEffects } from './use-post-effects';
 import { usePostView } from './use-post-view';
+
 import './PostPage.css';
 
 export function PostPage() {

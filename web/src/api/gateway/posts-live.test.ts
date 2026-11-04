@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import { useUi } from '@/runtime/ui-store';
+
 import { community, gateway, kind, page, post, roomSettings, routes } from './test-support';
 
 type Handler = (payload: Record<string, unknown>) => void;

@@ -2,6 +2,7 @@ import { Button, Icon, Img } from '@/design-system';
 import { tintStyle } from '@/domain/format';
 import { resizeErrorText, resizeImage } from '@/features/images';
 import { useUi } from '@/runtime/ui-store';
+
 import type { CommunityDraft } from './use-community-draft';
 
 export function ImageFields({ draft }: { readonly draft: CommunityDraft }) {

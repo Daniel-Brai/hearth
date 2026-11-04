@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { Button, ChoiceTiles, Field, Input, InputWithPrefix } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { Button, ChoiceTiles, Field, Input, InputWithPrefix } from '@/design-system';
 import { stripPrefix } from '@/domain/links';
 import { isUsername, takenText, toUsername, usernameProblem } from '@/domain/username';
 import { PhotoField } from '@/pages/signin/PhotoField';
-import type { SignIn, Privacy } from './use-sign-in';
+
+import type { Privacy, SignIn } from './use-sign-in';
 import { useUsernameTaken } from './use-username-taken';
 
 const initialsOf = (name: string) =>

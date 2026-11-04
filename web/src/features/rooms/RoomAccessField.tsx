@@ -1,8 +1,9 @@
 import { Suspense } from 'react';
-import { Chip, Field, Icon, Segmented } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Chip, Field, Icon, Segmented } from '@/design-system';
 import { roleRef, rolesOf } from '@/domain/selectors';
 import type { RoomAccess } from '@/domain/types';
 

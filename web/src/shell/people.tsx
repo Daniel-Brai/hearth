@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
+
+import { useAppState } from '@/data/store';
 import { Avatar, Link, type AvatarSize } from '@/design-system';
 import { authorName, displayName, initials, person, photoOf, presence } from '@/domain/selectors';
-import { useAppState } from '@/data/store';
 import { routes } from '@/runtime/routes';
 
 type PersonAvatarProps = {

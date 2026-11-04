@@ -1,3 +1,6 @@
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Button,
   Dialog,
@@ -7,9 +10,6 @@ import {
   EmptyState,
   Icon,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
 import type { ArchivedRoom } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
 import { useRoomActions } from '@/shell/use-room-actions';

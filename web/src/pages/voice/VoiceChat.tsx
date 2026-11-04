@@ -1,5 +1,6 @@
 import { Icon, IconButton } from '@/design-system';
 import { ChatView } from '@/pages/chat/ChatView';
+
 import '@/pages/chat/ChatPage.css';
 
 type VoiceChatProps = {

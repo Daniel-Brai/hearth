@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+
 import type { ProfileSpec } from '@/data/gateway';
+
 import { gateway, me, routes, sent, session } from './test-support';
 
 const spec: ProfileSpec = {

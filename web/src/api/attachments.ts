@@ -1,6 +1,6 @@
-import type { Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type Result } from '@/data/gateway';
 import type { Attachment } from '@/domain/types';
+
 import { dataUrlToBlob, uploadFile } from './upload';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

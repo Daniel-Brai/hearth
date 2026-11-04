@@ -1,20 +1,21 @@
-import { ButtonLink, FileList, Icon, Link, LiveDot, OriginNote, Pill } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useDisplayZone } from '@/app/request-context';
+import { useAppState } from '@/data/store';
+import { ButtonLink, FileList, Icon, Link, LiveDot, OriginNote, Pill } from '@/design-system';
 import { TITLE_LONG } from '@/domain/catalog';
 import { ageText, dateText, plural } from '@/domain/format';
-import { attachmentSrc, type Post } from '@/domain/types';
-import { useAppState } from '@/data/store';
 import { recordingsFor } from '@/domain/selectors';
+import { attachmentSrc, type Post } from '@/domain/types';
 import { Boosts } from '@/features/boosts/BoostMenu';
 import { Markdown } from '@/features/markdown/Markdown';
-import { RecordingList } from '@/features/recordings/RecordingList';
 import { toRow } from '@/features/recordings/recording-row';
+import { RecordingList } from '@/features/recordings/RecordingList';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
-import { useGuest } from '@/shell/use-guest';
 import { PersonAvatar, PersonLink } from '@/shell/people';
+import { useGuest } from '@/shell/use-guest';
+
 import type { PostViewData } from './use-post-view';
 
 type PostProps = { readonly post: Post; readonly view: PostViewData };

@@ -2,6 +2,7 @@
 
 import { KIND_LIB, MAX_ATTACHMENTS, TEMPLATES, type KindKey } from '@/domain/catalog';
 import type { PostKind } from '@/domain/types';
+
 import bookclubBanner from './images/bookclub-banner.webp';
 import bookclubLogo from './images/bookclub-logo.webp';
 import elixirBanner from './images/elixir-banner.webp';

@@ -1,6 +1,6 @@
-import { Select, type Option } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { Select, type Option } from '@/design-system';
 import { creationMode } from '@/domain/selectors';
 import type { CommunityCreation } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';

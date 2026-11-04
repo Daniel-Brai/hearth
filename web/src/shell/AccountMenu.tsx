@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Menu, MenuItem, MenuTitle } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { Menu, MenuItem, MenuTitle } from '@/design-system';
 import { displayName, person } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 

@@ -6,6 +6,7 @@ import { shortName } from '@/domain/selectors';
 import type { CommunityEvent } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
 import { useGuest } from '@/shell/use-guest';
+
 import { eventLink } from './event-utils';
 
 const names = new Intl.ListFormat('en');

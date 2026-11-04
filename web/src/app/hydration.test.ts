@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
+
 import { emptyState } from '@/data/empty-state';
+
 import { hydrationScript } from './hydration';
 
 describe('hydrationScript', () => {

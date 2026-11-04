@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { SIGN_IN_AGAIN } from '@/data/gateway';
 import {
   Button,
   Dialog,
@@ -10,8 +13,6 @@ import {
   Icon,
   Input,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { SIGN_IN_AGAIN } from '@/data/gateway';
 import { CodeBoxes } from '@/features/code-boxes/CodeBoxes';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';

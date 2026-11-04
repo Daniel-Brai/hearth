@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Badge, Button, cn, Icon, Label, Link, Select } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Badge, Button, cn, Icon, Label, Link, Select } from '@/design-system';
 import { cap, plural } from '@/domain/format';
 import { canDo, displayName, handle, joinedCids, person, presence } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar } from '@/shell/people';
-import { PeopleEmpty } from './PeopleEmpty';
+
 import { directUnread, lastDmLine, peopleIds, sharedNames, sharedSummary } from './people-select';
+import { PeopleEmpty } from './PeopleEmpty';
+
 import './PeoplePage.css';
 
 export function PeoplePage() {

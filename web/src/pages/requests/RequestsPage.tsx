@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Badge,
   Button,
@@ -13,9 +17,6 @@ import {
   Segmented,
   type IconName,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
 import {
   creationMode,
   displayName,
@@ -24,11 +25,12 @@ import {
   templateOf,
 } from '@/domain/selectors';
 import type { CommunityRequest } from '@/domain/types';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar } from '@/shell/people';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
+
 import './RequestsPage.css';
 
 type Tab = 'waiting' | 'decided';

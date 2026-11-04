@@ -2,12 +2,14 @@ import { act, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
 import { RequestContext } from '@/app/request-context';
 import { emptyState } from '@/data/empty-state';
 import { Store, StoreContext } from '@/data/store';
 import { LoadCache, LoadCacheContext } from '@/data/use-load';
 import { MockGateway } from '@/mocks/gateway';
+
 import Home from './home';
 
 async function show(hint: boolean) {

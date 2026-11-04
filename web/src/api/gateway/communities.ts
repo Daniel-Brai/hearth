@@ -1,6 +1,4 @@
-import type { HearthGateway } from '@/data/gateway';
-import type { Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
 import { visibilityOf } from '@/domain/audience';
 import type { CommunityRequest, PostKind } from '@/domain/types';
@@ -8,11 +6,11 @@ import {
   communityCreate,
   communityIndex,
   communityJoin,
-  communitySaveKinds,
   communityLeave,
   communityPublic,
   communityRequestDecide,
   communityRequestIndex,
+  communitySaveKinds,
   communityShow,
   communitySlug,
   communityTransfer,
@@ -22,17 +20,17 @@ import {
 import { postIndex, postPinned, postShow } from '@/generated/api/forum/forum';
 import { moderationCommunityLevel } from '@/generated/api/moderation/moderation';
 import type {
-  Community,
   CommunityRequest as ApiCommunityRequest,
+  Community,
   CreateCommunityBodyTemplate,
   RequestUploadBodyPurpose,
   UpdateCommunityBodyCategoriesItem,
 } from '@/generated/schemas';
-import { OPEN, SERVER_VISIBILITY, ageOf, toKindInput, toPerson } from '../mappers';
-import { dataUrlToBlob, uploadFile } from '../upload';
+
+import { ageOf, OPEN, SERVER_VISIBILITY, toKindInput, toPerson } from '../mappers';
 import { accessToken } from '../session-token';
-import type { GatewayContext } from './context';
-import { call, errorCode, failed } from './context';
+import { dataUrlToBlob, uploadFile } from '../upload';
+import { call, errorCode, failed, type GatewayContext } from './context';
 
 const TEMPLATES = {
   club: true,

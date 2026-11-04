@@ -1,12 +1,13 @@
 import type { LinkOptions } from '@/data/gateway';
 import type { InviteEmail, InviteLink } from '@/domain/types';
 import type {
+  Community as ApiCommunity,
+  InviteEmail as ApiInviteEmail,
   CreateInviteBody,
   Invite,
-  InviteEmail as ApiInviteEmail,
   InvitePreviewCommunity,
-  Community as ApiCommunity,
 } from '@/generated/schemas';
+
 import { ageOf } from './mappers';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

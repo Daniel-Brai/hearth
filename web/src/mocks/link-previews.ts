@@ -1,5 +1,5 @@
-import type { LinkPreview } from '@/domain/types';
 import { parseLink } from '@/domain/links';
+import type { LinkPreview } from '@/domain/types';
 
 const segments = (path: string) => path.split('/').filter(Boolean);
 

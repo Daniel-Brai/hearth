@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+
 import { Button, Icon } from '@/design-system';
+
 import { clockLabel } from './voice-session';
 
 type RecordingBannerProps = {

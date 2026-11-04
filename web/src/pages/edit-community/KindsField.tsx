@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Field } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { Field } from '@/design-system';
+
 import { MAX_KINDS } from './drafts';
 import { KindsEditor } from './KindsEditor';
 import type { CommunityDraft } from './use-community-draft';

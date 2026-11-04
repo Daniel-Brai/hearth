@@ -1,6 +1,4 @@
-import type { HearthGateway, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
-import type { CommunityEvent as ApiEvent } from '@/generated/schemas';
+import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
 import { communityIndex } from '@/generated/api/communities/communities';
 import {
   eventCancel,
@@ -8,14 +6,16 @@ import {
   eventDelete,
   eventIndex,
   eventInterest,
+  eventRestore,
   eventUpdate,
 } from '@/generated/api/events/events';
 import { recordingListEvent } from '@/generated/api/voice/voice';
+import type { CommunityEvent as ApiEvent } from '@/generated/schemas';
+
 import { toEvent, toEventBody } from '../events';
 import { toRecording } from '../mappers';
 import { accessToken } from '../session-token';
-import type { GatewayContext } from './context';
-import { call, failed } from './context';
+import { call, failed, type GatewayContext } from './context';
 
 export function createEventsGateway(
   ctx: GatewayContext,
@@ -115,7 +115,7 @@ export function createEventsGateway(
       if (event) event.cancelled = cancelled;
     });
 
-    const answer = await call(() => eventCancel(id, { cancelled }));
+    const answer = await call(() => (cancelled ? eventCancel(id) : eventRestore(id)));
     if (answer.status === 200) remember([answer.data]);
   };
 

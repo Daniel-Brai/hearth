@@ -3,6 +3,7 @@ import { fmtSize, shortFileName } from '@/domain/format';
 import { attachmentSrc, type Attachment } from '@/domain/types';
 import { IMAGE_ALIGNS, imageAlignIn, type ImageAlign } from '@/features/markdown/image-align';
 import { useUi } from '@/runtime/ui-store';
+
 import type { TextEdits } from './use-text-edits';
 
 const ALIGN_LABEL: Record<ImageAlign, string> = {

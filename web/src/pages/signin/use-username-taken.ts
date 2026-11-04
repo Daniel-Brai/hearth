@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 
 const PAUSE_MS = 300;

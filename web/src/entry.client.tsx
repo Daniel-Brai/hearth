@@ -1,6 +1,7 @@
-import { StrictMode, startTransition } from 'react';
+import { startTransition, StrictMode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { HydratedRouter } from 'react-router/dom';
+
 import { AppProviders } from '@/app/AppProviders';
 import { HYDRATION_KEY, type Hydration } from '@/app/hydration';
 import { rememberZone } from '@/app/request-context';

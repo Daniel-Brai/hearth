@@ -1,17 +1,20 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
 import { useLocation, useParams } from 'react-router';
-import { ButtonLink, EmptyState, Icon, Measure, Textarea } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { ButtonLink, EmptyState, Icon, Measure, Textarea } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
 import { canDo, isTech, joinedCids, kindInfo, postableKinds } from '@/domain/selectors';
 import type { Attachment } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
 import { extractTags } from '@/features/markdown/tags';
+import { ScheduledPosts } from '@/features/schedule/ScheduledPosts';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
+
 import {
   CommunityAndKind,
   ModeToggle,
@@ -23,9 +26,10 @@ import {
 import { LeaveDialog } from './LeaveDialog';
 import { hasContent, useComposeDraft } from './use-compose-draft';
 import { useLeaveGuard } from './use-leave-guard';
-import { ScheduledPosts } from '@/features/schedule/ScheduledPosts';
 import { usePublish } from './use-publish';
+
 import './ComposePage.css';
+
 import { TITLE_MAX } from '@/domain/catalog';
 
 const allowedCommunities = (state: AppState) =>

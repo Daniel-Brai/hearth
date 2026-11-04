@@ -1,23 +1,26 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { EmptyState, Label, Measure } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
+import { shareImage } from '@/app/share-image';
+import { eventGraph, eventsGraph, indexable, useStructuredData } from '@/app/structured-data';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { EmptyState, Label, Measure } from '@/design-system';
 import { canDo, community, joinedCids, pastEvents, upcomingEvents } from '@/domain/selectors';
 import type { CommunityEvent } from '@/domain/types';
-import { idFromSegment, routes } from '@/runtime/routes';
-import { eventGraph, eventsGraph, indexable, useStructuredData } from '@/app/structured-data';
 import { plainText } from '@/features/markdown/plain-text';
-import { PageHeader } from '@/shell/PageHeader';
-import { shareImage } from '@/app/share-image';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { idFromSegment, routes } from '@/runtime/routes';
+import { GateScreen } from '@/shell/GuestWall';
+import { PageHeader } from '@/shell/PageHeader';
+import { useGate } from '@/shell/use-guest';
+
+import { alwaysChanged, groupEvents, snapshot } from './event-utils';
 import { EventCard } from './EventCard';
 import { EventDialog } from './EventDialog';
 import { EventsToolbar, type EventsTab } from './EventsToolbar';
-import { alwaysChanged, groupEvents, snapshot } from './event-utils';
-import { GateScreen } from '@/shell/GuestWall';
-import { useGate } from '@/shell/use-guest';
+
 import './EventsPage.css';
 
 export function EventsPage() {

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+
+import { useAppState } from '@/data/store';
 import {
   Button,
   CommunityMark,
@@ -7,7 +9,6 @@ import {
   Select,
   type SelectOption,
 } from '@/design-system';
-import { useAppState } from '@/data/store';
 import { cap, plural } from '@/domain/format';
 import { community } from '@/domain/selectors';
 import type { ModLogEntry } from '@/domain/types';

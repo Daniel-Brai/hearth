@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
-import { displayName } from '@/domain/selectors';
 import { sendAtLabel } from '@/domain/schedule';
+import { displayName } from '@/domain/selectors';
 import type { Attachment, Message, ScheduledMessage } from '@/domain/types';
 import { isTune, playTune, sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
+
 import type { ChatTarget } from './chat-select';
 
 export function useChatComposer({

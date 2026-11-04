@@ -1,4 +1,5 @@
 import { lazy, Suspense, type CSSProperties } from 'react';
+
 import { attachmentSrc, type Attachment } from '@/domain/types';
 
 const VideoPlayer = lazy(() =>

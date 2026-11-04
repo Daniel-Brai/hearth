@@ -1,9 +1,12 @@
 import { useState, type KeyboardEvent } from 'react';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Avatar,
   Button,
-  EmptyState,
   cn,
+  EmptyState,
   Field,
   Icon,
   Input,
@@ -12,9 +15,8 @@ import {
   Select,
   type SelectOption,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
 import { ageText, plural } from '@/domain/format';
+import { stripPrefix } from '@/domain/links';
 import {
   canSeeName,
   community,
@@ -23,7 +25,6 @@ import {
   personIdByHandle,
   shortName,
 } from '@/domain/selectors';
-import { stripPrefix } from '@/domain/links';
 import type { Ban } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar } from '@/shell/people';

@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { person } from '@/domain/selectors';
 import type { Post } from '@/domain/types';
-import { routes } from '@/runtime/routes';
 import { useModerationActions } from '@/features/moderation/use-moderation-actions';
+import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
+
 import type { PostViewData } from './use-post-view';
 
 export function usePostActions(post: Post, view: PostViewData) {

@@ -1,9 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
+
 import { useGateway } from '@/app/gateway-context';
-import { useGuest } from '@/shell/use-guest';
-import { usePageKeys } from '@/shell/key-actions';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
+import { usePageKeys } from '@/shell/key-actions';
+import { useGuest } from '@/shell/use-guest';
 
 const noop = () => undefined;
 

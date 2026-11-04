@@ -1,6 +1,6 @@
 import type { HueChoice } from '@/design-system';
-import { KIND_LIB } from '@/domain/catalog';
 import type { Audience } from '@/domain/audience';
+import { KIND_LIB } from '@/domain/catalog';
 
 export type Form = {
   name: string;

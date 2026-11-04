@@ -2,6 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
 import { ok } from '@/data/gateway';
 import { Store, StoreContext } from '@/data/store';
@@ -12,6 +13,7 @@ import { MockGateway } from '@/mocks/gateway';
 import { createSeedState } from '@/mocks/seed';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
+
 import { ChatPage } from './ChatPage';
 
 async function show(access: RoomAccess, preview: LinkPreview | null = null) {

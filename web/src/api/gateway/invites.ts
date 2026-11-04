@@ -1,22 +1,21 @@
-import type { HearthGateway, LinkOptions, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway, type LinkOptions, type Result } from '@/data/gateway';
 import {
   inviteAccept,
   inviteCreate,
+  inviteDeclineInvitation,
   inviteDelete,
   inviteEmailCheck,
-  inviteSendInvitation,
-  inviteDeclineInvitation,
+  inviteIndex,
   inviteMine,
   inviteRevokeInvitation,
-  inviteIndex,
+  inviteSendInvitation,
   inviteShow,
   inviteUpdate,
 } from '@/generated/api/communities/communities';
+
 import { previewCommunity, toInviteBody, toInviteEmail, toInviteLink } from '../invites';
 import { ageOf, toPerson } from '../mappers';
-import type { GatewayContext } from './context';
-import { call, failed } from './context';
+import { call, failed, type GatewayContext } from './context';
 
 const NOT_LOADED = 'Open the community first.';
 

@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useState, type KeyboardEvent, type RefObject } from 'react';
+
 import type { useFullscreen } from '@/design-system/components/video-fullscreen';
 import type { useMediaState } from '@/design-system/components/video-media';
 

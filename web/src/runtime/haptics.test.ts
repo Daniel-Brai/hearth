@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { feelCue, setHapticsEnabled } from './haptics';
 
 const trigger = vi.hoisted(() => vi.fn(() => Promise.resolve()));

@@ -1,8 +1,10 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { RequestContext } from '@/app/request-context';
 import { Store, StoreContext } from '@/data/store';
 import { createSeedState } from '@/mocks/seed';
+
 import { ShareButton } from './ShareButton';
 
 const request = {

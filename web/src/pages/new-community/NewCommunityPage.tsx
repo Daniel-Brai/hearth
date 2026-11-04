@@ -1,15 +1,17 @@
-import { Button, ButtonLink, Measure, Panel } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Button, ButtonLink, Measure, Panel } from '@/design-system';
 import { canRequestCommunity, canStartCommunity } from '@/domain/selectors';
-import { routes } from '@/runtime/routes';
-import { PageHeader } from '@/shell/PageHeader';
 import { LeaveDialog } from '@/pages/compose/LeaveDialog';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { routes } from '@/runtime/routes';
+import { PageHeader } from '@/shell/PageHeader';
+
 import { ChosenTemplate } from './ChosenTemplate';
 import { CommunityFields } from './CommunityFields';
 import { LogoField } from './LogoField';
 import { TemplatePicker } from './TemplatePicker';
 import { useCreateCommunity } from './use-create-community';
+
 import './NewCommunityPage.css';
 
 export function NewCommunityPage() {

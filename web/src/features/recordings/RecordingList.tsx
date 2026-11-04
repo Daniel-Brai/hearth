@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Button,
   ButtonLink,
@@ -10,12 +12,12 @@ import {
   Label,
 } from '@/design-system';
 import { VideoPlayer } from '@/design-system/components/video-player';
-import { useAppState } from '@/data/store';
 import { displayName } from '@/domain/selectors';
 import type { RecordingStatus } from '@/domain/types';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar } from '@/shell/people';
+
 import type { Row } from './recording-row';
 
 const STATUS_TEXT: Partial<Record<RecordingStatus, string>> = {

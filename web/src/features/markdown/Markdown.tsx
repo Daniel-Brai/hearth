@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
+
 import { useAppState, useStore } from '@/data/store';
-import type { Attachment } from '@/domain/types';
 import { cn } from '@/design-system/index';
+import type { Attachment } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
+
 import { wireCarousels } from './carousel-block';
 import { lexMarkdown, markdownKey, renderInline, renderMarkdown } from './markdown';
 

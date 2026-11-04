@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Badge,
   Button,
@@ -13,18 +16,18 @@ import {
   Switch,
   type Option,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
 import { handle, isInstanceAdmin, pendingRequests, person } from '@/domain/selectors';
 import type { DigestChoice, ThemePreference } from '@/domain/types';
+import { CreationSelect } from '@/pages/settings/CreationSelect';
 import { feel, setHapticsEnabled } from '@/runtime/haptics';
-import { CUES, playTune, setSoundsEnabled, sfx, type CueName } from '@/runtime/sounds';
 import { routes } from '@/runtime/routes';
+import { CUES, playTune, setSoundsEnabled, sfx, type CueName } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
-import { CreationSelect } from '@/pages/settings/CreationSelect';
+
 import { EmailDialog } from './EmailDialog';
 import { PushRow } from './PushRow';
+
 import './SettingsPage.css';
 
 const DIGEST_OPTIONS: readonly Option<DigestChoice>[] = [

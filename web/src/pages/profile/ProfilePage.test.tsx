@@ -1,7 +1,9 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+
 import { patterns, routes } from '@/runtime/routes';
 import { showScreen } from '@/test/show-screen';
+
 import { ProfilePage } from './ProfilePage';
 
 const own = { path: patterns.profile, url: routes.profile('danielbrai'), element: <ProfilePage /> };

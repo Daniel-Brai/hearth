@@ -1,5 +1,6 @@
 import { ButtonLink, ExternalButtonLink, Icon, Link } from '@/design-system';
 import type { EventPlace } from '@/domain/events';
+
 import { placeIcon } from './place-icon';
 
 export function PlaceLink({ place }: { readonly place: EventPlace }) {

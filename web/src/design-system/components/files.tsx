@@ -1,9 +1,6 @@
 import { useState } from 'react';
+
 import { Icon } from '@/design-system/icons/Icon';
-import { IconButton } from './button';
-import { Carousel } from './carousel';
-import { Img } from './image';
-import { VideoAttachment } from './video-attachment';
 import { fmtSize, shortFileName } from '@/domain/format';
 import {
   attachmentDownload,
@@ -11,6 +8,11 @@ import {
   type Attachment,
   type LinkPreview as LinkPreviewData,
 } from '@/domain/types';
+
+import { IconButton } from './button';
+import { Carousel } from './carousel';
+import { Img } from './image';
+import { VideoAttachment } from './video-attachment';
 
 export function FileList({
   files,

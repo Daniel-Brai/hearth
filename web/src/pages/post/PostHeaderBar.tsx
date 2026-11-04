@@ -1,21 +1,22 @@
-import { Icon, IconButton, Menu, MenuItem } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
+import { shareImage } from '@/app/share-image';
+import { indexable, postGraph, useStructuredData } from '@/app/structured-data';
 import type { HearthGateway } from '@/data/gateway';
+import { useAppState } from '@/data/store';
+import { Icon, IconButton, Menu, MenuItem } from '@/design-system';
+import { postHref } from '@/domain/selectors';
 import { attachmentSrc, type Post } from '@/domain/types';
 import { plainText } from '@/features/markdown/plain-text';
-import { ShareButton } from '@/features/share/ShareButton';
 import { shareUrl } from '@/features/share/share-links';
 import { openShareSheet } from '@/features/share/share-sheet';
+import { ShareButton } from '@/features/share/ShareButton';
 import { useShareable } from '@/features/share/use-shareable';
-import { postHref } from '@/domain/selectors';
 import { useUi } from '@/runtime/ui-store';
-import { useGuest } from '@/shell/use-guest';
-import { indexable, postGraph, useStructuredData } from '@/app/structured-data';
-import { useAppState } from '@/data/store';
 import { PageHeader } from '@/shell/PageHeader';
-import { shareImage } from '@/app/share-image';
-import type { PostViewData } from './use-post-view';
+import { useGuest } from '@/shell/use-guest';
+
 import { usePostActions } from './use-post-actions';
+import type { PostViewData } from './use-post-view';
 
 function firstImage(post: Post): string | null {
   const image = post.files?.find((f) => f.kind === 'image');

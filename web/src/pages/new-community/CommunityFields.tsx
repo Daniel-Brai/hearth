@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Field, HUE_CHOICES, Input, Swatches } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useOrigin } from '@/app/request-context';
+import { Field, HUE_CHOICES, Input, Swatches } from '@/design-system';
+import type { Template } from '@/domain/types';
 import { AudienceField } from '@/features/community/AudienceField';
 import { DescriptionField } from '@/features/composer/DescriptionField';
-import type { Template } from '@/domain/types';
 import { slugify } from '@/runtime/routes';
+
 import type { Form } from './form';
 
 export function CommunityFields({

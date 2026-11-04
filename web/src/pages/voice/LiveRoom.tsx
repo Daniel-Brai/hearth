@@ -1,20 +1,22 @@
 import { useMemo, useState } from 'react';
-import { Button, cn, Icon, Link, OriginNote } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { Button, cn, Icon, Link, OriginNote } from '@/design-system';
 import { routes } from '@/runtime/routes';
 import { usePageKeys } from '@/shell/key-actions';
+
+import { useLiveRoomView, type LiveRoomView } from './live-room-view';
 import { LiveRoomCaptions } from './LiveRoomCaptions';
-import { ModePill } from './ModePill';
 import { LiveRoomControls, type ChatToggle } from './LiveRoomControls';
 import { LiveRoomListeners } from './LiveRoomListeners';
 import { FloatZone, LiveRoomStage, ShareStrip } from './LiveRoomStage';
-import { stageTalkers } from './talkers';
+import { ModePill } from './ModePill';
 import { PeopleDialog } from './PeopleDialog';
 import { RecordingBanner } from './RecordingBanner';
-import { ShareTile } from './ShareTile';
 import { shareLayout } from './share-view';
-import { useLiveRoomView, type LiveRoomView } from './live-room-view';
+import { ShareTile } from './ShareTile';
+import { stageTalkers } from './talkers';
 import { useVoiceActions } from './use-voice-actions';
 import { unnamedCount, useRoomSession } from './voice-session';
 

@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import type { Message } from '@/domain/types';
+
 import type { ChatTarget } from './chat-select';
 
 export function useMarkRead(target: ChatTarget, messages: readonly Message[]) {

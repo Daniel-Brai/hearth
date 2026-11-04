@@ -1,5 +1,6 @@
 import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
 import { RequestContext } from '@/app/request-context';
 import { Store, StoreContext } from '@/data/store';
@@ -7,6 +8,7 @@ import type { Attachment } from '@/domain/types';
 import { MockGateway } from '@/mocks/gateway';
 import { createSeedState } from '@/mocks/seed';
 import { useUi } from '@/runtime/ui-store';
+
 import { Composer } from './Composer';
 
 const request = {

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Button, Panel, SettingsRow } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useDisplayZone } from '@/app/request-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Button, Panel, SettingsRow } from '@/design-system';
 import { dateText } from '@/domain/format';
 import type { InstanceUpdate } from '@/domain/types';
 import { Markdown } from '@/features/markdown/Markdown';

@@ -1,6 +1,7 @@
+import { routes } from '@/runtime/routes';
+
 import type { AppState } from '../app-state';
 import type { Notification } from '../types';
-import { routes } from '@/runtime/routes';
 import { person } from './people';
 
 export const dmCount = (d: { unread: number | boolean }) => (d.unread === true ? 1 : d.unread || 0);

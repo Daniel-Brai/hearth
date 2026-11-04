@@ -1,22 +1,25 @@
 import { useParams } from 'react-router';
-import { Measure } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
+import { shareImage } from '@/app/share-image';
+import { profileGraph, useStructuredData } from '@/app/structured-data';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Measure } from '@/design-system';
 import { plural } from '@/domain/format';
 import { personIdByHandle } from '@/domain/selectors';
 import { plainText } from '@/features/markdown/plain-text';
 import { ShareButton } from '@/features/share/ShareButton';
-import { routes } from '@/runtime/routes';
-import { profileGraph, useStructuredData } from '@/app/structured-data';
-import { PageHeader } from '@/shell/PageHeader';
-import { shareImage } from '@/app/share-image';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { routes } from '@/runtime/routes';
+import { PageHeader } from '@/shell/PageHeader';
+
+import { profileCommunities } from './profile-data';
 import { ProfileActivity } from './ProfileActivity';
 import { ProfileCommunities } from './ProfileCommunities';
 import { ProfileHead } from './ProfileHead';
-import { profileCommunities } from './profile-data';
 import { useProfileView } from './use-profile-view';
+
 import './ProfilePage.css';
 
 export function ProfilePage() {

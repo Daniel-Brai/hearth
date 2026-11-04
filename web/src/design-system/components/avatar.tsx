@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { cn } from './cn';
+
 import { tintStyle } from '@/domain/format';
+
+import { cn } from './cn';
 import { fadeIn } from './fade';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';

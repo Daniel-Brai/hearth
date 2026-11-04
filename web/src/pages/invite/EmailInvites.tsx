@@ -1,9 +1,11 @@
 import { useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
-import { Button, Field, Icon, Panel, Select, Textarea, cn } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { Button, cn, Field, Icon, Panel, Select, Textarea } from '@/design-system';
 import { roleName, roleOptions } from '@/domain/selectors';
 import { useUi } from '@/runtime/ui-store';
+
 import { isEmail, splitAddresses } from './link-facts';
 
 type Chip = { email: string; role: string | null; valid: boolean; unreachable: boolean };

@@ -1,7 +1,8 @@
 import { addDays } from 'date-fns';
+
+import type { IconName } from '@/design-system';
 import { evEnd, evNext, evState, evWhere } from '@/domain/events';
 import type { Community, CommunityEvent, EventRepeat, VoiceMode } from '@/domain/types';
-import type { IconName } from '@/design-system';
 import { routes, slugify } from '@/runtime/routes';
 
 export const VOICE_MODES: readonly {

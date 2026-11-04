@@ -1,5 +1,5 @@
-import { Socket } from 'phoenix';
-import type { Channel } from 'phoenix';
+import { Socket, type Channel } from 'phoenix';
+
 import type {
   AnswerMarked,
   ContentRemoved,
@@ -17,27 +17,28 @@ import type {
   MessageReacted,
   MessageRemoved,
   NotificationCreated,
-  ScheduledMessageChanged,
-  ScheduledPostChanged,
   PostCreated,
   PostReacted,
   ReplyCreated,
   RoomActivity,
   RoomChanged,
+  ScheduledMessageChanged,
+  ScheduledPostChanged,
   SoundPlayed,
   TranscriptReady,
   VoiceAttendance,
   VoiceCaption,
   VoiceParticipantChanged,
-  VoiceSessionEnded,
-  VoiceSessionStarted,
-  VoiceShareChanged,
-  VoiceSpeakingChanged,
   VoiceReaction,
   VoiceRecordingChanged,
   VoiceRecordingDeleted,
   VoiceRecordingRenamed,
+  VoiceSessionEnded,
+  VoiceSessionStarted,
+  VoiceShareChanged,
+  VoiceSpeakingChanged,
 } from '@/generated/schemas';
+
 import { apiBaseUrl } from './custom-fetch';
 import { accessToken, onAccessToken } from './session-token';
 

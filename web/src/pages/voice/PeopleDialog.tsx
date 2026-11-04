@@ -1,3 +1,4 @@
+import { useAppState } from '@/data/store';
 import {
   Button,
   ButtonLink,
@@ -7,10 +8,10 @@ import {
   Icon,
   Label,
 } from '@/design-system';
-import { useAppState } from '@/data/store';
 import { displayName, handle, person } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 import { PersonAvatar } from '@/shell/people';
+
 import type { RoomSession } from './voice-session';
 
 type Entry = {

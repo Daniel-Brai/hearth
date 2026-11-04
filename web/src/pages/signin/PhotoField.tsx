@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+
 import { Button, Icon, Img } from '@/design-system';
 import { resizeErrorText, resizeImage } from '@/features/images';
 import { useUi } from '@/runtime/ui-store';

@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
+
 import { Input } from '@/design-system';
+
 import './CodeBoxes.css';
 
 const LENGTH = 6;

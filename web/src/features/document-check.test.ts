@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { shortFileName } from '@/domain/format';
 import { isAllowedDocument } from '@/features/document-check';
 

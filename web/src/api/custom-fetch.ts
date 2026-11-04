@@ -1,5 +1,6 @@
-import type { Session } from '@/generated/schemas';
 import { onServer, serverEnv } from '@/data/env';
+import type { Session } from '@/generated/schemas';
+
 import { accessToken, setAccessToken } from './session-token';
 import { apiHeaders } from './version';
 

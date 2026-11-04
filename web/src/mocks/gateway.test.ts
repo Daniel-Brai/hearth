@@ -1,8 +1,10 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it } from 'vitest';
+
 import { Store } from '@/data/store';
 import { TITLE_MAX } from '@/domain/catalog';
 import { canDo } from '@/domain/selectors';
+
 import { MockGateway } from './gateway';
 import { createSeedState } from './seed';
 

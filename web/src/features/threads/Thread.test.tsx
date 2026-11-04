@@ -1,8 +1,10 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
+
 import { Store, StoreContext } from '@/data/store';
 import { createSeedState } from '@/mocks/seed';
+
 import { Thread } from './Thread';
 import { buildTree } from './tree';
 

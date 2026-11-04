@@ -1,6 +1,7 @@
 import { addDays, addMonths, addWeeks } from 'date-fns';
-import type { Community, CommunityEvent, EventRepeat } from '@/domain/types';
+
 import { parseLink } from '@/domain/links';
+import type { Community, CommunityEvent, EventRepeat } from '@/domain/types';
 import { routes } from '@/runtime/routes';
 
 // Server and browser use the same zone until hydration ends so both write the same times

@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router';
-import { Avatar, Button, ButtonLink, Icon, Link, Pill, type IconName } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
+import { Avatar, Button, ButtonLink, Icon, Link, Pill, type IconName } from '@/design-system';
 import { Markdown } from '@/features/markdown/Markdown';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { useGuest } from '@/shell/use-guest';
+
 import { ProfileLinks } from './ProfileLinks';
 import type { ProfileViewData } from './use-profile-view';
 

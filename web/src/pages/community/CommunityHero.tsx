@@ -1,6 +1,6 @@
-import { AUDIENCE_LABEL } from '@/domain/audience';
 import { useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router';
+
 import {
   Badge,
   Button,
@@ -14,11 +14,13 @@ import {
   Menu,
   MenuItem,
 } from '@/design-system';
+import { AUDIENCE_LABEL } from '@/domain/audience';
 import { fmt, noun, plural } from '@/domain/format';
 import { linkIcon, linkText } from '@/domain/links';
 import { Markdown } from '@/features/markdown/Markdown';
 import { routes } from '@/runtime/routes';
 import { PersonAvatar } from '@/shell/people';
+
 import type { CommunityViewData } from './use-community-view';
 
 type HeroProps = {

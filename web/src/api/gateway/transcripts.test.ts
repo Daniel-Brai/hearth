@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { at, community, gateway, me, routes, sent, session } from './test-support';
 
 const recording = {
@@ -101,7 +102,7 @@ describe('transcripts', () => {
 
   it('fixes a line', async () => {
     routes['GET /api/voice-sessions/s1/transcript'] = { status: 200, body: transcript };
-    routes['PUT /api/transcript-segments/seg1'] = {
+    routes['PATCH /api/voice-sessions/s1/transcript/segments/seg1'] = {
       status: 200,
       body: { ...transcript.segments[0], text: 'Cut just above the bud', edited: true },
     };
@@ -115,7 +116,7 @@ describe('transcripts', () => {
     );
 
     expect(sent).toContainEqual(
-      expect.objectContaining({ method: 'PUT', body: { text: 'Cut just above the bud' } }),
+      expect.objectContaining({ method: 'PATCH', body: { text: 'Cut just above the bud' } }),
     );
     expect(store.get().transcripts['s1']?.lines[0]?.text).toBe('Cut just above the bud');
   });

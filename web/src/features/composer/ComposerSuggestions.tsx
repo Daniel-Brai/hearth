@@ -1,6 +1,7 @@
-import { Avatar, Icon } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Avatar, Icon } from '@/design-system';
 import { initials, person, photoOf } from '@/domain/selectors';
+
 import type { Suggestion, SuggestKind } from './composer-text';
 
 const TITLES: Record<SuggestKind, string> = {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { parseProviderReturn } from './provider-return';
 
 describe('parseProviderReturn', () => {

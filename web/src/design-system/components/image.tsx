@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+
 import { blurUrl } from './blur';
 import { fadeIn } from './fade';
 

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import {
   at,
   community,
@@ -538,7 +539,7 @@ describe('posts.startLive', () => {
   it('says why when every voice room is busy', async () => {
     const { gateway: g } = await openWithVoice();
 
-    routes['POST /api/posts/p1/live'] = { status: 400, body: { code: 'rooms_busy' } };
+    routes['POST /api/posts/p1/voice-sessions'] = { status: 400, body: { code: 'rooms_busy' } };
 
     const r = await g.posts.startLive('p1');
 
@@ -548,7 +549,7 @@ describe('posts.startLive', () => {
   it('opens the room it started in, live on the post', async () => {
     const { gateway: g, store } = await openWithVoice();
 
-    routes['POST /api/posts/p1/live'] = { status: 201, body: discussed };
+    routes['POST /api/posts/p1/voice-sessions'] = { status: 201, body: discussed };
 
     expect(await g.posts.startLive('p1')).toEqual({ ok: true, value: { room: 'office-hours' } });
 

@@ -1,22 +1,21 @@
-import type { HearthGateway, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
 import { floatReaction, useVoiceSession, type ServerSnapshot } from '@/data/voice-session';
 import type { AppState } from '@/domain/app-state';
-import type { VoiceMode } from '@/domain/types';
 import { nowTime } from '@/domain/format';
 import { mayTalk } from '@/domain/selectors';
+import type { VoiceMode } from '@/domain/types';
 import {
   recordingDelete,
-  recordingUpdate,
   recordingListRoom,
+  recordingUpdate,
   voiceCreate,
+  voiceCurrent,
   voiceDemote,
   voiceDisconnect,
   voiceEndSession,
   voiceHand,
-  voiceInvite,
-  voiceLive,
   voiceIndex,
+  voiceInvite,
   voiceMute,
   voiceServerMute,
   voiceShow,
@@ -34,8 +33,9 @@ import type {
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import { setVoiceStream } from '@/runtime/voice-streams';
-import type { VoiceEvents } from '../realtime';
-import { getRealtime } from '../realtime';
+
+import { toRecording } from '../mappers';
+import { getRealtime, type VoiceEvents } from '../realtime';
 import {
   JOIN_REFUSALS,
   VoiceClient,
@@ -45,9 +45,7 @@ import {
   type LevelMeter,
   type VoiceClientDeps,
 } from '../voice-client';
-import { toRecording } from '../mappers';
-import type { GatewayContext } from './context';
-import { call, errorCode, failed } from './context';
+import { call, errorCode, failed, type GatewayContext } from './context';
 
 const REFUSALS: Record<string, string> = {
   not_here: 'Join the room first.',
@@ -580,7 +578,7 @@ export function createVoiceGateway(
 
     if (!id) return null;
 
-    const answer = await call(() => voiceLive(id));
+    const answer = await call(() => voiceCurrent(id));
 
     if (answer.status !== 200) {
       markEnded(cid, rid);

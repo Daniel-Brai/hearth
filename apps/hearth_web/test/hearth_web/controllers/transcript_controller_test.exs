@@ -63,7 +63,10 @@ defmodule HearthWeb.TranscriptControllerTest do
       errors =
         conn
         |> auth_conn(member)
-        |> put(~p"/api/transcript-segments/#{thanks.id}", %{})
+        |> patch(
+          ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{thanks.id}",
+          %{}
+        )
         |> valid_response(422)
         |> Map.fetch!("errors")
 
@@ -80,7 +83,10 @@ defmodule HearthWeb.TranscriptControllerTest do
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(member)
-               |> put(~p"/api/transcript-segments/#{welcome.id}", %{text: "Hi"})
+               |> patch(
+                 ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{welcome.id}",
+                 %{text: "Hi"}
+               )
                |> valid_response(403)
     end
 
@@ -90,7 +96,10 @@ defmodule HearthWeb.TranscriptControllerTest do
       assert %{"text" => "Thank you", "edited" => true, "editable" => true} =
                conn
                |> auth_conn(member)
-               |> put(~p"/api/transcript-segments/#{thanks.id}", %{text: "Thank you"})
+               |> patch(
+                 ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{thanks.id}",
+                 %{text: "Thank you"}
+               )
                |> valid_response(200)
     end
   end

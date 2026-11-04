@@ -155,15 +155,16 @@ defmodule HearthWeb.Router do
     post "/communities/:community_id/events", EventController, :create
     patch "/events/:id", EventController, :update
     delete "/events/:id", EventController, :delete
-    put "/events/:id/cancelled", EventController, :cancel
+    post "/events/:id/cancellation", EventController, :cancel
+    delete "/events/:id/cancellation", EventController, :restore
     post "/events/:id/interest", EventController, :interest
 
-    get "/rooms/:id/voice-session", VoiceController, :live
+    get "/rooms/:id/voice-sessions/current", VoiceController, :current
     post "/rooms/:id/voice-sessions", VoiceController, :create
-    post "/posts/:id/live", VoiceController, :discuss
+    post "/posts/:id/voice-sessions", VoiceController, :discuss
     get "/voice-sessions", VoiceController, :index
     get "/voice-sessions/:id", VoiceController, :show
-    post "/voice-sessions/:id/end", VoiceController, :end_session
+    delete "/voice-sessions/:id", VoiceController, :end_session
     put "/voice-sessions/:id/hand", VoiceController, :hand
     put "/voice-sessions/:id/mute", VoiceController, :mute
     post "/voice-sessions/:id/participants/:user_id/invite", VoiceController, :invite
@@ -183,7 +184,10 @@ defmodule HearthWeb.Router do
     delete "/recordings/:id", RecordingController, :delete
 
     get "/voice-sessions/:id/transcript", TranscriptController, :show
-    put "/transcript-segments/:id", TranscriptController, :update_segment
+
+    patch "/voice-sessions/:id/transcript/segments/:segment_id",
+          TranscriptController,
+          :update_segment
 
     get "/communities/:community_id/roles", CommunityRoleController, :index
     get "/communities/:community_id/members", CommunityController, :members

@@ -1,5 +1,5 @@
-import { MAX_ATTACHMENTS } from '@/domain/catalog';
 import type { AppState } from '@/domain/app-state';
+import { MAX_ATTACHMENTS } from '@/domain/catalog';
 
 export function emptyState(): AppState {
   return {

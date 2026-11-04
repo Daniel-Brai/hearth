@@ -1,8 +1,9 @@
+import { DEFAULT_KINDS, KIND_LIB } from '@/domain/catalog';
+import { routes } from '@/runtime/routes';
+
 import type { AppState } from '../app-state';
 import { ageMinutes } from '../format';
 import type { Post, PostKind } from '../types';
-import { DEFAULT_KINDS, KIND_LIB } from '@/domain/catalog';
-import { routes } from '@/runtime/routes';
 import { canDo, isMod } from './access';
 import { joinedCids } from './communities';
 

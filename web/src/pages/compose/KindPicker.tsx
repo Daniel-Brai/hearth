@@ -1,4 +1,4 @@
-import { ICONS, Icon, type IconName } from '@/design-system';
+import { Icon, ICONS, type IconName } from '@/design-system';
 import { tintStyle } from '@/domain/format';
 import type { PostKind } from '@/domain/types';
 

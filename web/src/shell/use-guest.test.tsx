@@ -1,10 +1,12 @@
 import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
+
 import { RequestContext } from '@/app/request-context';
 import { emptyState } from '@/data/empty-state';
 import { Store, StoreContext } from '@/data/store';
 import type { SessionPhase } from '@/domain/app-state';
+
 import { useGate, useViewer, viewerOf } from './use-guest';
 
 describe('viewerOf', () => {

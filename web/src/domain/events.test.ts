@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import type { CommunityEvent } from './types';
+
 import { evDay, evRel, evWhen } from './events';
+import type { CommunityEvent } from './types';
 
 const event: CommunityEvent = {
   id: 'e1',

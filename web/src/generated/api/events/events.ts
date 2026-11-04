@@ -4,7 +4,6 @@
  * OpenAPI spec version: 2026-10-24
  */
 import type {
-  CancelBody,
   CommunityEvent,
   EventIndexParams,
   ForbiddenResponse,
@@ -276,6 +275,62 @@ export const eventUpdate = async (
   });
 };
 
+export type eventRestoreResponse200 = {
+  data: CommunityEvent;
+  status: 200;
+};
+
+export type eventRestoreResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type eventRestoreResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type eventRestoreResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type eventRestoreResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type eventRestoreResponseSuccess = eventRestoreResponse200 & {
+  headers: Headers;
+};
+export type eventRestoreResponseError = (
+  | eventRestoreResponse401
+  | eventRestoreResponse403
+  | eventRestoreResponse404
+  | eventRestoreResponse422
+) & {
+  headers: Headers;
+};
+
+export type eventRestoreResponse = eventRestoreResponseSuccess | eventRestoreResponseError;
+
+export const getEventRestoreUrl = (id: string) => {
+  return `/api/events/${id}/cancellation`;
+};
+
+/**
+ * @summary Bring a called off event back
+ */
+export const eventRestore = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<eventRestoreResponse> => {
+  return customFetch<eventRestoreResponse>(getEventRestoreUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
 export type eventCancelResponse200 = {
   data: CommunityEvent;
   status: 200;
@@ -313,41 +368,19 @@ export type eventCancelResponseError = (
 export type eventCancelResponse = eventCancelResponseSuccess | eventCancelResponseError;
 
 export const getEventCancelUrl = (id: string) => {
-  return `/api/events/${id}/cancelled`;
+  return `/api/events/${id}/cancellation`;
 };
 
 /**
- * @summary Call an event off or bring it back
+ * @summary Call an event off
  */
 export const eventCancel = async (
   id: string,
-  cancelBody: CancelBody,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<eventCancelResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit['headers']>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   return customFetch<eventCancelResponse>(getEventCancelUrl(id), {
     ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(cancelBody),
+    method: 'POST',
   });
 };
 

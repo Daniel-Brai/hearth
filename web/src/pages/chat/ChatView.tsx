@@ -1,7 +1,8 @@
 import { Fragment, useState, type RefObject } from 'react';
-import { Badge, Button, EmptyState, Icon, Separator } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { Badge, Button, EmptyState, Icon, Separator } from '@/design-system';
 import { plural } from '@/domain/format';
 import {
   canDo,
@@ -9,18 +10,15 @@ import {
   isMod,
   modLevel,
   reportsOn,
-  roomSettings,
   roomAccess,
+  roomSettings,
 } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
 import { Thread } from '@/features/threads/Thread';
-import { useThreadDepth } from '@/features/threads/use-thread-depth';
 import { buildTree } from '@/features/threads/tree';
+import { useThreadDepth } from '@/features/threads/use-thread-depth';
 import { useUi } from '@/runtime/ui-store';
-import { ChatHeader } from './ChatHeader';
-import { MessageBox, SelectBar } from './ChatComposerBar';
-import { MessageItem } from './MessageItem';
-import { PromoteDialog } from './PromoteDialog';
+
 import {
   chatThreads,
   roomTitle,
@@ -28,6 +26,10 @@ import {
   type ChatTarget,
   type ChatThread,
 } from './chat-select';
+import { MessageBox, SelectBar } from './ChatComposerBar';
+import { ChatHeader } from './ChatHeader';
+import { MessageItem } from './MessageItem';
+import { PromoteDialog } from './PromoteDialog';
 import { useChatComposer } from './use-chat-composer';
 import { useChatScroll } from './use-chat-scroll';
 import { useChatSelection } from './use-chat-selection';

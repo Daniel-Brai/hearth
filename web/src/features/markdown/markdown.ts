@@ -1,12 +1,14 @@
 import DOMPurify, { type WindowLike } from 'dompurify';
 import { Marked, Parser, type Tokens, type TokensList } from 'marked';
-import type { AppState } from '@/domain/app-state';
-import { canSeeName, findPerson, findRoom, person } from '@/domain/selectors';
-import { shortLink } from '@/domain/links';
-import { attachmentDownload, attachmentSrc, type Attachment } from '@/domain/types';
+
 import { blurUrl } from '@/design-system/components/blur';
 import { ICONS } from '@/design-system/icons/icons';
+import type { AppState } from '@/domain/app-state';
+import { shortLink } from '@/domain/links';
+import { canSeeName, findPerson, findRoom, person } from '@/domain/selectors';
+import { attachmentDownload, attachmentSrc, type Attachment } from '@/domain/types';
 import { routes } from '@/runtime/routes';
+
 import { splitImageHref, type ImageAlign } from './image-align';
 
 /** The server render has no DOM so it passes one in with setMarkdownWindow */

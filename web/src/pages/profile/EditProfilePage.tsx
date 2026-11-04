@@ -1,13 +1,16 @@
 import { useState, type KeyboardEvent } from 'react';
-import { Button, ButtonLink, Keys, Measure } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { Button, ButtonLink, Keys, Measure } from '@/design-system';
 import { initials, person } from '@/domain/selectors';
+import { LeaveDialog } from '@/pages/compose/LeaveDialog';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
-import { LeaveDialog } from '@/pages/compose/LeaveDialog';
+
 import { BIO_MAX } from './edit-profile-form';
 import { BioPanel, IdentityPanel, LinksPanel, PrivacyPanel } from './EditProfileSections';
 import { useEditProfile } from './use-edit-profile';
+
 import './EditProfilePage.css';
 
 export function EditProfilePage() {

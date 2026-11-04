@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Button, CommunityMark, EmptyState, Icon, Label, Select } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
+import { Button, CommunityMark, EmptyState, Icon, Label, Select } from '@/design-system';
+import { REPORT_REASONS } from '@/domain/catalog';
 import { ageText, plural, tintStyle } from '@/domain/format';
 import { canDo, community, displayName, handle, isHeld, person } from '@/domain/selectors';
-import { REPORT_REASONS } from '@/domain/catalog';
 import type { QueueItem, QueueReport } from '@/domain/types';
 import { InlineMarkdown, Markdown } from '@/features/markdown/Markdown';
 import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar, PersonLink } from '@/shell/people';
+
 import { modOffNote } from './mod-notes';
 import { DEFAULT_REASON, REASONS } from './queue-reasons';
 

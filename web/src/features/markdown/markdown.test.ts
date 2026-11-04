@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import { emptyState } from '@/data/empty-state';
-import { plainText } from './plain-text';
-import { codeBlockClick } from './code-block';
+
 import { wireCarousels } from './carousel-block';
+import { codeBlockClick } from './code-block';
 import { CODE_COLLAPSE_AFTER, renderInline, renderMarkdown } from './markdown';
+import { plainText } from './plain-text';
 
 const state = emptyState();
 

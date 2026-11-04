@@ -1,5 +1,8 @@
 import type { HearthGateway } from '@/data/gateway';
 import type { Store } from '@/data/store';
+import { reloadApp } from '@/runtime/reload';
+import { routes } from '@/runtime/routes';
+
 import { createChatGateway } from './gateway/chat';
 import { createCommunitiesGateway } from './gateway/communities';
 import { GatewayContext } from './gateway/context';
@@ -7,17 +10,15 @@ import { createEventsGateway } from './gateway/events';
 import { createInvitesGateway } from './gateway/invites';
 import { createModerationGateway } from './gateway/moderation';
 import { createNotificationsGateway } from './gateway/notifications';
-import { createRoomsGateway } from './gateway/rooms';
 import { createPeopleGateway } from './gateway/people';
 import { createPostsGateway } from './gateway/posts';
 import { createProfileGateway } from './gateway/profile';
 import { createRolesGateway } from './gateway/roles';
+import { createRoomsGateway } from './gateway/rooms';
 import { createSessionGateway } from './gateway/session';
 import { createSettingsGateway } from './gateway/settings';
 import { createTranscriptsGateway } from './gateway/transcripts';
 import { createVoiceGateway } from './gateway/voice';
-import { reloadApp } from '@/runtime/reload';
-import { routes } from '@/runtime/routes';
 
 export class ApiGateway implements HearthGateway {
   readonly load: HearthGateway['load'];

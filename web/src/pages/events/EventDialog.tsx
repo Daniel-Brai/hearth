@@ -1,6 +1,8 @@
+import { useEffect, type ReactNode } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import { useDisplayZone, useOrigin } from '@/app/request-context';
-import { useEffect, type ReactNode } from 'react';
+import { useAppState } from '@/data/store';
 import {
   Button,
   cn,
@@ -14,21 +16,21 @@ import {
   Menu,
   type IconName,
 } from '@/design-system';
-import { useAppState } from '@/data/store';
 import { evRepeatLabel, evState, evWhen, evWhere, evZone } from '@/domain/events';
 import { tintStyle } from '@/domain/format';
 import { canManageEvent, displayName, isInterested, shortName } from '@/domain/selectors';
 import type { CommunityEvent } from '@/domain/types';
 import { Markdown } from '@/features/markdown/Markdown';
-import { RecordingList } from '@/features/recordings/RecordingList';
-import { toRow } from '@/features/recordings/recording-row';
 import { plainText } from '@/features/markdown/plain-text';
+import { toRow } from '@/features/recordings/recording-row';
+import { RecordingList } from '@/features/recordings/RecordingList';
 import { ShareButton } from '@/features/share/ShareButton';
 import { useShareable } from '@/features/share/use-shareable';
-import { routes } from '@/runtime/routes';
 import { EventDate } from '@/pages/shared/EventMini';
+import { routes } from '@/runtime/routes';
 import { PersonAvatar } from '@/shell/people';
-import { eventFile, eventIcs, alwaysChanged, snapshot } from './event-utils';
+
+import { alwaysChanged, eventFile, eventIcs, snapshot } from './event-utils';
 import { EventManageItems } from './EventManageItems';
 import { JoinButton, PlaceIcon } from './Place';
 import { useEventActions } from './use-event-actions';

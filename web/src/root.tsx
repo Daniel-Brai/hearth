@@ -1,7 +1,8 @@
 import { useEffect, type ReactNode } from 'react';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
-import stylesheet from '@/design-system/styles/index.css?url';
+
 import { useGateway } from '@/app/gateway-context';
+import stylesheet from '@/design-system/styles/index.css?url';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { installImageFade } from '@/runtime/image-fade';
 

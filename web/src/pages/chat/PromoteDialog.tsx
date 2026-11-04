@@ -1,5 +1,8 @@
 import { useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Avatar,
   Button,
@@ -13,8 +16,6 @@ import {
   Label,
   type IconName,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
 import { tintStyle } from '@/domain/format';
 import { authorName, initials, person, photoOf, postableKinds } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
@@ -22,6 +23,7 @@ import { Markdown } from '@/features/markdown/Markdown';
 import { plainTextWithoutCode } from '@/features/markdown/plain-text';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
+
 import { promoteKind, type ChatTarget } from './chat-select';
 
 type PromoteDialogProps = {

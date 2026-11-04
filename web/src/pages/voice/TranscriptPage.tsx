@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Button,
   ButtonLink,
@@ -11,18 +15,16 @@ import {
   Link,
   Measure,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
 import { VideoPlayer, type VideoPlayerHandle } from '@/design-system/components/video-player';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
+import { secondsOf } from '@/domain/clock';
 import { community, displayName, shortName, transcriptionOn } from '@/domain/selectors';
+import type { TranscriptStatus } from '@/domain/types';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar, PersonName } from '@/shell/people';
-import { secondsOf } from '@/domain/clock';
-import type { TranscriptStatus } from '@/domain/types';
+
 import './TranscriptPage.css';
 
 const lineId = (t: string) => 't-' + t.split(':').join('-');

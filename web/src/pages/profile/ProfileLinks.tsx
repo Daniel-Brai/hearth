@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Icon, Label, Menu, cn, useMenu } from '@/design-system';
+
+import { cn, Icon, Label, Menu, useMenu } from '@/design-system';
 import { cleanUrl, linkIcon, linkKind, linkText, normalizeUrl } from '@/domain/links';
 import type { PersonLink } from '@/domain/types';
 

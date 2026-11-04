@@ -1,13 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
+
 import { useGateway } from '@/app/gateway-context';
 import { useStore } from '@/data/store';
 import { linkKind } from '@/domain/links';
 import { resizeErrorText, resizeImage } from '@/features/images';
+import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
 import { routes } from '@/runtime/routes';
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
-import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
+
 import {
   checkForm,
   formOf,

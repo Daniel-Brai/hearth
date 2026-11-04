@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { canRequestCommunity } from '@/domain/selectors';
 import type { Template } from '@/domain/types';
 import { resizeErrorText, resizeImage } from '@/features/images';
+import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
-import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
+
 import { EMPTY, type Form } from './form';
 
 export function useCreateCommunity() {

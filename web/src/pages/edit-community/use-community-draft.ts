@@ -1,7 +1,9 @@
 import { useState } from 'react';
+
 import { audienceOf, type Audience } from '@/domain/audience';
 import { linkKind } from '@/domain/links';
 import type { Community, Hue, ModerationLevel } from '@/domain/types';
+
 import { toKindDraft, type KindDraft, type LinkDraft } from './drafts';
 
 export function useCommunityDraft(current: Community) {

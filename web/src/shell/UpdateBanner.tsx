@@ -1,4 +1,8 @@
 import { useState } from 'react';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Button,
   ButtonLink,
@@ -9,12 +13,9 @@ import {
   Icon,
   IconButton,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
-import { useLoad } from '@/data/use-load';
 import { ReleaseNotes } from '@/features/updates/ReleaseNotes';
 import { routes } from '@/runtime/routes';
-import { dismissUpdate, dismissedUpdate } from '@/runtime/update-dismissal';
+import { dismissedUpdate, dismissUpdate } from '@/runtime/update-dismissal';
 
 export function UpdateBanner() {
   const gateway = useGateway();

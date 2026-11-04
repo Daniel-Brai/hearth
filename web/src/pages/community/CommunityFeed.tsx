@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
-import { ButtonLink, EmptyState, Icon, OriginNote, Segmented, Select, cn } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
+import { ButtonLink, cn, EmptyState, Icon, OriginNote, Segmented, Select } from '@/design-system';
 import { plural } from '@/domain/format';
-import type { FeedSort, feedEmpty } from '@/domain/selectors';
+import type { feedEmpty, FeedSort } from '@/domain/selectors';
 import type { Post } from '@/domain/types';
-import { routes } from '@/runtime/routes';
 import { PostRow } from '@/pages/shared/PostRow';
+import { routes } from '@/runtime/routes';
+
 import type { CommunityViewData } from './use-community-view';
 
 const SORTS: { value: FeedSort; label: string }[] = [

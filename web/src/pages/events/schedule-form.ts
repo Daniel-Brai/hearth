@@ -1,8 +1,10 @@
 import { addMinutes, format } from 'date-fns';
+
 import type { SelectOption } from '@/design-system';
 import { evTime, evZone } from '@/domain/events';
 import { isValidLink, normalizeUrl } from '@/domain/links';
 import type { Community, CommunityEvent, EventRepeat, EventWhere } from '@/domain/types';
+
 import { REPEATS } from './event-utils';
 
 export type Place = 'hearth' | 'link';

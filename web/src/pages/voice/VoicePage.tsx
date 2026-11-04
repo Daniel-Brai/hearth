@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { useLoad } from '@/data/use-load';
 import {
   Badge,
   ButtonLink,
@@ -11,27 +15,26 @@ import {
   Measure,
   Pill,
 } from '@/design-system';
-import { useGateway } from '@/app/gateway-context';
-import { useAppState } from '@/data/store';
 import type { AppState } from '@/domain/app-state';
-import { useLoad } from '@/data/use-load';
 import { canDo, community, post as selectPost, voiceOn } from '@/domain/selectors';
-import { routes } from '@/runtime/routes';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
-import { PageHeader } from '@/shell/PageHeader';
-import { PageMeta } from '@/shell/PageMeta';
 import { PrivateLock } from '@/features/rooms/PrivateLock';
 import { useLeaveHiddenRoom } from '@/features/rooms/use-leave-hidden-room';
-import { RoomRecordings } from './RoomRecordings';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
+import { routes } from '@/runtime/routes';
+import { useUi } from '@/runtime/ui-store';
+import { PageHeader } from '@/shell/PageHeader';
+import { PageMeta } from '@/shell/PageMeta';
+
 import { IdleRoomCard } from './IdleRoomCard';
 import { JoinCard } from './JoinCard';
 import { LiveRoom } from './LiveRoom';
 import type { ChatToggle } from './LiveRoomControls';
+import { RoomRecordings } from './RoomRecordings';
+import { useVoiceActions } from './use-voice-actions';
+import { useVoiceChat } from './use-voice-chat';
 import { VoiceChat } from './VoiceChat';
 import { VoiceRoomSettingsDialog } from './VoiceRoomSettingsDialog';
-import { useVoiceChat } from './use-voice-chat';
-import { useUi } from '@/runtime/ui-store';
-import { useVoiceActions } from './use-voice-actions';
+
 import './VoicePage.css';
 
 export function VoicePage() {

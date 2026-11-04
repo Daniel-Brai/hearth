@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Button, FileList, Icon, IconButton, Menu, MenuItem, Pill, cn } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import type { ReplyPatch } from '@/data/gateway';
 import { useAppState } from '@/data/store';
+import { Button, cn, FileList, Icon, IconButton, Menu, MenuItem, Pill } from '@/design-system';
 import {
   canDo,
   community,
@@ -15,12 +16,12 @@ import {
 import { attachmentSrc, type Post, type Reply } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
 import { Markdown } from '@/features/markdown/Markdown';
-import { useFlashFailure } from '@/runtime/use-flash-failure';
-import { useUi } from '@/runtime/ui-store';
-import { useGuest } from '@/shell/use-guest';
-import { ReplyingTo } from '@/features/threads/ReplyingTo';
 import { useModerationActions } from '@/features/moderation/use-moderation-actions';
+import { ReplyingTo } from '@/features/threads/ReplyingTo';
+import { useUi } from '@/runtime/ui-store';
+import { useFlashFailure } from '@/runtime/use-flash-failure';
 import { PersonAvatar, PersonLink } from '@/shell/people';
+import { useGuest } from '@/shell/use-guest';
 
 type ReplyProps = { readonly post: Post; readonly reply: Reply };
 

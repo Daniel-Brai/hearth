@@ -1,32 +1,38 @@
-import type { HearthGateway, Result, SignupSpec } from '@/data/gateway';
+import { rememberSignedIn } from '@/app/request-context';
 import { emptyState } from '@/data/empty-state';
-import { SIGN_IN_AGAIN, fail, ok } from '@/data/gateway';
+import { onServer } from '@/data/env';
+import {
+  fail,
+  ok,
+  SIGN_IN_AGAIN,
+  type HearthGateway,
+  type Result,
+  type SignupSpec,
+} from '@/data/gateway';
 import {
   authConfirmEmailChange,
   authMe,
-  authRequestEmailChange,
   authRegister,
   authRequestCode,
+  authRequestEmailChange,
   authSignIn,
   authSignOut,
   authUndoEmailChange,
   authUpdateMe,
 } from '@/generated/api/auth/auth';
 import { communityTemplates } from '@/generated/api/communities/communities';
-import { userAvailable } from '@/generated/api/people/people';
 import { instanceShow } from '@/generated/api/instance/instance';
+import { userAvailable } from '@/generated/api/people/people';
 import type { Me, Session } from '@/generated/schemas';
+import { useUi } from '@/runtime/ui-store';
+
 import { apiBaseUrl, refreshSession } from '../custom-fetch';
 import { toPerson, toTemplate } from '../mappers';
 import { parseProviderReturn } from '../provider-return';
+import { accessToken, onAccessToken, setAccessToken } from '../session-token';
 import { toSettings } from '../settings';
 import { dataUrlToBlob, uploadFile } from '../upload';
-import { accessToken, onAccessToken, setAccessToken } from '../session-token';
-import { rememberSignedIn } from '@/app/request-context';
-import { onServer } from '@/data/env';
-import { useUi } from '@/runtime/ui-store';
-import type { GatewayContext } from './context';
-import { UNREACHABLE, call, errorCode, failed } from './context';
+import { call, errorCode, failed, UNREACHABLE, type GatewayContext } from './context';
 
 const WRONG_CODE = "That code didn't work. Try again or send a new one.";
 

@@ -1,7 +1,10 @@
 import { useState } from 'react';
+
 import { Field, Segmented } from '@/design-system';
 import { Markdown } from '@/features/markdown/Markdown';
+
 import { Composer } from './Composer';
+
 import './DescriptionField.css';
 
 const PLACEHOLDER =

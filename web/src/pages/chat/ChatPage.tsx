@@ -1,15 +1,18 @@
 import { useParams } from 'react-router';
-import { ButtonLink, EmptyState, Icon } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { ButtonLink, EmptyState, Icon } from '@/design-system';
 import { community, personIdByHandle } from '@/domain/selectors';
+import { useLeaveHiddenRoom } from '@/features/rooms/use-leave-hidden-room';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
-import { useLeaveHiddenRoom } from '@/features/rooms/use-leave-hidden-room';
-import { ChatView } from './ChatView';
+
 import type { ChatTarget } from './chat-select';
+import { ChatView } from './ChatView';
+
 import './ChatPage.css';
 
 export function ChatPage() {

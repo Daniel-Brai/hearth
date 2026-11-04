@@ -10,11 +10,13 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
+
+import { Icon, type IconName } from '@/design-system/icons/Icon';
+
 import { cn } from './cn';
+import { Keys } from './keys';
 import { MenuContext, useMenu } from './menu-context';
 import { orientPopup } from './orient';
-import { Icon, type IconName } from '@/design-system/icons/Icon';
-import { Keys } from './keys';
 
 export type MenuProps = {
   readonly trigger: (props: { open: boolean; toggle: () => void; id: string }) => ReactNode;

@@ -1,3 +1,6 @@
+import type { Token, Tokens } from 'marked';
+
+import type { IconName } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
 import {
   allTags,
@@ -8,8 +11,6 @@ import {
   person,
   sharesCommunity,
 } from '@/domain/selectors';
-import type { IconName } from '@/design-system';
-import type { Token, Tokens } from 'marked';
 import { lexMarkdown, type MentionToken } from '@/features/markdown/markdown';
 
 export type SuggestKind = '@' | '#' | '/' | 'sound';

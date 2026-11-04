@@ -1,11 +1,13 @@
 import { act, render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
+import { emptyState } from '@/data/empty-state';
 import { ok, type Result } from '@/data/gateway';
 import { Store, StoreContext } from '@/data/store';
-import { emptyState } from '@/data/empty-state';
 import { MockGateway } from '@/mocks/gateway';
+
 import { PublicShell } from './PublicShell';
 
 async function show(session: Promise<Result>) {

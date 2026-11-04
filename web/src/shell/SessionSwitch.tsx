@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { useSignedInNow } from './use-signed-in';
+
 import { useViewer } from './use-guest';
+import { useSignedInNow } from './use-signed-in';
 
 export function SessionSwitch({
   signedIn,

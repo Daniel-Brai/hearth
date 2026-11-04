@@ -1,7 +1,9 @@
 import type { CSSProperties } from 'react';
+
 import { CommunityMark, Icon, Link } from '@/design-system';
 import { fmt, noun, plural } from '@/domain/format';
 import { routes } from '@/runtime/routes';
+
 import type { profileCommunities } from './profile-data';
 import type { ProfileViewData } from './use-profile-view';
 

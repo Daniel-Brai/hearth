@@ -1,5 +1,8 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+
+import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
 import {
   Badge,
   Button,
@@ -14,8 +17,7 @@ import {
   LiveDot,
   Toasts,
 } from '@/design-system';
-import { useAppState } from '@/data/store';
-import { useGateway } from '@/app/gateway-context';
+import { cap } from '@/domain/format';
 import {
   displayName,
   liveRoom,
@@ -23,12 +25,12 @@ import {
   unreadList,
   unreadNotifications,
 } from '@/domain/selectors';
-import { cap } from '@/domain/format';
 import type { Notification } from '@/domain/types';
 import { keyOf } from '@/runtime/keys';
 import { routes } from '@/runtime/routes';
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
+
 import { AccountMenu } from './AccountMenu';
 import { PersonAvatar } from './people';
 

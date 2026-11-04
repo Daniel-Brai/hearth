@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
+
 import { blurUrl } from './blur';
 
 const hash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';

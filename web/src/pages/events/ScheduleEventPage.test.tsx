@@ -2,12 +2,14 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
 import { Store, StoreContext } from '@/data/store';
 import { LoadCache, LoadCacheContext } from '@/data/use-load';
 import { MockGateway } from '@/mocks/gateway';
 import { createSeedState } from '@/mocks/seed';
 import { patterns } from '@/runtime/routes';
+
 import { ScheduleEventPage } from './ScheduleEventPage';
 
 async function show(path: string) {

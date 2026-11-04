@@ -1,7 +1,9 @@
 import { useState } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import { dedupeLinks, isValidLink, linkText, normalizeUrl } from '@/domain/links';
 import { useUi } from '@/runtime/ui-store';
+
 import type { CommunityDraft } from './use-community-draft';
 
 export function useSaveCommunity(cid: string, draft: CommunityDraft, close: () => void) {

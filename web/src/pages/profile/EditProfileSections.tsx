@@ -9,13 +9,14 @@ import {
   InputWithPrefix,
   Panel,
   Segmented,
-  SettingsRow,
   Select,
+  SettingsRow,
   Textarea,
 } from '@/design-system';
 import { linkIcon, linkText } from '@/domain/links';
 import type { CommunitiesVisibility, Visibility } from '@/domain/types';
 import { Markdown } from '@/features/markdown/Markdown';
+
 import { BIO_MAX, type LinkRow } from './edit-profile-form';
 import type { EditProfile } from './use-edit-profile';
 

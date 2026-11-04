@@ -84,74 +84,6 @@ export const recordingListEvent = async (
   });
 };
 
-export type voiceDiscussResponse200 = {
-  data: VoiceSession;
-  status: 200;
-};
-
-export type voiceDiscussResponse201 = {
-  data: VoiceSession;
-  status: 201;
-};
-
-export type voiceDiscussResponse400 = {
-  data: BadRequestResponse;
-  status: 400;
-};
-
-export type voiceDiscussResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type voiceDiscussResponse403 = {
-  data: ForbiddenResponse;
-  status: 403;
-};
-
-export type voiceDiscussResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type voiceDiscussResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type voiceDiscussResponseSuccess = (voiceDiscussResponse200 | voiceDiscussResponse201) & {
-  headers: Headers;
-};
-export type voiceDiscussResponseError = (
-  | voiceDiscussResponse400
-  | voiceDiscussResponse401
-  | voiceDiscussResponse403
-  | voiceDiscussResponse404
-  | voiceDiscussResponse422
-) & {
-  headers: Headers;
-};
-
-export type voiceDiscussResponse = voiceDiscussResponseSuccess | voiceDiscussResponseError;
-
-export const getVoiceDiscussUrl = (id: string) => {
-  return `/api/posts/${id}/live`;
-};
-
-/**
- * Needs voice-session.create and the post's author
- * @summary Start a live discussion of a post
- */
-export const voiceDiscuss = async (
-  id: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<voiceDiscussResponse> => {
-  return customFetch<voiceDiscussResponse>(getVoiceDiscussUrl(id), {
-    ...options,
-    method: 'POST',
-  });
-};
-
 export type recordingListPostResponse200 = {
   data: VoiceRecordingList;
   status: 200;
@@ -206,6 +138,74 @@ export const recordingListPost = async (
   return customFetch<recordingListPostResponse>(getRecordingListPostUrl(id), {
     ...options,
     method: 'GET',
+  });
+};
+
+export type voiceDiscussResponse200 = {
+  data: VoiceSession;
+  status: 200;
+};
+
+export type voiceDiscussResponse201 = {
+  data: VoiceSession;
+  status: 201;
+};
+
+export type voiceDiscussResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type voiceDiscussResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type voiceDiscussResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type voiceDiscussResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type voiceDiscussResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type voiceDiscussResponseSuccess = (voiceDiscussResponse200 | voiceDiscussResponse201) & {
+  headers: Headers;
+};
+export type voiceDiscussResponseError = (
+  | voiceDiscussResponse400
+  | voiceDiscussResponse401
+  | voiceDiscussResponse403
+  | voiceDiscussResponse404
+  | voiceDiscussResponse422
+) & {
+  headers: Headers;
+};
+
+export type voiceDiscussResponse = voiceDiscussResponseSuccess | voiceDiscussResponseError;
+
+export const getVoiceDiscussUrl = (id: string) => {
+  return `/api/posts/${id}/voice-sessions`;
+};
+
+/**
+ * Needs voice-session.create and the post's author
+ * @summary Start a live discussion of a post
+ */
+export const voiceDiscuss = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<voiceDiscussResponse> => {
+  return customFetch<voiceDiscussResponse>(getVoiceDiscussUrl(id), {
+    ...options,
+    method: 'POST',
   });
 };
 
@@ -478,55 +478,6 @@ export const recordingListRoom = async (
   });
 };
 
-export type voiceLiveResponse200 = {
-  data: VoiceSession;
-  status: 200;
-};
-
-export type voiceLiveResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type voiceLiveResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type voiceLiveResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type voiceLiveResponseSuccess = voiceLiveResponse200 & {
-  headers: Headers;
-};
-export type voiceLiveResponseError = (
-  voiceLiveResponse401 | voiceLiveResponse404 | voiceLiveResponse422
-) & {
-  headers: Headers;
-};
-
-export type voiceLiveResponse = voiceLiveResponseSuccess | voiceLiveResponseError;
-
-export const getVoiceLiveUrl = (id: string) => {
-  return `/api/rooms/${id}/voice-session`;
-};
-
-/**
- * Not found when the room isn't live
- * @summary Show a room's live voice session
- */
-export const voiceLive = async (
-  id: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<voiceLiveResponse> => {
-  return customFetch<voiceLiveResponse>(getVoiceLiveUrl(id), {
-    ...options,
-    method: 'GET',
-  });
-};
-
 export type voiceCreateResponse200 = {
   data: VoiceSession;
   status: 200;
@@ -617,83 +568,52 @@ export const voiceCreate = async (
   });
 };
 
-export type transcriptUpdateSegmentResponse200 = {
-  data: TranscriptSegment;
+export type voiceCurrentResponse200 = {
+  data: VoiceSession;
   status: 200;
 };
 
-export type transcriptUpdateSegmentResponse401 = {
+export type voiceCurrentResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type transcriptUpdateSegmentResponse403 = {
-  data: ForbiddenResponse;
-  status: 403;
-};
-
-export type transcriptUpdateSegmentResponse404 = {
+export type voiceCurrentResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type transcriptUpdateSegmentResponse422 = {
+export type voiceCurrentResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type transcriptUpdateSegmentResponseSuccess = transcriptUpdateSegmentResponse200 & {
+export type voiceCurrentResponseSuccess = voiceCurrentResponse200 & {
   headers: Headers;
 };
-export type transcriptUpdateSegmentResponseError = (
-  | transcriptUpdateSegmentResponse401
-  | transcriptUpdateSegmentResponse403
-  | transcriptUpdateSegmentResponse404
-  | transcriptUpdateSegmentResponse422
+export type voiceCurrentResponseError = (
+  voiceCurrentResponse401 | voiceCurrentResponse404 | voiceCurrentResponse422
 ) & {
   headers: Headers;
 };
 
-export type transcriptUpdateSegmentResponse =
-  transcriptUpdateSegmentResponseSuccess | transcriptUpdateSegmentResponseError;
+export type voiceCurrentResponse = voiceCurrentResponseSuccess | voiceCurrentResponseError;
 
-export const getTranscriptUpdateSegmentUrl = (id: string) => {
-  return `/api/transcript-segments/${id}`;
+export const getVoiceCurrentUrl = (id: string) => {
+  return `/api/rooms/${id}/voice-sessions/current`;
 };
 
 /**
- * The person who said it can, and so can anyone with content.remove
- * @summary Fix a line of a transcript
+ * Not found when the room isn't live
+ * @summary Show a room's live voice session
  */
-export const transcriptUpdateSegment = async (
+export const voiceCurrent = async (
   id: string,
-  editSegmentBody: EditSegmentBody,
   options?: Parameters<typeof customFetch>[1],
-): Promise<transcriptUpdateSegmentResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit['headers']>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  return customFetch<transcriptUpdateSegmentResponse>(getTranscriptUpdateSegmentUrl(id), {
+): Promise<voiceCurrentResponse> => {
+  return customFetch<voiceCurrentResponse>(getVoiceCurrentUrl(id), {
     ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(editSegmentBody),
+    method: 'GET',
   });
 };
 
@@ -730,6 +650,69 @@ export const voiceIndex = async (
   return customFetch<voiceIndexResponse>(getVoiceIndexUrl(), {
     ...options,
     method: 'GET',
+  });
+};
+
+export type voiceEndSessionResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type voiceEndSessionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type voiceEndSessionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type voiceEndSessionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type voiceEndSessionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type voiceEndSessionResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type voiceEndSessionResponseSuccess = voiceEndSessionResponse204 & {
+  headers: Headers;
+};
+export type voiceEndSessionResponseError = (
+  | voiceEndSessionResponse400
+  | voiceEndSessionResponse401
+  | voiceEndSessionResponse403
+  | voiceEndSessionResponse404
+  | voiceEndSessionResponse422
+) & {
+  headers: Headers;
+};
+
+export type voiceEndSessionResponse = voiceEndSessionResponseSuccess | voiceEndSessionResponseError;
+
+export const getVoiceEndSessionUrl = (id: string) => {
+  return `/api/voice-sessions/${id}`;
+};
+
+/**
+ * Needs the host or content.remove
+ * @summary End a voice session
+ */
+export const voiceEndSession = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<voiceEndSessionResponse> => {
+  return customFetch<voiceEndSessionResponse>(getVoiceEndSessionUrl(id), {
+    ...options,
+    method: 'DELETE',
   });
 };
 
@@ -792,69 +775,6 @@ export const voiceShow = async (
   return customFetch<voiceShowResponse>(getVoiceShowUrl(id), {
     ...options,
     method: 'GET',
-  });
-};
-
-export type voiceEndSessionResponse204 = {
-  data: NoContentResponse;
-  status: 204;
-};
-
-export type voiceEndSessionResponse400 = {
-  data: BadRequestResponse;
-  status: 400;
-};
-
-export type voiceEndSessionResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type voiceEndSessionResponse403 = {
-  data: ForbiddenResponse;
-  status: 403;
-};
-
-export type voiceEndSessionResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type voiceEndSessionResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type voiceEndSessionResponseSuccess = voiceEndSessionResponse204 & {
-  headers: Headers;
-};
-export type voiceEndSessionResponseError = (
-  | voiceEndSessionResponse400
-  | voiceEndSessionResponse401
-  | voiceEndSessionResponse403
-  | voiceEndSessionResponse404
-  | voiceEndSessionResponse422
-) & {
-  headers: Headers;
-};
-
-export type voiceEndSessionResponse = voiceEndSessionResponseSuccess | voiceEndSessionResponseError;
-
-export const getVoiceEndSessionUrl = (id: string) => {
-  return `/api/voice-sessions/${id}/end`;
-};
-
-/**
- * Needs the host or content.remove
- * @summary End a voice session
- */
-export const voiceEndSession = async (
-  id: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<voiceEndSessionResponse> => {
-  return customFetch<voiceEndSessionResponse>(getVoiceEndSessionUrl(id), {
-    ...options,
-    method: 'POST',
   });
 };
 
@@ -1613,4 +1533,88 @@ export const transcriptShow = async (
     ...options,
     method: 'GET',
   });
+};
+
+export type transcriptUpdateSegmentResponse200 = {
+  data: TranscriptSegment;
+  status: 200;
+};
+
+export type transcriptUpdateSegmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type transcriptUpdateSegmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type transcriptUpdateSegmentResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type transcriptUpdateSegmentResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type transcriptUpdateSegmentResponseSuccess = transcriptUpdateSegmentResponse200 & {
+  headers: Headers;
+};
+export type transcriptUpdateSegmentResponseError = (
+  | transcriptUpdateSegmentResponse401
+  | transcriptUpdateSegmentResponse403
+  | transcriptUpdateSegmentResponse404
+  | transcriptUpdateSegmentResponse422
+) & {
+  headers: Headers;
+};
+
+export type transcriptUpdateSegmentResponse =
+  transcriptUpdateSegmentResponseSuccess | transcriptUpdateSegmentResponseError;
+
+export const getTranscriptUpdateSegmentUrl = (id: string, segmentId: string) => {
+  return `/api/voice-sessions/${id}/transcript/segments/${segmentId}`;
+};
+
+/**
+ * The person who said it can, and so can anyone with content.remove
+ * @summary Fix a line of a transcript
+ */
+export const transcriptUpdateSegment = async (
+  id: string,
+  segmentId: string,
+  editSegmentBody: EditSegmentBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<transcriptUpdateSegmentResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<transcriptUpdateSegmentResponse>(
+    getTranscriptUpdateSegmentUrl(id, segmentId),
+    {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(editSegmentBody),
+    },
+  );
 };

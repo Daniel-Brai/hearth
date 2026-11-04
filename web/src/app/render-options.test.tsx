@@ -2,6 +2,7 @@
 import { Suspense, use } from 'react';
 import { renderToReadableStream } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+
 import { RENDER_OPTIONS } from './render-options';
 
 function Big({ text }: { readonly text: Promise<string> }) {

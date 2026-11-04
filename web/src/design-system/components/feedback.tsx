@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { cn } from './cn';
+
 import { Illo, type IlloName } from '@/design-system/icons/Icon';
+
+import { cn } from './cn';
 import {
   CardsShape,
   CatchUpShape,

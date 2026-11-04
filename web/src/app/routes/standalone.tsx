@@ -1,4 +1,5 @@
 import { StandaloneShell } from '@/shell/StandaloneShell';
+
 import { ClientOnlyFallback } from './client-only';
 import { clientOnlyLoader } from './client-only-loader';
 

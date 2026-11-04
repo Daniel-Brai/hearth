@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigationType } from 'react-router';
+
 import { useHydrated } from '@/app/request-context';
 import { peekVisit, recordVisit, type TrailEntry } from '@/runtime/trail';
 

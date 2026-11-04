@@ -17,12 +17,12 @@ defmodule HearthWeb.VoiceControllerTest do
     {:ok, binding()}
   end
 
-  describe "live" do
+  describe "current" do
     test "fails for a room that isn't live", %{conn: conn, member: member, room: room} do
       assert %{"code" => "not_found"} =
                conn
                |> auth_conn(member)
-               |> get(~p"/api/rooms/#{room.id}/voice-session")
+               |> get(~p"/api/rooms/#{room.id}/voice-sessions/current")
                |> valid_response(404)
     end
 
@@ -36,7 +36,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert %{"code" => "not_found"} =
                conn
                |> auth_conn(outsider)
-               |> get(~p"/api/rooms/#{session.room_id}/voice-session")
+               |> get(~p"/api/rooms/#{session.room_id}/voice-sessions/current")
                |> valid_response(404)
     end
 
@@ -47,7 +47,7 @@ defmodule HearthWeb.VoiceControllerTest do
                response =
                conn
                |> auth_conn(member)
-               |> get(~p"/api/rooms/#{session.room_id}/voice-session")
+               |> get(~p"/api/rooms/#{session.room_id}/voice-sessions/current")
                |> valid_response(200)
 
       assert response["id"] == session.id
@@ -101,7 +101,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(moderator)
-               |> post(~p"/api/posts/#{post.id}/live")
+               |> post(~p"/api/posts/#{post.id}/voice-sessions")
                |> valid_response(403)
     end
 
@@ -116,7 +116,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert %{"code" => "rooms_busy"} =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/posts/#{post.id}/live")
+               |> post(~p"/api/posts/#{post.id}/voice-sessions")
                |> valid_response(400)
     end
 
@@ -129,7 +129,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert response =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/posts/#{post.id}/live")
+               |> post(~p"/api/posts/#{post.id}/voice-sessions")
                |> valid_response(201)
 
       assert response["post_id"] == post.id
@@ -143,7 +143,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert %{"id" => id} =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/posts/#{post.id}/live")
+               |> post(~p"/api/posts/#{post.id}/voice-sessions")
                |> valid_response(200)
 
       assert id == session.id
@@ -250,7 +250,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(member)
-               |> post(~p"/api/voice-sessions/#{session.id}/end")
+               |> delete(~p"/api/voice-sessions/#{session.id}")
                |> valid_response(403)
     end
 
@@ -259,7 +259,7 @@ defmodule HearthWeb.VoiceControllerTest do
 
       assert conn
              |> auth_conn(owner)
-             |> post(~p"/api/voice-sessions/#{session.id}/end")
+             |> delete(~p"/api/voice-sessions/#{session.id}")
              |> response(204)
     end
   end

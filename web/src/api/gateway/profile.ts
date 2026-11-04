@@ -1,12 +1,11 @@
-import type { HearthGateway, ProfileSpec, Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway, type ProfileSpec, type Result } from '@/data/gateway';
 import type { Visibility } from '@/domain/types';
 import { authUpdateMe } from '@/generated/api/auth/auth';
 import type { UpdateProfileBody } from '@/generated/schemas';
+
 import { toPerson } from '../mappers';
 import { dataUrlToBlob, uploadFile } from '../upload';
-import type { GatewayContext } from './context';
-import { call, failed } from './context';
+import { call, failed, type GatewayContext } from './context';
 
 async function avatarOf(
   photo: string | null,

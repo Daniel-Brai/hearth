@@ -1,6 +1,6 @@
 import { ApiGateway } from '@/api/api-gateway';
-import type { HearthGateway } from '@/data/gateway';
 import { emptyState } from '@/data/empty-state';
+import type { HearthGateway } from '@/data/gateway';
 import { Store } from '@/data/store';
 import type { AppState } from '@/domain/app-state';
 

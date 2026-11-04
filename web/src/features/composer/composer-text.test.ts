@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+
 import { createSeedState } from '@/mocks/seed';
+
 import { suggest } from './composer-text';
 
 const state = createSeedState();

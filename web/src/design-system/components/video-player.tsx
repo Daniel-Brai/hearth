@@ -1,16 +1,18 @@
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState, type Ref } from 'react';
-import { Icon } from '@/design-system/icons/Icon';
+
 import { cn } from '@/design-system/components/cn';
-import { VideoControls } from '@/design-system/components/video-controls';
-import { useFullscreen } from '@/design-system/components/video-fullscreen';
-import { useIdle, useMediaState } from '@/design-system/components/video-media';
 import {
   RATES,
   usePlaybackEffects,
   useVideoActions,
   useVideoKeys,
 } from '@/design-system/components/video-actions';
+import { VideoControls } from '@/design-system/components/video-controls';
+import { useFullscreen } from '@/design-system/components/video-fullscreen';
+import { useIdle, useMediaState } from '@/design-system/components/video-media';
+import { Icon } from '@/design-system/icons/Icon';
 import { fmtSize, shortFileName } from '@/domain/format';
+
 import './video-player.css';
 
 export type VideoPlayerHandle = {

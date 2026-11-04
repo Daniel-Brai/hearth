@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import { getRoomSession } from '@/data/voice-session';
 import { useUi } from '@/runtime/ui-store';
+
 import {
   at,
   community,
@@ -135,7 +137,7 @@ async function joined() {
 
   routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
   routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
-  routes['GET /api/rooms/v1/voice-session'] = { status: 200, body: live };
+  routes['GET /api/rooms/v1/voice-sessions/current'] = { status: 200, body: live };
 
   routes['GET /api/voice-sessions/s1'] = {
     status: 200,
@@ -199,7 +201,7 @@ describe('load.voice', () => {
 
 describe('voice.end', () => {
   it('ends the room without also saying it ended, since the host already knows', async () => {
-    routes['POST /api/voice-sessions/s1/end'] = { status: 204, body: undefined };
+    routes['DELETE /api/voice-sessions/s1'] = { status: 204, body: undefined };
 
     const { gateway: g } = await joined();
     await g.voice.join('gardeners', 'office-hours', false);
@@ -283,7 +285,10 @@ describe('voice.join', () => {
 
   it('says the room ended when nothing is live there', async () => {
     const { gateway: g } = await joined();
-    routes['GET /api/rooms/v1/voice-session'] = { status: 404, body: { code: 'not_found' } };
+    routes['GET /api/rooms/v1/voice-sessions/current'] = {
+      status: 404,
+      body: { code: 'not_found' },
+    };
 
     expect(await g.voice.join('gardeners', 'office-hours', false)).toEqual({
       ok: false,

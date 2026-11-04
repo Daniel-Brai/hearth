@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import { playTune } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
+
 import {
   at,
   community,

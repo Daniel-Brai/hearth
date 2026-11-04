@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Button, EmptyState, Icon } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
-import { routes } from '@/runtime/routes';
+import { Button, EmptyState, Icon } from '@/design-system';
 import { AuthLogo } from '@/pages/signin/AuthLogo';
+import { routes } from '@/runtime/routes';
 import { PageMeta } from '@/shell/PageMeta';
 
 type Outcome = { status: 'working' } | { status: 'done' } | { status: 'failed'; error: string };

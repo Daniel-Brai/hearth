@@ -1,14 +1,16 @@
 import { useNavigate } from 'react-router';
-import { Button, CommunityMark, EmptyState, Measure, Pill } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Button, CommunityMark, EmptyState, Measure, Pill } from '@/design-system';
 import { community, displayName, roleName } from '@/domain/selectors';
 import type { MyInvite } from '@/domain/types';
+import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
-import { ErrorPage } from '@/pages/errors/ErrorPage';
+
 import '@/pages/requests/RequestsPage.css';
 
 export function MyInvitesPage() {

@@ -1,13 +1,14 @@
-import { Button, Icon, IconButton, OriginNote } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
+import { useAppState } from '@/data/store';
+import { Button, Icon, IconButton, OriginNote } from '@/design-system';
 import { SOUNDS } from '@/domain/catalog';
 import { plural, typingLine } from '@/domain/format';
-import type { Message } from '@/domain/types';
-import { useAppState } from '@/data/store';
 import { canDo, displayName } from '@/domain/selectors';
+import type { Message } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
 import { SendLaterButton } from '@/features/schedule/SendLater';
 import { useUi } from '@/runtime/ui-store';
+
 import type { ChatTarget } from './chat-select';
 import { ScheduledMessages } from './ScheduledMessages';
 import type { ChatComposerState } from './use-chat-composer';

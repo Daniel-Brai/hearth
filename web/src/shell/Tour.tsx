@@ -6,10 +6,10 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
-import { Button, Icon } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { getStore, useAppState } from '@/data/store';
-import { brandFor } from '@/runtime/brand';
+import { Button, Icon } from '@/design-system';
 import {
   canDo,
   canRequestCommunity,
@@ -19,9 +19,12 @@ import {
   isInstanceAdmin,
   joinedCids,
 } from '@/domain/selectors';
+import { brandFor } from '@/runtime/brand';
 import { hasKeyboard } from '@/runtime/keys';
 import { useUi } from '@/runtime/ui-store';
+
 import { useRouteContext } from './use-route-context';
+
 import './Tour.css';
 
 type Step = {

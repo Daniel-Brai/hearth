@@ -117,10 +117,9 @@ defmodule HearthWeb.EventController do
   end
 
   operation :cancel,
-    summary: "Call an event off or bring it back",
+    summary: "Call an event off",
     security: [%{"bearer" => []}],
     parameters: [id: @id],
-    request_body: Schema.CancelBody,
     responses: [
       ok: {Schema.CommunityEvent, description: "OK"},
       forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
@@ -129,14 +128,36 @@ defmodule HearthWeb.EventController do
       unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
     ]
 
-  @validate %{"id" => ~V[required|uuid], "cancelled" => ~V[required|boolean]}
+  @validate %{"id" => ~V[required|uuid]}
 
-  def cancel(%Conn{assigns: %{auth: %{}}} = conn, params) do
+  def cancel(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
-    %{"id" => id, "cancelled" => cancelled} = params
 
     with {:ok, event} <- find_event(id, auth),
-         {:ok, event} <- set_cancelled(auth, event, cancelled) do
+         {:ok, event} <- Events.cancel_event(auth, event) do
+      render_event(conn, event)
+    end
+  end
+
+  operation :restore,
+    summary: "Bring a called off event back",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      ok: {Schema.CommunityEvent, description: "OK"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def restore(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, event} <- find_event(id, auth),
+         {:ok, event} <- Events.restore_event(auth, event) do
       render_event(conn, event)
     end
   end
@@ -202,9 +223,6 @@ defmodule HearthWeb.EventController do
     )
     |> Common.atomize_string_keys()
   end
-
-  defp set_cancelled(auth, event, true), do: Events.cancel_event(auth, event)
-  defp set_cancelled(auth, event, false), do: Events.restore_event(auth, event)
 
   defp render_event(conn, event),
     do: render(conn, :show, event: event, interested: Events.interested_ids([event]))

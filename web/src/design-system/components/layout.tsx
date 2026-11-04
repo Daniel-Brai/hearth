@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+
 import { cn } from './cn';
 
 type Div = Omit<HTMLAttributes<HTMLDivElement>, 'className'> & { readonly className?: string };

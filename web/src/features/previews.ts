@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import type { LinkPreview } from '@/domain/types';
 import { firstLink } from '@/features/markdown/plain-text';

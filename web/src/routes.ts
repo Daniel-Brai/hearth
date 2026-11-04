@@ -1,4 +1,5 @@
 import { index, layout, route, type RouteConfig } from '@react-router/dev/routes';
+
 // Loaded before Vite's aliases apply so this import is relative
 import { patterns, routes } from './runtime/routes';
 

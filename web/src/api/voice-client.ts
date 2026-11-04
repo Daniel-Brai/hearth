@@ -1,11 +1,12 @@
 import type { Channel } from 'phoenix';
-import type { Result } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+
+import { fail, ok, type Result } from '@/data/gateway';
 import type {
   VoiceParticipant,
   VoiceParticipantRole,
   VoiceRecordingNow,
 } from '@/generated/schemas';
+
 import type { VoiceEvents } from './realtime';
 
 export type TrackInfo = {

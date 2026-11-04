@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { ScheduledNote, type ScheduledWords } from '@/features/schedule/ScheduledNote';

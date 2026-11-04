@@ -1,10 +1,12 @@
 import { useMemo, type Dispatch, type SetStateAction } from 'react';
-import { Icon, IconButton, Input, Menu, Label, Pill, cn } from '@/design-system';
+
+import { cn, Icon, IconButton, Input, Label, Menu, Pill } from '@/design-system';
+import { KIND_LIB } from '@/domain/catalog';
 import { isHex, plural, tintStyle } from '@/domain/format';
 import type { PostKind } from '@/domain/types';
-import { KIND_LIB } from '@/domain/catalog';
-import { toKindDraft, MAX_KINDS, type KindDraft } from './drafts';
-import { KIND_HUES, KIND_ICONS, asIconName, hexFor } from './colors';
+
+import { asIconName, hexFor, KIND_HUES, KIND_ICONS } from './colors';
+import { MAX_KINDS, toKindDraft, type KindDraft } from './drafts';
 
 const LIBRARY: PostKind[] = Object.values(KIND_LIB);
 

@@ -29,7 +29,7 @@ defmodule HearthWeb.VoiceController do
     unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
   ]
 
-  operation :live,
+  operation :current,
     summary: "Show a room's live voice session",
     description: "Not found when the room isn't live",
     security: [%{"bearer" => []}],
@@ -43,7 +43,7 @@ defmodule HearthWeb.VoiceController do
 
   @validate %{"id" => ~V[required|uuid]}
 
-  def live(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+  def current(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
     with {:ok, room} <- find_room(id, auth),

@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+
 import type { Attachment } from '@/domain/types';
 import {
   alignImageIn,
@@ -10,6 +11,7 @@ import {
   removeImageFrom,
   type ImageAlign,
 } from '@/features/markdown/image-align';
+
 import { paragraphGap } from './composer-files';
 
 type Where = 'cursor' | 'end';

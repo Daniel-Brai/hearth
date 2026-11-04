@@ -1,10 +1,9 @@
-import type { Result } from '@/data/gateway';
 import { onServer } from '@/data/env';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type Result } from '@/data/gateway';
 import type { Store } from '@/data/store';
+import type { RoomSettings } from '@/domain/types';
 import { lexMarkdown } from '@/features/markdown/markdown';
 import { userIndex } from '@/generated/api/people/people';
-import type { RoomSettings } from '@/domain/types';
 import type {
   ChatMessage,
   Community,
@@ -13,6 +12,8 @@ import type {
   PostKind,
   Reply,
 } from '@/generated/schemas';
+import { useUi } from '@/runtime/ui-store';
+
 import {
   toCommunity,
   toKind,
@@ -22,9 +23,7 @@ import {
   toReply,
   toRoomSettings,
 } from '../mappers';
-import { useUi } from '@/runtime/ui-store';
-import { getRealtime } from '../realtime';
-import type { Realtime, Topic } from '../realtime';
+import { getRealtime, type Realtime, type Topic } from '../realtime';
 
 type Answer = { status: number; data: unknown };
 

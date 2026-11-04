@@ -1,12 +1,15 @@
 import { useParams } from 'react-router';
-import { Measure } from '@/design-system';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { Measure } from '@/design-system';
 import { community, hasQueue } from '@/domain/selectors';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { PageHeader } from '@/shell/PageHeader';
+
 import { LogTab } from './LogTab';
+
 import './ModerationPage.css';
 
 /** Rendered on the server but kept out of search */

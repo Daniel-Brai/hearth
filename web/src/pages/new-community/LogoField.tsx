@@ -1,5 +1,6 @@
 import { Button, Icon, Img } from '@/design-system';
 import { tintStyle } from '@/domain/format';
+
 import type { Form } from './form';
 
 export function LogoField({

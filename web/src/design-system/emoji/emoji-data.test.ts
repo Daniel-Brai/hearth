@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { loadedEmojiPicker, loadEmojiPicker } from './emoji-data';
 
 describe('loadEmojiPicker', () => {

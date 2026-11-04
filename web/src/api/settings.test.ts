@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+
 import { emptyState } from '@/data/empty-state';
+
 import { toSettingsBody } from './settings';
 
 describe('toSettingsBody/2', () => {

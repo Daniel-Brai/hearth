@@ -1,14 +1,12 @@
-import type { HearthGateway, Result } from '@/data/gateway';
-import { ok } from '@/data/gateway';
-import { communityMembers } from '@/generated/api/communities/communities';
-import { communityShow } from '@/generated/api/communities/communities';
-import { userIndex, userPosts, userReplies, userShow } from '@/generated/api/people/people';
-import type { AuthoredReply, Profile } from '@/generated/schemas';
+import { ok, type HearthGateway, type Result } from '@/data/gateway';
 import { personIdByHandle } from '@/domain/selectors';
 import type { ProfileActivity } from '@/domain/types';
+import { communityMembers, communityShow } from '@/generated/api/communities/communities';
+import { userIndex, userPosts, userReplies, userShow } from '@/generated/api/people/people';
+import type { AuthoredReply, Profile } from '@/generated/schemas';
+
 import { ageOf, paragraphs, toPerson } from '../mappers';
-import type { GatewayContext } from './context';
-import { call, failed } from './context';
+import { call, failed, type GatewayContext } from './context';
 
 const joinedOf = (iso: string) =>
   new Date(iso).toLocaleDateString([], { month: 'short', year: 'numeric' });

@@ -1,19 +1,20 @@
-import type { HearthGateway } from '@/data/gateway';
-import { fail, ok } from '@/data/gateway';
+import { fail, ok, type HearthGateway } from '@/data/gateway';
 import type { UserSettings } from '@/domain/types';
 import { authUpdateSettings } from '@/generated/api/auth/auth';
-import {
-  notificationSubscribePush,
-  notificationUnsubscribePush,
-} from '@/generated/api/notifications/notifications';
 import {
   instanceCheckUpdate,
   instanceUpdate,
   instanceUpdateStatus,
 } from '@/generated/api/instance/instance';
 import { moderationScreeningSummary } from '@/generated/api/moderation/moderation';
+import {
+  notificationSubscribePush,
+  notificationUnsubscribePush,
+} from '@/generated/api/notifications/notifications';
+
 import { currentSubscription, pushStatus, subscribe } from '../push';
 import { toInstanceUpdate, toSettings, toSettingsBody } from '../settings';
+import { call, failed, type GatewayContext } from './context';
 
 const SCREENING_DAYS = 30;
 
@@ -21,9 +22,6 @@ const CHECK_ERRORS: Partial<Record<string, string>> = {
   update_check_off: 'Update checks are off on this server.',
   github_unreachable: "Couldn't reach GitHub. Try again later.",
 };
-
-import type { GatewayContext } from './context';
-import { call, failed } from './context';
 
 export function createSettingsGateway(ctx: GatewayContext) {
   // Writes go one at a time so quick clicks reach the server in the order they were made

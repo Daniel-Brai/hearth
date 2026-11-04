@@ -1,13 +1,14 @@
-import { createContext, useContext } from 'react';
-import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector';
 import {
   createDraft,
-  current as snapshotOf,
   finishDraft,
   isDraft,
   setAutoFreeze,
+  current as snapshotOf,
   type Draft,
 } from 'immer';
+import { createContext, useContext } from 'react';
+import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector';
+
 import type { AppState } from '@/domain/app-state';
 
 setAutoFreeze(false);

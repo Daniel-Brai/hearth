@@ -1,7 +1,9 @@
 import type { Dispatch, SetStateAction } from 'react';
+
 import { Button, Icon, IconButton, Input } from '@/design-system';
-import { MAX_LINKS, type LinkDraft } from './drafts';
 import { linkIcon, linkKind } from '@/domain/links';
+
+import { MAX_LINKS, type LinkDraft } from './drafts';
 
 const detectedLabel = (url: string) => linkKind(url)?.name ?? null;
 

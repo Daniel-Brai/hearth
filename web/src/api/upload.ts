@@ -1,5 +1,6 @@
 import { mediaCompleteUpload, mediaUpload } from '@/generated/api/media/media';
 import type { Media, RequestUploadBodyPurpose } from '@/generated/schemas';
+
 import { call } from './gateway/context';
 
 const toHex = (buffer: ArrayBuffer): string =>

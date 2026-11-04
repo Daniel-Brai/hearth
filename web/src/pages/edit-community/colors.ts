@@ -1,5 +1,5 @@
-import { isHex } from '@/domain/format';
 import { ICONS, type IconName } from '@/design-system';
+import { isHex } from '@/domain/format';
 
 export const KIND_HUES = [
   'blue',

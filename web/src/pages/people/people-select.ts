@@ -1,5 +1,5 @@
 import type { AppState } from '@/domain/app-state';
-import { dmCount, displayName, person, presence } from '@/domain/selectors';
+import { displayName, dmCount, person, presence } from '@/domain/selectors';
 import { plainText } from '@/features/markdown/plain-text';
 
 export function peopleIndex(state: AppState): Map<string, string[]> {

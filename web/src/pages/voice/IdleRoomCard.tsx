@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Button, ButtonLink, Icon, Label, Segmented } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { Button, ButtonLink, Icon, Label, Segmented } from '@/design-system';
 import { tintStyle } from '@/domain/format';
 import { canDo, community, displayName, nextVoiceEvent } from '@/domain/selectors';
 import type { VoiceMode } from '@/domain/types';
-import { routes } from '@/runtime/routes';
 import { EventMini } from '@/pages/shared/EventMini';
+import { routes } from '@/runtime/routes';
+
 import { useVoiceActions } from './use-voice-actions';
 import { startNotice } from './voice-copy';
 import { VOICE_MODES } from './voice-session';

@@ -1,12 +1,14 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+
 import { ButtonLink, cn, Icon, IconButton, Link } from '@/design-system';
 import { isPublicPath, routes } from '@/runtime/routes';
 import type { TrailEntry } from '@/runtime/trail';
+import { useUi } from '@/runtime/ui-store';
+
+import { PageMeta } from './PageMeta';
 import { useSignedInNow } from './use-signed-in';
 import { useTrail } from './use-trail';
-import { useUi } from '@/runtime/ui-store';
-import { PageMeta } from './PageMeta';
 
 export type PageHeaderProps = {
   readonly title: ReactNode;

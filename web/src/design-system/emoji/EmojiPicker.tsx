@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
+
 import { useMenu } from '../components/menu-context';
 import { emojiKey, loadedEmojiPicker, loadEmojiPicker } from './emoji-data';
 import { pickerThemeStyle } from './picker-theme';

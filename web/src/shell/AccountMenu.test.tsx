@@ -1,12 +1,14 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
 import { Store, StoreContext } from '@/data/store';
 import { person } from '@/domain/selectors';
 import { MockGateway } from '@/mocks/gateway';
 import { createSeedState } from '@/mocks/seed';
 import { routes } from '@/runtime/routes';
+
 import { AccountMenu } from './AccountMenu';
 
 async function show(store: Store, at: string) {

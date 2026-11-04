@@ -1,13 +1,15 @@
 import { useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import { getStore } from '@/data/store';
 import type { AppState } from '@/domain/app-state';
 import { useUi } from '@/runtime/ui-store';
+
 import {
   mentionAt,
   suggest,
-  type SuggestKind,
   type Suggestion,
+  type SuggestKind,
   type SuggestOptions,
 } from './composer-text';
 

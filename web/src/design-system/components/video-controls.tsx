@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from 'react';
-import type { CSSProperties } from 'react';
+import { useSyncExternalStore, type CSSProperties } from 'react';
+
 import { Icon } from '@/design-system/icons/Icon';
 
 function clock(seconds: number): string {

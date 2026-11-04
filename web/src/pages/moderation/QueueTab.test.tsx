@@ -1,11 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
+
 import { GatewayContext } from '@/app/gateway-context';
 import { Store, StoreContext } from '@/data/store';
 import type { Permission } from '@/domain/types';
 import { MockGateway } from '@/mocks/gateway';
 import { createSeedState } from '@/mocks/seed';
+
 import { QueueTab } from './QueueTab';
 
 async function show(permissions: Permission[]) {

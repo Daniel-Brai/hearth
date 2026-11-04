@@ -1,12 +1,13 @@
-import { CommunityMark, EmptyState, Link, Measure } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
-import { useAppState, shallowEqual } from '@/data/store';
+import { siteGraph, useStructuredData } from '@/app/structured-data';
+import { shallowEqual, useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
+import { CommunityMark, EmptyState, Link, Measure } from '@/design-system';
 import { fmt, noun } from '@/domain/format';
 import { brandFor } from '@/runtime/brand';
 import { routes } from '@/runtime/routes';
-import { siteGraph, useStructuredData } from '@/app/structured-data';
 import { PageHeader } from '@/shell/PageHeader';
+
 import './PublicHomePage.css';
 
 export function PublicHomePage() {

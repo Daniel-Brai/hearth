@@ -1,5 +1,5 @@
-import { Button, cn, Icon, Link, Menu, MenuItem } from '@/design-system';
 import { useAppState } from '@/data/store';
+import { Button, cn, Icon, Link, Menu, MenuItem } from '@/design-system';
 import { person } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 import { PersonAvatar, PersonName } from '@/shell/people';

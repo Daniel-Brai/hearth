@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { Message } from '@/domain/types';
+
 import { useGateway } from '@/app/gateway-context';
+import type { Message } from '@/domain/types';
 
 export function useChatScroll(messages: readonly Message[], roomKey: string) {
   const gateway = useGateway();

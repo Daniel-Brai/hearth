@@ -1,9 +1,11 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Icon, cn } from '@/design-system';
+
 import { useAppState } from '@/data/store';
+import { cn, Icon } from '@/design-system';
 import { plural } from '@/domain/format';
 import { displayName } from '@/domain/selectors';
 import { PersonAvatar } from '@/shell/people';
+
 import type { TreeNode } from './tree';
 
 const LONG_THREAD = 3;

@@ -85,12 +85,13 @@ defmodule Hearth.Transcripts do
   def for_post(nil, _post), do: nil
 
   # The person who said it fixes their own lines, and moderators fix anyone's
-  @spec edit_segment(User.t(), T.id(), map()) ::
+  @spec edit_segment(User.t(), T.id(), T.id(), map()) ::
           {:ok, Segment.t()} | {:error, :forbidden | :not_found | Changeset.t()}
-  def edit_segment(%User{} = user, segment_id, %{} = params) do
+  def edit_segment(%User{} = user, session_id, segment_id, %{} = params) do
     with :ok <- on(),
          %Segment{} = segment <- Segment.get(id: segment_id),
-         %Transcript{} = transcript <- Transcript.get(id: segment.transcript_id),
+         %Transcript{} = transcript <-
+           Transcript.get(id: segment.transcript_id, session_id: session_id),
          {:ok, _recording} <- Voice.get_recording(user, transcript.recording_id),
          :ok <- may_edit(user, segment, transcript) do
       Segment.edit(segment, user.id, params)
