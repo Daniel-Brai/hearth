@@ -4,7 +4,7 @@ import { useGateway } from '@/app/gateway-context';
 import type { PostPatch } from '@/data/gateway';
 import { useAppState } from '@/data/store';
 import { Button, Icon, Textarea } from '@/design-system';
-import { isTech, kindInfo, postableKinds } from '@/domain/selectors';
+import { kindInfo, postableKinds } from '@/domain/selectors';
 import type { Attachment, Post } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
 import { ModeToggle, PostPreview } from '@/pages/compose/ComposeParts';
@@ -45,7 +45,6 @@ export function PostEditor({ post, onDone }: { readonly post: Post; readonly onD
   });
 
   const kind = useAppState((state) => kindInfo(state, post.c, fields.kind));
-  const tech = useAppState((state) => isTech(state, post.c));
 
   const dirty =
     fields.title !== original.title ||
@@ -115,7 +114,7 @@ export function PostEditor({ post, onDone }: { readonly post: Post; readonly onD
           onChange={(body) => setFields((f) => ({ ...f, body }))}
           onSubmit={() => void save()}
           onEscape={onDone}
-          placeholder={kind.body + (tech ? ' Code goes in ``` fences.' : '')}
+          placeholder={kind.body}
           label="Post text"
           maxLength={20000}
           community={post.c}

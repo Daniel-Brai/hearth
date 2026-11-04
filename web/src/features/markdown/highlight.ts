@@ -1,8 +1,11 @@
 import hljs from 'highlight.js/lib/core';
 import bash from 'highlight.js/lib/languages/bash';
+import c from 'highlight.js/lib/languages/c';
+import cpp from 'highlight.js/lib/languages/cpp';
 import css from 'highlight.js/lib/languages/css';
 import elixir from 'highlight.js/lib/languages/elixir';
 import go from 'highlight.js/lib/languages/go';
+import haskell from 'highlight.js/lib/languages/haskell';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
 import python from 'highlight.js/lib/languages/python';
@@ -15,9 +18,12 @@ import yaml from 'highlight.js/lib/languages/yaml';
 
 const LANGUAGES = {
   bash,
+  c,
+  cpp,
   css,
   elixir,
   go,
+  haskell,
   javascript,
   json,
   python,
@@ -38,6 +44,11 @@ const LANGUAGES = {
   py: python,
   rb: ruby,
   rs: rust,
+  h: c,
+  'c++': cpp,
+  cc: cpp,
+  hpp: cpp,
+  hs: haskell,
 };
 
 Object.entries(LANGUAGES).forEach(([name, language]) => hljs.registerLanguage(name, language));

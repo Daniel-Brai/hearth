@@ -21,9 +21,6 @@ export const openCommunities = (state: AppState) =>
     .filter(([, c]) => !c.joined && c.visibility !== 'invite' && c.listed !== false)
     .slice(0, 8);
 
-export const isTech = (state: AppState, cid: string | null | undefined) =>
-  !!(cid && state.communities[cid]?.categories.includes('tech'));
-
 export const communityUnread = (state: AppState, cid: string) => {
   const c = state.communities[cid];
   return !!c && (c.rooms.some((r) => r.unread) || state.posts.some((p) => p.c === cid && !p.seen));

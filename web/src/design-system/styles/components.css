@@ -675,8 +675,10 @@ h2.separator { font: inherit; }
 .composer--block .composer__row .btn--circle { --btn-size: 2.1rem; --btn-font-size: 0.95rem; }
 .composer--block .composer__mirror, .composer--block .composer__input { min-block-size: 4.5rem; padding: 0.4rem 0.45rem; }
 .composer--block .composer__tools { display: inline-flex; }
-.composer--body .composer__row { grid-template-areas: "field field" "attach count"; grid-template-columns: auto 1fr; border-radius: 0.9rem; padding: 0.4rem 0.5rem 0.5rem; align-items: center; row-gap: 0.2rem; }
+.composer__languages { max-block-size: min(20rem, 60vh); overflow-y: auto; }
+.composer--body .composer__row { grid-template-areas: "field field field" "attach tools count"; grid-template-columns: auto minmax(0, 1fr) auto; border-radius: 0.9rem; padding: 0.4rem 0.5rem 0.5rem; align-items: center; row-gap: 0.2rem; }
 .composer--body .composer__send { display: none; }
+.composer--body .composer__tools { display: inline-flex; flex-wrap: wrap; }
 .composer--body .composer__mirror, .composer--body .composer__input { min-block-size: 12rem; max-block-size: none; }
 .composer--body .composer__input { overflow: hidden; }
 
@@ -1212,7 +1214,8 @@ a.origin-note:hover { filter: brightness(0.98); }
 .count-wrap > textarea { display: block; inline-size: 100%; padding-block-end: 1.7rem; }
 .count-wrap > textarea.input--bare { padding-block-end: 1.4rem; }
 .char-count--inset { background: var(--color-canvas); border-radius: 0.4em; font-size: var(--text-xx-small); inset: auto 0.55rem 0.4rem auto; padding: 0.05rem 0.3rem; pointer-events: none; position: absolute; }
-.composer__count { font-size: var(--text-xx-small); white-space: nowrap; grid-area: count; justify-self: end; padding-inline: 0.4rem; }
+.composer__count { font-size: var(--text-xx-small); white-space: nowrap; grid-area: count; justify-self: end; padding-inline: 0.4rem; display: inline-flex; align-items: center; gap: 0.75rem; }
+.composer__count .save-state { font-size: inherit; font-weight: 500; }
 .composer__row { position: relative; }
 .composer--chat .composer__count { position: absolute; inset: -1.35rem 0.9rem auto auto; }
 .composer--body .composer__count { position: static; }
@@ -1328,15 +1331,19 @@ a.origin-note:hover { filter: brightness(0.98); }
 
 @media (max-width: 639px) {
   .composer__send kbd { display: none; }
-  .composer--block .composer__row { grid-template-areas: "field field field field" "count count count count" "attach tools . send"; row-gap: 0.2rem; }
+  .composer--block .composer__row { grid-template-areas: "field field field field" "count count count count" "tools tools tools tools" "attach . . send"; row-gap: 0.2rem; }
   .composer--block .composer__count { padding-block: 0.1rem 0.15rem; }
-  .composer--block .composer__tools { gap: 0; }
+  .composer--block .composer__tools { gap: 0; justify-content: space-between; }
+  .composer--body .composer__row { grid-template-areas: "field field" "tools tools" "attach count"; grid-template-columns: auto 1fr; }
+  .composer--body .composer__tools { flex-wrap: nowrap; justify-content: space-between; }
 }
 @container main (max-width: 40rem) {
   .composer__send kbd { display: none; }
-  .composer--block .composer__row { grid-template-areas: "field field field field" "count count count count" "attach tools . send"; row-gap: 0.2rem; }
+  .composer--block .composer__row { grid-template-areas: "field field field field" "count count count count" "tools tools tools tools" "attach . . send"; row-gap: 0.2rem; }
   .composer--block .composer__count { padding-block: 0.1rem 0.15rem; }
-  .composer--block .composer__tools { gap: 0; }
+  .composer--block .composer__tools { gap: 0; justify-content: space-between; }
+  .composer--body .composer__row { grid-template-areas: "field field" "tools tools" "attach count"; grid-template-columns: auto 1fr; }
+  .composer--body .composer__tools { flex-wrap: nowrap; justify-content: space-between; }
 }
 
 @media (max-width: 639px), (any-hover: none) { .kb-only { display: none !important; } }

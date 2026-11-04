@@ -125,3 +125,57 @@ describe('Composer attachments', () => {
     expect(container.querySelector('.composer__send')).toBeNull();
   });
 });
+
+function write(value: string, onChange: (next: string) => void) {
+  const store = new Store(createSeedState());
+
+  return render(
+    <RequestContext value={request}>
+      <StoreContext value={store}>
+        <GatewayContext value={new MockGateway(store)}>
+          <Composer
+            id="body"
+            variant="block"
+            value={value}
+            onChange={onChange}
+            placeholder="Write something"
+            community="elixir"
+          />
+        </GatewayContext>
+      </StoreContext>
+    </RequestContext>,
+  );
+}
+
+describe('Composer tools', () => {
+  it('fences the selection as the language picked', () => {
+    const onChange = vi.fn();
+    const { container, getByLabelText, getByRole } = write('Try this\nprint(1)', onChange);
+
+    container.querySelector('textarea')!.setSelectionRange(9, 17);
+    fireEvent.click(getByLabelText('Code block'));
+    fireEvent.click(getByRole('menuitem', { name: 'Python' }));
+
+    expect(onChange).toHaveBeenLastCalledWith('Try this\n```python\nprint(1)\n```');
+  });
+
+  it('numbers every selected line', () => {
+    const onChange = vi.fn();
+    const { container, getByLabelText } = write('milk\neggs', onChange);
+
+    container.querySelector('textarea')!.setSelectionRange(0, 9);
+    fireEvent.click(getByLabelText('Numbered list'));
+
+    expect(onChange).toHaveBeenLastCalledWith('1. milk\n2. eggs');
+  });
+
+  it('quotes the line the cursor is on', () => {
+    const onChange = vi.fn();
+    const { container, getByLabelText } = write('first\nsecond', onChange);
+
+    container.querySelector('textarea')!.setSelectionRange(8, 8);
+    fireEvent.click(getByLabelText('Quote'));
+
+    expect(onChange).toHaveBeenLastCalledWith('first\n> second');
+  });
+});

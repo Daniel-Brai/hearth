@@ -25,13 +25,16 @@ export function SendLaterButton({
   label = 'Send later',
   goes = 'Sends',
   size = 'small',
+  variant = 'borderless',
   disabled,
   onPick,
 }: {
   readonly id?: string | undefined;
   readonly label?: string | undefined;
   readonly goes?: string | undefined;
-  readonly size?: 'small' | undefined;
+  readonly size?: 'small' | 'normal' | undefined;
+  /** Borderless beside a send button inside a composer, filled when it sits in a row of buttons */
+  readonly variant?: 'borderless' | 'default' | undefined;
   readonly disabled: boolean;
   readonly onPick: (at: Date) => boolean | Promise<boolean>;
 }) {
@@ -42,7 +45,7 @@ export function SendLaterButton({
       <IconButton
         id={id}
         size={size}
-        variant="borderless"
+        variant={variant}
         disabled={disabled}
         onClick={() => setOpen(true)}
         aria-label={label}

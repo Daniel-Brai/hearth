@@ -12,7 +12,6 @@ import {
 import { useAppState } from '@/data/store';
 import { cn, Icon, Keys } from '@/design-system';
 import { countText } from '@/domain/format';
-import { isTech } from '@/domain/selectors';
 import type { Attachment } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
 
@@ -61,6 +60,8 @@ export type ComposerProps = {
   readonly onEditLast?: (() => void) | undefined;
   readonly extraTools?: ReactNode;
   readonly beforeSend?: ReactNode;
+  /** Shown beside the count, such as whether the draft is saved */
+  readonly status?: ReactNode;
 };
 
 type SubmitKeys = {
@@ -206,9 +207,18 @@ function useFileDrop(files: boolean, addFiles: (list: FileList | File[]) => Prom
   return { dropping, dropProps, onPaste };
 }
 
-function Count({ value, max }: { readonly value: string; readonly max: number }) {
+function Count({
+  value,
+  max,
+  status,
+}: {
+  readonly value: string;
+  readonly max: number;
+  readonly status: ReactNode;
+}) {
   return (
     <span className={cn('char-count composer__count', value.length > max * 0.95 && 'is-near')}>
+      {status}
       {countText(value, max)}
     </span>
   );
@@ -272,6 +282,7 @@ export function Composer({
   onEditLast,
   extraTools,
   beforeSend,
+  status,
 }: ComposerProps) {
   const state = useAppState();
 
@@ -279,7 +290,6 @@ export function Composer({
   const mirror = useRef<HTMLDivElement>(null);
   const listId = useId();
 
-  const tech = isTech(state, community);
   const chat = variant === 'chat';
   const options = { community, commands, sounds, chat, mentionAll };
 
@@ -380,9 +390,9 @@ export function Composer({
           />
         </div>
 
-        {showCount ? <Count value={value} max={maxLength} /> : null}
+        {showCount ? <Count value={value} max={maxLength} status={status} /> : null}
 
-        <ComposerTools tech={tech} wrap={edits.wrap} extraTools={extraTools} />
+        <ComposerTools edits={edits} extraTools={extraTools} />
 
         {beforeSend ? <div className="composer__before-send">{beforeSend}</div> : null}
 

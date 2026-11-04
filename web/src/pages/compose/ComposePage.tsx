@@ -6,7 +6,7 @@ import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
 import { ButtonLink, EmptyState, Icon, Measure, Textarea } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
-import { canDo, isTech, joinedCids, kindInfo, postableKinds } from '@/domain/selectors';
+import { canDo, joinedCids, kindInfo, postableKinds } from '@/domain/selectors';
 import type { Attachment } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
 import { extractTags } from '@/features/markdown/tags';
@@ -125,7 +125,6 @@ function ComposeForm({ initialCid }: { readonly initialCid: string }) {
   const communityName = useAppState((state) => state.communities[fields.cid]?.name ?? null);
   const kinds = useAppState((state) => postableKinds(state, fields.cid));
   const kind = useAppState((state) => kindInfo(state, fields.cid, fields.kind));
-  const tech = useAppState((state) => isTech(state, fields.cid));
 
   const tags = useAppState((state) =>
     extractTags(state, fields.title + ' ' + fields.body, fields.cid),
@@ -147,11 +146,7 @@ function ComposeForm({ initialCid }: { readonly initialCid: string }) {
 
   return (
     <>
-      <PageHeader
-        label="new post"
-        title="New post"
-        endActions={badge ? <span className="hide-mobile">{badge}</span> : null}
-      />
+      <PageHeader label="new post" title="New post" />
 
       <main id="main">
         <Measure narrow className="grid gap-4">
@@ -192,12 +187,13 @@ function ComposeForm({ initialCid }: { readonly initialCid: string }) {
               value={fields.body}
               onChange={(body) => edit({ body })}
               onSubmit={() => void publish()}
-              placeholder={kind.body + (tech ? ' Code goes in ``` fences.' : '')}
+              placeholder={kind.body}
               sendLabel="Post"
               maxLength={20000}
               community={fields.cid}
               attachments={files}
               onAttachmentsChange={setFiles}
+              status={badge}
             />
           </div>
 
@@ -209,7 +205,6 @@ function ComposeForm({ initialCid }: { readonly initialCid: string }) {
 
           <PublishBar
             canDiscard={hasContent(fields)}
-            badge={saveState}
             busy={busy}
             communityName={communityName}
             onDiscard={discard}

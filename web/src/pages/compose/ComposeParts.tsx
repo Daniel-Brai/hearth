@@ -141,7 +141,6 @@ export function TagsRow({ tags }: { readonly tags: readonly string[] }) {
 
 export function PublishBar({
   canDiscard,
-  badge,
   busy,
   communityName,
   onDiscard,
@@ -149,7 +148,6 @@ export function PublishBar({
   onSchedule,
 }: {
   readonly canDiscard: boolean;
-  readonly badge: SaveState | null;
   readonly busy: boolean;
   readonly communityName: string | null;
   readonly onDiscard: () => void;
@@ -157,41 +155,42 @@ export function PublishBar({
   readonly onSchedule: (at: Date) => Promise<boolean>;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 flex-wrap">
+    <div className="publish-bar">
       {canDiscard ? (
-        <Button size="small" variant="borderless" onClick={onDiscard}>
+        <Button
+          id="compose-discard"
+          className="publish-bar__discard"
+          aria-label="Discard draft"
+          data-tip="Discard draft"
+          onClick={onDiscard}
+        >
           <Icon name="trash" />
-          Discard draft
+          <span className="hide-mobile">Discard draft</span>
         </Button>
       ) : null}
 
-      {badge ? (
-        <span className="show-mobile">
-          <SaveBadge saveState={badge} />
-        </span>
-      ) : null}
-
-      <span className="ml-auto">
+      <div className="publish-bar__actions">
         <SendLaterButton
           id="compose-post-later"
           label="Post later"
           goes="Posts"
-          size={undefined}
+          size="normal"
+          variant="default"
           disabled={busy}
           onPick={onSchedule}
         />
-      </span>
 
-      <Button
-        variant="reversed"
-        busy={busy}
-        className="post-to"
-        title={communityName ? `Post to ${communityName}` : undefined}
-        onClick={onPublish}
-      >
-        <Icon name="send" />
-        <span className="truncate">{communityName ? `Post to ${communityName}` : 'Post'}</span>
-      </Button>
+        <Button
+          variant="reversed"
+          busy={busy}
+          className="post-to"
+          title={communityName ? `Post to ${communityName}` : undefined}
+          onClick={onPublish}
+        >
+          <Icon name="send" />
+          <span className="truncate">{communityName ? `Post to ${communityName}` : 'Post'}</span>
+        </Button>
+      </div>
     </div>
   );
 }
