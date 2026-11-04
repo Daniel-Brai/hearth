@@ -3,8 +3,8 @@ import { fail, ok } from '@/data/gateway';
 import type { UserSettings } from '@/domain/types';
 import { authUpdateSettings } from '@/generated/api/auth/auth';
 import {
-  pushSubscriptionCreate,
-  pushSubscriptionDelete,
+  notificationSubscribePush,
+  notificationUnsubscribePush,
 } from '@/generated/api/notifications/notifications';
 import {
   instanceCheckUpdate,
@@ -58,7 +58,7 @@ export function createSettingsGateway(ctx: GatewayContext) {
       const current = await currentSubscription();
 
       if (!on) {
-        if (current) await call(() => pushSubscriptionDelete({ endpoint: current.endpoint }));
+        if (current) await call(() => notificationUnsubscribePush({ endpoint: current.endpoint }));
         await current?.unsubscribe();
 
         return ok(undefined);
@@ -75,7 +75,7 @@ export function createSettingsGateway(ctx: GatewayContext) {
       if (!p256dh || !auth) return fail("This browser can't receive push notifications.");
 
       const answer = await call(() =>
-        pushSubscriptionCreate({ endpoint: subscription.endpoint, p256dh, auth }),
+        notificationSubscribePush({ endpoint: subscription.endpoint, p256dh, auth }),
       );
 
       if (answer.status === 204) return ok(undefined);

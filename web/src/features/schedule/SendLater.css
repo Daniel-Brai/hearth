@@ -1,0 +1,4 @@
+.send-later { display: grid; gap: 1.1rem; }
+.send-later__chips { justify-content: center; }
+.send-later__summary { color: var(--color-ink-dark); font-size: var(--text-small); margin: 0; text-align: center; }
+.send-later__summary.is-problem { color: var(--color-negative); font-weight: 600; }

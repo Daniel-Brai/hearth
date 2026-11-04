@@ -54,7 +54,7 @@ defmodule HearthWeb.VoiceControllerTest do
     end
   end
 
-  describe "live_index" do
+  describe "index" do
     test "leaves out communities one isn't in", %{
       conn: conn,
       outsider: outsider,
@@ -65,7 +65,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert [] =
                conn
                |> auth_conn(outsider)
-               |> get(~p"/api/voice-sessions/live")
+               |> get(~p"/api/voice-sessions")
                |> valid_response(200)
     end
 
@@ -79,7 +79,7 @@ defmodule HearthWeb.VoiceControllerTest do
       assert [%{"ended_at" => nil, "recording" => false, "people" => 0} = live] =
                conn
                |> auth_conn(member)
-               |> get(~p"/api/voice-sessions/live")
+               |> get(~p"/api/voice-sessions")
                |> valid_response(200)
 
       assert live["id"] == session.id

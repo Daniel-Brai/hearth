@@ -19,6 +19,7 @@ defmodule Hearth.Common do
 
   defdelegate remove_nil_fields(value), to: Transform
   defdelegate atomize_string_keys(map), to: Transform
+  defdelegate parse_datetime(value), to: Transform
   defdelegate to_atom(value), to: String
 
   defdelegate normalize(value), to: Text

@@ -4,11 +4,11 @@ import {
   inviteAccept,
   inviteCreate,
   inviteDelete,
-  emailCheckCreate,
-  inviteEmailCreate,
-  inviteEmailDecline,
+  inviteEmailCheck,
+  inviteSendInvitation,
+  inviteDeclineInvitation,
   inviteMine,
-  inviteEmailDelete,
+  inviteRevokeInvitation,
   inviteIndex,
   inviteShow,
   inviteUpdate,
@@ -207,7 +207,7 @@ export function createInvitesGateway(
       if (!id) return fail(NOT_LOADED);
 
       const body = { note, emails: emails.map((e) => ({ email: e.email, role_key: e.role })) };
-      const answer = await call(() => inviteEmailCreate(id, body));
+      const answer = await call(() => inviteSendInvitation(id, body));
 
       if (answer.status !== 201) return failed(answer);
 
@@ -219,7 +219,7 @@ export function createInvitesGateway(
     },
 
     decline: async (id) => {
-      const answer = await call(() => inviteEmailDecline(id));
+      const answer = await call(() => inviteDeclineInvitation(id));
 
       if (answer.status !== 204) return failed(answer);
 
@@ -232,7 +232,7 @@ export function createInvitesGateway(
 
     // A check that fails says nothing is wrong and the send checks again
     unreachable: async (emails) => {
-      const answer = await call(() => emailCheckCreate({ emails }));
+      const answer = await call(() => inviteEmailCheck({ emails }));
       if (answer.status !== 200) return [];
 
       return answer.data.filter((c) => c.status === 'unreachable').map((c) => c.email);
@@ -244,7 +244,7 @@ export function createInvitesGateway(
         if (email) email.status = 'revoked';
       });
 
-      void call(() => inviteEmailDelete(id));
+      void call(() => inviteRevokeInvitation(id));
     },
   };
 

@@ -4,86 +4,24 @@
  * OpenAPI spec version: 2026-10-24
  */
 import type {
+  BadRequestResponse,
+  CompleteUploadBody,
   LinkPreview,
-  LinkPreviewShowParams,
   Media,
+  MediaUnfurlParams,
   NoContentResponse,
   NotFoundResponse,
+  PartUrls,
+  PartUrlsBody,
+  Parts,
+  RequestUploadBody,
   TooManyRequestsResponse,
   UnauthorizedResponse,
   UnprocessableContentResponse,
+  Upload,
 } from '../../schemas';
 
 import { customFetch } from '../../../api/custom-fetch';
-
-export type linkPreviewShowResponse200 = {
-  data: LinkPreview;
-  status: 200;
-};
-
-export type linkPreviewShowResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type linkPreviewShowResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type linkPreviewShowResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type linkPreviewShowResponse429 = {
-  data: TooManyRequestsResponse;
-  status: 429;
-};
-
-export type linkPreviewShowResponseSuccess = linkPreviewShowResponse200 & {
-  headers: Headers;
-};
-export type linkPreviewShowResponseError = (
-  | linkPreviewShowResponse401
-  | linkPreviewShowResponse404
-  | linkPreviewShowResponse422
-  | linkPreviewShowResponse429
-) & {
-  headers: Headers;
-};
-
-export type linkPreviewShowResponse = linkPreviewShowResponseSuccess | linkPreviewShowResponseError;
-
-export const getLinkPreviewShowUrl = (params: LinkPreviewShowParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value));
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/link-preview?${stringifiedParams}`
-    : `/api/link-preview`;
-};
-
-/**
- * Private addresses, and sites without preview tags, are not found
- * @summary Preview a link
- */
-export const linkPreviewShow = async (
-  params: LinkPreviewShowParams,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<linkPreviewShowResponse> => {
-  return customFetch<linkPreviewShowResponse>(getLinkPreviewShowUrl(params), {
-    ...options,
-    method: 'GET',
-  });
-};
 
 export type mediaDeleteResponse204 = {
   data: NoContentResponse;
@@ -179,5 +117,356 @@ export const mediaShow = async (
   return customFetch<mediaShowResponse>(getMediaShowUrl(id), {
     ...options,
     method: 'GET',
+  });
+};
+
+export type mediaUnfurlResponse200 = {
+  data: LinkPreview;
+  status: 200;
+};
+
+export type mediaUnfurlResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type mediaUnfurlResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type mediaUnfurlResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type mediaUnfurlResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type mediaUnfurlResponseSuccess = mediaUnfurlResponse200 & {
+  headers: Headers;
+};
+export type mediaUnfurlResponseError = (
+  mediaUnfurlResponse401 | mediaUnfurlResponse404 | mediaUnfurlResponse422 | mediaUnfurlResponse429
+) & {
+  headers: Headers;
+};
+
+export type mediaUnfurlResponse = mediaUnfurlResponseSuccess | mediaUnfurlResponseError;
+
+export const getMediaUnfurlUrl = (params: MediaUnfurlParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/unfurls?${stringifiedParams}` : `/api/unfurls`;
+};
+
+/**
+ * Private addresses, and sites without preview tags, are not found
+ * @summary Preview a link
+ */
+export const mediaUnfurl = async (
+  params: MediaUnfurlParams,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<mediaUnfurlResponse> => {
+  return customFetch<mediaUnfurlResponse>(getMediaUnfurlUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export type mediaUploadResponse201 = {
+  data: Upload;
+  status: 201;
+};
+
+export type mediaUploadResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type mediaUploadResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type mediaUploadResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type mediaUploadResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type mediaUploadResponseSuccess = mediaUploadResponse201 & {
+  headers: Headers;
+};
+export type mediaUploadResponseError = (
+  mediaUploadResponse400 | mediaUploadResponse401 | mediaUploadResponse422 | mediaUploadResponse429
+) & {
+  headers: Headers;
+};
+
+export type mediaUploadResponse = mediaUploadResponseSuccess | mediaUploadResponseError;
+
+export const getMediaUploadUrl = () => {
+  return `/api/uploads`;
+};
+
+/**
+ * Answers with one signed PUT or a multipart upload for big files
+ * @summary Start an upload
+ */
+export const mediaUpload = async (
+  requestUploadBody: RequestUploadBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<mediaUploadResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<mediaUploadResponse>(getMediaUploadUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(requestUploadBody),
+  });
+};
+
+export type mediaCompleteUploadResponse200 = {
+  data: Media;
+  status: 200;
+};
+
+export type mediaCompleteUploadResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type mediaCompleteUploadResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type mediaCompleteUploadResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type mediaCompleteUploadResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type mediaCompleteUploadResponseSuccess = mediaCompleteUploadResponse200 & {
+  headers: Headers;
+};
+export type mediaCompleteUploadResponseError = (
+  | mediaCompleteUploadResponse400
+  | mediaCompleteUploadResponse401
+  | mediaCompleteUploadResponse404
+  | mediaCompleteUploadResponse422
+) & {
+  headers: Headers;
+};
+
+export type mediaCompleteUploadResponse =
+  mediaCompleteUploadResponseSuccess | mediaCompleteUploadResponseError;
+
+export const getMediaCompleteUploadUrl = (id: string) => {
+  return `/api/uploads/${id}/complete`;
+};
+
+/**
+ * A file that fails the checks is deleted
+ * @summary Finish an upload
+ */
+export const mediaCompleteUpload = async (
+  id: string,
+  completeUploadBody: CompleteUploadBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<mediaCompleteUploadResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<mediaCompleteUploadResponse>(getMediaCompleteUploadUrl(id), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(completeUploadBody),
+  });
+};
+
+export type mediaListUploadPartsResponse200 = {
+  data: Parts;
+  status: 200;
+};
+
+export type mediaListUploadPartsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type mediaListUploadPartsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type mediaListUploadPartsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type mediaListUploadPartsResponseSuccess = mediaListUploadPartsResponse200 & {
+  headers: Headers;
+};
+export type mediaListUploadPartsResponseError = (
+  | mediaListUploadPartsResponse400
+  | mediaListUploadPartsResponse401
+  | mediaListUploadPartsResponse404
+) & {
+  headers: Headers;
+};
+
+export type mediaListUploadPartsResponse =
+  mediaListUploadPartsResponseSuccess | mediaListUploadPartsResponseError;
+
+export const getMediaListUploadPartsUrl = (id: string) => {
+  return `/api/uploads/${id}/parts`;
+};
+
+/**
+ * A resumed upload sends only the missing parts
+ * @summary List the parts already uploaded
+ */
+export const mediaListUploadParts = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<mediaListUploadPartsResponse> => {
+  return customFetch<mediaListUploadPartsResponse>(getMediaListUploadPartsUrl(id), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export type mediaSignUploadPartsResponse200 = {
+  data: PartUrls;
+  status: 200;
+};
+
+export type mediaSignUploadPartsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type mediaSignUploadPartsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type mediaSignUploadPartsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type mediaSignUploadPartsResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type mediaSignUploadPartsResponseSuccess = mediaSignUploadPartsResponse200 & {
+  headers: Headers;
+};
+export type mediaSignUploadPartsResponseError = (
+  | mediaSignUploadPartsResponse400
+  | mediaSignUploadPartsResponse401
+  | mediaSignUploadPartsResponse404
+  | mediaSignUploadPartsResponse422
+) & {
+  headers: Headers;
+};
+
+export type mediaSignUploadPartsResponse =
+  mediaSignUploadPartsResponseSuccess | mediaSignUploadPartsResponseError;
+
+export const getMediaSignUploadPartsUrl = (id: string) => {
+  return `/api/uploads/${id}/parts`;
+};
+
+/**
+ * Each URL takes one PUT and works for 10 minutes
+ * @summary Sign part URLs
+ */
+export const mediaSignUploadParts = async (
+  id: string,
+  partUrlsBody: PartUrlsBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<mediaSignUploadPartsResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<mediaSignUploadPartsResponse>(getMediaSignUploadPartsUrl(id), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(partUrlsBody),
   });
 };

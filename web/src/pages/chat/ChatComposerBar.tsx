@@ -6,8 +6,10 @@ import type { Message } from '@/domain/types';
 import { useAppState } from '@/data/store';
 import { canDo, displayName } from '@/domain/selectors';
 import { Composer } from '@/features/composer/Composer';
+import { SendLaterButton } from '@/features/schedule/SendLater';
 import { useUi } from '@/runtime/ui-store';
 import type { ChatTarget } from './chat-select';
+import { ScheduledMessages } from './ScheduledMessages';
 import type { ChatComposerState } from './use-chat-composer';
 
 export function SelectBar({
@@ -100,6 +102,7 @@ export function MessageBox({
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-1">
       <TypingNote chatKey={target.key} />
+      {canChat ? <ScheduledMessages chatKey={target.key} onEdit={composer.restore} /> : null}
 
       {canChat ? (
         <Composer
@@ -122,12 +125,19 @@ export function MessageBox({
           onEditLast={composer.editLast}
           onEscape={escapeComposer(editing, replying, composer.stopEdit, composer.stopReplying)}
           beforeSend={
-            <ComposerCancel
-              editing={!!editing}
-              replyingName={replyingName}
-              onStopEditing={composer.stopEdit}
-              onStopReplying={composer.stopReplying}
-            />
+            editing || replyingName ? (
+              <ComposerCancel
+                editing={!!editing}
+                replyingName={replyingName}
+                onStopEditing={composer.stopEdit}
+                onStopReplying={composer.stopReplying}
+              />
+            ) : (
+              <SendLaterButton
+                disabled={!composer.text.trim() && !composer.files.length}
+                onPick={composer.schedule}
+              />
+            )
           }
         />
       ) : (

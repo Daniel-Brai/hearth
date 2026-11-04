@@ -263,6 +263,17 @@ export interface HearthGateway {
       body: string;
       files?: Attachment[];
     }): Promise<Result<{ post: Post }>>;
+    schedule(spec: {
+      c: string;
+      kind: string;
+      title: string;
+      body: string;
+      files?: Attachment[];
+      sendAt: string;
+    }): Promise<Result>;
+    reschedule(id: string, sendAt: string): Promise<Result>;
+    publishNow(id: string): Promise<Result>;
+    unschedule(id: string): void;
     edit(id: string, patch: PostPatch): Promise<Result>;
     remove(id: string): Promise<Result>;
     toggleAnswer(postId: string, replyId: string): Promise<Result>;
@@ -287,6 +298,15 @@ export interface HearthGateway {
       opts?: { files?: Attachment[]; parent?: string | null },
     ): Result<{ sound?: string }>;
     commands(key: string): ChatCommand[];
+    schedule(
+      key: string,
+      text: string,
+      sendAt: string,
+      opts?: { files?: Attachment[] },
+    ): Promise<Result>;
+    reschedule(id: string, sendAt: string): Promise<Result>;
+    sendNow(id: string): Promise<Result>;
+    unschedule(id: string): void;
     edit(key: string, id: string, patch: { text: string; files: readonly Attachment[] }): Result;
     remove(key: string, id: string): void;
     toggleBoost(key: string, id: string, emoji: string): void;

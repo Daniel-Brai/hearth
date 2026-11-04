@@ -30,6 +30,7 @@ import { CommunityHero } from './CommunityHero';
 import { useCommunityView, type CommunityViewData } from './use-community-view';
 import { useJoinToggle } from './use-join-toggle';
 import './CommunityPage.css';
+import { ScheduledPosts } from '@/features/schedule/ScheduledPosts';
 
 export function CommunityPage() {
   const { community: cid, tag } = useParams();
@@ -90,7 +91,10 @@ function CommunityView({ cid, tag }: { readonly cid: string; readonly tag: strin
               text="You need an invite to see its posts, rooms and events. Ask someone inside for a link."
             />
           ) : (
-            <CommunityContent cid={cid} tag={tag} view={view} />
+            <>
+              <ScheduledPosts cid={cid} />
+              <CommunityContent cid={cid} tag={tag} view={view} />
+            </>
           )}
         </Measure>
       </main>

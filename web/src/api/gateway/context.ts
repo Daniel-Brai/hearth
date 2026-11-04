@@ -195,6 +195,10 @@ export class GatewayContext {
     });
   }
 
+  kindName(id: string | null): string {
+    return (id && this.kindNames.get(id)) || '';
+  }
+
   knowsKindsOf(communityId: string): boolean {
     return this.kindsFor.has(communityId);
   }

@@ -24,7 +24,11 @@ import type {
   Reply,
   ReplyIndex200,
   ReplyIndexParams,
+  RescheduleBody,
+  SchedulePostBody,
+  ScheduledPost,
   Toggle,
+  TooManyRequestsResponse,
   UnauthorizedResponse,
   UnprocessableContentResponse,
   UpdatePostBody,
@@ -32,129 +36,6 @@ import type {
 } from '../../schemas';
 
 import { customFetch } from '../../../api/custom-fetch';
-
-export type draftDeleteResponse204 = {
-  data: NoContentResponse;
-  status: 204;
-};
-
-export type draftDeleteResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type draftDeleteResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type draftDeleteResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type draftDeleteResponseSuccess = draftDeleteResponse204 & {
-  headers: Headers;
-};
-export type draftDeleteResponseError = (
-  draftDeleteResponse401 | draftDeleteResponse404 | draftDeleteResponse422
-) & {
-  headers: Headers;
-};
-
-export type draftDeleteResponse = draftDeleteResponseSuccess | draftDeleteResponseError;
-
-export const getDraftDeleteUrl = (communityId: string) => {
-  return `/api/communities/${communityId}/draft`;
-};
-
-/**
- * @summary Throw away my unfinished post in a community
- */
-export const draftDelete = async (
-  communityId: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<draftDeleteResponse> => {
-  return customFetch<draftDeleteResponse>(getDraftDeleteUrl(communityId), {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-export type draftUpdateResponse200 = {
-  data: Draft;
-  status: 200;
-};
-
-export type draftUpdateResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type draftUpdateResponse403 = {
-  data: ForbiddenResponse;
-  status: 403;
-};
-
-export type draftUpdateResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type draftUpdateResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type draftUpdateResponseSuccess = draftUpdateResponse200 & {
-  headers: Headers;
-};
-export type draftUpdateResponseError = (
-  draftUpdateResponse401 | draftUpdateResponse403 | draftUpdateResponse404 | draftUpdateResponse422
-) & {
-  headers: Headers;
-};
-
-export type draftUpdateResponse = draftUpdateResponseSuccess | draftUpdateResponseError;
-
-export const getDraftUpdateUrl = (communityId: string) => {
-  return `/api/communities/${communityId}/draft`;
-};
-
-/**
- * @summary Save my unfinished post in a community
- */
-export const draftUpdate = async (
-  communityId: string,
-  draftBody: DraftBody,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<draftUpdateResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit['headers']>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  return customFetch<draftUpdateResponse>(getDraftUpdateUrl(communityId), {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(draftBody),
-  });
-};
 
 export type postIndexResponse200 = {
   data: PostIndex200;
@@ -302,6 +183,133 @@ export const postCreate = async (
   });
 };
 
+export type postDiscardDraftResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type postDiscardDraftResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postDiscardDraftResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postDiscardDraftResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postDiscardDraftResponseSuccess = postDiscardDraftResponse204 & {
+  headers: Headers;
+};
+export type postDiscardDraftResponseError = (
+  postDiscardDraftResponse401 | postDiscardDraftResponse404 | postDiscardDraftResponse422
+) & {
+  headers: Headers;
+};
+
+export type postDiscardDraftResponse =
+  postDiscardDraftResponseSuccess | postDiscardDraftResponseError;
+
+export const getPostDiscardDraftUrl = (communityId: string) => {
+  return `/api/communities/${communityId}/posts/draft`;
+};
+
+/**
+ * @summary Throw away my unfinished post in a community
+ */
+export const postDiscardDraft = async (
+  communityId: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postDiscardDraftResponse> => {
+  return customFetch<postDiscardDraftResponse>(getPostDiscardDraftUrl(communityId), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export type postSaveDraftResponse200 = {
+  data: Draft;
+  status: 200;
+};
+
+export type postSaveDraftResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postSaveDraftResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type postSaveDraftResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postSaveDraftResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postSaveDraftResponseSuccess = postSaveDraftResponse200 & {
+  headers: Headers;
+};
+export type postSaveDraftResponseError = (
+  | postSaveDraftResponse401
+  | postSaveDraftResponse403
+  | postSaveDraftResponse404
+  | postSaveDraftResponse422
+) & {
+  headers: Headers;
+};
+
+export type postSaveDraftResponse = postSaveDraftResponseSuccess | postSaveDraftResponseError;
+
+export const getPostSaveDraftUrl = (communityId: string) => {
+  return `/api/communities/${communityId}/posts/draft`;
+};
+
+/**
+ * @summary Save my unfinished post in a community
+ */
+export const postSaveDraft = async (
+  communityId: string,
+  draftBody: DraftBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postSaveDraftResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<postSaveDraftResponse>(getPostSaveDraftUrl(communityId), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(draftBody),
+  });
+};
+
 export type postPinnedResponse200 = {
   data: Post[];
   status: 200;
@@ -340,6 +348,96 @@ export const postPinned = async (
   return customFetch<postPinnedResponse>(getPostPinnedUrl(communityId), {
     ...options,
     method: 'GET',
+  });
+};
+
+export type postScheduleResponse201 = {
+  data: ScheduledPost;
+  status: 201;
+};
+
+export type postScheduleResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type postScheduleResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postScheduleResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type postScheduleResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postScheduleResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postScheduleResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type postScheduleResponseSuccess = postScheduleResponse201 & {
+  headers: Headers;
+};
+export type postScheduleResponseError = (
+  | postScheduleResponse400
+  | postScheduleResponse401
+  | postScheduleResponse403
+  | postScheduleResponse404
+  | postScheduleResponse422
+  | postScheduleResponse429
+) & {
+  headers: Headers;
+};
+
+export type postScheduleResponse = postScheduleResponseSuccess | postScheduleResponseError;
+
+export const getPostScheduleUrl = (communityId: string) => {
+  return `/api/communities/${communityId}/posts/scheduled`;
+};
+
+/**
+ * @summary Schedule a post in a community
+ */
+export const postSchedule = async (
+  communityId: string,
+  schedulePostBody: SchedulePostBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postScheduleResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<postScheduleResponse>(getPostScheduleUrl(communityId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(schedulePostBody),
   });
 };
 
@@ -400,39 +498,267 @@ export const postCommunitySeen = async (
   });
 };
 
-export type draftIndexResponse200 = {
+export type postDraftsResponse200 = {
   data: Draft[];
   status: 200;
 };
 
-export type draftIndexResponse401 = {
+export type postDraftsResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type draftIndexResponseSuccess = draftIndexResponse200 & {
+export type postDraftsResponseSuccess = postDraftsResponse200 & {
   headers: Headers;
 };
-export type draftIndexResponseError = draftIndexResponse401 & {
+export type postDraftsResponseError = postDraftsResponse401 & {
   headers: Headers;
 };
 
-export type draftIndexResponse = draftIndexResponseSuccess | draftIndexResponseError;
+export type postDraftsResponse = postDraftsResponseSuccess | postDraftsResponseError;
 
-export const getDraftIndexUrl = () => {
-  return `/api/drafts`;
+export const getPostDraftsUrl = () => {
+  return `/api/posts/drafts`;
 };
 
 /**
  * One per community
  * @summary List my unfinished posts
  */
-export const draftIndex = async (
+export const postDrafts = async (
   options?: Parameters<typeof customFetch>[1],
-): Promise<draftIndexResponse> => {
-  return customFetch<draftIndexResponse>(getDraftIndexUrl(), {
+): Promise<postDraftsResponse> => {
+  return customFetch<postDraftsResponse>(getPostDraftsUrl(), {
     ...options,
     method: 'GET',
+  });
+};
+
+export type postListScheduledResponse200 = {
+  data: ScheduledPost[];
+  status: 200;
+};
+
+export type postListScheduledResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postListScheduledResponseSuccess = postListScheduledResponse200 & {
+  headers: Headers;
+};
+export type postListScheduledResponseError = postListScheduledResponse401 & {
+  headers: Headers;
+};
+
+export type postListScheduledResponse =
+  postListScheduledResponseSuccess | postListScheduledResponseError;
+
+export const getPostListScheduledUrl = () => {
+  return `/api/posts/scheduled`;
+};
+
+/**
+ * Soonest first
+ * @summary List my scheduled posts
+ */
+export const postListScheduled = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postListScheduledResponse> => {
+  return customFetch<postListScheduledResponse>(getPostListScheduledUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export type postUnscheduleResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type postUnscheduleResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postUnscheduleResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postUnscheduleResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postUnscheduleResponseSuccess = postUnscheduleResponse204 & {
+  headers: Headers;
+};
+export type postUnscheduleResponseError = (
+  postUnscheduleResponse401 | postUnscheduleResponse404 | postUnscheduleResponse422
+) & {
+  headers: Headers;
+};
+
+export type postUnscheduleResponse = postUnscheduleResponseSuccess | postUnscheduleResponseError;
+
+export const getPostUnscheduleUrl = (id: string) => {
+  return `/api/posts/scheduled/${id}`;
+};
+
+/**
+ * @summary Stop a scheduled post
+ */
+export const postUnschedule = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postUnscheduleResponse> => {
+  return customFetch<postUnscheduleResponse>(getPostUnscheduleUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export type postRescheduleResponse200 = {
+  data: ScheduledPost;
+  status: 200;
+};
+
+export type postRescheduleResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type postRescheduleResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postRescheduleResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postRescheduleResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postRescheduleResponseSuccess = postRescheduleResponse200 & {
+  headers: Headers;
+};
+export type postRescheduleResponseError = (
+  | postRescheduleResponse400
+  | postRescheduleResponse401
+  | postRescheduleResponse404
+  | postRescheduleResponse422
+) & {
+  headers: Headers;
+};
+
+export type postRescheduleResponse = postRescheduleResponseSuccess | postRescheduleResponseError;
+
+export const getPostRescheduleUrl = (id: string) => {
+  return `/api/posts/scheduled/${id}`;
+};
+
+/**
+ * A post that couldn't go up is tried again at the new time
+ * @summary Move a scheduled post to another time
+ */
+export const postReschedule = async (
+  id: string,
+  rescheduleBody: RescheduleBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postRescheduleResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<postRescheduleResponse>(getPostRescheduleUrl(id), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rescheduleBody),
+  });
+};
+
+export type postPublishScheduledResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type postPublishScheduledResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type postPublishScheduledResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postPublishScheduledResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type postPublishScheduledResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postPublishScheduledResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postPublishScheduledResponseSuccess = postPublishScheduledResponse204 & {
+  headers: Headers;
+};
+export type postPublishScheduledResponseError = (
+  | postPublishScheduledResponse400
+  | postPublishScheduledResponse401
+  | postPublishScheduledResponse403
+  | postPublishScheduledResponse404
+  | postPublishScheduledResponse422
+) & {
+  headers: Headers;
+};
+
+export type postPublishScheduledResponse =
+  postPublishScheduledResponseSuccess | postPublishScheduledResponseError;
+
+export const getPostPublishScheduledUrl = (id: string) => {
+  return `/api/posts/scheduled/${id}/publish`;
+};
+
+/**
+ * It arrives in the community feed like any other post
+ * @summary Publish a scheduled post now
+ */
+export const postPublishScheduled = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postPublishScheduledResponse> => {
+  return customFetch<postPublishScheduledResponse>(getPostPublishScheduledUrl(id), {
+    ...options,
+    method: 'POST',
   });
 };
 

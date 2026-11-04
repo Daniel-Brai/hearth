@@ -165,7 +165,7 @@ describe('load.people', () => {
   });
 
   it('fails when the server refuses', async () => {
-    routes['GET /api/people'] = { status: 401, body: { message: 'Unauthorized' } };
+    routes['GET /api/users'] = { status: 401, body: { message: 'Unauthorized' } };
 
     expect(await gateway().gateway.load.people()).toEqual({ ok: false, error: 'Unauthorized' });
   });
@@ -179,7 +179,7 @@ describe('load.people', () => {
     routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
     routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
 
-    routes['GET /api/people'] = {
+    routes['GET /api/users'] = {
       status: 200,
       body: [
         person('bola', { online: true }),

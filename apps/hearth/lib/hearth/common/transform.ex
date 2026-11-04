@@ -35,4 +35,12 @@ defmodule Hearth.Common.Transform do
         [elem | acc]
     end)
   end
+
+  @spec parse_datetime(String.t()) :: {:ok, DateTime.t()} | {:error, :invalid_time}
+  def parse_datetime(value) when is_binary(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, at, _offset} -> {:ok, at}
+      {:error, _reason} -> {:error, :invalid_time}
+    end
+  end
 end

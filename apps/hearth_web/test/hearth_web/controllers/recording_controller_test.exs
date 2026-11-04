@@ -17,7 +17,7 @@ defmodule HearthWeb.RecordingControllerTest do
     {:ok, binding()}
   end
 
-  describe "room_index" do
+  describe "list_room" do
     test "fails for someone outside the community", %{
       conn: conn,
       outsider: outsider,
@@ -54,7 +54,7 @@ defmodule HearthWeb.RecordingControllerTest do
     end
   end
 
-  describe "event_index" do
+  describe "list_event" do
     test "fails for a missing event", %{conn: conn, member: member} do
       assert %{"code" => "not_found"} =
                conn
@@ -74,7 +74,7 @@ defmodule HearthWeb.RecordingControllerTest do
     end
   end
 
-  describe "post_index" do
+  describe "list_post" do
     test "fails for a missing post", %{conn: conn, member: member} do
       assert %{"code" => "not_found"} =
                conn

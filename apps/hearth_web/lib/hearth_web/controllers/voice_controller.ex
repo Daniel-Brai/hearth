@@ -52,7 +52,7 @@ defmodule HearthWeb.VoiceController do
     end
   end
 
-  operation :live_index,
+  operation :index,
     summary: "List live sessions in my communities",
     description: "So the sidebar can show which voice rooms are on air without opening them",
     security: [%{"bearer" => []}],
@@ -61,12 +61,12 @@ defmodule HearthWeb.VoiceController do
       unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"}
     ]
 
-  def live_index(%Conn{assigns: %{auth: %{}}} = conn, _params) do
+  def index(%Conn{assigns: %{auth: %{}}} = conn, _params) do
     %Conn{assigns: %{auth: auth}} = conn
 
     sessions = Voice.live_for(auth)
 
-    render(conn, :live_index,
+    render(conn, :index,
       sessions: sessions,
       recording: Map.new(sessions, &{&1.id, Voice.recording?(&1)}),
       people: Map.new(sessions, &{&1.id, Voice.people_in(&1)})

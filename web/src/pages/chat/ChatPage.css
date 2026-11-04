@@ -50,3 +50,4 @@
 .members-popup__name > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .members-popup__name small { font-size: var(--text-x-small); }
 .members-popup__message { flex: none; } }
+

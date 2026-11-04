@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useGateway } from '@/app/gateway-context';
+import { sendAtLabel } from '@/domain/schedule';
 import type { Attachment } from '@/domain/types';
 import { routes } from '@/runtime/routes';
 import { sfx } from '@/runtime/sounds';
@@ -22,17 +23,19 @@ export function usePublish({
   const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(false);
 
+  const titled = () => {
+    if (fields.title.trim()) return true;
+
+    setShake(true);
+    window.setTimeout(() => setShake(false), 450);
+    document.getElementById('compose-title')?.focus();
+    flash('Give your post a title first');
+
+    return false;
+  };
+
   const publish = async () => {
-    if (busy) return;
-
-    if (!fields.title.trim()) {
-      setShake(true);
-      window.setTimeout(() => setShake(false), 450);
-      document.getElementById('compose-title')?.focus();
-      flash('Give your post a title first');
-
-      return;
-    }
+    if (busy || !titled()) return;
 
     setBusy(true);
 
@@ -62,5 +65,39 @@ export function usePublish({
     void navigate(routes.post(r.value.post.c, r.value.post.id, r.value.post.title));
   };
 
-  return { busy, shake, publish };
+  const schedule = async (at: Date): Promise<boolean> => {
+    if (busy || !titled()) return false;
+
+    setBusy(true);
+
+    let r;
+
+    try {
+      r = await gateway.posts.schedule({
+        c: fields.cid,
+        kind: fields.kind,
+        title: fields.title,
+        body: fields.body.trim(),
+        files,
+        sendAt: at.toISOString(),
+      });
+    } finally {
+      setBusy(false);
+    }
+
+    if (!r.ok) {
+      sfx('error');
+      flash(r.error);
+      return false;
+    }
+
+    onPublished();
+
+    flash('Scheduled for ' + sendAtLabel(at, new Date()));
+    void navigate(routes.community(fields.cid));
+
+    return true;
+  };
+
+  return { busy, shake, publish, schedule };
 }

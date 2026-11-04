@@ -67,7 +67,10 @@ const item = {
 
 describe('moderation.report', () => {
   it('says plainly when reports are off there', async () => {
-    routes['POST /api/reports'] = { status: 400, body: { code: 'reports_off', message: 'Bad' } };
+    routes['POST /api/moderation/reports'] = {
+      status: 400,
+      body: { code: 'reports_off', message: 'Bad' },
+    };
 
     expect(await gateway().gateway.moderation.report(report)).toEqual({
       ok: false,
@@ -76,7 +79,7 @@ describe('moderation.report', () => {
   });
 
   it('says plainly when the same person reports it again', async () => {
-    routes['POST /api/reports'] = {
+    routes['POST /api/moderation/reports'] = {
       status: 400,
       body: { code: 'already_reported', message: 'Bad' },
     };
@@ -88,7 +91,7 @@ describe('moderation.report', () => {
   });
 
   it('sends the reason and the note', async () => {
-    routes['POST /api/reports'] = { status: 201, body: { queued: true } };
+    routes['POST /api/moderation/reports'] = { status: 201, body: { queued: true } };
 
     const r = await gateway().gateway.moderation.report({ ...report, note: ' Spam link ' });
 

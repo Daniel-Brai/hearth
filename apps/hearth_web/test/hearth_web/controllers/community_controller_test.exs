@@ -431,4 +431,120 @@ defmodule HearthWeb.CommunityControllerTest do
       assert response["owner_id"] == member.id
     end
   end
+
+  describe "save_kinds" do
+    setup do
+      owner = TestUtils.register_random_user!()
+      community = TestUtils.create_random_community!(owner, template: "oss")
+      {:ok, _kinds} = Forum.create_default_kinds(community.id, community.template)
+
+      {:ok, binding()}
+    end
+
+    test "returns 401 without signing in", %{conn: conn, community: community} do
+      body = %{kinds: TestUtils.kinds_input(community)}
+
+      assert conn |> put(~p"/api/communities/#{community.id}/kinds", body) |> valid_response(401)
+    end
+
+    test "returns 404 for an outsider to a private community", %{
+      conn: conn,
+      owner: owner,
+      community: community
+    } do
+      private = TestUtils.create_random_community!(owner, visibility: :private)
+      body = %{kinds: TestUtils.kinds_input(community)}
+
+      assert conn
+             |> auth_conn(TestUtils.register_random_user!())
+             |> put(~p"/api/communities/#{private.id}/kinds", body)
+             |> valid_response(404)
+    end
+
+    test "returns 403 for a member", %{conn: conn, community: community} do
+      member = TestUtils.join_random_member!(community)
+      body = %{kinds: TestUtils.kinds_input(community)}
+
+      assert %{"code" => "forbidden"} =
+               conn
+               |> auth_conn(member)
+               |> put(~p"/api/communities/#{community.id}/kinds", body)
+               |> valid_response(403)
+    end
+
+    test "returns 400 without discussion", %{conn: conn, owner: owner, community: community} do
+      body = %{kinds: TestUtils.kinds_input(community, without: ["discussion"])}
+
+      assert %{"code" => "keeps_discussion"} =
+               conn
+               |> auth_conn(owner)
+               |> put(~p"/api/communities/#{community.id}/kinds", body)
+               |> valid_response(400)
+    end
+
+    test "saves the kinds", %{conn: conn, owner: owner, community: community} do
+      added = %{label: "Trip report", icon: "map", hue: "green"}
+      body = %{kinds: [added | TestUtils.kinds_input(community)]}
+
+      response =
+        conn
+        |> auth_conn(owner)
+        |> put(~p"/api/communities/#{community.id}/kinds", body)
+        |> valid_response(200)
+
+      assert "trip-report" in TestUtils.pluck(response, "key")
+    end
+  end
+
+  describe "members" do
+    setup do
+      owner = TestUtils.register_random_user!(username: "owl_owner")
+      community = TestUtils.create_random_community!(owner)
+
+      {:ok, binding()}
+    end
+
+    test "returns 404 if private", %{conn: conn, owner: owner} do
+      private = TestUtils.create_random_community!(owner, visibility: :private)
+
+      assert conn |> get(~p"/api/communities/#{private.id}/members?q=owl") |> valid_response(404)
+    end
+
+    test "returns 404 if invite only", %{
+      conn: conn,
+      owner: owner
+    } do
+      community = TestUtils.create_random_community!(owner, visibility: :invite_only)
+
+      assert conn
+             |> auth_conn(TestUtils.register_random_user!())
+             |> get(~p"/api/communities/#{community.id}/members?q=owl")
+             |> valid_response(404)
+    end
+
+    test "finds members with roles", %{conn: conn, owner: owner, community: community} do
+      member = TestUtils.register_random_user!(username: "owl_member")
+      {:ok, _membership} = Communities.join(member, community)
+      _outsider = TestUtils.register_random_user!(username: "owl_outsider")
+
+      assert response =
+               conn
+               |> get(~p"/api/communities/#{community.id}/members?q=owl")
+               |> valid_response(200)
+
+      assert response |> TestUtils.pluck("user") |> TestUtils.pluck("id") == [member.id, owner.id]
+      assert [%{"role_keys" => ["member"]} | _rest] = response
+    end
+  end
+
+  describe "templates" do
+    test "lists each template with what it sets up", %{conn: conn} do
+      templates = conn |> get(~p"/api/community-templates") |> valid_response(200)
+
+      [club | _rest] = templates
+
+      assert TestUtils.pluck(templates, "id") == ~w[club local creator class support oss blank]
+      assert "question" in club["kinds"]
+    end
+  end
 end

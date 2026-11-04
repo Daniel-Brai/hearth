@@ -11,7 +11,7 @@ import type {
   MuteBody,
   NoContentResponse,
   NotFoundResponse,
-  RecordingRoomIndexParams,
+  RecordingListRoomParams,
   RenameRecordingBody,
   StartVoiceSessionBody,
   Transcript,
@@ -27,58 +27,58 @@ import type {
 
 import { customFetch } from '../../../api/custom-fetch';
 
-export type recordingEventIndexResponse200 = {
+export type recordingListEventResponse200 = {
   data: VoiceRecordingList;
   status: 200;
 };
 
-export type recordingEventIndexResponse401 = {
+export type recordingListEventResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type recordingEventIndexResponse403 = {
+export type recordingListEventResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type recordingEventIndexResponse404 = {
+export type recordingListEventResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type recordingEventIndexResponse422 = {
+export type recordingListEventResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type recordingEventIndexResponseSuccess = recordingEventIndexResponse200 & {
+export type recordingListEventResponseSuccess = recordingListEventResponse200 & {
   headers: Headers;
 };
-export type recordingEventIndexResponseError = (
-  | recordingEventIndexResponse401
-  | recordingEventIndexResponse403
-  | recordingEventIndexResponse404
-  | recordingEventIndexResponse422
+export type recordingListEventResponseError = (
+  | recordingListEventResponse401
+  | recordingListEventResponse403
+  | recordingListEventResponse404
+  | recordingListEventResponse422
 ) & {
   headers: Headers;
 };
 
-export type recordingEventIndexResponse =
-  recordingEventIndexResponseSuccess | recordingEventIndexResponseError;
+export type recordingListEventResponse =
+  recordingListEventResponseSuccess | recordingListEventResponseError;
 
-export const getRecordingEventIndexUrl = (id: string) => {
+export const getRecordingListEventUrl = (id: string) => {
   return `/api/events/${id}/recordings`;
 };
 
 /**
  * @summary List an event's recordings
  */
-export const recordingEventIndex = async (
+export const recordingListEvent = async (
   id: string,
   options?: Parameters<typeof customFetch>[1],
-): Promise<recordingEventIndexResponse> => {
-  return customFetch<recordingEventIndexResponse>(getRecordingEventIndexUrl(id), {
+): Promise<recordingListEventResponse> => {
+  return customFetch<recordingListEventResponse>(getRecordingListEventUrl(id), {
     ...options,
     method: 'GET',
   });
@@ -152,58 +152,58 @@ export const voiceDiscuss = async (
   });
 };
 
-export type recordingPostIndexResponse200 = {
+export type recordingListPostResponse200 = {
   data: VoiceRecordingList;
   status: 200;
 };
 
-export type recordingPostIndexResponse401 = {
+export type recordingListPostResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type recordingPostIndexResponse403 = {
+export type recordingListPostResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type recordingPostIndexResponse404 = {
+export type recordingListPostResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type recordingPostIndexResponse422 = {
+export type recordingListPostResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type recordingPostIndexResponseSuccess = recordingPostIndexResponse200 & {
+export type recordingListPostResponseSuccess = recordingListPostResponse200 & {
   headers: Headers;
 };
-export type recordingPostIndexResponseError = (
-  | recordingPostIndexResponse401
-  | recordingPostIndexResponse403
-  | recordingPostIndexResponse404
-  | recordingPostIndexResponse422
+export type recordingListPostResponseError = (
+  | recordingListPostResponse401
+  | recordingListPostResponse403
+  | recordingListPostResponse404
+  | recordingListPostResponse422
 ) & {
   headers: Headers;
 };
 
-export type recordingPostIndexResponse =
-  recordingPostIndexResponseSuccess | recordingPostIndexResponseError;
+export type recordingListPostResponse =
+  recordingListPostResponseSuccess | recordingListPostResponseError;
 
-export const getRecordingPostIndexUrl = (id: string) => {
+export const getRecordingListPostUrl = (id: string) => {
   return `/api/posts/${id}/recordings`;
 };
 
 /**
  * @summary List a post's recordings
  */
-export const recordingPostIndex = async (
+export const recordingListPost = async (
   id: string,
   options?: Parameters<typeof customFetch>[1],
-): Promise<recordingPostIndexResponse> => {
-  return customFetch<recordingPostIndexResponse>(getRecordingPostIndexUrl(id), {
+): Promise<recordingListPostResponse> => {
+  return customFetch<recordingListPostResponse>(getRecordingListPostUrl(id), {
     ...options,
     method: 'GET',
   });
@@ -401,53 +401,53 @@ export const recordingUpdate = async (
   });
 };
 
-export type recordingRoomIndexResponse200 = {
+export type recordingListRoomResponse200 = {
   data: VoiceRecordingPage;
   status: 200;
 };
 
-export type recordingRoomIndexResponse400 = {
+export type recordingListRoomResponse400 = {
   data: BadRequestResponse;
   status: 400;
 };
 
-export type recordingRoomIndexResponse401 = {
+export type recordingListRoomResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type recordingRoomIndexResponse403 = {
+export type recordingListRoomResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type recordingRoomIndexResponse404 = {
+export type recordingListRoomResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type recordingRoomIndexResponse422 = {
+export type recordingListRoomResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type recordingRoomIndexResponseSuccess = recordingRoomIndexResponse200 & {
+export type recordingListRoomResponseSuccess = recordingListRoomResponse200 & {
   headers: Headers;
 };
-export type recordingRoomIndexResponseError = (
-  | recordingRoomIndexResponse400
-  | recordingRoomIndexResponse401
-  | recordingRoomIndexResponse403
-  | recordingRoomIndexResponse404
-  | recordingRoomIndexResponse422
+export type recordingListRoomResponseError = (
+  | recordingListRoomResponse400
+  | recordingListRoomResponse401
+  | recordingListRoomResponse403
+  | recordingListRoomResponse404
+  | recordingListRoomResponse422
 ) & {
   headers: Headers;
 };
 
-export type recordingRoomIndexResponse =
-  recordingRoomIndexResponseSuccess | recordingRoomIndexResponseError;
+export type recordingListRoomResponse =
+  recordingListRoomResponseSuccess | recordingListRoomResponseError;
 
-export const getRecordingRoomIndexUrl = (id: string, params?: RecordingRoomIndexParams) => {
+export const getRecordingListRoomUrl = (id: string, params?: RecordingListRoomParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -467,12 +467,12 @@ export const getRecordingRoomIndexUrl = (id: string, params?: RecordingRoomIndex
  * For members of the room's community, newest first, a page at a time
  * @summary List a room's recordings
  */
-export const recordingRoomIndex = async (
+export const recordingListRoom = async (
   id: string,
-  params?: RecordingRoomIndexParams,
+  params?: RecordingListRoomParams,
   options?: Parameters<typeof customFetch>[1],
-): Promise<recordingRoomIndexResponse> => {
-  return customFetch<recordingRoomIndexResponse>(getRecordingRoomIndexUrl(id, params), {
+): Promise<recordingListRoomResponse> => {
+  return customFetch<recordingListRoomResponse>(getRecordingListRoomUrl(id, params), {
     ...options,
     method: 'GET',
   });
@@ -697,37 +697,37 @@ export const transcriptUpdateSegment = async (
   });
 };
 
-export type voiceLiveIndexResponse200 = {
+export type voiceIndexResponse200 = {
   data: VoiceSession[];
   status: 200;
 };
 
-export type voiceLiveIndexResponse401 = {
+export type voiceIndexResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type voiceLiveIndexResponseSuccess = voiceLiveIndexResponse200 & {
+export type voiceIndexResponseSuccess = voiceIndexResponse200 & {
   headers: Headers;
 };
-export type voiceLiveIndexResponseError = voiceLiveIndexResponse401 & {
+export type voiceIndexResponseError = voiceIndexResponse401 & {
   headers: Headers;
 };
 
-export type voiceLiveIndexResponse = voiceLiveIndexResponseSuccess | voiceLiveIndexResponseError;
+export type voiceIndexResponse = voiceIndexResponseSuccess | voiceIndexResponseError;
 
-export const getVoiceLiveIndexUrl = () => {
-  return `/api/voice-sessions/live`;
+export const getVoiceIndexUrl = () => {
+  return `/api/voice-sessions`;
 };
 
 /**
  * So the sidebar can show which voice rooms are on air without opening them
  * @summary List live sessions in my communities
  */
-export const voiceLiveIndex = async (
+export const voiceIndex = async (
   options?: Parameters<typeof customFetch>[1],
-): Promise<voiceLiveIndexResponse> => {
-  return customFetch<voiceLiveIndexResponse>(getVoiceLiveIndexUrl(), {
+): Promise<voiceIndexResponse> => {
+  return customFetch<voiceIndexResponse>(getVoiceIndexUrl(), {
     ...options,
     method: 'GET',
   });

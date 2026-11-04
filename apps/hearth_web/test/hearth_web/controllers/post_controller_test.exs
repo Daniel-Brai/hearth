@@ -18,6 +18,8 @@ defmodule HearthWeb.PostControllerTest do
     {:ok, _membership} = Communities.join(member, community)
     post = TestUtils.create_random_post!(member, community, kind_id: kind.id)
 
+    send_at = 30 |> TestUtils.in_minutes() |> DateTime.to_iso8601()
+
     {:ok, binding()}
   end
 
@@ -522,6 +524,212 @@ defmodule HearthWeb.PostControllerTest do
 
       assert room_id == room.id
       assert promoted_by["id"] == owner.id
+    end
+  end
+
+  describe "list_scheduled" do
+    test "fails without signing in", %{conn: conn} do
+      assert conn |> get(~p"/api/posts/scheduled") |> valid_response(401)
+    end
+
+    test "lists only mine", %{conn: conn, owner: owner, community: community} do
+      %{id: id} = TestUtils.schedule_random_post!(owner, community)
+
+      assert [%{"id" => ^id}] =
+               conn |> auth_conn(owner) |> get(~p"/api/posts/scheduled") |> valid_response(200)
+    end
+  end
+
+  describe "schedule" do
+    test "fails outside the community", %{
+      conn: conn,
+      community: community,
+      kind: kind,
+      send_at: send_at
+    } do
+      body = %{kind_id: kind.id, title: Lorem.sentence(), send_at: send_at}
+
+      assert %{"code" => "forbidden"} =
+               conn
+               |> auth_conn(TestUtils.register_random_user!())
+               |> post(~p"/api/communities/#{community.id}/posts/scheduled", body)
+               |> valid_response(403)
+    end
+
+    test "returns 404 if the community is missing", %{
+      conn: conn,
+      owner: owner,
+      kind: kind,
+      send_at: send_at
+    } do
+      body = %{kind_id: kind.id, title: Lorem.sentence(), send_at: send_at}
+
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/communities/#{Common.new_id()}/posts/scheduled", body)
+             |> valid_response(404)
+    end
+
+    test "schedules the post", %{
+      conn: conn,
+      owner: owner,
+      community: community,
+      kind: kind,
+      send_at: send_at
+    } do
+      body = %{
+        kind_id: kind.id,
+        title: Lorem.sentence(),
+        body: Lorem.paragraph(),
+        send_at: send_at
+      }
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> post(~p"/api/communities/#{community.id}/posts/scheduled", body)
+               |> valid_response(201)
+
+      assert response["title"] == body.title
+      assert response["community_id"] == community.id
+    end
+  end
+
+  describe "reschedule" do
+    test "returns 404 for someone else's", %{
+      conn: conn,
+      owner: owner,
+      community: community,
+      send_at: send_at
+    } do
+      scheduled = TestUtils.schedule_random_post!(owner, community)
+
+      assert conn
+             |> auth_conn(TestUtils.register_random_user!())
+             |> patch(~p"/api/posts/scheduled/#{scheduled.id}", %{send_at: send_at})
+             |> valid_response(404)
+    end
+
+    test "moves it", %{conn: conn, owner: owner, community: community} do
+      scheduled = TestUtils.schedule_random_post!(owner, community)
+      send_at = 90 |> TestUtils.in_minutes() |> DateTime.to_iso8601()
+
+      assert %{"send_at" => moved} =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/posts/scheduled/#{scheduled.id}", %{send_at: send_at})
+               |> valid_response(200)
+
+      assert moved == send_at
+    end
+  end
+
+  describe "publish_scheduled" do
+    test "publishes it", %{conn: conn, owner: owner, community: community} do
+      scheduled = TestUtils.schedule_random_post!(owner, community)
+
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/posts/scheduled/#{scheduled.id}/publish")
+             |> response(204)
+
+      assert [] = Forum.list_scheduled_posts(owner)
+    end
+  end
+
+  describe "unschedule" do
+    test "stops it", %{conn: conn, owner: owner, community: community} do
+      scheduled = TestUtils.schedule_random_post!(owner, community)
+
+      assert conn
+             |> auth_conn(owner)
+             |> delete(~p"/api/posts/scheduled/#{scheduled.id}")
+             |> response(204)
+
+      assert [] = Forum.list_scheduled_posts(owner)
+    end
+  end
+
+  describe "drafts" do
+    setup do
+      owner = TestUtils.register_random_user!()
+      community = TestUtils.create_random_forum!(owner)
+
+      {:ok, binding()}
+    end
+
+    test "fails without signing in", %{conn: conn} do
+      assert conn |> get(~p"/api/posts/drafts") |> valid_response(401)
+    end
+
+    test "lists my drafts with their kind", %{conn: conn, owner: owner, community: community} do
+      [kind | _kinds] = Forum.list_kinds(community.id)
+      params = %{title: Lorem.sentence(), kind_id: kind.id}
+      {:ok, _draft} = Forum.save_draft(owner, community, params)
+
+      assert [draft] =
+               conn |> auth_conn(owner) |> get(~p"/api/posts/drafts") |> valid_response(200)
+
+      assert draft["kind"] == kind.label
+    end
+  end
+
+  describe "save_draft" do
+    setup do
+      owner = TestUtils.register_random_user!()
+      community = TestUtils.create_random_forum!(owner)
+
+      {:ok, binding()}
+    end
+
+    test "fails outside the community", %{conn: conn, community: community} do
+      assert %{"code" => "forbidden"} =
+               conn
+               |> auth_conn(TestUtils.register_random_user!())
+               |> put(~p"/api/communities/#{community.id}/posts/draft", %{title: Lorem.sentence()})
+               |> valid_response(403)
+    end
+
+    test "returns 404 if missing", %{conn: conn, owner: owner} do
+      assert conn
+             |> auth_conn(owner)
+             |> put(~p"/api/communities/#{Common.new_id()}/posts/draft", %{
+               title: Lorem.sentence()
+             })
+             |> valid_response(404)
+    end
+
+    test "saves the draft", %{conn: conn, owner: owner, community: community} do
+      body = %{title: Lorem.sentence(), body: Lorem.paragraph()}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> put(~p"/api/communities/#{community.id}/posts/draft", body)
+               |> valid_response(200)
+
+      assert response["title"] == body.title
+      assert response["body"] == body.body
+    end
+  end
+
+  describe "discard_draft" do
+    setup do
+      owner = TestUtils.register_random_user!()
+      community = TestUtils.create_random_forum!(owner)
+
+      {:ok, binding()}
+    end
+
+    test "throws the draft away", %{conn: conn, owner: owner, community: community} do
+      {:ok, _draft} = Forum.save_draft(owner, community, %{title: Lorem.sentence()})
+
+      assert conn
+             |> auth_conn(owner)
+             |> delete(~p"/api/communities/#{community.id}/posts/draft")
+             |> response(204)
+
+      assert [] = Forum.list_drafts(owner)
     end
   end
 end

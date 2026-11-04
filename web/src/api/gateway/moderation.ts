@@ -16,7 +16,7 @@ import {
   moderationRemoveContent,
   moderationRestoreContent,
   moderationUndo,
-  reportCreate,
+  moderationReport,
 } from '@/generated/api/moderation/moderation';
 import type {
   Ban as ApiBan,
@@ -346,7 +346,7 @@ export function createModerationGateway(
 
     report: async (spec) => {
       const answer = await call(() =>
-        reportCreate({
+        moderationReport({
           subject_type: SUBJECTS[spec.kind],
           subject_id: spec.id,
           reason: spec.reason,

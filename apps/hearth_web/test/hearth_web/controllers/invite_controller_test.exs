@@ -147,12 +147,12 @@ defmodule HearthWeb.InviteControllerTest do
     end
   end
 
-  describe "email_create" do
+  describe "send_invitation" do
     test "fails due to validation", %{conn: conn, owner: owner, community: community} do
       assert %{"errors" => errors} =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/communities/#{community.id}/invite-emails", %{emails: []})
+               |> post(~p"/api/communities/#{community.id}/invitations", %{emails: []})
                |> valid_response(422)
 
       assert [_message] = errors["emails"]
@@ -165,7 +165,7 @@ defmodule HearthWeb.InviteControllerTest do
       assert [sent] =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/communities/#{community.id}/invite-emails", body)
+               |> post(~p"/api/communities/#{community.id}/invitations", body)
                |> valid_response(201)
 
       assert sent["email"] == email
@@ -173,12 +173,12 @@ defmodule HearthWeb.InviteControllerTest do
     end
   end
 
-  describe "email_delete" do
+  describe "revoke_invitation" do
     test "returns 404 if missing", %{conn: conn, owner: owner} do
       assert %{"message" => "Not Found"} =
                conn
                |> auth_conn(owner)
-               |> delete(~p"/api/invite-emails/#{Common.new_id()}")
+               |> delete(~p"/api/invitations/#{Common.new_id()}")
                |> valid_response(404)
     end
 
@@ -189,7 +189,7 @@ defmodule HearthWeb.InviteControllerTest do
       assert %{"status" => "revoked"} =
                conn
                |> auth_conn(owner)
-               |> delete(~p"/api/invite-emails/#{sent.id}")
+               |> delete(~p"/api/invitations/#{sent.id}")
                |> valid_response(200)
     end
   end
@@ -218,7 +218,7 @@ defmodule HearthWeb.InviteControllerTest do
     end
   end
 
-  describe "email_decline" do
+  describe "decline_invitation" do
     test "returns 404 for someone else's invite", %{
       conn: conn,
       owner: owner,
@@ -229,7 +229,7 @@ defmodule HearthWeb.InviteControllerTest do
 
       assert conn
              |> auth_conn(TestUtils.register_random_user!())
-             |> post(~p"/api/invite-emails/#{sent.id}/decline")
+             |> post(~p"/api/invitations/#{sent.id}/decline")
              |> valid_response(404)
     end
 
@@ -241,10 +241,44 @@ defmodule HearthWeb.InviteControllerTest do
 
       assert conn
              |> auth_conn(user)
-             |> post(~p"/api/invite-emails/#{sent.id}/decline")
+             |> post(~p"/api/invitations/#{sent.id}/decline")
              |> response(204)
 
       assert [] = conn |> auth_conn(user) |> get(~p"/api/auth/me/invites") |> valid_response(200)
+    end
+  end
+
+  describe "email_check" do
+    test "fails without signing in", %{conn: conn} do
+      assert conn
+             |> post(~p"/api/invites/email-check", %{emails: ["a@example.org"]})
+             |> valid_response(401)
+    end
+
+    test "fails due to validation", %{conn: conn} do
+      assert %{"errors" => errors} =
+               conn
+               |> auth_conn(TestUtils.register_random_user!())
+               |> post(~p"/api/invites/email-check", %{emails: []})
+               |> valid_response(422)
+
+      assert "The emails field must be at least 1 items." in errors["emails"]
+    end
+
+    test "says which addresses can't receive email", %{conn: conn} do
+      body = %{emails: ["ada@example.org", "bo@typo.invalid", "nope"]}
+
+      assert response =
+               conn
+               |> auth_conn(TestUtils.register_random_user!())
+               |> post(~p"/api/invites/email-check", body)
+               |> valid_response(200)
+
+      assert response == [
+               %{"email" => "ada@example.org", "status" => "unknown"},
+               %{"email" => "bo@typo.invalid", "status" => "unreachable"},
+               %{"email" => "nope", "status" => "invalid"}
+             ]
     end
   end
 end

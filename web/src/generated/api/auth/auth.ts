@@ -21,7 +21,6 @@ import type {
   UnprocessableContentResponse,
   UpdateProfileBody,
   UpdateSettingsBody,
-  UsernameAvailability,
 } from '../../schemas';
 
 import { customFetch } from '../../../api/custom-fetch';
@@ -701,47 +700,5 @@ export const authRegister = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(registerBody),
-  });
-};
-
-export type usernameShowResponse200 = {
-  data: UsernameAvailability;
-  status: 200;
-};
-
-export type usernameShowResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type usernameShowResponse429 = {
-  data: TooManyRequestsResponse;
-  status: 429;
-};
-
-export type usernameShowResponseSuccess = usernameShowResponse200 & {
-  headers: Headers;
-};
-export type usernameShowResponseError = (usernameShowResponse422 | usernameShowResponse429) & {
-  headers: Headers;
-};
-
-export type usernameShowResponse = usernameShowResponseSuccess | usernameShowResponseError;
-
-export const getUsernameShowUrl = (username: string) => {
-  return `/api/usernames/${username}`;
-};
-
-/**
- * A username that breaks the rules is not available
- * @summary Check whether a username is free
- */
-export const usernameShow = async (
-  username: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<usernameShowResponse> => {
-  return customFetch<usernameShowResponse>(getUsernameShowUrl(username), {
-    ...options,
-    method: 'GET',
   });
 };

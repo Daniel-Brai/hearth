@@ -8,7 +8,7 @@ import {
   communityCreate,
   communityIndex,
   communityJoin,
-  communityKindUpdate,
+  communitySaveKinds,
   communityLeave,
   communityPublic,
   communityRequestDecide,
@@ -105,7 +105,7 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
   ): Promise<Result> => {
     if (sameKinds(before, kinds)) return ok(undefined);
 
-    const answer = await call(() => communityKindUpdate(id, { kinds: kinds.map(toKindInput) }));
+    const answer = await call(() => communitySaveKinds(id, { kinds: kinds.map(toKindInput) }));
 
     if (answer.status === 200) {
       ctx.rememberKinds(cid, answer.data);

@@ -25,6 +25,25 @@ defmodule Hearth.Repo.Changeset do
     end)
   end
 
+  # Far enough ahead to be worth waiting for and no more than a month out
+  @spec validate_send_at(Changeset.t(), atom()) :: Changeset.t()
+  def validate_send_at(changeset, field \\ :send_at) do
+    validate_change(changeset, field, fn ^field, at ->
+      now = DateTime.utc_now()
+
+      cond do
+        DateTime.before?(at, DateTime.add(now, 1, :minute)) ->
+          [{field, "must be at least a minute from now"}]
+
+        DateTime.after?(at, DateTime.add(now, 30, :day)) ->
+          [{field, "must be within 30 days"}]
+
+        true ->
+          []
+      end
+    end)
+  end
+
   defp message(opts, default, message_opts) do
     case Keyword.get(opts, :message, default) do
       {message, extra} when is_binary(message) and is_list(extra) ->

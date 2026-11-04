@@ -1,20 +1,29 @@
 import type { HearthGateway, Result } from '@/data/gateway';
 import { fail, ok } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
-import type { Attachment, Post, Reply, VoiceRoom } from '@/domain/types';
+import { failureText, sendAtProblem } from '@/domain/schedule';
+import type { Attachment, Post, Reply, ScheduledPost, VoiceRoom } from '@/domain/types';
 import { communityShow } from '@/generated/api/communities/communities';
 import {
+  postAllSeen,
   postAnswer,
+  postCommunitySeen,
   postCreate,
   postDelete,
+  postDiscardDraft,
+  postDrafts,
   postHelpful,
-  postAllSeen,
-  postCommunitySeen,
   postLock,
   postPin,
+  postPublishScheduled,
   postReact,
+  postReschedule,
+  postSaveDraft,
+  postSchedule,
+  postListScheduled,
   postSeen,
   postShow,
+  postUnschedule,
   postUpdate,
   postWatch,
   replyCreate,
@@ -23,9 +32,12 @@ import {
   replyIndex,
   replyUpdate,
 } from '@/generated/api/forum/forum';
-import { recordingPostIndex, voiceDiscuss } from '@/generated/api/voice/voice';
-import { draftDelete, draftIndex, draftUpdate } from '@/generated/api/forum/forum';
-import type { Media, Post as ApiPost } from '@/generated/schemas';
+import { recordingListPost, voiceDiscuss } from '@/generated/api/voice/voice';
+import type {
+  Media,
+  Post as ApiPost,
+  ScheduledPost as ApiScheduledPost,
+} from '@/generated/schemas';
 import { sendFiles } from '../attachments';
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
@@ -141,7 +153,7 @@ export function createPostsGateway(ctx: GatewayContext) {
 
     if (!cid || !accessToken()) return;
 
-    const answer = await call(() => recordingPostIndex(postId));
+    const answer = await call(() => recordingListPost(postId));
 
     if (answer.status !== 200) return;
 
@@ -426,6 +438,64 @@ export function createPostsGateway(ctx: GatewayContext) {
       return answered(answer);
     },
     loadReplies: (postId, parent) => fetchReplies(postId, parent),
+
+    schedule: async (spec) => {
+      const communityId = ctx.communityIds.get(spec.c);
+      const kindId = ctx.kindIds.get(`${spec.c}/${spec.kind}`);
+      const problem = sendAtProblem(new Date(spec.sendAt), new Date());
+
+      if (!communityId || !kindId) return fail('That community is not loaded.');
+      if (problem) return fail(problem);
+
+      const sent = await sendFiles(spec.files ?? [], spec.body);
+
+      if (!sent.ok) return sent;
+
+      const answer = await call(() =>
+        postSchedule(communityId, {
+          kind_id: kindId,
+          title: spec.title,
+          body: sent.value.body,
+          attachment_ids: sent.value.ids,
+          send_at: spec.sendAt,
+        }),
+      );
+
+      if (answer.status !== 201) return failed(answer);
+
+      putScheduled(answer.data);
+
+      return ok(undefined);
+    },
+
+    reschedule: async (id, sendAt) => {
+      const answer = await call(() => postReschedule(id, { send_at: sendAt }));
+
+      if (answer.status !== 200) return failed(answer);
+
+      putScheduled(answer.data);
+
+      return ok(undefined);
+    },
+
+    // The post itself arrives in the feed like any other
+    publishNow: async (id) => {
+      const answer = await call(() => postPublishScheduled(id));
+
+      if (answer.status !== 204) {
+        void loadScheduled();
+        return failed(answer);
+      }
+
+      dropScheduled(id);
+
+      return ok(undefined);
+    },
+
+    unschedule: (id) => {
+      dropScheduled(id);
+      void call(() => postUnschedule(id));
+    },
 
     create: async (spec) => {
       const communityId = ctx.communityIds.get(spec.c);
@@ -741,7 +811,7 @@ export function createPostsGateway(ctx: GatewayContext) {
 
       return answered(
         await call(() =>
-          draftUpdate(communityId, { title: draft.title, body: draft.body, kind_id: kindId }),
+          postSaveDraft(communityId, { title: draft.title, body: draft.body, kind_id: kindId }),
         ),
       );
     },
@@ -755,13 +825,13 @@ export function createPostsGateway(ctx: GatewayContext) {
 
       if (!communityId) return ok(undefined);
 
-      return answered(await call(() => draftDelete(communityId)));
+      return answered(await call(() => postDiscardDraft(communityId)));
     },
   };
 
   // The compose screen reads drafts from the store when it opens so they load after sign in
   const loadDrafts = async () => {
-    const answer = await call(() => draftIndex());
+    const answer = await call(() => postDrafts());
 
     if (answer.status !== 200) return;
 
@@ -780,5 +850,48 @@ export function createPostsGateway(ctx: GatewayContext) {
     });
   };
 
-  return { load, posts, loadDrafts };
+  const toScheduled = (s: ApiScheduledPost): ScheduledPost | null => {
+    const c = ctx.communitySlugs.get(s.community_id);
+
+    if (!c) return null;
+
+    return {
+      id: s.id,
+      c,
+      kind: ctx.kindName(s.kind_id),
+      title: s.title,
+      body: s.body,
+      files: toAttachments(s.attachments),
+      sendAt: s.send_at,
+      failure: s.failure === null ? null : failureText(s.failure),
+    };
+  };
+
+  const putScheduled = (s: ApiScheduledPost) => {
+    const item = toScheduled(s);
+
+    if (!item) return;
+
+    ctx.store.set((state) => {
+      state.scheduledPosts = [...state.scheduledPosts.filter((x) => x.id !== item.id), item];
+    });
+  };
+
+  const dropScheduled = (id: string) =>
+    ctx.store.set((state) => {
+      state.scheduledPosts = state.scheduledPosts.filter((x) => x.id !== id);
+    });
+
+  // Read after the joined communities load, since each one is filed under its community
+  const loadScheduled = async () => {
+    const answer = await call(() => postListScheduled());
+
+    if (answer.status !== 200) return;
+
+    ctx.store.set((state) => {
+      state.scheduledPosts = answer.data.flatMap((s) => toScheduled(s) ?? []);
+    });
+  };
+
+  return { load, posts, loadDrafts, loadScheduled };
 }

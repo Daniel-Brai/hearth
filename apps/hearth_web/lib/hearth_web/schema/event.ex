@@ -35,7 +35,9 @@ defmodule HearthWeb.Schema.Event do
     Event.VoiceRecordingRenamed,
     Event.VoiceReaction,
     Event.VoiceCaption,
-    Event.TranscriptReady
+    Event.TranscriptReady,
+    Event.ScheduledMessageChanged,
+    Event.ScheduledPostChanged
   ]
 
   @spec all() :: [module()]

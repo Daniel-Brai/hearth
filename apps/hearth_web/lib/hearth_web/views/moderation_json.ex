@@ -86,4 +86,6 @@ defmodule HearthWeb.ModerationJSON do
       target: UserJSON.summary(people[action.target_id])
     })
   end
+
+  def report(%{}), do: %{queued: true}
 end

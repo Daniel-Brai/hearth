@@ -585,7 +585,7 @@ describe('drafts', () => {
     routes['POST /api/auth/sessions'] = { status: 200, body: session };
     routes['GET /api/communities'] = { status: 200, body: [community] };
 
-    routes['GET /api/drafts'] = {
+    routes['GET /api/posts/drafts'] = {
       status: 200,
       body: [
         {
@@ -615,7 +615,7 @@ describe('drafts', () => {
   it('keeps a draft at once and saves it with its kind', async () => {
     const { store, g } = await opened();
 
-    routes['PUT /api/communities/c1/draft'] = { status: 200, body: {} };
+    routes['PUT /api/communities/c1/posts/draft'] = { status: 200, body: {} };
 
     g.posts.saveDraft('gardeners', { title: 'Tomatoes', body: 'Too much rain', kind: 'Question' });
 
@@ -633,7 +633,7 @@ describe('drafts', () => {
   it('throws a draft away here and on the server', async () => {
     const { store, g } = await opened();
 
-    routes['DELETE /api/communities/c1/draft'] = { status: 204 };
+    routes['DELETE /api/communities/c1/posts/draft'] = { status: 204 };
 
     g.posts.saveDraft('gardeners', { title: 'Tomatoes', body: '', kind: 'Question' });
     g.posts.discardDraft('gardeners');

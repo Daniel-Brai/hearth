@@ -653,7 +653,8 @@ h2.separator { font: inherit; }
 .composer__attach.is-disabled { cursor: not-allowed; opacity: 0.45; }
 .composer__send { grid-area: send; }
 .composer__row:has(> .composer__before-send) { grid-template-areas: "attach field extra send"; grid-template-columns: auto minmax(0, 1fr) auto auto; }
-.composer__before-send { grid-area: extra; align-self: center; display: inline-flex; }
+.composer__before-send { align-items: center; display: inline-flex; grid-area: extra; min-block-size: 2.4rem; }
+.composer--block .composer__before-send { min-block-size: 2.1rem; }
 .composer__tools { grid-area: tools; display: none; align-items: center; gap: 0.1rem; }
 .composer__field { grid-area: field; display: grid; min-inline-size: 0; position: relative; }
 .composer__row .btn--circle { --btn-size: 2.4rem; --btn-font-size: 1rem; }

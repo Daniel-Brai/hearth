@@ -1207,6 +1207,8 @@ export const SEED = {
     },
   },
   typing: {},
+  scheduled: [],
+  scheduledPosts: [],
   chats: {
     'elixir/help': [
       {

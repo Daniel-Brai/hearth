@@ -186,7 +186,7 @@ defmodule HearthWeb.InviteController do
     end
   end
 
-  operation :email_create,
+  operation :send_invitation,
     summary: "Email invites",
     description: "Each address gets a single use code with the role given for it",
     security: [%{"bearer" => []}],
@@ -208,7 +208,7 @@ defmodule HearthWeb.InviteController do
     "emails.*.role_key" => ~V[required|string|min:1|max:40]
   }
 
-  def email_create(%Conn{assigns: %{auth: %{}}} = conn, params) do
+  def send_invitation(%Conn{assigns: %{auth: %{}}} = conn, params) do
     %Conn{assigns: %{auth: auth}} = conn
     %{"community_id" => community_id, "emails" => emails} = params
 
@@ -222,11 +222,11 @@ defmodule HearthWeb.InviteController do
 
     with {:ok, community} <- Communities.get_community(id: community_id, archived_at: nil),
          {:ok, sent} <- Communities.email_invites(auth, community, entries, note) do
-      conn |> put_status(:created) |> render(:email_create, sent: sent)
+      conn |> put_status(:created) |> render(:send_invitation, sent: sent)
     end
   end
 
-  operation :email_delete,
+  operation :revoke_invitation,
     summary: "Revoke an emailed invite",
     description: "Only that person's code stops working",
     security: [%{"bearer" => []}],
@@ -241,12 +241,12 @@ defmodule HearthWeb.InviteController do
 
   @validate %{"id" => ~V[required|uuid]}
 
-  def email_delete(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+  def revoke_invitation(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
     with {:ok, invite_email} <- Communities.get_invite_email(id),
          {:ok, invite_email} <- Communities.revoke_email_invite(auth, invite_email) do
-      render(conn, :email_delete, invite_email: invite_email)
+      render(conn, :revoke_invitation, invite_email: invite_email)
     end
   end
 
@@ -273,7 +273,7 @@ defmodule HearthWeb.InviteController do
     render(conn, :mine, invites: invites, inviters: inviters)
   end
 
-  operation :email_decline,
+  operation :decline_invitation,
     summary: "Turn down an emailed invite",
     description: "Its code stops working",
     security: [%{"bearer" => []}],
@@ -287,12 +287,44 @@ defmodule HearthWeb.InviteController do
 
   @validate %{"id" => ~V[required|uuid]}
 
-  def email_decline(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+  def decline_invitation(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
     with {:ok, invite_email} <- Communities.get_invite_email(id),
          {:ok, _invite_email} <- Communities.decline_email_invite(auth, invite_email) do
       send_resp(conn, :no_content, "")
     end
+  end
+
+  operation :email_check,
+    summary: "Check addresses can receive email",
+    description: "Never says who has an account",
+    security: [%{"bearer" => []}],
+    request_body: Schema.EmailCheckBody,
+    responses: [
+      ok: {%{type: :array, items: Schema.EmailCheck}, description: "OK"},
+      too_many_requests: %Reference{"$ref": "#/components/responses/too_many_requests"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  rate_limit :email_check, limit: 60, scale: :timer.minutes(10), by: :user
+
+  @validate %{
+    "emails" => ~V[required|list|min:1|max:50],
+    "emails.*" => ~V[required|string|min:1|max:254]
+  }
+
+  def email_check(%Conn{assigns: %{auth: %{}}} = conn, %{"emails" => emails}) do
+    checks =
+      emails
+      |> Enum.uniq()
+      |> Task.async_stream(&{&1, Common.email_status(&1)},
+        timeout: :infinity,
+        max_concurrency: 10
+      )
+      |> Enum.map(fn {:ok, {email, status}} -> %{email: email, status: status} end)
+
+    render(conn, :email_check, checks: checks)
   end
 end

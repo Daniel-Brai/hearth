@@ -2,7 +2,7 @@ defmodule HearthWeb.VoiceJSON do
   @session ~w[id room_id community_id host_id event_id post_id mode topic started_at ended_at]a
   @participant ~w[user_id role hand_raised_at self_muted server_muted]a
 
-  def live_index(%{sessions: sessions, recording: recording, people: people}) do
+  def index(%{sessions: sessions, recording: recording, people: people}) do
     Enum.map(sessions, fn session ->
       %{session: session, recording: recording[session.id]}
       |> session()

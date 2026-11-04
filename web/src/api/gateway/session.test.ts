@@ -157,7 +157,7 @@ describe('session', () => {
   });
 
   it('says whether a username is free', async () => {
-    routes['GET /api/usernames/ada'] = { status: 200, body: { available: false } };
+    routes['GET /api/users/available'] = { status: 200, body: { available: false } };
 
     expect(await gateway().gateway.session.usernameAvailable('ada')).toEqual({
       ok: true,

@@ -25,7 +25,7 @@ defmodule HearthWeb.RecordingController do
     unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
   ]
 
-  operation :room_index,
+  operation :list_room,
     summary: "List a room's recordings",
     description: "For members of the room's community, newest first, a page at a time",
     security: [%{"bearer" => []}],
@@ -46,14 +46,14 @@ defmodule HearthWeb.RecordingController do
     "before" => ~V[string]
   }
 
-  def room_index(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
+  def list_room(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
     with {:ok, room} <- Communities.view_room(auth, id: id),
          {:ok, page} <- Voice.list_room_recordings(auth, room, Paging.opts(conn)) do
       render(conn, :page, page: page)
     end
   end
 
-  operation :event_index,
+  operation :list_event,
     summary: "List an event's recordings",
     security: [%{"bearer" => []}],
     parameters: [id: @id],
@@ -61,13 +61,13 @@ defmodule HearthWeb.RecordingController do
 
   @validate %{"id" => ~V[required|uuid]}
 
-  def event_index(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
+  def list_event(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
     with {:ok, event} <- Events.get_event(id: id) do
       list(conn, auth, {:event_id, event.id, event.community_id})
     end
   end
 
-  operation :post_index,
+  operation :list_post,
     summary: "List a post's recordings",
     security: [%{"bearer" => []}],
     parameters: [id: @id],
@@ -75,7 +75,7 @@ defmodule HearthWeb.RecordingController do
 
   @validate %{"id" => ~V[required|uuid]}
 
-  def post_index(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
+  def list_post(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
     with {:ok, post} <- Forum.get_post(id: id),
          true <- Forum.visible?(auth, post) do
       list(conn, auth, {:post_id, post.id, post.community_id})

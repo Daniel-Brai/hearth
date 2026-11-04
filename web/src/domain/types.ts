@@ -197,6 +197,28 @@ export type LinkPreview = {
   image: string | null;
 };
 
+/** A message waiting to go out, seen only by the person who wrote it */
+export type ScheduledMessage = {
+  id: string;
+  key: string;
+  text: string;
+  files: Attachment[];
+  sendAt: string;
+  failure: string | null;
+};
+
+/** A post waiting to go up, seen only by the person who wrote it */
+export type ScheduledPost = {
+  id: string;
+  c: string;
+  kind: string;
+  title: string;
+  body: string;
+  files: Attachment[];
+  sendAt: string;
+  failure: string | null;
+};
+
 export type Message = {
   id: string;
   who: string;

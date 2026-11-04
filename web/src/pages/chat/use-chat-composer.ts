@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { displayName } from '@/domain/selectors';
-import type { Attachment, Message } from '@/domain/types';
+import { sendAtLabel } from '@/domain/schedule';
+import type { Attachment, Message, ScheduledMessage } from '@/domain/types';
 import { isTune, playTune, sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import type { ChatTarget } from './chat-select';
@@ -88,6 +89,13 @@ export function useChatComposer({
     stopEdit();
   };
 
+  const refuse = (message: string) => {
+    setError(message);
+    setShake(true);
+    window.setTimeout(() => setShake(false), 500);
+    sfx('error');
+  };
+
   const send = () => {
     if (editing) {
       saveEdit(editing);
@@ -97,11 +105,7 @@ export function useChatComposer({
     const r = gateway.chat.send(target.key, text, { files, parent: replying?.id ?? null });
 
     if (!r.ok) {
-      setError(r.error);
-      setShake(true);
-      window.setTimeout(() => setShake(false), 500);
-      sfx('error');
-
+      refuse(r.error);
       return;
     }
 
@@ -121,6 +125,48 @@ export function useChatComposer({
     }
 
     onSent();
+  };
+
+  const schedule = async (at: Date): Promise<boolean> => {
+    const r = await gateway.chat.schedule(target.key, text, at.toISOString(), { files });
+
+    if (!r.ok) {
+      refuse(r.error);
+      return false;
+    }
+
+    setText('');
+    setFiles([]);
+    setError(null);
+    gateway.chat.typing(target.key, false);
+    flash('Scheduled for ' + sendAtLabel(at, new Date()));
+
+    return true;
+  };
+
+  // Editing takes it off the schedule and back into the box, where it can be sent or scheduled again
+  const restore = (item: ScheduledMessage) => {
+    const take = () => {
+      if (editing) stopEdit();
+      setReplying(null);
+      setText(item.text);
+      setFiles(item.files);
+      setError(null);
+      gateway.chat.unschedule(item.id);
+      document.getElementById('composer')?.focus();
+    };
+
+    if (!text.trim() && !files.length) {
+      take();
+      return;
+    }
+
+    ask({
+      title: 'Replace what you are writing?',
+      body: 'The scheduled message goes into the box in place of what is there now.',
+      action: 'Replace',
+      onConfirm: take,
+    });
   };
 
   const editLast = () => {
@@ -148,6 +194,8 @@ export function useChatComposer({
     startEdit,
     stopEdit,
     send,
+    schedule,
+    restore,
     editLast,
     replyTo,
     stopReplying: () => setReplying(null),

@@ -11,9 +11,9 @@ import {
   authSignOut,
   authUndoEmailChange,
   authUpdateMe,
-  usernameShow,
 } from '@/generated/api/auth/auth';
-import { communityTemplateIndex } from '@/generated/api/communities/communities';
+import { communityTemplates } from '@/generated/api/communities/communities';
+import { userAvailable } from '@/generated/api/people/people';
 import { instanceShow } from '@/generated/api/instance/instance';
 import type { Me, Session } from '@/generated/schemas';
 import { apiBaseUrl, refreshSession } from '../custom-fetch';
@@ -34,6 +34,8 @@ export type SignInHooks = {
   /** Settles once everything the sidebar reads has loaded, whether or not each load worked */
   onSignIn: () => Promise<unknown>;
   onNotice: (kind: string) => void;
+  /** Another tab or the server changed something this person scheduled */
+  onScheduled: (what: 'messages' | 'posts') => void;
   onSignOut: () => void;
 };
 
@@ -91,6 +93,12 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
       const stopNotices = realtime.onPush(topic, 'NotificationCreated', ({ kind }) =>
         hooks.onNotice(kind),
       );
+      const stopMessages = realtime.onPush(topic, 'ScheduledMessageChanged', () =>
+        hooks.onScheduled('messages'),
+      );
+      const stopPosts = realtime.onPush(topic, 'ScheduledPostChanged', () =>
+        hooks.onScheduled('posts'),
+      );
       const stopPresence = realtime.onPush(topic, 'presence_changed', ({ online, offline }) =>
         ctx.store.set((state) => {
           for (const id of online) state.online[id] = true;
@@ -102,6 +110,8 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
         stopMedia();
         stopFailed();
         stopNotices();
+        stopMessages();
+        stopPosts();
         stopPresence();
       };
     });
@@ -130,7 +140,7 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
   };
 
   const loadTemplates = async () => {
-    const answer = await call(() => communityTemplateIndex());
+    const answer = await call(() => communityTemplates());
     if (answer.status === 200)
       ctx.store.set((state) => (state.templates = answer.data.map(toTemplate)));
   };
@@ -236,7 +246,7 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
     },
 
     usernameAvailable: async (username) => {
-      const answer = await call(() => usernameShow(username));
+      const answer = await call(() => userAvailable({ username }));
       if (answer.status !== 200) return failed(answer);
 
       return ok(answer.data.available);

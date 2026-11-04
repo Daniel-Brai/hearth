@@ -17,6 +17,8 @@ export function emptyState(): AppState {
     recordings: {},
     chats: {},
     typing: {},
+    scheduled: [],
+    scheduledPosts: [],
     directs: [],
     queue: [],
     queueCounts: {},

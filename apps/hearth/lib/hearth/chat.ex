@@ -1,7 +1,7 @@
 defmodule Hearth.Chat do
-  events = [MessageCreated, MessageRemoved]
+  events = [MessageCreated, MessageRemoved, ScheduledMessageChanged]
 
-  default = [Conversation, Message | events]
+  default = [Conversation, Message, ScheduledMessage | events]
 
   exports =
     case Mix.env() do
@@ -30,6 +30,8 @@ defmodule Hearth.Chat do
   alias Hearth.Buffer
   alias Hearth.Chat.Command.DeleteMessage
   alias Hearth.Chat.Command.EditMessage
+  alias Hearth.Chat.Command.RescheduleMessage
+  alias Hearth.Chat.Command.ScheduleMessage
   alias Hearth.Chat.Command.SendMessage
   alias Hearth.Chat.Command.StartConversation
   alias Hearth.Chat.Conversation
@@ -42,6 +44,8 @@ defmodule Hearth.Chat do
   alias Hearth.Chat.Reaction
   alias Hearth.Chat.ReadMarkers
   alias Hearth.Chat.RoomActivity
+  alias Hearth.Chat.ScheduledMessage
+  alias Hearth.Chat.ScheduledMessageChanged
   alias Hearth.Chat.SoundPlayed
   alias Hearth.Common
   alias Hearth.Common.T
@@ -92,6 +96,64 @@ defmodule Hearth.Chat do
       played(message)
 
       {:ok, message}
+    end
+  end
+
+  @spec schedule_message(User.t(), place(), map()) ::
+          {:ok, ScheduledMessage.t()}
+          | {:error, :forbidden | :not_found | :too_many | Changeset.t()}
+  def schedule_message(%User{} = user, place, %{} = params) do
+    with :ok <- may_write(user, place),
+         {:ok, scheduled} <- ScheduleMessage.execute(user, where_in(place), params) do
+      scheduled_changed(scheduled)
+      {:ok, scheduled}
+    end
+  end
+
+  @spec list_scheduled_messages(User.t()) :: [ScheduledMessage.t()]
+  def list_scheduled_messages(%User{id: id}), do: ScheduledMessage.list_for(id)
+
+  @spec get_scheduled_message(User.t(), T.id()) ::
+          {:ok, ScheduledMessage.t()} | {:error, :not_found}
+  def get_scheduled_message(%User{id: user_id}, id) when is_binary(id) do
+    case ScheduledMessage.get(id: id, author_id: user_id) do
+      nil -> {:error, :not_found}
+      %ScheduledMessage{} = scheduled -> {:ok, scheduled}
+    end
+  end
+
+  @spec reschedule_message(ScheduledMessage.t(), DateTime.t()) ::
+          {:ok, ScheduledMessage.t()} | {:error, Changeset.t()}
+  def reschedule_message(%ScheduledMessage{} = scheduled, %DateTime{} = send_at) do
+    with {:ok, scheduled} <- RescheduleMessage.execute(scheduled, send_at) do
+      scheduled_changed(scheduled)
+      {:ok, scheduled}
+    end
+  end
+
+  @spec cancel_scheduled_message(ScheduledMessage.t()) :: :ok
+  def cancel_scheduled_message(%ScheduledMessage{} = scheduled) do
+    {:ok, _deleted} = ScheduledMessage.delete(scheduled)
+    scheduled_changed(scheduled)
+  end
+
+  # Sent as its author and checked again, since they may have lost access while it waited
+  @spec send_scheduled(ScheduledMessage.t()) ::
+          {:ok, Message.t()} | {:error, atom() | Changeset.t()}
+  def send_scheduled(%ScheduledMessage{} = scheduled) do
+    params = %{body: scheduled.body, attachment_ids: scheduled.attachment_ids}
+
+    with {:ok, author} <- Accounts.get_user(id: scheduled.author_id),
+         {:ok, place} <- place_of(scheduled),
+         {:ok, message} <- send_message(author, place, params) do
+      {:ok, _deleted} = ScheduledMessage.delete(scheduled)
+      scheduled_changed(scheduled)
+      {:ok, message}
+    else
+      {:error, reason} = error ->
+        {:ok, _failed} = ScheduledMessage.fail(scheduled, reason)
+        scheduled_changed(scheduled)
+        error
     end
   end
 
@@ -446,14 +508,18 @@ defmodule Hearth.Chat do
   defp where_in(%Room{id: id}), do: [room_id: id]
   defp where_in(%Conversation{id: id}), do: [conversation_id: id]
 
-  defp place_of(%Message{room_id: nil, conversation_id: id}) do
+  defp place_of(%{room_id: nil, conversation_id: id}) do
     case Conversation.get(id: id) do
       nil -> {:error, :not_found}
       %Conversation{} = conversation -> {:ok, conversation}
     end
   end
 
-  defp place_of(%Message{room_id: id}), do: Communities.get_room(id: id)
+  defp place_of(%{room_id: id}), do: Communities.get_room(id: id)
+
+  defp scheduled_changed(%ScheduledMessage{} = scheduled) do
+    broadcast(%ScheduledMessageChanged{user_id: scheduled.author_id, scheduled_id: scheduled.id})
+  end
 
   defp fetch_parent(_place, nil), do: {:ok, nil}
 

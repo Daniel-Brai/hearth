@@ -9,10 +9,12 @@ defmodule HearthWeb.UserController do
   alias Hearth.Accounts
   alias Hearth.Communities
   alias Hearth.Forum
+  alias Hearth.IAM
   alias HearthWeb.Attachments
   alias HearthWeb.Authors
   alias HearthWeb.Avatars
   alias HearthWeb.Paging
+  alias HearthWeb.Presence
   alias HearthWeb.PublicProfile
   alias HearthWeb.Reports
   alias Plug.Conn
@@ -20,37 +22,60 @@ defmodule HearthWeb.UserController do
   tags ["People"]
 
   operation :index,
-    summary: "Look up people by username",
-    description: "Names with no account are left out",
+    summary: "List people",
+    description:
+      "By usernames, which works signed out, or else everyone who shares a community with me, online first",
     parameters: [
       usernames: [
         in: :query,
-        required: true,
         schema: %{type: :string, maxLength: 1_100},
-        description: "Up to 50, separated by commas."
-      ]
+        description: "Up to 50, separated by commas. Names with no account are left out"
+      ],
+      q: [in: :query, schema: %{type: :string, maxLength: 40}],
+      community: [in: :query, schema: %{type: :string, format: :uuid}],
+      limit: [in: :query, schema: %{type: :integer, minimum: 1, maximum: 100, default: 50}]
     ],
     responses: [
-      ok: {%{type: :array, items: Schema.UserSummary}, description: "OK"},
+      ok: {%{type: :array, items: Schema.Person}, description: "OK"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
       unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
     ]
 
-  @validate %{"usernames" => ~V[required|string|max:1100]}
+  @validate %{
+    "usernames" => ~V[string|max:1100],
+    "q" => ~V[string|max:40],
+    "community" => ~V[uuid],
+    "limit" => ~V[between:1,100]
+  }
 
   def index(%Conn{assigns: %{auth: auth}} = conn, %{"usernames" => usernames}) do
-    usernames =
+    people =
       usernames
       |> String.split(",", trim: true)
       |> Enum.take(50)
-
-    users =
-      usernames
       |> Accounts.list_users_by_username()
       |> Avatars.put_urls()
       |> Enum.map(&PublicProfile.apply(&1, auth))
 
-    render(conn, :index, users: users)
+    render(conn, :index, people: people, shared: shared_with(auth, nil), online: online())
   end
+
+  def index(%Conn{assigns: %{auth: %{}}} = conn, params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    shared = shared_with(auth, params["community"])
+    online = Presence.online_ids()
+
+    people =
+      (params["q"] || "")
+      |> Accounts.list_people(Map.keys(shared), online, query_param(conn, :limit) || 50)
+      |> Avatars.put_urls()
+      |> Enum.map(&PublicProfile.apply(&1, auth))
+
+    render(conn, :index, people: people, shared: shared, online: MapSet.new(online))
+  end
+
+  def index(%Conn{}, _params), do: {:error, :unauthorized}
 
   @username [in: :path, schema: %{type: :string, maxLength: 40}]
 
@@ -139,4 +164,33 @@ defmodule HearthWeb.UserController do
       )
     end
   end
+
+  operation :available,
+    summary: "Check whether a username is free",
+    description: "A username that breaks the rules is not available",
+    parameters: [
+      username: [
+        in: :query,
+        required: true,
+        schema: %{type: :string, minLength: 1, maxLength: 40}
+      ]
+    ],
+    responses: [
+      ok: {Schema.UsernameAvailability, description: "OK"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"},
+      too_many_requests: %Reference{"$ref": "#/components/responses/too_many_requests"}
+    ]
+
+  rate_limit :available, limit: 60, scale: :timer.minutes(1)
+
+  @validate %{"username" => ~V[required|string|min:1|max:40]}
+
+  def available(conn, %{"username" => username}) do
+    render(conn, :available, available: Accounts.username_available?(username))
+  end
+
+  defp shared_with(nil, _community_id), do: %{}
+  defp shared_with(auth, community_id), do: IAM.co_members(auth, community_id)
+
+  defp online, do: MapSet.new(Presence.online_ids())
 end

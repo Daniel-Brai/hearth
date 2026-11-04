@@ -78,6 +78,144 @@ export const notificationIndex = async (
   });
 };
 
+export type notificationUnsubscribePushResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type notificationUnsubscribePushResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type notificationUnsubscribePushResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type notificationUnsubscribePushResponseSuccess = notificationUnsubscribePushResponse204 & {
+  headers: Headers;
+};
+export type notificationUnsubscribePushResponseError = (
+  notificationUnsubscribePushResponse401 | notificationUnsubscribePushResponse422
+) & {
+  headers: Headers;
+};
+
+export type notificationUnsubscribePushResponse =
+  notificationUnsubscribePushResponseSuccess | notificationUnsubscribePushResponseError;
+
+export const getNotificationUnsubscribePushUrl = () => {
+  return `/api/notifications/push-subscriptions`;
+};
+
+/**
+ * @summary Stop sending pushes to this device
+ */
+export const notificationUnsubscribePush = async (
+  pushEndpointBody: PushEndpointBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<notificationUnsubscribePushResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<notificationUnsubscribePushResponse>(getNotificationUnsubscribePushUrl(), {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(pushEndpointBody),
+  });
+};
+
+export type notificationSubscribePushResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type notificationSubscribePushResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type notificationSubscribePushResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type notificationSubscribePushResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type notificationSubscribePushResponseSuccess = notificationSubscribePushResponse204 & {
+  headers: Headers;
+};
+export type notificationSubscribePushResponseError = (
+  | notificationSubscribePushResponse400
+  | notificationSubscribePushResponse401
+  | notificationSubscribePushResponse422
+) & {
+  headers: Headers;
+};
+
+export type notificationSubscribePushResponse =
+  notificationSubscribePushResponseSuccess | notificationSubscribePushResponseError;
+
+export const getNotificationSubscribePushUrl = () => {
+  return `/api/notifications/push-subscriptions`;
+};
+
+/**
+ * Saving a device again moves it to whoever is signed in on it now
+ * @summary Send pushes to this device
+ */
+export const notificationSubscribePush = async (
+  pushSubscriptionBody: PushSubscriptionBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<notificationSubscribePushResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<notificationSubscribePushResponse>(getNotificationSubscribePushUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(pushSubscriptionBody),
+  });
+};
+
 export type notificationReadAllResponse204 = {
   data: NoContentResponse;
   status: 204;
@@ -155,143 +293,5 @@ export const notificationRead = async (
   return customFetch<notificationReadResponse>(getNotificationReadUrl(id), {
     ...options,
     method: 'POST',
-  });
-};
-
-export type pushSubscriptionDeleteResponse204 = {
-  data: NoContentResponse;
-  status: 204;
-};
-
-export type pushSubscriptionDeleteResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type pushSubscriptionDeleteResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type pushSubscriptionDeleteResponseSuccess = pushSubscriptionDeleteResponse204 & {
-  headers: Headers;
-};
-export type pushSubscriptionDeleteResponseError = (
-  pushSubscriptionDeleteResponse401 | pushSubscriptionDeleteResponse422
-) & {
-  headers: Headers;
-};
-
-export type pushSubscriptionDeleteResponse =
-  pushSubscriptionDeleteResponseSuccess | pushSubscriptionDeleteResponseError;
-
-export const getPushSubscriptionDeleteUrl = () => {
-  return `/api/push-subscriptions`;
-};
-
-/**
- * @summary Stop sending pushes to this device
- */
-export const pushSubscriptionDelete = async (
-  pushEndpointBody: PushEndpointBody,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<pushSubscriptionDeleteResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit['headers']>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  return customFetch<pushSubscriptionDeleteResponse>(getPushSubscriptionDeleteUrl(), {
-    ...options,
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(pushEndpointBody),
-  });
-};
-
-export type pushSubscriptionCreateResponse204 = {
-  data: NoContentResponse;
-  status: 204;
-};
-
-export type pushSubscriptionCreateResponse400 = {
-  data: BadRequestResponse;
-  status: 400;
-};
-
-export type pushSubscriptionCreateResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type pushSubscriptionCreateResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type pushSubscriptionCreateResponseSuccess = pushSubscriptionCreateResponse204 & {
-  headers: Headers;
-};
-export type pushSubscriptionCreateResponseError = (
-  | pushSubscriptionCreateResponse400
-  | pushSubscriptionCreateResponse401
-  | pushSubscriptionCreateResponse422
-) & {
-  headers: Headers;
-};
-
-export type pushSubscriptionCreateResponse =
-  pushSubscriptionCreateResponseSuccess | pushSubscriptionCreateResponseError;
-
-export const getPushSubscriptionCreateUrl = () => {
-  return `/api/push-subscriptions`;
-};
-
-/**
- * Saving a device again moves it to whoever is signed in on it now
- * @summary Send pushes to this device
- */
-export const pushSubscriptionCreate = async (
-  pushSubscriptionBody: PushSubscriptionBody,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<pushSubscriptionCreateResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit['headers']>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  return customFetch<pushSubscriptionCreateResponse>(getPushSubscriptionCreateUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(pushSubscriptionBody),
   });
 };

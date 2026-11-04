@@ -1,9 +1,8 @@
 import type { HearthGateway, Result } from '@/data/gateway';
 import { ok } from '@/data/gateway';
-import { communityMemberIndex } from '@/generated/api/communities/communities';
+import { communityMembers } from '@/generated/api/communities/communities';
 import { communityShow } from '@/generated/api/communities/communities';
-import { peopleIndex } from '@/generated/api/accounts/accounts';
-import { userPosts, userReplies, userShow } from '@/generated/api/people/people';
+import { userIndex, userPosts, userReplies, userShow } from '@/generated/api/people/people';
 import type { AuthoredReply, Profile } from '@/generated/schemas';
 import { personIdByHandle } from '@/domain/selectors';
 import type { ProfileActivity } from '@/domain/types';
@@ -165,7 +164,7 @@ export function createPeopleGateway(
 
       if (!ctx.store.get().roles.some((r) => r.c === cid)) await loadRoles(cid);
 
-      const answer = await call(() => communityMemberIndex(id, { q: query, limit: 8 }));
+      const answer = await call(() => communityMembers(id, { q: query, limit: 8 }));
 
       if (answer.status !== 200) return failed(answer);
 
@@ -184,7 +183,7 @@ export function createPeopleGateway(
   } satisfies Partial<HearthGateway['load']>;
 
   const people = async () => {
-    const answer = await call(() => peopleIndex({ limit: 100 }));
+    const answer = await call(() => userIndex({ limit: 100 }));
 
     if (answer.status !== 200) return failed(answer);
 

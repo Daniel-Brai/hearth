@@ -6,8 +6,18 @@
 
 export type UserIndexParams = {
   /**
-   * Up to 50, separated by commas.
+   * Up to 50, separated by commas. Names with no account are left out
    * @maxLength 1100
    */
-  usernames: string;
+  usernames?: string;
+  /**
+   * @maxLength 40
+   */
+  q?: string;
+  community?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
 };

@@ -10,7 +10,7 @@ import {
   eventInterest,
   eventUpdate,
 } from '@/generated/api/events/events';
-import { recordingEventIndex } from '@/generated/api/voice/voice';
+import { recordingListEvent } from '@/generated/api/voice/voice';
 import { toEvent, toEventBody } from '../events';
 import { toRecording } from '../mappers';
 import { accessToken } from '../session-token';
@@ -124,7 +124,7 @@ export function createEventsGateway(
       const event = ctx.store.get().events.find((e) => e.id === id);
       if (!event || !accessToken()) return;
 
-      void call(() => recordingEventIndex(id)).then((answer) => {
+      void call(() => recordingListEvent(id)).then((answer) => {
         if (answer.status !== 200) return;
 
         ctx.store.set((state) => {

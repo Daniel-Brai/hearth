@@ -582,7 +582,7 @@ describe('chat inbox', () => {
       ],
     };
 
-    routes['GET /api/unread'] = {
+    routes['GET /api/messages/unread'] = {
       status: 200,
       body: {
         rooms: [{ id: 'r1', community_id: 'c1', count: 3 }],
@@ -641,7 +641,7 @@ describe('chat.hidePreview', () => {
 
 describe('chat.linkPreview', () => {
   it('finds nothing for a page without a card', async () => {
-    routes['GET /api/link-preview'] = { status: 404, body: { message: 'Not Found' } };
+    routes['GET /api/unfurls'] = { status: 404, body: { message: 'Not Found' } };
 
     const { gateway: g } = gateway();
 
@@ -649,7 +649,7 @@ describe('chat.linkPreview', () => {
   });
 
   it("reads the page's card once for every message with the link", async () => {
-    routes['GET /api/link-preview'] = {
+    routes['GET /api/unfurls'] = {
       status: 200,
       body: {
         url: 'https://github.com/Daniel-Brai',
@@ -673,7 +673,7 @@ describe('chat.linkPreview', () => {
       image: 'https://avatars.githubusercontent.com/u/88239970?v=4',
     });
     expect(second).toBe(first);
-    expect(sent.filter((r) => r.path === '/api/link-preview')).toHaveLength(1);
+    expect(sent.filter((r) => r.path === '/api/unfurls')).toHaveLength(1);
   });
 });
 

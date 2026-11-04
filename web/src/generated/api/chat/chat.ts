@@ -9,14 +9,17 @@ import type {
   Conversation,
   EditBody,
   ForbiddenResponse,
-  MessageConversationIndex200,
-  MessageConversationIndexParams,
-  MessageRoomIndex200,
-  MessageRoomIndexParams,
+  MessageListConversation200,
+  MessageListConversationParams,
+  MessageListRoom200,
+  MessageListRoomParams,
   NoContentResponse,
   NotFoundResponse,
   PreviewBody,
   ReactionBody,
+  RescheduleBody,
+  ScheduleMessageBody,
+  ScheduledMessage,
   SendMessageBody,
   StartConversationBody,
   Toggle,
@@ -144,49 +147,49 @@ export const conversationCreate = async (
   });
 };
 
-export type messageConversationIndexResponse200 = {
-  data: MessageConversationIndex200;
+export type messageListConversationResponse200 = {
+  data: MessageListConversation200;
   status: 200;
 };
 
-export type messageConversationIndexResponse400 = {
+export type messageListConversationResponse400 = {
   data: BadRequestResponse;
   status: 400;
 };
 
-export type messageConversationIndexResponse401 = {
+export type messageListConversationResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type messageConversationIndexResponse404 = {
+export type messageListConversationResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type messageConversationIndexResponse422 = {
+export type messageListConversationResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type messageConversationIndexResponseSuccess = messageConversationIndexResponse200 & {
+export type messageListConversationResponseSuccess = messageListConversationResponse200 & {
   headers: Headers;
 };
-export type messageConversationIndexResponseError = (
-  | messageConversationIndexResponse400
-  | messageConversationIndexResponse401
-  | messageConversationIndexResponse404
-  | messageConversationIndexResponse422
+export type messageListConversationResponseError = (
+  | messageListConversationResponse400
+  | messageListConversationResponse401
+  | messageListConversationResponse404
+  | messageListConversationResponse422
 ) & {
   headers: Headers;
 };
 
-export type messageConversationIndexResponse =
-  messageConversationIndexResponseSuccess | messageConversationIndexResponseError;
+export type messageListConversationResponse =
+  messageListConversationResponseSuccess | messageListConversationResponseError;
 
-export const getMessageConversationIndexUrl = (
+export const getMessageListConversationUrl = (
   conversationId: string,
-  params?: MessageConversationIndexParams,
+  params?: MessageListConversationParams,
 ) => {
   const normalizedParams = new URLSearchParams();
 
@@ -207,13 +210,13 @@ export const getMessageConversationIndexUrl = (
  * Newest first
  * @summary List a conversation's messages
  */
-export const messageConversationIndex = async (
+export const messageListConversation = async (
   conversationId: string,
-  params?: MessageConversationIndexParams,
+  params?: MessageListConversationParams,
   options?: Parameters<typeof customFetch>[1],
-): Promise<messageConversationIndexResponse> => {
-  return customFetch<messageConversationIndexResponse>(
-    getMessageConversationIndexUrl(conversationId, params),
+): Promise<messageListConversationResponse> => {
+  return customFetch<messageListConversationResponse>(
+    getMessageListConversationUrl(conversationId, params),
     {
       ...options,
       method: 'GET',
@@ -221,64 +224,64 @@ export const messageConversationIndex = async (
   );
 };
 
-export type messageConversationCreateResponse201 = {
+export type messageSendConversationResponse201 = {
   data: ChatMessage;
   status: 201;
 };
 
-export type messageConversationCreateResponse400 = {
+export type messageSendConversationResponse400 = {
   data: BadRequestResponse;
   status: 400;
 };
 
-export type messageConversationCreateResponse401 = {
+export type messageSendConversationResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type messageConversationCreateResponse404 = {
+export type messageSendConversationResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type messageConversationCreateResponse422 = {
+export type messageSendConversationResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type messageConversationCreateResponse429 = {
+export type messageSendConversationResponse429 = {
   data: TooManyRequestsResponse;
   status: 429;
 };
 
-export type messageConversationCreateResponseSuccess = messageConversationCreateResponse201 & {
+export type messageSendConversationResponseSuccess = messageSendConversationResponse201 & {
   headers: Headers;
 };
-export type messageConversationCreateResponseError = (
-  | messageConversationCreateResponse400
-  | messageConversationCreateResponse401
-  | messageConversationCreateResponse404
-  | messageConversationCreateResponse422
-  | messageConversationCreateResponse429
+export type messageSendConversationResponseError = (
+  | messageSendConversationResponse400
+  | messageSendConversationResponse401
+  | messageSendConversationResponse404
+  | messageSendConversationResponse422
+  | messageSendConversationResponse429
 ) & {
   headers: Headers;
 };
 
-export type messageConversationCreateResponse =
-  messageConversationCreateResponseSuccess | messageConversationCreateResponseError;
+export type messageSendConversationResponse =
+  messageSendConversationResponseSuccess | messageSendConversationResponseError;
 
-export const getMessageConversationCreateUrl = (conversationId: string) => {
+export const getMessageSendConversationUrl = (conversationId: string) => {
   return `/api/conversations/${conversationId}/messages`;
 };
 
 /**
  * @summary Send a message to a conversation
  */
-export const messageConversationCreate = async (
+export const messageSendConversation = async (
   conversationId: string,
   sendMessageBody: SendMessageBody,
   options?: Parameters<typeof customFetch>[1],
-): Promise<messageConversationCreateResponse> => {
+): Promise<messageSendConversationResponse> => {
   const getHeaders = (
     h?: NonNullable<RequestInit['headers']>,
   ): Record<string, string | readonly string[]> => {
@@ -298,8 +301,8 @@ export const messageConversationCreate = async (
     }
     return headers;
   };
-  return customFetch<messageConversationCreateResponse>(
-    getMessageConversationCreateUrl(conversationId),
+  return customFetch<messageSendConversationResponse>(
+    getMessageSendConversationUrl(conversationId),
     {
       ...options,
       method: 'POST',
@@ -307,6 +310,360 @@ export const messageConversationCreate = async (
       body: JSON.stringify(sendMessageBody),
     },
   );
+};
+
+export type messageConversationScheduleResponse201 = {
+  data: ScheduledMessage;
+  status: 201;
+};
+
+export type messageConversationScheduleResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type messageConversationScheduleResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageConversationScheduleResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messageConversationScheduleResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messageConversationScheduleResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type messageConversationScheduleResponseSuccess = messageConversationScheduleResponse201 & {
+  headers: Headers;
+};
+export type messageConversationScheduleResponseError = (
+  | messageConversationScheduleResponse400
+  | messageConversationScheduleResponse401
+  | messageConversationScheduleResponse404
+  | messageConversationScheduleResponse422
+  | messageConversationScheduleResponse429
+) & {
+  headers: Headers;
+};
+
+export type messageConversationScheduleResponse =
+  messageConversationScheduleResponseSuccess | messageConversationScheduleResponseError;
+
+export const getMessageConversationScheduleUrl = (conversationId: string) => {
+  return `/api/conversations/${conversationId}/messages/scheduled`;
+};
+
+/**
+ * @summary Schedule a message in a conversation
+ */
+export const messageConversationSchedule = async (
+  conversationId: string,
+  scheduleMessageBody: ScheduleMessageBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageConversationScheduleResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<messageConversationScheduleResponse>(
+    getMessageConversationScheduleUrl(conversationId),
+    {
+      ...options,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+      body: JSON.stringify(scheduleMessageBody),
+    },
+  );
+};
+
+export type messageListScheduledResponse200 = {
+  data: ScheduledMessage[];
+  status: 200;
+};
+
+export type messageListScheduledResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageListScheduledResponseSuccess = messageListScheduledResponse200 & {
+  headers: Headers;
+};
+export type messageListScheduledResponseError = messageListScheduledResponse401 & {
+  headers: Headers;
+};
+
+export type messageListScheduledResponse =
+  messageListScheduledResponseSuccess | messageListScheduledResponseError;
+
+export const getMessageListScheduledUrl = () => {
+  return `/api/messages/scheduled`;
+};
+
+/**
+ * Soonest first
+ * @summary List my scheduled messages
+ */
+export const messageListScheduled = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageListScheduledResponse> => {
+  return customFetch<messageListScheduledResponse>(getMessageListScheduledUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export type messageUnscheduleResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type messageUnscheduleResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageUnscheduleResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messageUnscheduleResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messageUnscheduleResponseSuccess = messageUnscheduleResponse204 & {
+  headers: Headers;
+};
+export type messageUnscheduleResponseError = (
+  messageUnscheduleResponse401 | messageUnscheduleResponse404 | messageUnscheduleResponse422
+) & {
+  headers: Headers;
+};
+
+export type messageUnscheduleResponse =
+  messageUnscheduleResponseSuccess | messageUnscheduleResponseError;
+
+export const getMessageUnscheduleUrl = (id: string) => {
+  return `/api/messages/scheduled/${id}`;
+};
+
+/**
+ * @summary Stop a scheduled message
+ */
+export const messageUnschedule = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageUnscheduleResponse> => {
+  return customFetch<messageUnscheduleResponse>(getMessageUnscheduleUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export type messageRescheduleResponse200 = {
+  data: ScheduledMessage;
+  status: 200;
+};
+
+export type messageRescheduleResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type messageRescheduleResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageRescheduleResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messageRescheduleResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messageRescheduleResponseSuccess = messageRescheduleResponse200 & {
+  headers: Headers;
+};
+export type messageRescheduleResponseError = (
+  | messageRescheduleResponse400
+  | messageRescheduleResponse401
+  | messageRescheduleResponse404
+  | messageRescheduleResponse422
+) & {
+  headers: Headers;
+};
+
+export type messageRescheduleResponse =
+  messageRescheduleResponseSuccess | messageRescheduleResponseError;
+
+export const getMessageRescheduleUrl = (id: string) => {
+  return `/api/messages/scheduled/${id}`;
+};
+
+/**
+ * A message that couldn't send is tried again at the new time
+ * @summary Move a scheduled message to another time
+ */
+export const messageReschedule = async (
+  id: string,
+  rescheduleBody: RescheduleBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageRescheduleResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<messageRescheduleResponse>(getMessageRescheduleUrl(id), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(rescheduleBody),
+  });
+};
+
+export type messageSendScheduledResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type messageSendScheduledResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type messageSendScheduledResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageSendScheduledResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type messageSendScheduledResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messageSendScheduledResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messageSendScheduledResponseSuccess = messageSendScheduledResponse204 & {
+  headers: Headers;
+};
+export type messageSendScheduledResponseError = (
+  | messageSendScheduledResponse400
+  | messageSendScheduledResponse401
+  | messageSendScheduledResponse403
+  | messageSendScheduledResponse404
+  | messageSendScheduledResponse422
+) & {
+  headers: Headers;
+};
+
+export type messageSendScheduledResponse =
+  messageSendScheduledResponseSuccess | messageSendScheduledResponseError;
+
+export const getMessageSendScheduledUrl = (id: string) => {
+  return `/api/messages/scheduled/${id}/send`;
+};
+
+/**
+ * It arrives through the room or conversation like any other message
+ * @summary Send a scheduled message now
+ */
+export const messageSendScheduled = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageSendScheduledResponse> => {
+  return customFetch<messageSendScheduledResponse>(getMessageSendScheduledUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export type messageUnreadResponse200 = {
+  data: Unread;
+  status: 200;
+};
+
+export type messageUnreadResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageUnreadResponseSuccess = messageUnreadResponse200 & {
+  headers: Headers;
+};
+export type messageUnreadResponseError = messageUnreadResponse401 & {
+  headers: Headers;
+};
+
+export type messageUnreadResponse = messageUnreadResponseSuccess | messageUnreadResponseError;
+
+export const getMessageUnreadUrl = () => {
+  return `/api/messages/unread`;
+};
+
+/**
+ * Per room in my communities and per conversation
+ * @summary Count my unread messages
+ */
+export const messageUnread = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageUnreadResponse> => {
+  return customFetch<messageUnreadResponse>(getMessageUnreadUrl(), {
+    ...options,
+    method: 'GET',
+  });
 };
 
 export type messageDeleteResponse204 = {
@@ -667,53 +1024,52 @@ export const messageRead = async (
   });
 };
 
-export type messageRoomIndexResponse200 = {
-  data: MessageRoomIndex200;
+export type messageListRoomResponse200 = {
+  data: MessageListRoom200;
   status: 200;
 };
 
-export type messageRoomIndexResponse400 = {
+export type messageListRoomResponse400 = {
   data: BadRequestResponse;
   status: 400;
 };
 
-export type messageRoomIndexResponse401 = {
+export type messageListRoomResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type messageRoomIndexResponse403 = {
+export type messageListRoomResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type messageRoomIndexResponse404 = {
+export type messageListRoomResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type messageRoomIndexResponse422 = {
+export type messageListRoomResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type messageRoomIndexResponseSuccess = messageRoomIndexResponse200 & {
+export type messageListRoomResponseSuccess = messageListRoomResponse200 & {
   headers: Headers;
 };
-export type messageRoomIndexResponseError = (
-  | messageRoomIndexResponse400
-  | messageRoomIndexResponse401
-  | messageRoomIndexResponse403
-  | messageRoomIndexResponse404
-  | messageRoomIndexResponse422
+export type messageListRoomResponseError = (
+  | messageListRoomResponse400
+  | messageListRoomResponse401
+  | messageListRoomResponse403
+  | messageListRoomResponse404
+  | messageListRoomResponse422
 ) & {
   headers: Headers;
 };
 
-export type messageRoomIndexResponse =
-  messageRoomIndexResponseSuccess | messageRoomIndexResponseError;
+export type messageListRoomResponse = messageListRoomResponseSuccess | messageListRoomResponseError;
 
-export const getMessageRoomIndexUrl = (roomId: string, params?: MessageRoomIndexParams) => {
+export const getMessageListRoomUrl = (roomId: string, params?: MessageListRoomParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -733,81 +1089,80 @@ export const getMessageRoomIndexUrl = (roomId: string, params?: MessageRoomIndex
  * Newest first
  * @summary List a room's messages
  */
-export const messageRoomIndex = async (
+export const messageListRoom = async (
   roomId: string,
-  params?: MessageRoomIndexParams,
+  params?: MessageListRoomParams,
   options?: Parameters<typeof customFetch>[1],
-): Promise<messageRoomIndexResponse> => {
-  return customFetch<messageRoomIndexResponse>(getMessageRoomIndexUrl(roomId, params), {
+): Promise<messageListRoomResponse> => {
+  return customFetch<messageListRoomResponse>(getMessageListRoomUrl(roomId, params), {
     ...options,
     method: 'GET',
   });
 };
 
-export type messageRoomCreateResponse201 = {
+export type messageSendRoomResponse201 = {
   data: ChatMessage;
   status: 201;
 };
 
-export type messageRoomCreateResponse400 = {
+export type messageSendRoomResponse400 = {
   data: BadRequestResponse;
   status: 400;
 };
 
-export type messageRoomCreateResponse401 = {
+export type messageSendRoomResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type messageRoomCreateResponse403 = {
+export type messageSendRoomResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type messageRoomCreateResponse404 = {
+export type messageSendRoomResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type messageRoomCreateResponse422 = {
+export type messageSendRoomResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type messageRoomCreateResponse429 = {
+export type messageSendRoomResponse429 = {
   data: TooManyRequestsResponse;
   status: 429;
 };
 
-export type messageRoomCreateResponseSuccess = messageRoomCreateResponse201 & {
+export type messageSendRoomResponseSuccess = messageSendRoomResponse201 & {
   headers: Headers;
 };
-export type messageRoomCreateResponseError = (
-  | messageRoomCreateResponse400
-  | messageRoomCreateResponse401
-  | messageRoomCreateResponse403
-  | messageRoomCreateResponse404
-  | messageRoomCreateResponse422
-  | messageRoomCreateResponse429
+export type messageSendRoomResponseError = (
+  | messageSendRoomResponse400
+  | messageSendRoomResponse401
+  | messageSendRoomResponse403
+  | messageSendRoomResponse404
+  | messageSendRoomResponse422
+  | messageSendRoomResponse429
 ) & {
   headers: Headers;
 };
 
-export type messageRoomCreateResponse =
-  messageRoomCreateResponseSuccess | messageRoomCreateResponseError;
+export type messageSendRoomResponse = messageSendRoomResponseSuccess | messageSendRoomResponseError;
 
-export const getMessageRoomCreateUrl = (roomId: string) => {
+export const getMessageSendRoomUrl = (roomId: string) => {
   return `/api/rooms/${roomId}/messages`;
 };
 
 /**
  * @summary Send a message to a room
  */
-export const messageRoomCreate = async (
+export const messageSendRoom = async (
   roomId: string,
   sendMessageBody: SendMessageBody,
   options?: Parameters<typeof customFetch>[1],
-): Promise<messageRoomCreateResponse> => {
+): Promise<messageSendRoomResponse> => {
   const getHeaders = (
     h?: NonNullable<RequestInit['headers']>,
   ): Record<string, string | readonly string[]> => {
@@ -827,7 +1182,7 @@ export const messageRoomCreate = async (
     }
     return headers;
   };
-  return customFetch<messageRoomCreateResponse>(getMessageRoomCreateUrl(roomId), {
+  return customFetch<messageSendRoomResponse>(getMessageSendRoomUrl(roomId), {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
@@ -835,38 +1190,93 @@ export const messageRoomCreate = async (
   });
 };
 
-export type unreadShowResponse200 = {
-  data: Unread;
-  status: 200;
+export type messageRoomScheduleResponse201 = {
+  data: ScheduledMessage;
+  status: 201;
 };
 
-export type unreadShowResponse401 = {
+export type messageRoomScheduleResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type messageRoomScheduleResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type unreadShowResponseSuccess = unreadShowResponse200 & {
+export type messageRoomScheduleResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type messageRoomScheduleResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messageRoomScheduleResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messageRoomScheduleResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type messageRoomScheduleResponseSuccess = messageRoomScheduleResponse201 & {
   headers: Headers;
 };
-export type unreadShowResponseError = unreadShowResponse401 & {
+export type messageRoomScheduleResponseError = (
+  | messageRoomScheduleResponse400
+  | messageRoomScheduleResponse401
+  | messageRoomScheduleResponse403
+  | messageRoomScheduleResponse404
+  | messageRoomScheduleResponse422
+  | messageRoomScheduleResponse429
+) & {
   headers: Headers;
 };
 
-export type unreadShowResponse = unreadShowResponseSuccess | unreadShowResponseError;
+export type messageRoomScheduleResponse =
+  messageRoomScheduleResponseSuccess | messageRoomScheduleResponseError;
 
-export const getUnreadShowUrl = () => {
-  return `/api/unread`;
+export const getMessageRoomScheduleUrl = (roomId: string) => {
+  return `/api/rooms/${roomId}/messages/scheduled`;
 };
 
 /**
- * Per room in my communities and per conversation
- * @summary Count my unread messages
+ * @summary Schedule a message in a room
  */
-export const unreadShow = async (
+export const messageRoomSchedule = async (
+  roomId: string,
+  scheduleMessageBody: ScheduleMessageBody,
   options?: Parameters<typeof customFetch>[1],
-): Promise<unreadShowResponse> => {
-  return customFetch<unreadShowResponse>(getUnreadShowUrl(), {
+): Promise<messageRoomScheduleResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<messageRoomScheduleResponse>(getMessageRoomScheduleUrl(roomId), {
     ...options,
-    method: 'GET',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(scheduleMessageBody),
   });
 };

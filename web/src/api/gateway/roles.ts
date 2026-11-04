@@ -2,7 +2,7 @@ import type { HearthGateway, Result } from '@/data/gateway';
 import { fail, ok } from '@/data/gateway';
 import type { Hue, Permission, Role } from '@/domain/types';
 import {
-  communityMemberIndex,
+  communityMembers,
   communityRoleCreate,
   communityRoleDelete,
   communityRoleIndex,
@@ -71,7 +71,7 @@ export function createRolesGateway(
 
   const memberKeys = async (id: string, q?: string) => {
     const answer = await call(() =>
-      communityMemberIndex(id, q ? { q, limit: MEMBERS_SHOWN } : { limit: MEMBERS_SHOWN }),
+      communityMembers(id, q ? { q, limit: MEMBERS_SHOWN } : { limit: MEMBERS_SHOWN }),
     );
 
     if (answer.status !== 200) return null;

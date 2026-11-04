@@ -23,7 +23,14 @@ defmodule HearthWeb.MessageController do
     description: "The message whose answers to list, or the main timeline without it"
   ]
 
-  operation :room_index,
+  @schedule %{
+    "body" => ~V[string|max:4000],
+    "attachment_ids" => ~V[list],
+    "attachment_ids.*" => ~V[uuid],
+    "send_at" => ~V[required|string]
+  }
+
+  operation :list_room,
     summary: "List a room's messages",
     description: "Newest first",
     security: [%{"bearer" => []}],
@@ -45,7 +52,7 @@ defmodule HearthWeb.MessageController do
     "before" => ~V[string]
   }
 
-  def room_index(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id} = params) do
+  def list_room(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id} = params) do
     %Conn{assigns: %{auth: auth}} = conn
 
     with {:ok, room} <- Communities.view_room(auth, id: room_id, archived_at: nil) do
@@ -53,7 +60,7 @@ defmodule HearthWeb.MessageController do
     end
   end
 
-  operation :room_create,
+  operation :send_room,
     summary: "Send a message to a room",
     security: [%{"bearer" => []}],
     parameters: [room_id: @id],
@@ -77,9 +84,9 @@ defmodule HearthWeb.MessageController do
     "kind" => ~V[allowed:text,action,sound]
   }
 
-  rate_limit :room_create, limit: 30, scale: :timer.seconds(30), by: :user
+  rate_limit :send_room, limit: 30, scale: :timer.seconds(30), by: :user
 
-  def room_create(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id} = params) do
+  def send_room(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id} = params) do
     %Conn{assigns: %{auth: auth}} = conn
 
     with {:ok, room} <- Communities.view_room(auth, id: room_id, archived_at: nil) do
@@ -87,7 +94,7 @@ defmodule HearthWeb.MessageController do
     end
   end
 
-  operation :conversation_index,
+  operation :list_conversation,
     summary: "List a conversation's messages",
     description: "Newest first",
     security: [%{"bearer" => []}],
@@ -108,7 +115,7 @@ defmodule HearthWeb.MessageController do
     "before" => ~V[string]
   }
 
-  def conversation_index(%Conn{assigns: %{auth: %{}}} = conn, %{"conversation_id" => id} = params) do
+  def list_conversation(%Conn{assigns: %{auth: %{}}} = conn, %{"conversation_id" => id} = params) do
     %Conn{assigns: %{auth: auth}} = conn
 
     with {:ok, conversation} <- Chat.get_conversation(auth, id) do
@@ -116,7 +123,7 @@ defmodule HearthWeb.MessageController do
     end
   end
 
-  operation :conversation_create,
+  operation :send_conversation,
     summary: "Send a message to a conversation",
     security: [%{"bearer" => []}],
     parameters: [conversation_id: @id],
@@ -139,9 +146,9 @@ defmodule HearthWeb.MessageController do
     "kind" => ~V[allowed:text,action,sound]
   }
 
-  rate_limit :conversation_create, limit: 30, scale: :timer.seconds(30), by: :user
+  rate_limit :send_conversation, limit: 30, scale: :timer.seconds(30), by: :user
 
-  def conversation_create(
+  def send_conversation(
         %Conn{assigns: %{auth: %{}}} = conn,
         %{"conversation_id" => id} = params
       ) do
@@ -293,6 +300,161 @@ defmodule HearthWeb.MessageController do
     end
   end
 
+  operation :list_scheduled,
+    summary: "List my scheduled messages",
+    description: "Soonest first",
+    security: [%{"bearer" => []}],
+    responses: [
+      ok: {%{type: :array, items: Schema.ScheduledMessage}, description: "OK"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"}
+    ]
+
+  def list_scheduled(%Conn{assigns: %{auth: %{}}} = conn, _params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    scheduled = Chat.list_scheduled_messages(auth)
+    render(conn, :list_scheduled, scheduled: scheduled, media: Attachments.media_for(scheduled))
+  end
+
+  operation :room_schedule,
+    summary: "Schedule a message in a room",
+    security: [%{"bearer" => []}],
+    parameters: [room_id: @id],
+    request_body: Schema.ScheduleMessageBody,
+    responses: [
+      created: {Schema.ScheduledMessage, description: "Scheduled"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      too_many_requests: %Reference{"$ref": "#/components/responses/too_many_requests"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate Map.put(@schedule, "room_id", ~V[required|uuid])
+
+  rate_limit :room_schedule, limit: 30, scale: :timer.seconds(30), by: :user
+
+  def room_schedule(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id} = params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, room} <- Communities.view_room(auth, id: room_id, archived_at: nil) do
+      schedule_message(conn, params, auth, room)
+    end
+  end
+
+  operation :conversation_schedule,
+    summary: "Schedule a message in a conversation",
+    security: [%{"bearer" => []}],
+    parameters: [conversation_id: @id],
+    request_body: Schema.ScheduleMessageBody,
+    responses: [
+      created: {Schema.ScheduledMessage, description: "Scheduled"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      too_many_requests: %Reference{"$ref": "#/components/responses/too_many_requests"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate Map.put(@schedule, "conversation_id", ~V[required|uuid])
+
+  rate_limit :conversation_schedule, limit: 30, scale: :timer.seconds(30), by: :user
+
+  def conversation_schedule(
+        %Conn{assigns: %{auth: %{}}} = conn,
+        %{"conversation_id" => id} = params
+      ) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, conversation} <- Chat.get_conversation(auth, id) do
+      schedule_message(conn, params, auth, conversation)
+    end
+  end
+
+  operation :reschedule,
+    summary: "Move a scheduled message to another time",
+    description: "A message that couldn't send is tried again at the new time",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    request_body: Schema.RescheduleBody,
+    responses: [
+      ok: {Schema.ScheduledMessage, description: "OK"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid], "send_at" => ~V[required|string]}
+
+  def reschedule(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "send_at" => send_at}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, at} <- Common.parse_datetime(send_at),
+         {:ok, scheduled} <- Chat.get_scheduled_message(auth, id),
+         {:ok, moved} <- Chat.reschedule_message(scheduled, at) do
+      render(conn, :scheduled, scheduled: moved, media: Attachments.media_for(moved))
+    end
+  end
+
+  operation :send_scheduled,
+    summary: "Send a scheduled message now",
+    description: "It arrives through the room or conversation like any other message",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def send_scheduled(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, scheduled} <- Chat.get_scheduled_message(auth, id),
+         {:ok, _message} <- Chat.send_scheduled(scheduled) do
+      send_resp(conn, :no_content, "")
+    end
+  end
+
+  operation :unschedule,
+    summary: "Stop a scheduled message",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def unschedule(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, scheduled} <- Chat.get_scheduled_message(auth, id) do
+      :ok = Chat.cancel_scheduled_message(scheduled)
+      send_resp(conn, :no_content, "")
+    end
+  end
+
+  defp schedule_message(conn, params, auth, place) do
+    changes = params |> Map.take(~w[body attachment_ids send_at]) |> Common.atomize_string_keys()
+
+    with {:ok, scheduled} <- Chat.schedule_message(auth, place, changes) do
+      conn
+      |> put_status(:created)
+      |> render(:scheduled, scheduled: scheduled, media: Attachments.media_for(scheduled))
+    end
+  end
+
   defp list(conn, params, auth, place) do
     with {:ok, parent} <- find_parent(params["parent_id"]),
          %{data: messages} = page <-
@@ -330,4 +492,19 @@ defmodule HearthWeb.MessageController do
 
   defp find_parent(nil), do: {:ok, nil}
   defp find_parent(id), do: Chat.get_message(id)
+
+  operation :unread,
+    summary: "Count my unread messages",
+    description: "Per room in my communities and per conversation",
+    security: [%{"bearer" => []}],
+    responses: [
+      ok: {Schema.Unread, description: "OK"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"}
+    ]
+
+  def unread(%Conn{assigns: %{auth: %{}}} = conn, _params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    render(conn, :unread, unread: Chat.unread_counts(auth))
+  end
 end

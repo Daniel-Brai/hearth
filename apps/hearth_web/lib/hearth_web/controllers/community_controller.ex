@@ -12,7 +12,9 @@ defmodule HearthWeb.CommunityController do
   alias Hearth.Forum
   alias Hearth.IAM
   alias HearthWeb.Authors
+  alias HearthWeb.Avatars
   alias HearthWeb.CommunityExtras
+  alias HearthWeb.PublicProfile
   alias Plug.Conn
 
   tags ["Communities"]
@@ -324,5 +326,96 @@ defmodule HearthWeb.CommunityController do
       {:ok, membership} -> membership
       {:error, :not_found} -> nil
     end
+  end
+
+  @fields ~w[key label icon hue description title_hint body_hint answers postable]
+
+  operation :save_kinds,
+    summary: "Save a community's kinds of post",
+    description:
+      "Needs community.update. Kinds left out are removed and their posts move to Discussion",
+    security: [%{"bearer" => []}],
+    parameters: [community_id: [in: :path, schema: %{type: :string, format: :uuid}]],
+    request_body: Schema.SaveKindsBody,
+    responses: [
+      ok: {%{type: :array, items: Schema.PostKind}, description: "OK"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{
+    "community_id" => ~V[required|uuid],
+    "kinds" => ~V[required|list|max:8],
+    "kinds.*.key" => ~V[string|max:40],
+    "kinds.*.label" => ~V[required|string|max:30],
+    "kinds.*.icon" => ~V[required|string|max:40],
+    "kinds.*.hue" => ~V[required|string|max:20],
+    "kinds.*.description" => ~V[string|max:300],
+    "kinds.*.title_hint" => ~V[string|max:120],
+    "kinds.*.body_hint" => ~V[string|max:2000],
+    "kinds.*.answers" => ~V[boolean],
+    "kinds.*.postable" => ~V[boolean]
+  }
+
+  def save_kinds(%Conn{assigns: %{auth: %{}}} = conn, %{"community_id" => community_id} = params) do
+    %Conn{assigns: %{auth: auth}} = conn
+    kinds = Enum.map(params["kinds"], &(&1 |> Map.take(@fields) |> Common.atomize_string_keys()))
+
+    with {:ok, community} <- find_visible(community_id, auth),
+         {:ok, saved} <- Forum.save_kinds(auth, community, kinds) do
+      render(conn, :save_kinds, kinds: saved)
+    end
+  end
+
+  operation :members,
+    summary: "Find members of a community to mention",
+    description: "Matches the start of a username or any part of a name",
+    parameters: [
+      community_id: [in: :path, schema: %{type: :string, format: :uuid}],
+      q: [in: :query, schema: %{type: :string, maxLength: 40}],
+      limit: [in: :query, schema: %{type: :integer, minimum: 1, maximum: 20}]
+    ],
+    responses: [
+      ok: {%{type: :array, items: Schema.MemberMatch}, description: "OK"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{
+    "community_id" => ~V[required|uuid],
+    "q" => ~V[string|max:40],
+    "limit" => ~V[between:1,20]
+  }
+
+  def members(%Conn{assigns: %{auth: auth}} = conn, %{"community_id" => community_id} = params) do
+    with {:ok, community} <- Communities.get_community(id: community_id, archived_at: nil),
+         true <- Communities.readable?(community, auth) do
+      roles = IAM.member_roles(community.id)
+
+      users =
+        (params["q"] || "")
+        |> Accounts.search_users(Map.keys(roles), query_param(conn, :limit) || 8)
+        |> Avatars.put_urls()
+        |> Enum.map(&PublicProfile.apply(&1, auth))
+
+      render(conn, :members, users: users, roles: roles)
+    else
+      false -> {:error, :not_found}
+      error -> error
+    end
+  end
+
+  operation :templates,
+    summary: "List the starting points for a new community",
+    description: "Cacheable for an hour",
+    responses: [ok: {%{type: :array, items: Schema.CommunityTemplate}, description: "OK"}]
+
+  def templates(conn, _params) do
+    conn
+    |> put_resp_header("cache-control", "public, max-age=3600")
+    |> render(:templates, templates: Communities.list_templates())
   end
 end

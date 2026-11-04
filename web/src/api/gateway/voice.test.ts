@@ -172,7 +172,7 @@ describe('voice.loadLive', () => {
       body: [{ ...community, rooms: [...community.rooms, voiceRoom] }],
     };
 
-    routes['GET /api/voice-sessions/live'] = { status: 200, body: [{ ...live, people: 2 }] };
+    routes['GET /api/voice-sessions'] = { status: 200, body: [{ ...live, people: 2 }] };
 
     const { store, gateway: g } = gateway();
 

@@ -1,4 +1,4 @@
-import { uploadComplete, uploadCreate } from '@/generated/api/uploads/uploads';
+import { mediaCompleteUpload, mediaUpload } from '@/generated/api/media/media';
 import type { Media, RequestUploadBodyPurpose } from '@/generated/schemas';
 import { call } from './gateway/context';
 
@@ -25,7 +25,7 @@ export async function uploadFile(
 
   const headers = { 'Idempotency-Key': crypto.randomUUID() };
 
-  const requested = await call(() => uploadCreate(body, { headers }));
+  const requested = await call(() => mediaUpload(body, { headers }));
 
   if (requested.status !== 201) return null;
 
@@ -37,7 +37,7 @@ export async function uploadFile(
 
   if (!stored.ok) return null;
 
-  const completed = await call(() => uploadComplete(media.id, {}));
+  const completed = await call(() => mediaCompleteUpload(media.id, {}));
 
   if (completed.status !== 200) return null;
 

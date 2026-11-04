@@ -528,6 +528,138 @@ defmodule HearthWeb.PostController do
     end
   end
 
+  operation :list_scheduled,
+    summary: "List my scheduled posts",
+    description: "Soonest first",
+    security: [%{"bearer" => []}],
+    responses: [
+      ok: {%{type: :array, items: Schema.ScheduledPost}, description: "OK"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"}
+    ]
+
+  def list_scheduled(%Conn{assigns: %{auth: %{}}} = conn, _params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    scheduled = Forum.list_scheduled_posts(auth)
+    render(conn, :list_scheduled, scheduled: scheduled, media: Attachments.media_for(scheduled))
+  end
+
+  operation :schedule,
+    summary: "Schedule a post in a community",
+    security: [%{"bearer" => []}],
+    parameters: [community_id: @id],
+    request_body: Schema.SchedulePostBody,
+    responses: [
+      created: {Schema.ScheduledPost, description: "Scheduled"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      too_many_requests: %Reference{"$ref": "#/components/responses/too_many_requests"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{
+    "community_id" => ~V[required|uuid],
+    "kind_id" => ~V[required|uuid],
+    "title" => ~V[required|string|max:150],
+    "body" => ~V[string|max:40000],
+    "attachment_ids" => ~V[list],
+    "attachment_ids.*" => ~V[uuid],
+    "send_at" => ~V[required|string]
+  }
+
+  rate_limit :schedule, limit: 10, scale: :timer.minutes(1), by: :user
+
+  def schedule(%Conn{assigns: %{auth: %{}}} = conn, %{"community_id" => community_id} = params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    changes =
+      params
+      |> Map.take(~w[kind_id title body attachment_ids send_at])
+      |> Common.atomize_string_keys()
+
+    with {:ok, community} <- Communities.get_community(id: community_id, archived_at: nil),
+         {:ok, scheduled} <- Forum.schedule_post(auth, community, changes) do
+      conn
+      |> put_status(:created)
+      |> render(:scheduled, scheduled: scheduled, media: Attachments.media_for(scheduled))
+    end
+  end
+
+  operation :reschedule,
+    summary: "Move a scheduled post to another time",
+    description: "A post that couldn't go up is tried again at the new time",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    request_body: Schema.RescheduleBody,
+    responses: [
+      ok: {Schema.ScheduledPost, description: "OK"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid], "send_at" => ~V[required|string]}
+
+  def reschedule(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "send_at" => send_at}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, at} <- Common.parse_datetime(send_at),
+         {:ok, scheduled} <- Forum.get_scheduled_post(auth, id),
+         {:ok, moved} <- Forum.reschedule_post(scheduled, at) do
+      render(conn, :scheduled, scheduled: moved, media: Attachments.media_for(moved))
+    end
+  end
+
+  operation :publish_scheduled,
+    summary: "Publish a scheduled post now",
+    description: "It arrives in the community feed like any other post",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def publish_scheduled(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, scheduled} <- Forum.get_scheduled_post(auth, id),
+         {:ok, _post} <- Forum.publish_scheduled(scheduled) do
+      send_resp(conn, :no_content, "")
+    end
+  end
+
+  operation :unschedule,
+    summary: "Stop a scheduled post",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def unschedule(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, scheduled} <- Forum.get_scheduled_post(auth, id) do
+      :ok = Forum.cancel_scheduled_post(scheduled)
+      send_resp(conn, :no_content, "")
+    end
+  end
+
   defp find_community(id, auth) do
     with {:ok, community} <- Communities.get_community(id: id, archived_at: nil),
          true <- Communities.readable?(community, auth) do
@@ -557,6 +689,76 @@ defmodule HearthWeb.PostController do
     case Transcripts.for_post(auth, post) do
       nil -> %{}
       summary -> %{post.id => summary}
+    end
+  end
+
+  @community [in: :path, schema: %{type: :string, format: :uuid}]
+
+  operation :drafts,
+    summary: "List my unfinished posts",
+    description: "One per community",
+    security: [%{"bearer" => []}],
+    responses: [
+      ok: {%{type: :array, items: Schema.Draft}, description: "OK"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"}
+    ]
+
+  def drafts(%Conn{assigns: %{auth: %{}}} = conn, _params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    render(conn, :drafts, drafts: Forum.list_drafts(auth))
+  end
+
+  operation :save_draft,
+    summary: "Save my unfinished post in a community",
+    security: [%{"bearer" => []}],
+    parameters: [community_id: @community],
+    request_body: Schema.DraftBody,
+    responses: [
+      ok: {Schema.Draft, description: "OK"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{
+    "community_id" => ~V[required|uuid],
+    "title" => ~V[string|max:150],
+    "body" => ~V[string|max:40000],
+    "kind_id" => ~V[uuid]
+  }
+
+  def save_draft(%Conn{assigns: %{auth: %{}}} = conn, %{"community_id" => community_id} = params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    changes = params |> Map.take(~w[title body kind_id]) |> Common.atomize_string_keys()
+
+    with {:ok, community} <- Communities.get_community(id: community_id, archived_at: nil),
+         {:ok, draft} <- Forum.save_draft(auth, community, changes) do
+      render(conn, :draft, draft: draft)
+    end
+  end
+
+  operation :discard_draft,
+    summary: "Throw away my unfinished post in a community",
+    security: [%{"bearer" => []}],
+    parameters: [community_id: @community],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"community_id" => ~V[required|uuid]}
+
+  def discard_draft(%Conn{assigns: %{auth: %{}}} = conn, %{"community_id" => community_id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, community} <- Communities.get_community(id: community_id) do
+      :ok = Forum.discard_draft(auth, community)
+      send_resp(conn, :no_content, "")
     end
   end
 end

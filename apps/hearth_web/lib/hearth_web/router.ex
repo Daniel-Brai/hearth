@@ -66,14 +66,14 @@ defmodule HearthWeb.Router do
   scope "/", HearthWeb do
     pipe_through :crawler
 
-    get "/robots.txt", SitemapController, :robots
-    get "/sitemap.xml", SitemapController, :index
-    get "/sitemaps/:file", SitemapController, :show
+    get "/robots.txt", SeoController, :robots
+    get "/sitemap.xml", SeoController, :sitemap
+    get "/sitemaps/:file", SeoController, :sitemap_file
 
-    get "/og/communities/:slug", ShareCardController, :community
-    get "/og/posts/:id", ShareCardController, :post
-    get "/og/events/:id", ShareCardController, :event
-    get "/og/users/:username", ShareCardController, :user
+    get "/og/communities/:slug", SeoController, :og_community
+    get "/og/posts/:id", SeoController, :og_post
+    get "/og/events/:id", SeoController, :og_event
+    get "/og/users/:username", SeoController, :og_user
   end
 
   scope "/api/auth/oauth", HearthWeb do
@@ -103,18 +103,18 @@ defmodule HearthWeb.Router do
     post "/auth/me/email/confirm", AuthController, :confirm_email_change
     post "/auth/email/undo", AuthController, :undo_email_change
     get "/auth/me/invites", InviteController, :mine
-    get "/usernames/:username", UsernameController, :show
+    get "/users/available", UserController, :available
 
-    post "/uploads", UploadController, :create
-    get "/uploads/:id/parts", UploadController, :parts
-    post "/uploads/:id/part-urls", UploadController, :part_urls
-    post "/uploads/:id/complete", UploadController, :complete
+    post "/uploads", MediaController, :upload
+    get "/uploads/:id/parts", MediaController, :list_upload_parts
+    post "/uploads/:id/parts", MediaController, :sign_upload_parts
+    post "/uploads/:id/complete", MediaController, :complete_upload
 
     get "/media/:id", MediaController, :show
-    get "/link-preview", LinkPreviewController, :show
+    get "/unfurls", MediaController, :unfurl
     delete "/media/:id", MediaController, :delete
 
-    get "/community-templates", CommunityTemplateController, :index
+    get "/community-templates", CommunityController, :templates
     get "/community-slugs", CommunityController, :slug
     get "/communities", CommunityController, :index
     get "/public/communities", CommunityController, :public
@@ -132,7 +132,7 @@ defmodule HearthWeb.Router do
     get "/communities/:community_id/rooms/archived", RoomController, :archived
     post "/communities/:community_id/rooms", RoomController, :create
     post "/communities/:community_id/roles", CommunityRoleController, :create
-    put "/communities/:community_id/kinds", CommunityKindController, :update
+    put "/communities/:community_id/kinds", CommunityController, :save_kinds
 
     put "/communities/:community_id/members/:user_id/roles",
         CommunityRoleController,
@@ -146,8 +146,8 @@ defmodule HearthWeb.Router do
     delete "/rooms/:id", RoomController, :delete
 
     get "/notifications", NotificationController, :index
-    post "/push-subscriptions", PushSubscriptionController, :create
-    delete "/push-subscriptions", PushSubscriptionController, :delete
+    post "/notifications/push-subscriptions", NotificationController, :subscribe_push
+    delete "/notifications/push-subscriptions", NotificationController, :unsubscribe_push
     post "/notifications/read", NotificationController, :read_all
     post "/notifications/:id/read", NotificationController, :read
 
@@ -161,7 +161,7 @@ defmodule HearthWeb.Router do
     get "/rooms/:id/voice-session", VoiceController, :live
     post "/rooms/:id/voice-sessions", VoiceController, :create
     post "/posts/:id/live", VoiceController, :discuss
-    get "/voice-sessions/live", VoiceController, :live_index
+    get "/voice-sessions", VoiceController, :index
     get "/voice-sessions/:id", VoiceController, :show
     post "/voice-sessions/:id/end", VoiceController, :end_session
     put "/voice-sessions/:id/hand", VoiceController, :hand
@@ -175,9 +175,9 @@ defmodule HearthWeb.Router do
     post "/voice-sessions/:id/recording", VoiceController, :start_recording
     delete "/voice-sessions/:id/recording", VoiceController, :stop_recording
 
-    get "/rooms/:id/recordings", RecordingController, :room_index
-    get "/events/:id/recordings", RecordingController, :event_index
-    get "/posts/:id/recordings", RecordingController, :post_index
+    get "/rooms/:id/recordings", RecordingController, :list_room
+    get "/events/:id/recordings", RecordingController, :list_event
+    get "/posts/:id/recordings", RecordingController, :list_post
     get "/recordings/:id", RecordingController, :show
     patch "/recordings/:id", RecordingController, :update
     delete "/recordings/:id", RecordingController, :delete
@@ -186,26 +186,30 @@ defmodule HearthWeb.Router do
     put "/transcript-segments/:id", TranscriptController, :update_segment
 
     get "/communities/:community_id/roles", CommunityRoleController, :index
-    get "/communities/:community_id/members", CommunityMemberController, :index
-    get "/people", PeopleController, :index
+    get "/communities/:community_id/members", CommunityController, :members
     get "/users", UserController, :index
     get "/users/:username", UserController, :show
     get "/users/:username/posts", UserController, :posts
     get "/users/:username/replies", UserController, :replies
-    post "/emails/check", EmailCheckController, :create
+    post "/invites/email-check", InviteController, :email_check
     get "/communities/:community_id/invites", InviteController, :index
     post "/communities/:community_id/invites", InviteController, :create
-    post "/communities/:community_id/invite-emails", InviteController, :email_create
-    delete "/invite-emails/:id", InviteController, :email_delete
-    post "/invite-emails/:id/decline", InviteController, :email_decline
+    post "/communities/:community_id/invitations", InviteController, :send_invitation
+    delete "/invitations/:id", InviteController, :revoke_invitation
+    post "/invitations/:id/decline", InviteController, :decline_invitation
     get "/invites/:code", InviteController, :show
     patch "/invites/:code", InviteController, :update
     post "/invites/:code/accept", InviteController, :accept
     delete "/invites/:code", InviteController, :delete
 
-    get "/drafts", DraftController, :index
-    put "/communities/:community_id/draft", DraftController, :update
-    delete "/communities/:community_id/draft", DraftController, :delete
+    get "/posts/drafts", PostController, :drafts
+    put "/communities/:community_id/posts/draft", PostController, :save_draft
+    delete "/communities/:community_id/posts/draft", PostController, :discard_draft
+    get "/posts/scheduled", PostController, :list_scheduled
+    patch "/posts/scheduled/:id", PostController, :reschedule
+    post "/posts/scheduled/:id/publish", PostController, :publish_scheduled
+    delete "/posts/scheduled/:id", PostController, :unschedule
+    post "/communities/:community_id/posts/scheduled", PostController, :schedule
     get "/communities/:community_id/posts", PostController, :index
     get "/communities/:community_id/posts/pinned", PostController, :pinned
     post "/communities/:community_id/posts", PostController, :create
@@ -228,21 +232,31 @@ defmodule HearthWeb.Router do
     delete "/replies/:id", ReplyController, :delete
     post "/replies/:id/helpful", ReplyController, :helpful
 
-    get "/rooms/:room_id/messages", MessageController, :room_index
-    post "/rooms/:room_id/messages", MessageController, :room_create
+    get "/messages/scheduled", MessageController, :list_scheduled
+    patch "/messages/scheduled/:id", MessageController, :reschedule
+    post "/messages/scheduled/:id/send", MessageController, :send_scheduled
+    delete "/messages/scheduled/:id", MessageController, :unschedule
+    post "/rooms/:room_id/messages/scheduled", MessageController, :room_schedule
+
+    post "/conversations/:conversation_id/messages/scheduled",
+         MessageController,
+         :conversation_schedule
+
+    get "/rooms/:room_id/messages", MessageController, :list_room
+    post "/rooms/:room_id/messages", MessageController, :send_room
     post "/rooms/:room_id/posts", PostController, :promote
     get "/conversations", ConversationController, :index
     post "/conversations", ConversationController, :create
-    get "/conversations/:conversation_id/messages", MessageController, :conversation_index
-    post "/conversations/:conversation_id/messages", MessageController, :conversation_create
+    get "/conversations/:conversation_id/messages", MessageController, :list_conversation
+    post "/conversations/:conversation_id/messages", MessageController, :send_conversation
     patch "/messages/:id", MessageController, :update
     delete "/messages/:id", MessageController, :delete
     post "/messages/:id/reactions", MessageController, :react
     post "/messages/:id/read", MessageController, :read
     put "/messages/:id/preview", MessageController, :preview
-    get "/unread", UnreadController, :show
+    get "/messages/unread", MessageController, :unread
 
-    post "/reports", ReportController, :create
+    post "/moderation/reports", ModerationController, :report
     get "/moderation/counts", ModerationController, :counts
     get "/communities/:community_id/moderation/queue", ModerationController, :queue
     get "/communities/:community_id/moderation/log", ModerationController, :log

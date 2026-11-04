@@ -3,6 +3,7 @@ defmodule HearthWeb.MessageControllerTest do
 
   alias Faker.Lorem
   alias Hearth.Chat
+  alias Hearth.Common
   alias Hearth.Communities
   alias Hearth.TestUtils
 
@@ -13,10 +14,12 @@ defmodule HearthWeb.MessageControllerTest do
     {:ok, _membership} = Communities.join(member, community)
     room = TestUtils.get_room!(community, type: :text)
 
+    send_at = 30 |> TestUtils.in_minutes() |> DateTime.to_iso8601()
+
     {:ok, binding()}
   end
 
-  describe "room_index" do
+  describe "list_room" do
     test "fails for someone outside the community", %{conn: conn, room: room} do
       assert %{"code" => "forbidden"} =
                conn
@@ -56,7 +59,7 @@ defmodule HearthWeb.MessageControllerTest do
     end
   end
 
-  describe "room_create" do
+  describe "send_room" do
     test "fails due to validation", %{conn: conn, member: member, room: room} do
       body = %{body: ""}
 
@@ -195,7 +198,7 @@ defmodule HearthWeb.MessageControllerTest do
     end
   end
 
-  describe "conversation_index" do
+  describe "list_conversation" do
     test "returns 404 outside conversation", %{
       conn: conn,
       owner: owner,
@@ -350,6 +353,202 @@ defmodule HearthWeb.MessageControllerTest do
              |> auth_conn(member)
              |> post(~p"/api/messages/#{message.id}/read")
              |> response(204)
+    end
+  end
+
+  describe "list_scheduled" do
+    test "fails without signing in", %{conn: conn} do
+      assert conn |> get(~p"/api/messages/scheduled") |> valid_response(401)
+    end
+
+    test "lists only mine", %{conn: conn, owner: owner, room: room} do
+      %{id: id} = TestUtils.schedule_random_message!(owner, room)
+
+      assert [%{"id" => ^id}] =
+               conn |> auth_conn(owner) |> get(~p"/api/messages/scheduled") |> valid_response(200)
+    end
+  end
+
+  describe "room_schedule" do
+    test "fails outside the community", %{conn: conn, room: room, send_at: send_at} do
+      assert %{"code" => "forbidden"} =
+               conn
+               |> auth_conn(TestUtils.register_random_user!())
+               |> post(~p"/api/rooms/#{room.id}/messages/scheduled", %{
+                 body: Lorem.sentence(),
+                 send_at: send_at
+               })
+               |> valid_response(403)
+    end
+
+    test "fails for a time already past", %{conn: conn, owner: owner, room: room} do
+      body = %{
+        body: Lorem.sentence(),
+        send_at: -5 |> TestUtils.in_minutes() |> DateTime.to_iso8601()
+      }
+
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/rooms/#{room.id}/messages/scheduled", body)
+             |> valid_response(422)
+    end
+
+    test "schedules the message", %{conn: conn, owner: owner, room: room, send_at: send_at} do
+      body = %{body: Lorem.sentence(), send_at: send_at}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> post(~p"/api/rooms/#{room.id}/messages/scheduled", body)
+               |> valid_response(201)
+
+      assert response["body"] == body.body
+      assert response["room_id"] == room.id
+    end
+  end
+
+  describe "conversation_schedule" do
+    test "returns 404 for someone else's conversation", %{
+      conn: conn,
+      owner: owner,
+      send_at: send_at
+    } do
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/conversations/#{Common.new_id()}/messages/scheduled", %{
+               body: Lorem.sentence(),
+               send_at: send_at
+             })
+             |> valid_response(404)
+    end
+
+    test "schedules a direct message", %{
+      conn: conn,
+      owner: owner,
+      community: community,
+      send_at: send_at
+    } do
+      member = TestUtils.join_random_member!(community)
+      {:ok, conversation} = Chat.start_direct(owner, member)
+
+      assert %{"conversation_id" => conversation_id} =
+               conn
+               |> auth_conn(owner)
+               |> post(~p"/api/conversations/#{conversation.id}/messages/scheduled", %{
+                 body: Lorem.sentence(),
+                 send_at: send_at
+               })
+               |> valid_response(201)
+
+      assert conversation_id == conversation.id
+    end
+  end
+
+  describe "reschedule" do
+    test "fails for a time that isn't one", %{conn: conn, owner: owner, room: room} do
+      scheduled = TestUtils.schedule_random_message!(owner, room)
+
+      assert %{"code" => "invalid_time"} =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/messages/scheduled/#{scheduled.id}", %{send_at: "soon"})
+               |> valid_response(400)
+    end
+
+    test "returns 404 for someone else's", %{
+      conn: conn,
+      owner: owner,
+      room: room,
+      send_at: send_at
+    } do
+      scheduled = TestUtils.schedule_random_message!(owner, room)
+
+      assert conn
+             |> auth_conn(TestUtils.register_random_user!())
+             |> patch(~p"/api/messages/scheduled/#{scheduled.id}", %{send_at: send_at})
+             |> valid_response(404)
+    end
+
+    test "moves it", %{conn: conn, owner: owner, room: room} do
+      scheduled = TestUtils.schedule_random_message!(owner, room)
+      send_at = 90 |> TestUtils.in_minutes() |> DateTime.to_iso8601()
+
+      assert %{"send_at" => moved} =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/messages/scheduled/#{scheduled.id}", %{send_at: send_at})
+               |> valid_response(200)
+
+      assert moved == send_at
+    end
+  end
+
+  describe "send_scheduled" do
+    test "returns 404 for someone else's", %{conn: conn, owner: owner, room: room} do
+      scheduled = TestUtils.schedule_random_message!(owner, room)
+
+      assert conn
+             |> auth_conn(TestUtils.register_random_user!())
+             |> post(~p"/api/messages/scheduled/#{scheduled.id}/send")
+             |> valid_response(404)
+    end
+
+    test "sends it", %{conn: conn, owner: owner, room: room} do
+      scheduled = TestUtils.schedule_random_message!(owner, room)
+
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/messages/scheduled/#{scheduled.id}/send")
+             |> response(204)
+
+      assert [] = Chat.list_scheduled_messages(owner)
+    end
+  end
+
+  describe "unschedule" do
+    test "stops it", %{conn: conn, owner: owner, room: room} do
+      scheduled = TestUtils.schedule_random_message!(owner, room)
+
+      assert conn
+             |> auth_conn(owner)
+             |> delete(~p"/api/messages/scheduled/#{scheduled.id}")
+             |> response(204)
+
+      assert [] = Chat.list_scheduled_messages(owner)
+    end
+  end
+
+  describe "unread" do
+    setup do
+      owner = TestUtils.register_random_user!()
+      community = TestUtils.create_random_community!(owner)
+      member = TestUtils.join_random_member!(community)
+      room = TestUtils.get_room!(community, type: :text)
+
+      {:ok, binding()}
+    end
+
+    test "fails signed out", %{conn: conn} do
+      conn |> get(~p"/api/messages/unread") |> valid_response(401)
+    end
+
+    test "counts unread rooms and conversations", %{
+      conn: conn,
+      owner: owner,
+      member: member,
+      room: room
+    } do
+      {:ok, conversation} = Chat.start_direct(owner, member)
+      {:ok, _message} = Chat.send_message(owner, conversation, %{body: Lorem.sentence()})
+      {:ok, _message} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
+
+      assert %{"rooms" => [unread_room], "conversations" => [unread_conversation]} =
+               conn |> auth_conn(member) |> get(~p"/api/messages/unread") |> valid_response(200)
+
+      assert unread_room["id"] == room.id
+      assert unread_room["count"] == 1
+      assert unread_conversation["id"] == conversation.id
+      assert unread_conversation["count"] == 1
     end
   end
 end

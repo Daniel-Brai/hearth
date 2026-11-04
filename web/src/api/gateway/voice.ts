@@ -8,7 +8,7 @@ import { mayTalk } from '@/domain/selectors';
 import {
   recordingDelete,
   recordingUpdate,
-  recordingRoomIndex,
+  recordingListRoom,
   voiceCreate,
   voiceDemote,
   voiceDisconnect,
@@ -16,7 +16,7 @@ import {
   voiceHand,
   voiceInvite,
   voiceLive,
-  voiceLiveIndex,
+  voiceIndex,
   voiceMute,
   voiceServerMute,
   voiceShow,
@@ -208,7 +208,7 @@ export function createVoiceGateway(
   };
 
   const loadRecordings = async (cid: string, rid: string, id: string, after?: string) => {
-    const answer = await call(() => recordingRoomIndex(id, after ? { after } : undefined));
+    const answer = await call(() => recordingListRoom(id, after ? { after } : undefined));
     if (answer.status !== 200) return;
 
     const { data, meta } = answer.data;
@@ -693,7 +693,7 @@ export function createVoiceGateway(
 
   // After sign in, every live session in the communities joined, and their rooms followed from then on
   const loadLive = async (): Promise<Result> => {
-    const answer = await call(() => voiceLiveIndex());
+    const answer = await call(() => voiceIndex());
 
     if (answer.status !== 200) return failed(answer);
 

@@ -27,30 +27,6 @@
 .event-hero .dialog__title { padding: 0; text-align: start; }
 .tz-note { align-items: center; color: var(--color-ink-dark); display: inline-flex; font-size: var(--text-x-small); gap: 0.35rem; }
 .tz-note svg { block-size: 0.9rem; inline-size: 0.9rem; }
-.picker__icon { color: var(--color-ink-dark); display: inline-grid; }
-.picker__icon svg { block-size: 1rem; inline-size: 1rem; }
-.picker__pop { max-block-size: none; overflow: visible; padding: 0.6rem; }
-.select__menu.picker__pop { min-inline-size: 17.5rem; }
-.cal__head { align-items: center; display: flex; justify-content: space-between; padding: 0 0.1rem 0.4rem; }
-.cal__grid { display: grid; gap: 0.15rem; grid-template-columns: repeat(7, 2.25rem); }
-.cal__dow { color: var(--color-ink-medium); font-size: var(--text-xx-small); font-weight: 700; padding-block: 0.25rem; text-align: center; text-transform: uppercase; }
-.cal__day {
-  background: none; border: 1px solid transparent; border-radius: 0.55em; color: var(--color-ink); cursor: pointer; font: inherit; font-size: var(--text-small);
-  font-variant-numeric: tabular-nums; block-size: 2.25rem; inline-size: 2.25rem; padding: 0;
-}
-.cal__day:hover:not(:disabled) { background: var(--color-ink-lightest); }
-.cal__day.is-out { color: var(--color-ink-medium); }
-.cal__day.is-today { border-color: var(--color-ink-light); font-weight: 800; }
-.cal__day.is-on { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-canvas); font-weight: 700; }
-.cal__day:disabled { color: var(--color-ink-lighter); cursor: not-allowed; }
-.cal__day:focus-visible { outline: var(--focus-ring); outline-offset: 1px; }
-.cal__foot { border-block-start: 1px solid var(--color-ink-lightest); display: flex; gap: 0.2rem; justify-content: space-between; margin-block-start: 0.5rem; padding-block-start: 0.4rem; }
-.picker__pop--time { display: grid; gap: 0.4rem; }
-.select__menu.picker__pop--time { min-inline-size: 13rem; }
-.time__type { font-size: var(--text-small); min-block-size: 2.2rem; }
-.time__hint { padding-inline: 0.2rem; }
-.time__list { display: grid; gap: 1px; max-block-size: 14rem; overflow-y: auto; scrollbar-width: thin; }
-.time__slot { font-variant-numeric: tabular-nums; }
 .event-card.is-live { border-color: var(--color-ink-lighter); }
 .event-card .pill--live { background: color-mix(in oklab, var(--hue-red) 14%, transparent); color: color-mix(in oklab, var(--hue-red) 70%, var(--color-ink)); }
 @container main (max-width: 46rem) {

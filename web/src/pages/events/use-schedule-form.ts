@@ -7,7 +7,7 @@ import { voiceOn } from '@/domain/selectors';
 import { evNext, evProvider } from '@/domain/events';
 import type { CommunityEvent, EventRepeat, VoiceMode } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
-import { combine, dayKey } from './date-time';
+import { combine, dayKey } from '@/features/date-time/date-time';
 import {
   flashText,
   alreadyPassed,

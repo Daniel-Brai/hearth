@@ -6,21 +6,30 @@
 import type {
   BadRequestResponse,
   NotFoundResponse,
+  Person,
   Profile,
+  TooManyRequestsResponse,
+  UnauthorizedResponse,
   UnprocessableContentResponse,
+  UserAvailableParams,
   UserIndexParams,
   UserPosts200,
   UserPostsParams,
   UserReplies200,
   UserRepliesParams,
-  UserSummary,
+  UsernameAvailability,
 } from '../../schemas';
 
 import { customFetch } from '../../../api/custom-fetch';
 
 export type userIndexResponse200 = {
-  data: UserSummary[];
+  data: Person[];
   status: 200;
+};
+
+export type userIndexResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
 };
 
 export type userIndexResponse422 = {
@@ -31,13 +40,13 @@ export type userIndexResponse422 = {
 export type userIndexResponseSuccess = userIndexResponse200 & {
   headers: Headers;
 };
-export type userIndexResponseError = userIndexResponse422 & {
+export type userIndexResponseError = (userIndexResponse401 | userIndexResponse422) & {
   headers: Headers;
 };
 
 export type userIndexResponse = userIndexResponseSuccess | userIndexResponseError;
 
-export const getUserIndexUrl = (params: UserIndexParams) => {
+export const getUserIndexUrl = (params?: UserIndexParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -52,14 +61,68 @@ export const getUserIndexUrl = (params: UserIndexParams) => {
 };
 
 /**
- * Names with no account are left out
- * @summary Look up people by username
+ * By usernames, which works signed out, or else everyone who shares a community with me, online first
+ * @summary List people
  */
 export const userIndex = async (
-  params: UserIndexParams,
+  params?: UserIndexParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<userIndexResponse> => {
   return customFetch<userIndexResponse>(getUserIndexUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export type userAvailableResponse200 = {
+  data: UsernameAvailability;
+  status: 200;
+};
+
+export type userAvailableResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type userAvailableResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type userAvailableResponseSuccess = userAvailableResponse200 & {
+  headers: Headers;
+};
+export type userAvailableResponseError = (userAvailableResponse422 | userAvailableResponse429) & {
+  headers: Headers;
+};
+
+export type userAvailableResponse = userAvailableResponseSuccess | userAvailableResponseError;
+
+export const getUserAvailableUrl = (params: UserAvailableParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/users/available?${stringifiedParams}`
+    : `/api/users/available`;
+};
+
+/**
+ * A username that breaks the rules is not available
+ * @summary Check whether a username is free
+ */
+export const userAvailable = async (
+  params: UserAvailableParams,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<userAvailableResponse> => {
+  return customFetch<userAvailableResponse>(getUserAvailableUrl(params), {
     ...options,
     method: 'GET',
   });

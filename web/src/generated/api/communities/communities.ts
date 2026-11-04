@@ -7,7 +7,7 @@ import type {
   BadRequestResponse,
   Community,
   CommunityDetail,
-  CommunityMemberIndexParams,
+  CommunityMembersParams,
   CommunityRequest,
   CommunityRequestIndexParams,
   CommunitySlug,
@@ -204,59 +204,59 @@ export const communityCreate = async (
   });
 };
 
-export type inviteEmailCreateResponse201 = {
+export type inviteSendInvitationResponse201 = {
   data: InviteEmail[];
   status: 201;
 };
 
-export type inviteEmailCreateResponse401 = {
+export type inviteSendInvitationResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type inviteEmailCreateResponse403 = {
+export type inviteSendInvitationResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type inviteEmailCreateResponse404 = {
+export type inviteSendInvitationResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type inviteEmailCreateResponse422 = {
+export type inviteSendInvitationResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type inviteEmailCreateResponseSuccess = inviteEmailCreateResponse201 & {
+export type inviteSendInvitationResponseSuccess = inviteSendInvitationResponse201 & {
   headers: Headers;
 };
-export type inviteEmailCreateResponseError = (
-  | inviteEmailCreateResponse401
-  | inviteEmailCreateResponse403
-  | inviteEmailCreateResponse404
-  | inviteEmailCreateResponse422
+export type inviteSendInvitationResponseError = (
+  | inviteSendInvitationResponse401
+  | inviteSendInvitationResponse403
+  | inviteSendInvitationResponse404
+  | inviteSendInvitationResponse422
 ) & {
   headers: Headers;
 };
 
-export type inviteEmailCreateResponse =
-  inviteEmailCreateResponseSuccess | inviteEmailCreateResponseError;
+export type inviteSendInvitationResponse =
+  inviteSendInvitationResponseSuccess | inviteSendInvitationResponseError;
 
-export const getInviteEmailCreateUrl = (communityId: string) => {
-  return `/api/communities/${communityId}/invite-emails`;
+export const getInviteSendInvitationUrl = (communityId: string) => {
+  return `/api/communities/${communityId}/invitations`;
 };
 
 /**
  * Each address gets a single use code with the role given for it
  * @summary Email invites
  */
-export const inviteEmailCreate = async (
+export const inviteSendInvitation = async (
   communityId: string,
   emailInvitesBody: EmailInvitesBody,
   options?: Parameters<typeof customFetch>[1],
-): Promise<inviteEmailCreateResponse> => {
+): Promise<inviteSendInvitationResponse> => {
   const getHeaders = (
     h?: NonNullable<RequestInit['headers']>,
   ): Record<string, string | readonly string[]> => {
@@ -276,7 +276,7 @@ export const inviteEmailCreate = async (
     }
     return headers;
   };
-  return customFetch<inviteEmailCreateResponse>(getInviteEmailCreateUrl(communityId), {
+  return customFetch<inviteSendInvitationResponse>(getInviteSendInvitationUrl(communityId), {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
@@ -417,53 +417,53 @@ export const inviteCreate = async (
   });
 };
 
-export type communityKindUpdateResponse200 = {
+export type communitySaveKindsResponse200 = {
   data: PostKind[];
   status: 200;
 };
 
-export type communityKindUpdateResponse400 = {
+export type communitySaveKindsResponse400 = {
   data: BadRequestResponse;
   status: 400;
 };
 
-export type communityKindUpdateResponse401 = {
+export type communitySaveKindsResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type communityKindUpdateResponse403 = {
+export type communitySaveKindsResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type communityKindUpdateResponse404 = {
+export type communitySaveKindsResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type communityKindUpdateResponse422 = {
+export type communitySaveKindsResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type communityKindUpdateResponseSuccess = communityKindUpdateResponse200 & {
+export type communitySaveKindsResponseSuccess = communitySaveKindsResponse200 & {
   headers: Headers;
 };
-export type communityKindUpdateResponseError = (
-  | communityKindUpdateResponse400
-  | communityKindUpdateResponse401
-  | communityKindUpdateResponse403
-  | communityKindUpdateResponse404
-  | communityKindUpdateResponse422
+export type communitySaveKindsResponseError = (
+  | communitySaveKindsResponse400
+  | communitySaveKindsResponse401
+  | communitySaveKindsResponse403
+  | communitySaveKindsResponse404
+  | communitySaveKindsResponse422
 ) & {
   headers: Headers;
 };
 
-export type communityKindUpdateResponse =
-  communityKindUpdateResponseSuccess | communityKindUpdateResponseError;
+export type communitySaveKindsResponse =
+  communitySaveKindsResponseSuccess | communitySaveKindsResponseError;
 
-export const getCommunityKindUpdateUrl = (communityId: string) => {
+export const getCommunitySaveKindsUrl = (communityId: string) => {
   return `/api/communities/${communityId}/kinds`;
 };
 
@@ -471,11 +471,11 @@ export const getCommunityKindUpdateUrl = (communityId: string) => {
  * Needs community.update. Kinds left out are removed and their posts move to Discussion
  * @summary Save a community's kinds of post
  */
-export const communityKindUpdate = async (
+export const communitySaveKinds = async (
   communityId: string,
   saveKindsBody: SaveKindsBody,
   options?: Parameters<typeof customFetch>[1],
-): Promise<communityKindUpdateResponse> => {
+): Promise<communitySaveKindsResponse> => {
   const getHeaders = (
     h?: NonNullable<RequestInit['headers']>,
   ): Record<string, string | readonly string[]> => {
@@ -495,7 +495,7 @@ export const communityKindUpdate = async (
     }
     return headers;
   };
-  return customFetch<communityKindUpdateResponse>(getCommunityKindUpdateUrl(communityId), {
+  return customFetch<communitySaveKindsResponse>(getCommunitySaveKindsUrl(communityId), {
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
@@ -503,37 +503,34 @@ export const communityKindUpdate = async (
   });
 };
 
-export type communityMemberIndexResponse200 = {
+export type communityMembersResponse200 = {
   data: MemberMatch[];
   status: 200;
 };
 
-export type communityMemberIndexResponse404 = {
+export type communityMembersResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type communityMemberIndexResponse422 = {
+export type communityMembersResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type communityMemberIndexResponseSuccess = communityMemberIndexResponse200 & {
+export type communityMembersResponseSuccess = communityMembersResponse200 & {
   headers: Headers;
 };
-export type communityMemberIndexResponseError = (
-  communityMemberIndexResponse404 | communityMemberIndexResponse422
+export type communityMembersResponseError = (
+  communityMembersResponse404 | communityMembersResponse422
 ) & {
   headers: Headers;
 };
 
-export type communityMemberIndexResponse =
-  communityMemberIndexResponseSuccess | communityMemberIndexResponseError;
+export type communityMembersResponse =
+  communityMembersResponseSuccess | communityMembersResponseError;
 
-export const getCommunityMemberIndexUrl = (
-  communityId: string,
-  params?: CommunityMemberIndexParams,
-) => {
+export const getCommunityMembersUrl = (communityId: string, params?: CommunityMembersParams) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -553,18 +550,15 @@ export const getCommunityMemberIndexUrl = (
  * Matches the start of a username or any part of a name
  * @summary Find members of a community to mention
  */
-export const communityMemberIndex = async (
+export const communityMembers = async (
   communityId: string,
-  params?: CommunityMemberIndexParams,
+  params?: CommunityMembersParams,
   options?: Parameters<typeof customFetch>[1],
-): Promise<communityMemberIndexResponse> => {
-  return customFetch<communityMemberIndexResponse>(
-    getCommunityMemberIndexUrl(communityId, params),
-    {
-      ...options,
-      method: 'GET',
-    },
-  );
+): Promise<communityMembersResponse> => {
+  return customFetch<communityMembersResponse>(getCommunityMembersUrl(communityId, params), {
+    ...options,
+    method: 'GET',
+  });
 };
 
 export type communityRoleMemberRolesResponse200 = {
@@ -1489,17 +1483,17 @@ export const communitySlug = async (
   });
 };
 
-export type communityTemplateIndexResponse200 = {
+export type communityTemplatesResponse200 = {
   data: CommunityTemplate[];
   status: 200;
 };
 
-export type communityTemplateIndexResponseSuccess = communityTemplateIndexResponse200 & {
+export type communityTemplatesResponseSuccess = communityTemplatesResponse200 & {
   headers: Headers;
 };
-export type communityTemplateIndexResponse = communityTemplateIndexResponseSuccess;
+export type communityTemplatesResponse = communityTemplatesResponseSuccess;
 
-export const getCommunityTemplateIndexUrl = () => {
+export const getCommunityTemplatesUrl = () => {
   return `/api/community-templates`;
 };
 
@@ -1507,59 +1501,169 @@ export const getCommunityTemplateIndexUrl = () => {
  * Cacheable for an hour
  * @summary List the starting points for a new community
  */
-export const communityTemplateIndex = async (
+export const communityTemplates = async (
   options?: Parameters<typeof customFetch>[1],
-): Promise<communityTemplateIndexResponse> => {
-  return customFetch<communityTemplateIndexResponse>(getCommunityTemplateIndexUrl(), {
+): Promise<communityTemplatesResponse> => {
+  return customFetch<communityTemplatesResponse>(getCommunityTemplatesUrl(), {
     ...options,
     method: 'GET',
   });
 };
 
-export type emailCheckCreateResponse200 = {
-  data: EmailCheck[];
+export type inviteRevokeInvitationResponse200 = {
+  data: InviteEmail;
   status: 200;
 };
 
-export type emailCheckCreateResponse401 = {
+export type inviteRevokeInvitationResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type emailCheckCreateResponse422 = {
+export type inviteRevokeInvitationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type inviteRevokeInvitationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type inviteRevokeInvitationResponse422 = {
   data: UnprocessableContentResponse;
   status: 422;
 };
 
-export type emailCheckCreateResponse429 = {
-  data: TooManyRequestsResponse;
-  status: 429;
-};
-
-export type emailCheckCreateResponseSuccess = emailCheckCreateResponse200 & {
+export type inviteRevokeInvitationResponseSuccess = inviteRevokeInvitationResponse200 & {
   headers: Headers;
 };
-export type emailCheckCreateResponseError = (
-  emailCheckCreateResponse401 | emailCheckCreateResponse422 | emailCheckCreateResponse429
+export type inviteRevokeInvitationResponseError = (
+  | inviteRevokeInvitationResponse401
+  | inviteRevokeInvitationResponse403
+  | inviteRevokeInvitationResponse404
+  | inviteRevokeInvitationResponse422
 ) & {
   headers: Headers;
 };
 
-export type emailCheckCreateResponse =
-  emailCheckCreateResponseSuccess | emailCheckCreateResponseError;
+export type inviteRevokeInvitationResponse =
+  inviteRevokeInvitationResponseSuccess | inviteRevokeInvitationResponseError;
 
-export const getEmailCheckCreateUrl = () => {
-  return `/api/emails/check`;
+export const getInviteRevokeInvitationUrl = (id: string) => {
+  return `/api/invitations/${id}`;
+};
+
+/**
+ * Only that person's code stops working
+ * @summary Revoke an emailed invite
+ */
+export const inviteRevokeInvitation = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<inviteRevokeInvitationResponse> => {
+  return customFetch<inviteRevokeInvitationResponse>(getInviteRevokeInvitationUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export type inviteDeclineInvitationResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type inviteDeclineInvitationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type inviteDeclineInvitationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type inviteDeclineInvitationResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type inviteDeclineInvitationResponseSuccess = inviteDeclineInvitationResponse204 & {
+  headers: Headers;
+};
+export type inviteDeclineInvitationResponseError = (
+  | inviteDeclineInvitationResponse401
+  | inviteDeclineInvitationResponse404
+  | inviteDeclineInvitationResponse422
+) & {
+  headers: Headers;
+};
+
+export type inviteDeclineInvitationResponse =
+  inviteDeclineInvitationResponseSuccess | inviteDeclineInvitationResponseError;
+
+export const getInviteDeclineInvitationUrl = (id: string) => {
+  return `/api/invitations/${id}/decline`;
+};
+
+/**
+ * Its code stops working
+ * @summary Turn down an emailed invite
+ */
+export const inviteDeclineInvitation = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<inviteDeclineInvitationResponse> => {
+  return customFetch<inviteDeclineInvitationResponse>(getInviteDeclineInvitationUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export type inviteEmailCheckResponse200 = {
+  data: EmailCheck[];
+  status: 200;
+};
+
+export type inviteEmailCheckResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type inviteEmailCheckResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type inviteEmailCheckResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type inviteEmailCheckResponseSuccess = inviteEmailCheckResponse200 & {
+  headers: Headers;
+};
+export type inviteEmailCheckResponseError = (
+  inviteEmailCheckResponse401 | inviteEmailCheckResponse422 | inviteEmailCheckResponse429
+) & {
+  headers: Headers;
+};
+
+export type inviteEmailCheckResponse =
+  inviteEmailCheckResponseSuccess | inviteEmailCheckResponseError;
+
+export const getInviteEmailCheckUrl = () => {
+  return `/api/invites/email-check`;
 };
 
 /**
  * Never says who has an account
  * @summary Check addresses can receive email
  */
-export const emailCheckCreate = async (
+export const inviteEmailCheck = async (
   emailCheckBody: EmailCheckBody,
   options?: Parameters<typeof customFetch>[1],
-): Promise<emailCheckCreateResponse> => {
+): Promise<inviteEmailCheckResponse> => {
   const getHeaders = (
     h?: NonNullable<RequestInit['headers']>,
   ): Record<string, string | readonly string[]> => {
@@ -1579,119 +1683,11 @@ export const emailCheckCreate = async (
     }
     return headers;
   };
-  return customFetch<emailCheckCreateResponse>(getEmailCheckCreateUrl(), {
+  return customFetch<inviteEmailCheckResponse>(getInviteEmailCheckUrl(), {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(emailCheckBody),
-  });
-};
-
-export type inviteEmailDeleteResponse200 = {
-  data: InviteEmail;
-  status: 200;
-};
-
-export type inviteEmailDeleteResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type inviteEmailDeleteResponse403 = {
-  data: ForbiddenResponse;
-  status: 403;
-};
-
-export type inviteEmailDeleteResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type inviteEmailDeleteResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type inviteEmailDeleteResponseSuccess = inviteEmailDeleteResponse200 & {
-  headers: Headers;
-};
-export type inviteEmailDeleteResponseError = (
-  | inviteEmailDeleteResponse401
-  | inviteEmailDeleteResponse403
-  | inviteEmailDeleteResponse404
-  | inviteEmailDeleteResponse422
-) & {
-  headers: Headers;
-};
-
-export type inviteEmailDeleteResponse =
-  inviteEmailDeleteResponseSuccess | inviteEmailDeleteResponseError;
-
-export const getInviteEmailDeleteUrl = (id: string) => {
-  return `/api/invite-emails/${id}`;
-};
-
-/**
- * Only that person's code stops working
- * @summary Revoke an emailed invite
- */
-export const inviteEmailDelete = async (
-  id: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<inviteEmailDeleteResponse> => {
-  return customFetch<inviteEmailDeleteResponse>(getInviteEmailDeleteUrl(id), {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-export type inviteEmailDeclineResponse204 = {
-  data: NoContentResponse;
-  status: 204;
-};
-
-export type inviteEmailDeclineResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type inviteEmailDeclineResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type inviteEmailDeclineResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type inviteEmailDeclineResponseSuccess = inviteEmailDeclineResponse204 & {
-  headers: Headers;
-};
-export type inviteEmailDeclineResponseError = (
-  inviteEmailDeclineResponse401 | inviteEmailDeclineResponse404 | inviteEmailDeclineResponse422
-) & {
-  headers: Headers;
-};
-
-export type inviteEmailDeclineResponse =
-  inviteEmailDeclineResponseSuccess | inviteEmailDeclineResponseError;
-
-export const getInviteEmailDeclineUrl = (id: string) => {
-  return `/api/invite-emails/${id}/decline`;
-};
-
-/**
- * Its code stops working
- * @summary Turn down an emailed invite
- */
-export const inviteEmailDecline = async (
-  id: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<inviteEmailDeclineResponse> => {
-  return customFetch<inviteEmailDeclineResponse>(getInviteEmailDeclineUrl(id), {
-    ...options,
-    method: 'POST',
   });
 };
 

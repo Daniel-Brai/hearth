@@ -9,10 +9,10 @@ import type {
   Instance,
   InviteEmail,
   InviteLink,
-  MyInvite,
   LiveState,
   Message,
   ModLogEntry,
+  MyInvite,
   Notification,
   Person,
   Post,
@@ -21,6 +21,8 @@ import type {
   Recording,
   Role,
   RoomSettings,
+  ScheduledMessage,
+  ScheduledPost,
   Template,
   Transcript,
   UserSettings,
@@ -50,6 +52,8 @@ export type AppState = {
   online: Record<string, boolean>;
   // Who else is typing in each chat right now, by chat key
   typing: Record<string, string[]>;
+  scheduled: ScheduledMessage[];
+  scheduledPosts: ScheduledPost[];
   directs: Direct[];
   queue: QueueItem[];
   queueCounts: Record<string, number>;

@@ -22,6 +22,7 @@ import {
   roomAccess,
 } from '@/domain/selectors';
 import { stripPrefix } from '@/domain/links';
+import { MOST_SCHEDULED, sendAtProblem } from '@/domain/schedule';
 import { usernameProblem } from '@/domain/username';
 import { extractTags } from '@/features/markdown/tags';
 import type {
@@ -732,6 +733,79 @@ export class MockGateway implements HearthGateway {
   };
 
   readonly posts = {
+    schedule: async (spec: {
+      c: string;
+      kind: string;
+      title: string;
+      body: string;
+      files?: Attachment[];
+      sendAt: string;
+    }): Promise<Result> => {
+      await latency(300);
+
+      const state = this.state();
+      const problem = sendAtProblem(new Date(spec.sendAt), new Date());
+
+      if (!canDo(state, spec.c, 'post.create'))
+        return fail(
+          'Join ' + (community(state, spec.c)?.name ?? 'the community') + ' to post there',
+        );
+
+      if (!spec.title.trim()) return fail('Give your post a title first');
+
+      if (spec.title.trim().length > TITLE_MAX)
+        return fail(`Keep the title to ${TITLE_MAX} characters.`);
+
+      if (!postableKinds(state, spec.c).some((k) => k.name === spec.kind))
+        return fail('Pick a kind of post');
+
+      if (problem) return fail(problem);
+
+      if (this.waiting() >= MOST_SCHEDULED)
+        return fail(`You have ${MOST_SCHEDULED} things scheduled. Send or delete some first.`);
+
+      const id = this.store.nextId('sp');
+
+      this.store.set((d) => {
+        d.scheduledPosts.push({
+          id,
+          c: spec.c,
+          kind: spec.kind,
+          title: spec.title.trim(),
+          body: spec.body.trim(),
+          files: spec.files ?? [],
+          sendAt: spec.sendAt,
+          failure: null,
+        });
+      });
+      this.armPost(id, spec.sendAt);
+
+      return ok(undefined);
+    },
+    reschedule: async (id: string, sendAt: string): Promise<Result> => {
+      const problem = sendAtProblem(new Date(sendAt), new Date());
+
+      if (problem) return fail(problem);
+
+      this.store.set((d) => {
+        const item = d.scheduledPosts.find((s) => s.id === id);
+
+        if (item) {
+          item.sendAt = sendAt;
+          item.failure = null;
+        }
+      });
+      this.armPost(id, sendAt);
+
+      return ok(undefined);
+    },
+    publishNow: (id: string): Promise<Result> => this.firePost(id),
+    unschedule: (id: string) => {
+      this.disarm(id);
+      this.store.set((d) => {
+        d.scheduledPosts = d.scheduledPosts.filter((s) => s.id !== id);
+      });
+    },
     markSeen: async (id: string): Promise<Result> => {
       this.store.set((state) => {
         const p = state.posts.find((x) => x.id === id);
@@ -1211,6 +1285,62 @@ export class MockGateway implements HearthGateway {
 
       return ok({});
     },
+    schedule: async (
+      key: string,
+      text: string,
+      sendAt: string,
+      opts: { files?: Attachment[] } = {},
+    ): Promise<Result> => {
+      const state = this.state();
+      const [cid] = key.split('/') as [string, string];
+      const body = text.trim();
+      const problem = sendAtProblem(new Date(sendAt), new Date());
+
+      if (!body && !opts.files?.length) return fail('Write something first.');
+      if (body.startsWith('/'))
+        return fail("A command runs straight away, so it can't be scheduled.");
+
+      if (cid !== 'dm' && !canDo(state, cid, 'message.create'))
+        return fail('Join ' + community(state, cid)!.name + ' to chat there');
+
+      if (problem) return fail(problem);
+
+      if (this.waiting() >= MOST_SCHEDULED)
+        return fail(`You have ${MOST_SCHEDULED} things scheduled. Send or delete some first.`);
+
+      const id = this.store.nextId('s');
+
+      this.store.set((d) => {
+        d.scheduled.push({ id, key, text: body, files: opts.files ?? [], sendAt, failure: null });
+      });
+      this.armScheduled(id, sendAt);
+
+      return ok(undefined);
+    },
+    reschedule: async (id: string, sendAt: string): Promise<Result> => {
+      const problem = sendAtProblem(new Date(sendAt), new Date());
+
+      if (problem) return fail(problem);
+
+      this.store.set((d) => {
+        const item = d.scheduled.find((s) => s.id === id);
+
+        if (item) {
+          item.sendAt = sendAt;
+          item.failure = null;
+        }
+      });
+      this.armScheduled(id, sendAt);
+
+      return ok(undefined);
+    },
+    sendNow: async (id: string): Promise<Result> => this.fireScheduled(id),
+    unschedule: (id: string) => {
+      this.disarm(id);
+      this.store.set((d) => {
+        d.scheduled = d.scheduled.filter((s) => s.id !== id);
+      });
+    },
     commands: (key: string) => {
       const state = this.state();
       const dm = key.startsWith('dm/');
@@ -1662,6 +1792,76 @@ export class MockGateway implements HearthGateway {
   };
 
   private readonly reported = new Set<string>();
+  private readonly scheduleTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  /** A timer can't wait much past 24 days, so one set further out checks again when it wakes */
+  private arm(id: string, sendAt: string, fire: () => void) {
+    const at = new Date(sendAt).getTime();
+
+    clearTimeout(this.scheduleTimers.get(id));
+    this.scheduleTimers.set(
+      id,
+      setTimeout(
+        () => (at > Date.now() ? this.arm(id, sendAt, fire) : fire()),
+        Math.min(Math.max(at - Date.now(), 0), 2 ** 31 - 1),
+      ),
+    );
+  }
+
+  private disarm(id: string) {
+    clearTimeout(this.scheduleTimers.get(id));
+    this.scheduleTimers.delete(id);
+  }
+
+  private armScheduled(id: string, sendAt: string) {
+    this.arm(id, sendAt, () => this.fireScheduled(id));
+  }
+
+  private armPost(id: string, sendAt: string) {
+    this.arm(id, sendAt, () => void this.firePost(id));
+  }
+
+  private waiting(): number {
+    const state = this.state();
+
+    return state.scheduled.length + state.scheduledPosts.length;
+  }
+
+  private async firePost(id: string): Promise<Result> {
+    const item = this.state().scheduledPosts.find((s) => s.id === id);
+
+    if (!item) return fail('That post was already published or deleted.');
+
+    this.disarm(id);
+
+    const posted = await this.posts.create(item);
+
+    this.store.set((d) => {
+      d.scheduledPosts = posted.ok
+        ? d.scheduledPosts.filter((s) => s.id !== id)
+        : d.scheduledPosts.map((s) => (s.id === id ? { ...s, failure: posted.error } : s));
+    });
+
+    return posted.ok ? ok(undefined) : fail(posted.error);
+  }
+
+  private fireScheduled(id: string): Result {
+    const item = this.state().scheduled.find((s) => s.id === id);
+
+    if (!item) return fail('That message was already sent or deleted.');
+
+    this.disarm(id);
+
+    const sent = this.chat.send(item.key, item.text, { files: item.files });
+
+    this.store.set((d) => {
+      d.scheduled = sent.ok
+        ? d.scheduled.filter((s) => s.id !== id)
+        : d.scheduled.map((s) => (s.id === id ? { ...s, failure: sent.error } : s));
+    });
+
+    return sent.ok ? ok(undefined) : fail(sent.error);
+  }
 
   readonly moderation = {
     keep: async (id: string): Promise<Result> => {

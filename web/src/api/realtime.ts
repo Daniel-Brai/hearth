@@ -17,6 +17,8 @@ import type {
   MessageReacted,
   MessageRemoved,
   NotificationCreated,
+  ScheduledMessageChanged,
+  ScheduledPostChanged,
   PostCreated,
   PostReacted,
   ReplyCreated,
@@ -62,6 +64,8 @@ export type ChannelEvents = {
   EventUpdated: EventUpdated;
   EventCancelled: EventCancelled;
   NotificationCreated: NotificationCreated;
+  ScheduledMessageChanged: ScheduledMessageChanged;
+  ScheduledPostChanged: ScheduledPostChanged;
   VoiceSessionStarted: VoiceSessionStarted;
   VoiceSessionEnded: VoiceSessionEnded;
   VoiceAttendance: VoiceAttendance;

@@ -51,7 +51,8 @@ export class ApiGateway implements HearthGateway {
               Promise.all([
                 moderation.loadCounts(),
                 posts.loadDrafts(),
-                chat.loadInbox(),
+                posts.loadScheduled(),
+                chat.loadInbox().then(() => chat.loadScheduled()),
                 voice.loadLive(),
               ]),
             ),
@@ -64,6 +65,8 @@ export class ApiGateway implements HearthGateway {
         if (kind === 'report') void moderation.loadCounts();
         if (kind === 'dm') void chat.loadInbox();
       },
+      onScheduled: (what) =>
+        void (what === 'messages' ? chat.loadScheduled() : posts.loadScheduled()),
       onSignOut: () => reloadApp(routes.signIn),
     });
 

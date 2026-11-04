@@ -9,7 +9,7 @@ defmodule HearthWeb.UserJSON do
   def summary(nil), do: nil
   def summary(user), do: Map.take(user, ~w[id username display_name avatar_id avatar_url]a)
 
-  def index(%{users: users}), do: Enum.map(users, &summary/1)
+  def index(%{people: people} = assigns), do: Enum.map(people, &person(&1, assigns))
 
   def show(%{user: user, counts: counts}) do
     user
@@ -34,4 +34,24 @@ defmodule HearthWeb.UserJSON do
       answer: post.answer_reply_id == reply.id
     }
   end
+
+  def available(%{available: available}), do: %{available: available}
+
+  # A setting for members shows only to someone who shares a community with the person
+  defp person(%{privacy: privacy} = user, %{shared: shared, online: online}) do
+    communities = shared[user.id]
+
+    user
+    |> summary()
+    |> Map.merge(%{
+      online: shows?(privacy.presence, communities) and MapSet.member?(online, user.id),
+      last_seen_at: if(shows?(privacy.last_seen, communities), do: user.last_seen_at),
+      community_ids:
+        if(shows?(privacy.show_communities, communities), do: communities || [], else: [])
+    })
+  end
+
+  defp shows?(:nobody, _communities), do: false
+  defp shows?(:everyone, _communities), do: true
+  defp shows?(_members, communities), do: communities != nil
 end

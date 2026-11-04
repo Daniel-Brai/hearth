@@ -15,6 +15,7 @@ defmodule Hearth.TestUtils do
   alias Hearth.Accounts
   alias Hearth.Auth
   alias Hearth.Auth.TransferCodeRequested
+  alias Hearth.Chat
   alias Hearth.Common
   alias Hearth.Communities
   alias Hearth.Events
@@ -153,6 +154,29 @@ defmodule Hearth.TestUtils do
     {:ok, _kinds} = Forum.create_default_kinds(community.id, community.template)
 
     community
+  end
+
+  def in_minutes(minutes), do: DateTime.add(DateTime.utc_now(), minutes, :minute)
+
+  def schedule_random_message!(author, place, opts \\ []) do
+    params = %{body: Lorem.sentence(), send_at: Keyword.get(opts, :send_at, in_minutes(30))}
+    {:ok, scheduled} = Chat.schedule_message(author, place, params)
+
+    scheduled
+  end
+
+  def schedule_random_post!(author, community, opts \\ []) do
+    [kind | _kinds] = Forum.list_kinds(community.id)
+
+    params =
+      Map.merge(
+        %{kind_id: kind.id, title: Lorem.sentence(), send_at: in_minutes(30)},
+        Map.new(opts)
+      )
+
+    {:ok, scheduled} = Forum.schedule_post(author, community, params)
+
+    scheduled
   end
 
   def put_env(app \\ :hearth, key, value) do

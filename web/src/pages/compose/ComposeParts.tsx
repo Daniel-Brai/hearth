@@ -1,4 +1,5 @@
 import { Button, FileList, Icon, Label, Panel, Segmented, Select, cn } from '@/design-system';
+import { SendLaterButton } from '@/features/schedule/SendLater';
 import type { Attachment, PostKind } from '@/domain/types';
 import { Markdown } from '@/features/markdown/Markdown';
 import { useUi } from '@/runtime/ui-store';
@@ -144,6 +145,7 @@ export function PublishBar({
   communityName,
   onDiscard,
   onPublish,
+  onSchedule,
 }: {
   readonly canDiscard: boolean;
   readonly badge: SaveState | null;
@@ -151,6 +153,7 @@ export function PublishBar({
   readonly communityName: string | null;
   readonly onDiscard: () => void;
   readonly onPublish: () => void;
+  readonly onSchedule: (at: Date) => Promise<boolean>;
 }) {
   return (
     <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -167,11 +170,21 @@ export function PublishBar({
         </span>
       ) : null}
 
+      <span className="ml-auto">
+        <SendLaterButton
+          id="compose-post-later"
+          label="Post later"
+          goes="Posts"
+          size={undefined}
+          disabled={busy}
+          onPick={onSchedule}
+        />
+      </span>
+
       <Button
         variant="reversed"
         busy={busy}
         className="post-to"
-        style={{ marginInlineStart: 'auto' }}
         title={communityName ? `Post to ${communityName}` : undefined}
         onClick={onPublish}
       >

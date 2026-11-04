@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
-import { useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { ButtonLink, EmptyState, Icon, Measure, Textarea } from '@/design-system';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
@@ -23,6 +23,7 @@ import {
 import { LeaveDialog } from './LeaveDialog';
 import { hasContent, useComposeDraft } from './use-compose-draft';
 import { useLeaveGuard } from './use-leave-guard';
+import { ScheduledPosts } from '@/features/schedule/ScheduledPosts';
 import { usePublish } from './use-publish';
 import './ComposePage.css';
 import { TITLE_MAX } from '@/domain/catalog';
@@ -32,6 +33,7 @@ const allowedCommunities = (state: AppState) =>
 
 export function ComposePage() {
   const { community: asked } = useParams();
+  const location = useLocation();
   const gateway = useGateway();
 
   useLoad(() => gateway.load.compose(), 'compose');
@@ -74,7 +76,7 @@ export function ComposePage() {
     );
   }
 
-  return <ComposeForm key={cid} initialCid={cid} />;
+  return <ComposeForm key={cid + location.key} initialCid={cid} />;
 }
 
 function titleKeyHandler(publish: () => void) {
@@ -101,7 +103,7 @@ function ComposeForm({ initialCid }: { readonly initialCid: string }) {
     saveState === 'Saving…' || saveState === "Couldn't save the draft" || files.length > 0;
   const guard = useLeaveGuard(dirty);
 
-  const { busy, shake, publish } = usePublish({
+  const { busy, shake, publish, schedule } = usePublish({
     fields,
     files,
     onPublished: () => {
@@ -149,6 +151,8 @@ function ComposeForm({ initialCid }: { readonly initialCid: string }) {
 
       <main id="main">
         <Measure narrow className="grid gap-4">
+          <ScheduledPosts cid={fields.cid} />
+
           <CommunityAndKind
             cid={fields.cid}
             communities={communities}
@@ -206,6 +210,7 @@ function ComposeForm({ initialCid }: { readonly initialCid: string }) {
             communityName={communityName}
             onDiscard={discard}
             onPublish={() => void publish()}
+            onSchedule={schedule}
           />
         </Measure>
       </main>

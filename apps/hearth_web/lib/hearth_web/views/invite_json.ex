@@ -52,8 +52,8 @@ defmodule HearthWeb.InviteJSON do
     end)
   end
 
-  def email_create(%{sent: sent}), do: Enum.map(sent, &email/1)
-  def email_delete(%{invite_email: invite_email}), do: email(invite_email)
+  def send_invitation(%{sent: sent}), do: Enum.map(sent, &email/1)
+  def revoke_invitation(%{invite_email: invite_email}), do: email(invite_email)
 
   @spec serialize(map()) :: map()
   def serialize(invite), do: Map.take(invite, @fields)
@@ -63,4 +63,6 @@ defmodule HearthWeb.InviteJSON do
     |> Map.take(~w[id email status inserted_at]a)
     |> Map.put(:role_key, invite_email.invite.role_key)
   end
+
+  def email_check(%{checks: checks}), do: checks
 end

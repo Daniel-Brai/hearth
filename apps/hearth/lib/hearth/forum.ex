@@ -1,7 +1,7 @@
 defmodule Hearth.Forum do
-  events = [AnswerMarked, KindsChanged, PostCreated, ReplyCreated]
+  events = [AnswerMarked, KindsChanged, PostCreated, ReplyCreated, ScheduledPostChanged]
 
-  default = [Draft, Kind, Post, Reply | events]
+  default = [Draft, Kind, Post, Reply, ScheduledPost | events]
 
   exports =
     case Mix.env() do
@@ -25,6 +25,7 @@ defmodule Hearth.Forum do
     exports: exports
 
   alias Ecto.Changeset
+  alias Hearth.Accounts
   alias Hearth.Accounts.User
   alias Hearth.Buffer
   alias Hearth.Chat
@@ -39,7 +40,9 @@ defmodule Hearth.Forum do
   alias Hearth.Forum.Command.DeleteReply
   alias Hearth.Forum.Command.EditReply
   alias Hearth.Forum.Command.PromoteMessages
+  alias Hearth.Forum.Command.ReschedulePost
   alias Hearth.Forum.Command.SaveKinds
+  alias Hearth.Forum.Command.SchedulePost
   alias Hearth.Forum.Command.ToggleHelpful
   alias Hearth.Forum.Command.UpdatePost
   alias Hearth.Forum.Draft
@@ -56,6 +59,8 @@ defmodule Hearth.Forum do
   alias Hearth.Forum.Reads
   alias Hearth.Forum.Reply
   alias Hearth.Forum.ReplyCreated
+  alias Hearth.Forum.ScheduledPost
+  alias Hearth.Forum.ScheduledPostChanged
   alias Hearth.IAM
   alias Hearth.PubSub
   alias Hearth.Repo.Page
@@ -107,6 +112,64 @@ defmodule Hearth.Forum do
          {:ok, post} <- CreatePost.execute(user, community, params) do
       broadcast(%PostCreated{post_id: post.id, community_id: community.id, author_id: user.id})
       {:ok, post}
+    end
+  end
+
+  @spec schedule_post(User.t(), Community.t(), map()) ::
+          {:ok, ScheduledPost.t()}
+          | {:error, :forbidden | :unknown_kind | :too_many | Changeset.t()}
+  def schedule_post(%User{} = user, %Community{} = community, %{} = params) do
+    with :ok <- authorize(user, :create, :post, community.id),
+         {:ok, kind} <- fetch_kind(community.id, params[:kind_id]),
+         :ok <- may_use_kind(user, community.id, kind),
+         {:ok, scheduled} <- SchedulePost.execute(user, community, params) do
+      scheduled_changed(scheduled)
+      {:ok, scheduled}
+    end
+  end
+
+  @spec list_scheduled_posts(User.t()) :: [ScheduledPost.t()]
+  def list_scheduled_posts(%User{id: id}), do: ScheduledPost.list_for(id)
+
+  @spec get_scheduled_post(User.t(), T.id()) :: {:ok, ScheduledPost.t()} | {:error, :not_found}
+  def get_scheduled_post(%User{id: user_id}, id) when is_binary(id) do
+    case ScheduledPost.get(id: id, author_id: user_id) do
+      nil -> {:error, :not_found}
+      %ScheduledPost{} = scheduled -> {:ok, scheduled}
+    end
+  end
+
+  @spec reschedule_post(ScheduledPost.t(), DateTime.t()) ::
+          {:ok, ScheduledPost.t()} | {:error, Changeset.t()}
+  def reschedule_post(%ScheduledPost{} = scheduled, %DateTime{} = send_at) do
+    with {:ok, scheduled} <- ReschedulePost.execute(scheduled, send_at) do
+      scheduled_changed(scheduled)
+      {:ok, scheduled}
+    end
+  end
+
+  @spec cancel_scheduled_post(ScheduledPost.t()) :: :ok
+  def cancel_scheduled_post(%ScheduledPost{} = scheduled) do
+    {:ok, _deleted} = ScheduledPost.delete(scheduled)
+    scheduled_changed(scheduled)
+  end
+
+  # Posted as its author and checked again, since they may have lost access while it waited
+  @spec publish_scheduled(ScheduledPost.t()) :: {:ok, Post.t()} | {:error, atom() | Changeset.t()}
+  def publish_scheduled(%ScheduledPost{} = scheduled) do
+    params = Map.take(scheduled, ~w[kind_id title body attachment_ids]a)
+
+    with {:ok, author} <- Accounts.get_user(id: scheduled.author_id),
+         {:ok, community} <- Communities.get_community(id: scheduled.community_id),
+         {:ok, post} <- create_post(author, community, params) do
+      {:ok, _deleted} = ScheduledPost.delete(scheduled)
+      scheduled_changed(scheduled)
+      {:ok, post}
+    else
+      {:error, reason} = error ->
+        {:ok, _failed} = ScheduledPost.fail(scheduled, reason)
+        scheduled_changed(scheduled)
+        error
     end
   end
 
@@ -506,6 +569,10 @@ defmodule Hearth.Forum do
       true -> :ok
       false -> {:error, :invalid_emoji}
     end
+  end
+
+  defp scheduled_changed(%ScheduledPost{} = scheduled) do
+    broadcast(%ScheduledPostChanged{user_id: scheduled.author_id, scheduled_id: scheduled.id})
   end
 
   defp broadcast(event), do: PubSub.broadcast(@topic, event)

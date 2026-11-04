@@ -1,4 +1,6 @@
 defmodule HearthWeb.CommunityJSON do
+  alias Hearth.Events
+  alias Hearth.Forum
   alias HearthWeb.CommunityRequestJSON
   alias HearthWeb.RoomJSON
   alias HearthWeb.UserJSON
@@ -81,5 +83,25 @@ defmodule HearthWeb.CommunityJSON do
       permissions: membership.permissions,
       joined_at: membership.joined_at
     }
+  end
+
+  def save_kinds(%{kinds: kinds}), do: Enum.map(kinds, &kind/1)
+
+  def members(%{users: users, roles: roles}),
+    do: Enum.map(users, &%{user: UserJSON.summary(&1), role_keys: Map.get(roles, &1.id, [])})
+
+  def templates(%{templates: templates}), do: Enum.map(templates, &template/1)
+
+  defp template(template) do
+    template
+    |> Map.take(~w[id label icon description category rooms voice placeholder]a)
+    |> Map.merge(%{kinds: Forum.template_kinds(template.id), event: event(template.id)})
+  end
+
+  defp event(template) do
+    case Events.template_event(template) do
+      nil -> nil
+      event -> Map.take(event, ~w[title days mins repeat]a)
+    end
   end
 end

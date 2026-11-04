@@ -1,4 +1,5 @@
 defmodule HearthWeb.PostJSON do
+  alias HearthWeb.Attachments
   alias HearthWeb.PageJSON
   alias HearthWeb.UserJSON
 
@@ -33,6 +34,11 @@ defmodule HearthWeb.PostJSON do
   def helpful(%{on: on}), do: %{on: on}
   def watch(%{on: on}), do: %{on: on}
   def react(%{on: on}), do: %{on: on}
+
+  def list_scheduled(%{scheduled: scheduled, media: media}),
+    do: Enum.map(scheduled, &serialize_scheduled(&1, media))
+
+  def scheduled(%{scheduled: scheduled, media: media}), do: serialize_scheduled(scheduled, media)
 
   @spec serialize(map(), map()) :: map()
   def serialize(post, %{authors: authors, attachments: attachments} = assigns) do
@@ -92,4 +98,23 @@ defmodule HearthWeb.PostJSON do
   # Views that don't load reports leave the flags off, which reads as false
   defp flagged?(assigns, key, post),
     do: assigns |> Map.get(key, MapSet.new()) |> MapSet.member?(post.id)
+
+  defp serialize_scheduled(scheduled, media) do
+    scheduled
+    |> Map.take(~w[id community_id kind_id title body send_at failure]a)
+    |> Map.put(:attachments, Attachments.pick(scheduled.attachment_ids, media))
+  end
+
+  def drafts(%{drafts: drafts}), do: Enum.map(drafts, &serialize_draft/1)
+  def draft(%{draft: draft}), do: serialize_draft(draft)
+
+  defp serialize_draft(draft) do
+    draft
+    |> Map.take(~w[community_id kind_id title body updated_at]a)
+    |> Map.put(:kind, kind_label(draft.kind))
+  end
+
+  # A saved draft answers without its kind loaded since the writer already knows it
+  defp kind_label(%{label: label}), do: label
+  defp kind_label(_none), do: nil
 end

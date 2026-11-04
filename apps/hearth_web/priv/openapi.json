@@ -3088,7 +3088,7 @@
       },
       "MultipartUpload": {
         "title": "MultipartUpload",
-        "description": "Sign each part with POST /api/uploads/{id}/part-urls",
+        "description": "Sign each part with POST /api/uploads/{id}/parts",
         "properties": {
           "part_size": {
             "description": "In bytes, except the last part",
@@ -4774,6 +4774,21 @@
         ],
         "type": "object"
       },
+      "RescheduleBody": {
+        "title": "RescheduleBody",
+        "additionalProperties": false,
+        "properties": {
+          "send_at": {
+            "description": "At least a minute and at most 30 days ahead",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "send_at"
+        ],
+        "type": "object"
+      },
       "Role": {
         "title": "Role",
         "properties": {
@@ -5084,6 +5099,218 @@
           "duration_min",
           "timezone",
           "place"
+        ],
+        "type": "object"
+      },
+      "ScheduleMessageBody": {
+        "title": "ScheduleMessageBody",
+        "additionalProperties": false,
+        "properties": {
+          "attachment_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "body": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "send_at": {
+            "description": "At least a minute and at most 30 days ahead",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "send_at"
+        ],
+        "type": "object"
+      },
+      "SchedulePostBody": {
+        "title": "SchedulePostBody",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "maxLength": 150,
+            "minLength": 1,
+            "type": "string"
+          },
+          "attachment_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "body": {
+            "maxLength": 40000,
+            "type": "string"
+          },
+          "kind_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "send_at": {
+            "description": "At least a minute and at most 30 days ahead",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind_id",
+          "title",
+          "send_at"
+        ],
+        "type": "object"
+      },
+      "ScheduledMessage": {
+        "title": "ScheduledMessage",
+        "description": "A message waiting for its time, seen only by its author",
+        "properties": {
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/Media"
+            },
+            "type": "array"
+          },
+          "body": {
+            "type": "string"
+          },
+          "conversation_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "failure": {
+            "description": "Why it couldn't send, such as forbidden or archived",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "room_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "send_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "room_id",
+          "conversation_id",
+          "body",
+          "attachments",
+          "send_at",
+          "failure"
+        ],
+        "type": "object"
+      },
+      "ScheduledMessageChanged": {
+        "title": "ScheduledMessageChanged",
+        "description": "On user:<id> when a scheduled message of theirs is added, moved, sent or fails, so other tabs refetch it",
+        "properties": {
+          "scheduled_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "scheduled_id"
+        ],
+        "type": "object"
+      },
+      "ScheduledPost": {
+        "title": "ScheduledPost",
+        "description": "A post waiting for its time, seen only by its author",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/Media"
+            },
+            "type": "array"
+          },
+          "body": {
+            "type": "string"
+          },
+          "community_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "failure": {
+            "description": "Why it couldn't go up, such as forbidden or unknown_kind",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "send_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "community_id",
+          "kind_id",
+          "title",
+          "body",
+          "attachments",
+          "send_at",
+          "failure"
+        ],
+        "type": "object"
+      },
+      "ScheduledPostChanged": {
+        "title": "ScheduledPostChanged",
+        "description": "On user:<id> when a scheduled post of theirs is added, moved, sent or fails, so other tabs refetch it",
+        "properties": {
+          "scheduled_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "scheduled_id"
         ],
         "type": "object"
       },
@@ -8024,102 +8251,6 @@
         "summary": "Ban someone from a community by username"
       }
     },
-    "/api/communities/{community_id}/draft": {
-      "delete": {
-        "tags": [
-          "Forum"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "$ref": "#/components/responses/no_content"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "operationId": "draft_delete_G7F4GHQ",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "community_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "summary": "Throw away my unfinished post in a community"
-      },
-      "put": {
-        "tags": [
-          "Forum"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Draft"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "operationId": "draft_update_G7F4GHQ",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "community_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DraftBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Save my unfinished post in a community"
-      }
-    },
     "/api/communities/{community_id}/events": {
       "post": {
         "tags": [
@@ -8180,7 +8311,7 @@
         "summary": "Schedule an event"
       }
     },
-    "/api/communities/{community_id}/invite-emails": {
+    "/api/communities/{community_id}/invitations": {
       "post": {
         "tags": [
           "Communities"
@@ -8218,7 +8349,7 @@
           }
         },
         "description": "Each address gets a single use code with the role given for it",
-        "operationId": "invite_email_create_CB5QEZA",
+        "operationId": "invite_send_invitation_CB5QEZA",
         "parameters": [
           {
             "in": "path",
@@ -8392,7 +8523,7 @@
           }
         },
         "description": "Needs community.update. Kinds left out are removed and their posts move to Discussion",
-        "operationId": "community_kind_update_5W3PZGI",
+        "operationId": "community_save_kinds_WIPQI5A",
         "parameters": [
           {
             "in": "path",
@@ -8444,7 +8575,7 @@
           }
         },
         "description": "Matches the start of a username or any part of a name",
-        "operationId": "community_member_index_KGZXDQQ",
+        "operationId": "community_members_WIPQI5A",
         "parameters": [
           {
             "in": "path",
@@ -8953,6 +9084,102 @@
         "summary": "Write a post"
       }
     },
+    "/api/communities/{community_id}/posts/draft": {
+      "delete": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "post_discard_draft_PKGICIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "community_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Throw away my unfinished post in a community"
+      },
+      "put": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Draft"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "post_save_draft_PKGICIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "community_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Save my unfinished post in a community"
+      }
+    },
     "/api/communities/{community_id}/posts/pinned": {
       "get": {
         "tags": [
@@ -8992,6 +9219,71 @@
           }
         ],
         "summary": "List a community's pinned posts"
+      }
+    },
+    "/api/communities/{community_id}/posts/scheduled": {
+      "post": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledPost"
+                }
+              }
+            },
+            "description": "Scheduled"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
+          }
+        },
+        "operationId": "post_schedule_PKGICIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "community_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchedulePostBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Schedule a post in a community"
       }
     },
     "/api/communities/{community_id}/posts/seen": {
@@ -9735,7 +10027,7 @@
           }
         },
         "description": "Cacheable for an hour",
-        "operationId": "community_template_index_6L3GA7Q",
+        "operationId": "community_templates_WIPQI5A",
         "summary": "List the starting points for a new community"
       }
     },
@@ -9869,7 +10161,7 @@
           }
         },
         "description": "Newest first",
-        "operationId": "message_conversation_index_U4A6L3I",
+        "operationId": "message_list_conversation_U4A6L3I",
         "parameters": [
           {
             "in": "path",
@@ -9955,7 +10247,7 @@
             "$ref": "#/components/responses/too_many_requests"
           }
         },
-        "operationId": "message_conversation_create_U4A6L3I",
+        "operationId": "message_send_conversation_U4A6L3I",
         "parameters": [
           {
             "in": "path",
@@ -9980,43 +10272,10 @@
         "summary": "Send a message to a conversation"
       }
     },
-    "/api/drafts": {
-      "get": {
-        "tags": [
-          "Forum"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/Draft"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          }
-        },
-        "description": "One per community",
-        "operationId": "draft_index_G7F4GHQ",
-        "summary": "List my unfinished posts"
-      }
-    },
-    "/api/emails/check": {
+    "/api/conversations/{conversation_id}/messages/scheduled": {
       "post": {
         "tags": [
-          "Communities"
+          "Chat"
         ],
         "security": [
           {
@@ -10024,21 +10283,24 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/EmailCheck"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/ScheduledMessage"
                 }
               }
             },
-            "description": "OK"
+            "description": "Scheduled"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
           },
           "401": {
             "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
           },
           "422": {
             "$ref": "#/components/responses/unprocessable_content"
@@ -10047,19 +10309,29 @@
             "$ref": "#/components/responses/too_many_requests"
           }
         },
-        "description": "Never says who has an account",
-        "operationId": "email_check_create_5HW6LAA",
+        "operationId": "message_conversation_schedule_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EmailCheckBody"
+                "$ref": "#/components/schemas/ScheduleMessageBody"
               }
             }
           },
           "required": true
         },
-        "summary": "Check addresses can receive email"
+        "summary": "Schedule a message in a conversation"
       }
     },
     "/api/events": {
@@ -10346,7 +10618,7 @@
             "$ref": "#/components/responses/unprocessable_content"
           }
         },
-        "operationId": "recording_event_index_L6ETTFY",
+        "operationId": "recording_list_event_L6ETTFY",
         "parameters": [
           {
             "in": "path",
@@ -10640,7 +10912,7 @@
         "summary": "Check GitHub for a newer Hearth now"
       }
     },
-    "/api/invite-emails/{id}": {
+    "/api/invitations/{id}": {
       "delete": {
         "tags": [
           "Communities"
@@ -10675,7 +10947,7 @@
           }
         },
         "description": "Only that person's code stops working",
-        "operationId": "invite_email_delete_CB5QEZA",
+        "operationId": "invite_revoke_invitation_CB5QEZA",
         "parameters": [
           {
             "in": "path",
@@ -10690,7 +10962,7 @@
         "summary": "Revoke an emailed invite"
       }
     },
-    "/api/invite-emails/{id}/decline": {
+    "/api/invitations/{id}/decline": {
       "post": {
         "tags": [
           "Communities"
@@ -10715,7 +10987,7 @@
           }
         },
         "description": "Its code stops working",
-        "operationId": "invite_email_decline_CB5QEZA",
+        "operationId": "invite_decline_invitation_CB5QEZA",
         "parameters": [
           {
             "in": "path",
@@ -10728,6 +11000,55 @@
           }
         ],
         "summary": "Turn down an emailed invite"
+      }
+    },
+    "/api/invites/email-check": {
+      "post": {
+        "tags": [
+          "Communities"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmailCheck"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
+          }
+        },
+        "description": "Never says who has an account",
+        "operationId": "invite_email_check_CB5QEZA",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCheckBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Check addresses can receive email"
       }
     },
     "/api/invites/{code}": {
@@ -10926,56 +11247,6 @@
         "summary": "Join a community through an invite"
       }
     },
-    "/api/link-preview": {
-      "get": {
-        "tags": [
-          "Media"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LinkPreview"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          },
-          "429": {
-            "$ref": "#/components/responses/too_many_requests"
-          }
-        },
-        "description": "Private addresses, and sites without preview tags, are not found",
-        "operationId": "link_preview_show_LHVEUKA",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "url",
-            "required": true,
-            "schema": {
-              "maxLength": 2000,
-              "type": "string"
-            }
-          }
-        ],
-        "summary": "Preview a link"
-      }
-    },
     "/api/media/{id}": {
       "delete": {
         "tags": [
@@ -11058,6 +11329,212 @@
           }
         ],
         "summary": "Show a file"
+      }
+    },
+    "/api/messages/scheduled": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduledMessage"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        },
+        "description": "Soonest first",
+        "operationId": "message_list_scheduled_U4A6L3I",
+        "summary": "List my scheduled messages"
+      }
+    },
+    "/api/messages/scheduled/{id}": {
+      "delete": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "message_unschedule_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Stop a scheduled message"
+      },
+      "patch": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledMessage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "A message that couldn't send is tried again at the new time",
+        "operationId": "message_reschedule_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Move a scheduled message to another time"
+      }
+    },
+    "/api/messages/scheduled/{id}/send": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "It arrives through the room or conversation like any other message",
+        "operationId": "message_send_scheduled_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Send a scheduled message now"
+      }
+    },
+    "/api/messages/unread": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unread"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        },
+        "description": "Per room in my communities and per conversation",
+        "operationId": "message_unread_U4A6L3I",
+        "summary": "Count my unread messages"
       }
     },
     "/api/messages/{id}": {
@@ -11642,6 +12119,55 @@
         "summary": "Remove a post, reply or message"
       }
     },
+    "/api/moderation/reports": {
+      "post": {
+        "tags": [
+          "Moderation"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportReceipt"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Direct messages go to the instance admins and it fails with reports_off, own or already_reported",
+        "operationId": "moderation_report_BNYA4VQ",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Report a post, reply or message"
+      }
+    },
     "/api/moderation/restore": {
       "post": {
         "tags": [
@@ -11757,6 +12283,78 @@
         "summary": "List my notifications"
       }
     },
+    "/api/notifications/push-subscriptions": {
+      "delete": {
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "notification_unsubscribe_push_CFCNC3A",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushEndpointBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Stop sending pushes to this device"
+      },
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Saving a device again moves it to whoever is signed in on it now",
+        "operationId": "notification_subscribe_push_CFCNC3A",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscriptionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Send pushes to this device"
+      }
+    },
     "/api/notifications/read": {
       "post": {
         "tags": [
@@ -11815,10 +12413,10 @@
         "summary": "Mark a notification read"
       }
     },
-    "/api/people": {
+    "/api/posts/drafts": {
       "get": {
         "tags": [
-          "Accounts"
+          "Forum"
         ],
         "security": [
           {
@@ -11831,7 +12429,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/Person"
+                    "$ref": "#/components/schemas/Draft"
                   },
                   "type": "array"
                 }
@@ -11841,45 +12439,187 @@
           },
           "401": {
             "$ref": "#/components/responses/unauthorized"
+          }
+        },
+        "description": "One per community",
+        "operationId": "post_drafts_PKGICIA",
+        "summary": "List my unfinished posts"
+      }
+    },
+    "/api/posts/scheduled": {
+      "get": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduledPost"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          }
+        },
+        "description": "Soonest first",
+        "operationId": "post_list_scheduled_PKGICIA",
+        "summary": "List my scheduled posts"
+      }
+    },
+    "/api/posts/scheduled/{id}": {
+      "delete": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
           },
           "422": {
             "$ref": "#/components/responses/unprocessable_content"
           }
         },
-        "description": "Online first with each person's privacy settings applied",
-        "operationId": "people_index_SOM7SKQ",
+        "operationId": "post_unschedule_PKGICIA",
         "parameters": [
           {
-            "in": "query",
-            "name": "q",
-            "required": false,
-            "schema": {
-              "maxLength": 40,
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "community",
-            "required": false,
+            "in": "path",
+            "name": "id",
+            "required": true,
             "schema": {
               "format": "uuid",
               "type": "string"
             }
-          },
+          }
+        ],
+        "summary": "Stop a scheduled post"
+      },
+      "patch": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
           {
-            "in": "query",
-            "name": "limit",
-            "required": false,
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledPost"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "A post that couldn't go up is tried again at the new time",
+        "operationId": "post_reschedule_PKGICIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
             "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "integer"
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
-        "summary": "List people who share a community with me"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Move a scheduled post to another time"
+      }
+    },
+    "/api/posts/scheduled/{id}/publish": {
+      "post": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "It arrives in the community feed like any other post",
+        "operationId": "post_publish_scheduled_PKGICIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Publish a scheduled post now"
       }
     },
     "/api/posts/seen": {
@@ -12431,7 +13171,7 @@
             "$ref": "#/components/responses/unprocessable_content"
           }
         },
-        "operationId": "recording_post_index_L6ETTFY",
+        "operationId": "recording_list_post_L6ETTFY",
         "parameters": [
           {
             "in": "path",
@@ -12735,78 +13475,6 @@
         "summary": "List the public communities"
       }
     },
-    "/api/push-subscriptions": {
-      "delete": {
-        "tags": [
-          "Notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "$ref": "#/components/responses/no_content"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "operationId": "push_subscription_delete_SZCRMJY",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PushEndpointBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Stop sending pushes to this device"
-      },
-      "post": {
-        "tags": [
-          "Notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "$ref": "#/components/responses/no_content"
-          },
-          "400": {
-            "$ref": "#/components/responses/bad_request"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "Saving a device again moves it to whoever is signed in on it now",
-        "operationId": "push_subscription_create_SZCRMJY",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PushSubscriptionBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Send pushes to this device"
-      }
-    },
     "/api/recordings/{id}": {
       "delete": {
         "tags": [
@@ -13106,55 +13774,6 @@
           }
         ],
         "summary": "Mark a reply as helpful, or take the mark back"
-      }
-    },
-    "/api/reports": {
-      "post": {
-        "tags": [
-          "Moderation"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReportReceipt"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "400": {
-            "$ref": "#/components/responses/bad_request"
-          },
-          "401": {
-            "$ref": "#/components/responses/unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/not_found"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "Direct messages go to the instance admins and it fails with reports_off, own or already_reported",
-        "operationId": "report_create_G33WAUA",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReportBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Report a post, reply or message"
       }
     },
     "/api/roles/{id}": {
@@ -13512,7 +14131,7 @@
           }
         },
         "description": "For members of the room's community, newest first, a page at a time",
-        "operationId": "recording_room_index_L6ETTFY",
+        "operationId": "recording_list_room_L6ETTFY",
         "parameters": [
           {
             "in": "path",
@@ -13775,7 +14394,7 @@
           }
         },
         "description": "Newest first",
-        "operationId": "message_room_index_U4A6L3I",
+        "operationId": "message_list_room_U4A6L3I",
         "parameters": [
           {
             "in": "path",
@@ -13864,7 +14483,7 @@
             "$ref": "#/components/responses/too_many_requests"
           }
         },
-        "operationId": "message_room_create_U4A6L3I",
+        "operationId": "message_send_room_U4A6L3I",
         "parameters": [
           {
             "in": "path",
@@ -13887,6 +14506,71 @@
           "required": true
         },
         "summary": "Send a message to a room"
+      }
+    },
+    "/api/rooms/{room_id}/messages/scheduled": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledMessage"
+                }
+              }
+            },
+            "description": "Scheduled"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
+          }
+        },
+        "operationId": "message_room_schedule_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleMessageBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Schedule a message in a room"
       }
     },
     "/api/rooms/{room_id}/posts": {
@@ -14012,10 +14696,10 @@
         "summary": "Fix a line of a transcript"
       }
     },
-    "/api/unread": {
+    "/api/unfurls": {
       "get": {
         "tags": [
-          "Chat"
+          "Media"
         ],
         "security": [
           {
@@ -14027,7 +14711,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Unread"
+                  "$ref": "#/components/schemas/LinkPreview"
                 }
               }
             },
@@ -14035,17 +14719,37 @@
           },
           "401": {
             "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
           }
         },
-        "description": "Per room in my communities and per conversation",
-        "operationId": "unread_show_36X5QMY",
-        "summary": "Count my unread messages"
+        "description": "Private addresses, and sites without preview tags, are not found",
+        "operationId": "media_unfurl_5DXB2TA",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "url",
+            "required": true,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Preview a link"
       }
     },
     "/api/uploads": {
       "post": {
         "tags": [
-          "Uploads"
+          "Media"
         ],
         "security": [
           {
@@ -14077,7 +14781,7 @@
           }
         },
         "description": "Answers with one signed PUT or a multipart upload for big files",
-        "operationId": "upload_create_EQWV7ZQ",
+        "operationId": "media_upload_5DXB2TA",
         "parameters": [
           {
             "description": "A key the client makes for this file, such as a UUID.",
@@ -14107,7 +14811,7 @@
     "/api/uploads/{id}/complete": {
       "post": {
         "tags": [
-          "Uploads"
+          "Media"
         ],
         "security": [
           {
@@ -14139,7 +14843,7 @@
           }
         },
         "description": "A file that fails the checks is deleted",
-        "operationId": "upload_complete_EQWV7ZQ",
+        "operationId": "media_complete_upload_5DXB2TA",
         "parameters": [
           {
             "in": "path",
@@ -14164,10 +14868,55 @@
         "summary": "Finish an upload"
       }
     },
-    "/api/uploads/{id}/part-urls": {
+    "/api/uploads/{id}/parts": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parts"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          }
+        },
+        "description": "A resumed upload sends only the missing parts",
+        "operationId": "media_list_upload_parts_5DXB2TA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "List the parts already uploaded"
+      },
       "post": {
         "tags": [
-          "Uploads"
+          "Media"
         ],
         "security": [
           {
@@ -14199,7 +14948,7 @@
           }
         },
         "description": "Each URL takes one PUT and works for 10 minutes",
-        "operationId": "upload_part_urls_EQWV7ZQ",
+        "operationId": "media_sign_upload_parts_5DXB2TA",
         "parameters": [
           {
             "in": "path",
@@ -14224,57 +14973,82 @@
         "summary": "Sign part URLs"
       }
     },
-    "/api/uploads/{id}/parts": {
+    "/api/users": {
       "get": {
         "tags": [
-          "Uploads"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
+          "People"
         ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Parts"
+                  "items": {
+                    "$ref": "#/components/schemas/Person"
+                  },
+                  "type": "array"
                 }
               }
             },
             "description": "OK"
           },
-          "400": {
-            "$ref": "#/components/responses/bad_request"
-          },
           "401": {
             "$ref": "#/components/responses/unauthorized"
           },
-          "404": {
-            "$ref": "#/components/responses/not_found"
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
           }
         },
-        "description": "A resumed upload sends only the missing parts",
-        "operationId": "upload_parts_EQWV7ZQ",
+        "description": "By usernames, which works signed out, or else everyone who shares a community with me, online first",
+        "operationId": "user_index_LJ7PE5Y",
         "parameters": [
           {
-            "in": "path",
-            "name": "id",
-            "required": true,
+            "description": "Up to 50, separated by commas. Names with no account are left out",
+            "in": "query",
+            "name": "usernames",
+            "required": false,
+            "schema": {
+              "maxLength": 1100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 40,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "community",
+            "required": false,
             "schema": {
               "format": "uuid",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
           }
         ],
-        "summary": "List the parts already uploaded"
+        "summary": "List people"
       }
     },
-    "/api/usernames/{username}": {
+    "/api/users/available": {
       "get": {
         "tags": [
-          "Auth"
+          "People"
         ],
         "responses": {
           "200": {
@@ -14295,10 +15069,10 @@
           }
         },
         "description": "A username that breaks the rules is not available",
-        "operationId": "username_show_D5VKINA",
+        "operationId": "user_available_LJ7PE5Y",
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "username",
             "required": true,
             "schema": {
@@ -14309,46 +15083,6 @@
           }
         ],
         "summary": "Check whether a username is free"
-      }
-    },
-    "/api/users": {
-      "get": {
-        "tags": [
-          "People"
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/UserSummary"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "422": {
-            "$ref": "#/components/responses/unprocessable_content"
-          }
-        },
-        "description": "Names with no account are left out",
-        "operationId": "user_index_LJ7PE5Y",
-        "parameters": [
-          {
-            "description": "Up to 50, separated by commas.",
-            "in": "query",
-            "name": "usernames",
-            "required": true,
-            "schema": {
-              "maxLength": 1100,
-              "type": "string"
-            }
-          }
-        ],
-        "summary": "Look up people by username"
       }
     },
     "/api/users/{username}": {
@@ -14556,7 +15290,7 @@
         "summary": "List what someone replied"
       }
     },
-    "/api/voice-sessions/live": {
+    "/api/voice-sessions": {
       "get": {
         "tags": [
           "Voice"
@@ -14585,7 +15319,7 @@
           }
         },
         "description": "So the sidebar can show which voice rooms are on air without opening them",
-        "operationId": "voice_live_index_I6UWJ5A",
+        "operationId": "voice_index_I6UWJ5A",
         "summary": "List live sessions in my communities"
       }
     },

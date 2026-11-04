@@ -5,7 +5,7 @@
  */
 
 /**
- * Sign each part with POST /api/uploads/{id}/part-urls
+ * Sign each part with POST /api/uploads/{id}/parts
  */
 export interface MultipartUpload {
   /**

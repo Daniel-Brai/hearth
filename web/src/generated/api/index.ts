@@ -1,4 +1,3 @@
-export * from './accounts/accounts';
 export * from './auth/auth';
 export * from './chat/chat';
 export * from './communities/communities';
@@ -9,5 +8,4 @@ export * from './media/media';
 export * from './moderation/moderation';
 export * from './notifications/notifications';
 export * from './people/people';
-export * from './uploads/uploads';
 export * from './voice/voice';

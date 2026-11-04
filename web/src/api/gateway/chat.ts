@@ -3,23 +3,33 @@ import { fail, ok } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
 import { SOUNDS } from '@/domain/catalog';
 import { canDo, soundAccess } from '@/domain/selectors';
-import type { Attachment, LinkPreview, Message } from '@/domain/types';
+import { failureText, sendAtProblem } from '@/domain/schedule';
+import type { Attachment, LinkPreview, Message, ScheduledMessage } from '@/domain/types';
 import {
   conversationCreate,
   conversationIndex,
-  messageConversationCreate,
-  messageConversationIndex,
+  messageSendConversation,
+  messageListConversation,
   messageDelete,
   messagePreview,
   messageReact,
-  messageRoomCreate,
-  messageRoomIndex,
+  messageSendRoom,
+  messageListRoom,
   messageUpdate,
-  unreadShow,
+  messageConversationSchedule,
+  messageUnschedule,
+  messageListScheduled,
+  messageRoomSchedule,
+  messageSendScheduled,
+  messageReschedule,
+  messageUnread,
 } from '@/generated/api/chat/chat';
 import { postPromote } from '@/generated/api/forum/forum';
-import { linkPreviewShow } from '@/generated/api/media/media';
-import type { SendMessageBodyKind } from '@/generated/schemas';
+import { mediaUnfurl } from '@/generated/api/media/media';
+import type {
+  ScheduledMessage as ApiScheduledMessage,
+  SendMessageBodyKind,
+} from '@/generated/schemas';
 import { isTune, playTune } from '@/runtime/sounds';
 import { sendFiles } from '../attachments';
 import { toAttachments, toLinkPreview, toMessage, toPerson, timeOf } from '../mappers';
@@ -47,15 +57,15 @@ const TYPING_SHOWN_MS = 5000;
 const TYPING_EVERY_MS = 3000;
 
 function listMessages(place: Place, params: Paging) {
-  if (place.kind === 'room') return messageRoomIndex(place.id, params);
+  if (place.kind === 'room') return messageListRoom(place.id, params);
 
-  return messageConversationIndex(place.id, params);
+  return messageListConversation(place.id, params);
 }
 
 function createMessage(place: Place, body: Body) {
-  if (place.kind === 'room') return messageRoomCreate(place.id, body);
+  if (place.kind === 'room') return messageSendRoom(place.id, body);
 
-  return messageConversationCreate(place.id, body);
+  return messageSendConversation(place.id, body);
 }
 
 const setContent = (
@@ -327,7 +337,7 @@ export function createChatGateway(
   const loadInbox = async (): Promise<Result> => {
     const [listed, unread] = await Promise.all([
       call(() => conversationIndex()),
-      call(() => unreadShow()),
+      call(() => messageUnread()),
     ]);
 
     if (listed.status !== 200) return failed(listed);
@@ -509,6 +519,65 @@ export function createChatGateway(
         ctx.store.set((state) => setBoost(state, key, id, emoji, on));
       });
     },
+    schedule: async (key, text, sendAt, opts) => {
+      const body = text.trim();
+      const problem = sendAtProblem(new Date(sendAt), new Date());
+
+      if (body.startsWith('/'))
+        return fail("A command runs straight away, so it can't be scheduled.");
+      if (problem) return fail(problem);
+
+      const place = await placeOf(key);
+
+      if (!place.ok) return place;
+
+      const sent = await sendFiles(opts?.files ?? [], body);
+
+      if (!sent.ok) return sent;
+
+      const spec = { body: sent.value.body, attachment_ids: sent.value.ids, send_at: sendAt };
+      const answer = await call(() =>
+        place.value.kind === 'room'
+          ? messageRoomSchedule(place.value.id, spec)
+          : messageConversationSchedule(place.value.id, spec),
+      );
+
+      if (answer.status !== 201) return failed(answer);
+
+      putScheduled(answer.data);
+
+      return ok(undefined);
+    },
+
+    reschedule: async (id, sendAt) => {
+      const answer = await call(() => messageReschedule(id, { send_at: sendAt }));
+
+      if (answer.status !== 200) return failed(answer);
+
+      putScheduled(answer.data);
+
+      return ok(undefined);
+    },
+
+    // The message itself arrives through the room or conversation like any other
+    sendNow: async (id) => {
+      const answer = await call(() => messageSendScheduled(id));
+
+      if (answer.status !== 204) {
+        void loadScheduled();
+        return failed(answer);
+      }
+
+      dropScheduled(id);
+
+      return ok(undefined);
+    },
+
+    unschedule: (id) => {
+      dropScheduled(id);
+      void call(() => messageUnschedule(id));
+    },
+
     hidePreview: (key, id) => {
       const setHidden = (hidden: boolean) =>
         ctx.store.set((state) => {
@@ -527,7 +596,7 @@ export function createChatGateway(
       const known = linkPreviews.get(url);
       if (known) return known;
 
-      const preview = call(() => linkPreviewShow({ url })).then((answer) =>
+      const preview = call(() => mediaUnfurl({ url })).then((answer) =>
         answer.status === 200 ? toLinkPreview(answer.data) : null,
       );
 
@@ -563,5 +632,56 @@ export function createChatGateway(
     },
   };
 
-  return { load, chat, loadInbox };
+  const keyOf = (s: ApiScheduledMessage): string | null => {
+    const [id, ids, prefix] = s.conversation_id
+      ? [s.conversation_id, ctx.conversationIds, 'dm/']
+      : [s.room_id, ctx.roomIds, ''];
+
+    for (const [key, known] of ids) if (known === id) return prefix + key;
+
+    return null;
+  };
+
+  const toScheduled = (s: ApiScheduledMessage): ScheduledMessage | null => {
+    const key = keyOf(s);
+
+    if (!key) return null;
+
+    return {
+      id: s.id,
+      key,
+      text: s.body,
+      files: toAttachments(s.attachments),
+      sendAt: s.send_at,
+      failure: s.failure === null ? null : failureText(s.failure),
+    };
+  };
+
+  const putScheduled = (s: ApiScheduledMessage) => {
+    const item = toScheduled(s);
+
+    if (!item) return;
+
+    ctx.store.set((state) => {
+      state.scheduled = [...state.scheduled.filter((x) => x.id !== item.id), item];
+    });
+  };
+
+  const dropScheduled = (id: string) =>
+    ctx.store.set((state) => {
+      state.scheduled = state.scheduled.filter((x) => x.id !== id);
+    });
+
+  // Read after the inbox and rooms load, since each one is filed under the chat it waits in
+  const loadScheduled = async () => {
+    const answer = await call(() => messageListScheduled());
+
+    if (answer.status !== 200) return;
+
+    ctx.store.set((state) => {
+      state.scheduled = answer.data.flatMap((s) => toScheduled(s) ?? []);
+    });
+  };
+
+  return { load, chat, loadInbox, loadScheduled };
 }

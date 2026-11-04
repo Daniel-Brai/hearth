@@ -1048,6 +1048,85 @@ export const moderationRemoveContent = async (
   });
 };
 
+export type moderationReportResponse201 = {
+  data: ReportReceipt;
+  status: 201;
+};
+
+export type moderationReportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type moderationReportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type moderationReportResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type moderationReportResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type moderationReportResponseSuccess = moderationReportResponse201 & {
+  headers: Headers;
+};
+export type moderationReportResponseError = (
+  | moderationReportResponse400
+  | moderationReportResponse401
+  | moderationReportResponse404
+  | moderationReportResponse422
+) & {
+  headers: Headers;
+};
+
+export type moderationReportResponse =
+  moderationReportResponseSuccess | moderationReportResponseError;
+
+export const getModerationReportUrl = () => {
+  return `/api/moderation/reports`;
+};
+
+/**
+ * Direct messages go to the instance admins and it fails with reports_off, own or already_reported
+ * @summary Report a post, reply or message
+ */
+export const moderationReport = async (
+  reportBody: ReportBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<moderationReportResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<moderationReportResponse>(getModerationReportUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reportBody),
+  });
+};
+
 export type moderationRestoreContentResponse200 = {
   data: ModeratedContent;
   status: 200;
@@ -1129,84 +1208,6 @@ export const moderationRestoreContent = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(moderateContentBody),
-  });
-};
-
-export type reportCreateResponse201 = {
-  data: ReportReceipt;
-  status: 201;
-};
-
-export type reportCreateResponse400 = {
-  data: BadRequestResponse;
-  status: 400;
-};
-
-export type reportCreateResponse401 = {
-  data: UnauthorizedResponse;
-  status: 401;
-};
-
-export type reportCreateResponse404 = {
-  data: NotFoundResponse;
-  status: 404;
-};
-
-export type reportCreateResponse422 = {
-  data: UnprocessableContentResponse;
-  status: 422;
-};
-
-export type reportCreateResponseSuccess = reportCreateResponse201 & {
-  headers: Headers;
-};
-export type reportCreateResponseError = (
-  | reportCreateResponse400
-  | reportCreateResponse401
-  | reportCreateResponse404
-  | reportCreateResponse422
-) & {
-  headers: Headers;
-};
-
-export type reportCreateResponse = reportCreateResponseSuccess | reportCreateResponseError;
-
-export const getReportCreateUrl = () => {
-  return `/api/reports`;
-};
-
-/**
- * Direct messages go to the instance admins and it fails with reports_off, own or already_reported
- * @summary Report a post, reply or message
- */
-export const reportCreate = async (
-  reportBody: ReportBody,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<reportCreateResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit['headers']>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  return customFetch<reportCreateResponse>(getReportCreateUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(reportBody),
   });
 };
 

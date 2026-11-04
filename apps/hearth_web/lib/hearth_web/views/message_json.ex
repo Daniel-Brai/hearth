@@ -1,4 +1,5 @@
 defmodule HearthWeb.MessageJSON do
+  alias HearthWeb.Attachments
   alias HearthWeb.PageJSON
   alias HearthWeb.UserJSON
 
@@ -25,6 +26,11 @@ defmodule HearthWeb.MessageJSON do
 
   def react(%{on: on}), do: %{on: on}
 
+  def list_scheduled(%{scheduled: scheduled, media: media}),
+    do: Enum.map(scheduled, &serialize_scheduled(&1, media))
+
+  def scheduled(%{scheduled: scheduled, media: media}), do: serialize_scheduled(scheduled, media)
+
   @spec serialize(map(), map()) :: map()
   def serialize(message, %{authors: authors, attachments: attachments} = assigns) do
     deleted = message.deleted_at != nil
@@ -49,4 +55,17 @@ defmodule HearthWeb.MessageJSON do
   # Views that don't load reactions, such as a new message, have none
   defp reactions(assigns, message),
     do: assigns |> Map.get(:reactions, %{}) |> Map.get(message.id, [])
+
+  defp serialize_scheduled(scheduled, media) do
+    scheduled
+    |> Map.take(~w[id room_id conversation_id body send_at failure]a)
+    |> Map.put(:attachments, Attachments.pick(scheduled.attachment_ids, media))
+  end
+
+  def unread(%{unread: %{rooms: rooms, conversations: conversations}}) do
+    %{
+      rooms: Enum.map(rooms, &%{id: &1.room_id, community_id: &1.community_id, count: &1.count}),
+      conversations: Enum.map(conversations, fn {id, count} -> %{id: id, count: count} end)
+    }
+  end
 end

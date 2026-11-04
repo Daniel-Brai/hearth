@@ -4,7 +4,7 @@ defmodule HearthWeb.Schema.MultipartUpload do
   defschema %{
     title: "MultipartUpload",
     type: :object,
-    description: "Sign each part with POST /api/uploads/{id}/part-urls",
+    description: "Sign each part with POST /api/uploads/{id}/parts",
     required: [:upload_id, :part_size, :parts],
     properties: %{
       upload_id: string(),
