@@ -5,6 +5,21 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.3](https://github.com/daniel-brai/hearth/compare/v0.0.2...v0.0.3) (2026-11-04)
+
+
+
+
+### Features:
+
+* lock unmute without a mic and match each screen's skeleton
+
+* guard migrations with a lock timeout and add data migrations
+
+### Bug Fixes:
+
+* keep ffmpeg values as single arguments
+
 ## [v0.0.2](https://github.com/daniel-brai/hearth/compare/v0.0.1...v0.0.2) (2026-10-31)
 
 
