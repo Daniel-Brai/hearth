@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.4](https://github.com/daniel-brai/hearth/compare/v0.0.3...v0.0.4) (2026-11-04)
+
+
+
+
+### Features:
+
+* schedule messages and posts, and fold small controllers into their resources
+
 ## [v0.0.3](https://github.com/daniel-brai/hearth/compare/v0.0.2...v0.0.3) (2026-11-04)
 
 
