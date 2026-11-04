@@ -13,40 +13,37 @@ defmodule Hearth.Notifications.Digest do
 
   @spec build(User.t(), :daily | :weekly, DateTime.t()) :: nil | CatchUp.t()
   def build(%User{} = user, period, %DateTime{} = since) do
-    communities = Communities.list_joined(user)
-    ids = Enum.map(communities, & &1.id)
-    posts = user |> Forum.list_unread_since(ids, since, @most) |> without_trouble(user)
-    authors = posts |> Enum.map(& &1.author_id) |> Accounts.list_users() |> Map.new(&{&1.id, &1})
-    now = DateTime.utc_now()
+    communities = user |> Communities.list_joined() |> Map.new(&{&1.id, &1})
 
+    posts =
+      user
+      |> Forum.list_unread_since(Map.keys(communities), since, @most)
+      |> without_trouble(user)
+      |> rank(DateTime.utc_now())
+
+    authors = posts |> Enum.map(& &1.author_id) |> Accounts.list_users() |> Map.new(&{&1.id, &1})
     by_community = Enum.group_by(posts, & &1.community_id)
 
-    communities
-    |> Enum.flat_map(fn community ->
-      ranked = by_community |> Map.get(community.id, []) |> Enum.sort_by(&score(&1, now), :desc)
-
-      case ranked do
-        [] ->
-          []
-
-        [top | _rest] ->
-          [
-            {score(top, now),
-             %{
-               community: community,
-               posts:
-                 ranked
-                 |> Enum.take(@per_community)
-                 |> Enum.map(&%{post: &1, author: authors[&1.author_id]}),
-               more: max(length(ranked) - @per_community, 0)
-             }}
-          ]
-      end
-    end)
-    |> Enum.sort_by(&elem(&1, 0), :desc)
-    |> Enum.map(&elem(&1, 1))
+    # Posts come best first so communities follow the order of their best post
+    posts
+    |> Enum.map(& &1.community_id)
+    |> Enum.uniq()
+    |> Enum.map(&section(communities[&1], by_community[&1], authors))
     |> catch_up(period)
   end
+
+  defp section(community, posts, authors) do
+    %{
+      community: community,
+      posts:
+        posts
+        |> Enum.take(@per_community)
+        |> Enum.map(&%{post: &1, author: authors[&1.author_id]}),
+      more: max(length(posts) - @per_community, 0)
+    }
+  end
+
+  defp rank(posts, now), do: Enum.sort_by(posts, &score(&1, now), :desc)
 
   defp catch_up([], _period), do: nil
   defp catch_up(found, period), do: %CatchUp{period: period, communities: found}

@@ -222,8 +222,7 @@ defmodule HearthWeb.ModerationController do
          {:ok, ban} <- Moderation.ban_author(auth, item, changes) do
       conn
       |> put_status(:created)
-      |> put_view(json: HearthWeb.BanJSON)
-      |> render(:show, ban: ban, people: Authors.people([ban.user_id, ban.banned_by_id]))
+      |> render(:ban_author, ban: ban, people: Authors.people([ban.user_id, ban.banned_by_id]))
     end
   end
 

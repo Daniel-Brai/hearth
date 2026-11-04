@@ -44,7 +44,7 @@ defmodule Hearth.Media.FileType do
   @spec avif?() :: boolean()
   def avif?, do: config(:avif)
 
-  @spec limits() :: %{
+  @type limits :: %{
           content_types: [String.t()],
           max_image_bytes: pos_integer(),
           max_video_bytes: pos_integer(),
@@ -52,6 +52,8 @@ defmodule Hearth.Media.FileType do
           max_file_bytes: pos_integer(),
           max_attachments: pos_integer()
         }
+
+  @spec limits() :: limits()
   def limits do
     %{
       content_types: content_types(),

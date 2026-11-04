@@ -3,11 +3,13 @@ defmodule HearthWeb.ErrorHTMLTest do
 
   import Phoenix.Template, only: [render_to_string: 4]
 
+  alias HearthWeb.ErrorHTML
+
   test "renders 404.html" do
-    assert render_to_string(HearthWeb.ErrorHTML, "404", "html", []) == "Not Found"
+    assert render_to_string(ErrorHTML, "404", "html", []) == "Not Found"
   end
 
   test "renders 500.html" do
-    assert render_to_string(HearthWeb.ErrorHTML, "500", "html", []) == "Internal Server Error"
+    assert render_to_string(ErrorHTML, "500", "html", []) == "Internal Server Error"
   end
 end

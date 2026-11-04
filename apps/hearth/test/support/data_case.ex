@@ -2,6 +2,7 @@ defmodule Hearth.DataCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
+  alias Ecto.Changeset
 
   using do
     quote do
@@ -12,7 +13,7 @@ defmodule Hearth.DataCase do
   end
 
   setup tags do
-    Hearth.DataCase.setup_sandbox(tags)
+    setup_sandbox(tags)
     :ok
   end
 
@@ -22,7 +23,7 @@ defmodule Hearth.DataCase do
   end
 
   def errors_on(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->
+    Changeset.traverse_errors(changeset, fn {message, opts} ->
       Regex.replace(~r"%{(\w+)}", message, fn _, key ->
         opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
       end)

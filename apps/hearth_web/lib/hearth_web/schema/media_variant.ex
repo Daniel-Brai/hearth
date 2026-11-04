@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.MediaVariant do
   use JSV.Schema
 
+  alias Hearth.Media.Variant
+  alias HearthWeb.Schema
+
   defschema %{
     title: "MediaVariant",
     type: :object,
@@ -8,7 +11,7 @@ defmodule HearthWeb.Schema.MediaVariant do
     properties: %{
       width: pos_integer(),
       height: pos_integer(),
-      format: enum(~w[webp avif mp4]),
+      format: Schema.enum_of(Variant, :format),
       url: string()
     }
   }

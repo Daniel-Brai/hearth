@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.Event.VoiceSessionStarted do
   use JSV.Schema
 
+  alias Hearth.Voice.Session
+  alias HearthWeb.Schema
+
   defschema %{
     title: "VoiceSessionStarted",
     type: :object,
@@ -12,7 +15,7 @@ defmodule HearthWeb.Schema.Event.VoiceSessionStarted do
       community_id: uuid(),
       post_id: nullable(uuid()),
       host_id: nullable(uuid()),
-      mode: enum(~w[stage open]),
+      mode: Schema.enum_of(Session, :mode),
       topic: nullable(string())
     }
   }

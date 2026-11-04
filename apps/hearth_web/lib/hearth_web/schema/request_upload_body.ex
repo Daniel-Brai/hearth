@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.RequestUploadBody do
   use JSV.Schema
 
+  alias Hearth.Media.Asset
+  alias HearthWeb.Schema
+
   defschema %{
     title: "RequestUploadBody",
     type: :object,
@@ -11,7 +14,7 @@ defmodule HearthWeb.Schema.RequestUploadBody do
       content_type: string(minLength: 1, maxLength: 255),
       byte_size: pos_integer(),
       sha256: string(pattern: "^[0-9a-fA-F]{64}$"),
-      purpose: enum(~w[attachment avatar logo]),
+      purpose: Schema.enum_of(Asset, :purpose),
       duration_ms: pos_integer(description: "As the browser read it, checked again later")
     }
   }

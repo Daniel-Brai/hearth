@@ -827,7 +827,7 @@ defmodule Hearth.VoiceTest do
       session = TestUtils.start_random_voice_session!(community)
       %{id: id} = session
       live = TestUtils.live_of!(session)
-      :ok = DynamicSupervisor.terminate_child(Hearth.Voice.LiveSupervisor, live)
+      :ok = DynamicSupervisor.terminate_child(Voice.LiveSupervisor, live)
 
       assert 1 = Voice.end_orphans()
       assert_receive %VoiceSessionEnded{session_id: ^id, reason: :lost}
@@ -838,7 +838,7 @@ defmodule Hearth.VoiceTest do
       session = TestUtils.start_random_voice_session!(community)
       :ok = Voice.start_recording(owner, session)
       live = TestUtils.live_of!(session)
-      :ok = DynamicSupervisor.terminate_child(Hearth.Voice.LiveSupervisor, live)
+      :ok = DynamicSupervisor.terminate_child(Voice.LiveSupervisor, live)
 
       assert 1 = Voice.end_orphans()
       assert_receive %VoiceRecordingChanged{status: :failed}

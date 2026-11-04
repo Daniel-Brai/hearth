@@ -3,6 +3,7 @@ defmodule HearthWeb.OpenAPISpec do
 
   alias HearthWeb.Plugs.ApiVersion
   alias HearthWeb.RefreshCookie
+  alias HearthWeb.Router
   alias HearthWeb.Schema
   alias Oaskit.Spec.Components
   alias Oaskit.Spec.Contact
@@ -50,7 +51,7 @@ defmodule HearthWeb.OpenAPISpec do
       },
       # Relative so the docs try requests against the server that serves them
       servers: [%Server{url: "/"}],
-      paths: Paths.from_router(HearthWeb.Router, filter: &documented?/1),
+      paths: Paths.from_router(Router, filter: &documented?/1),
       tags: [
         %Tag{name: "Instance", description: "What this instance has set up."},
         %Tag{name: "Auth", description: "Signing in and out."},
@@ -97,13 +98,13 @@ defmodule HearthWeb.OpenAPISpec do
   if Mix.env() == :dev do
     @impl Oaskit
     def cache_variant do
-      plugs = HearthWeb.Router |> Phoenix.Router.routes() |> Enum.map(& &1.plug) |> Enum.uniq()
+      plugs = Router |> Phoenix.Router.routes() |> Enum.map(& &1.plug) |> Enum.uniq()
       {:ok, modules} = :application.get_key(:hearth_web, :modules)
 
       schemas =
         Enum.filter(modules, &String.starts_with?(Atom.to_string(&1), "Elixir.HearthWeb.Schema."))
 
-      [__MODULE__, HearthWeb.Router | plugs ++ schemas]
+      [__MODULE__, Router | plugs ++ schemas]
       |> Enum.map(& &1.module_info(:md5))
       |> :erlang.md5()
     end

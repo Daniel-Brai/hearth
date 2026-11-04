@@ -77,13 +77,13 @@ defmodule Hearth.TestUtils do
 
     {:ok, user} = Accounts.register_user(params)
 
-    _state = :sys.get_state(Hearth.Accounts.Taken)
+    _state = :sys.get_state(Accounts.Taken)
 
     # Each test starts with no accounts so its first would be the instance admin
     admin = Keyword.get(opts, :admin, false)
 
     if user.is_instance_admin != admin do
-      update_rows!(Hearth.Accounts.User, [id: user.id], is_instance_admin: admin)
+      update_rows!(Accounts.User, [id: user.id], is_instance_admin: admin)
     end
 
     %{user | is_instance_admin: admin}
@@ -410,7 +410,7 @@ defmodule Hearth.TestUtils do
   end
 
   def reply_created(reply, post, author) do
-    %Hearth.Forum.ReplyCreated{
+    %Forum.ReplyCreated{
       reply_id: reply.id,
       post_id: post.id,
       parent_reply_id: nil,
@@ -487,7 +487,7 @@ defmodule Hearth.TestUtils do
   def fail_random_uploads!(uploader, count) do
     Enum.each(1..count, fn _index ->
       [media] = request_random_uploads!(uploader, 1)
-      update_rows!(Hearth.Media.Asset, [id: media.id], status: :failed)
+      update_rows!(Media.Asset, [id: media.id], status: :failed)
     end)
   end
 
@@ -615,8 +615,8 @@ defmodule Hearth.TestUtils do
   # test ends and cut an upload off mid query. It stops in on_exit instead, before
   # the test's database goes away
   def start_voice! do
-    start_supervised!(Hearth.RTC.Supervisor)
-    {:ok, voice} = Hearth.Voice.Supervisor.start_link()
+    start_supervised!(RTC.Supervisor)
+    {:ok, voice} = Voice.Supervisor.start_link()
     Process.unlink(voice)
     on_exit(fn -> stop_voice(voice) end)
     :ok = :pg.join(Hearth.Roles, :rtc, self())
@@ -627,7 +627,7 @@ defmodule Hearth.TestUtils do
       DynamicSupervisor.terminate_child(LiveSupervisor, live)
     end
 
-    Hearth.Voice.TaskSupervisor |> Task.Supervisor.children() |> Enum.each(&await_exit/1)
+    Voice.TaskSupervisor |> Task.Supervisor.children() |> Enum.each(&await_exit/1)
     Supervisor.stop(voice)
   end
 
@@ -757,7 +757,7 @@ defmodule Hearth.TestUtils do
   end
 
   def await_recording_uploads! do
-    for task <- Task.Supervisor.children(Hearth.Voice.TaskSupervisor) do
+    for task <- Task.Supervisor.children(Voice.TaskSupervisor) do
       ref = Process.monitor(task)
 
       receive do

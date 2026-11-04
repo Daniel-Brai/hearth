@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.ChatMessage do
   use JSV.Schema
 
+  alias Hearth.Chat.Message
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.Media
   alias HearthWeb.Schema.Reaction
   alias HearthWeb.Schema.UserSummary
@@ -37,9 +39,9 @@ defmodule HearthWeb.Schema.ChatMessage do
       body: nullable(string(description: "Null once deleted or removed")),
       depth: non_neg_integer(),
       child_count: non_neg_integer(),
-      status: enum(~w[published pending removed]),
+      status: Schema.enum_of(Message, :status),
       kind:
-        enum(~w[text promoted action sound],
+        Schema.enum_of(Message, :kind,
           description:
             "A promoted message is the room's note about a new post, an action is a /me line and a sound is a /play whose body is its name"
         ),

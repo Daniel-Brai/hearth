@@ -1,5 +1,7 @@
 defmodule Hearth.Repo.Schema do
+  alias Ecto.Changeset
   alias Hearth.Common.Id
+  alias Hearth.Repo
 
   # A list filter matches any of its values and nil matches a missing one
   # update/2 passes on only the fields in @changeable
@@ -82,11 +84,11 @@ defmodule Hearth.Repo.Schema do
         end
       end
 
-      @spec delete(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+      @spec delete(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Changeset.t()}
       if opts[:soft_delete?] do
         def delete(%__MODULE__{} = schema) do
           schema
-          |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+          |> Changeset.change(deleted_at: DateTime.utc_now())
           |> Repo.update()
         end
       else
@@ -123,23 +125,23 @@ defmodule Hearth.Repo.Schema do
 
       if Module.defines?(__MODULE__, {:changeset, 2}) and
            not Module.defines?(__MODULE__, {:insert, 2}) do
-        @spec insert(struct(), map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
+        @spec insert(struct(), map()) :: {:ok, struct()} | {:error, Changeset.t()}
         def insert(%__MODULE__{} = schema, %{} = params) do
           schema
           |> changeset(params)
-          |> Hearth.Repo.insert()
+          |> Repo.insert()
         end
       end
 
       if Module.defines?(__MODULE__, {:changeset, 2}) and
            not Module.defines?(__MODULE__, {:update, 2}) do
-        @spec update(struct(), map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
+        @spec update(struct(), map()) :: {:ok, struct()} | {:error, Changeset.t()}
         def update(%__MODULE__{} = schema, %{} = params) do
           changes = Map.take(params, @changeable_fields)
 
           schema
           |> changeset(changes)
-          |> Hearth.Repo.update()
+          |> Repo.update()
         end
       end
     end

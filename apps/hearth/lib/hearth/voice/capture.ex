@@ -29,7 +29,7 @@ defmodule Hearth.Voice.Capture do
       Voice.broadcast_recording(recording)
 
       {:ok, _task} =
-        Task.Supervisor.start_child(Hearth.Voice.TaskSupervisor, __MODULE__, :upload, [recording])
+        Task.Supervisor.start_child(Voice.TaskSupervisor, __MODULE__, :upload, [recording])
 
       {:ok, recording}
     end

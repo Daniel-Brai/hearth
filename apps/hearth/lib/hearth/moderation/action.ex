@@ -8,8 +8,22 @@ defmodule Hearth.Moderation.Action do
   alias Hearth.Common.T
 
   @fields [:reason, :metadata]
-  @actions ~w[removed restored kept banned unbanned server_muted server_mute_lifted disconnected
-               moved_to_listeners recording_started recording_stopped pinned locked changed]a
+  @actions ~w[
+    removed
+    restored
+    kept
+    banned
+    unbanned
+    server_muted
+    server_mute_lifted
+    disconnected
+    moved_to_listeners
+    recording_started
+    recording_stopped
+    pinned
+    locked
+    changed
+  ]a
   @subjects ~w[post reply message user community room]a
 
   @flop_options [

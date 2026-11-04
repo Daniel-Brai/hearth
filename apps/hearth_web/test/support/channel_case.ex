@@ -3,6 +3,8 @@ defmodule HearthWeb.ChannelCase do
 
   import Phoenix.ChannelTest
 
+  alias Hearth.DataCase
+
   @endpoint HearthWeb.Endpoint
 
   using do
@@ -15,7 +17,7 @@ defmodule HearthWeb.ChannelCase do
   end
 
   setup tags do
-    Hearth.DataCase.setup_sandbox(tags)
+    DataCase.setup_sandbox(tags)
     :ok
   end
 

@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.UpdateRoomBody do
   use JSV.Schema
 
+  alias Hearth.Communities.Room
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.RoomSettings
 
   defschema %{
@@ -11,7 +13,7 @@ defmodule HearthWeb.Schema.UpdateRoomBody do
       name: string(minLength: 1, maxLength: 40),
       topic: nullable(string(maxLength: 200)),
       position: integer(minimum: 0),
-      access: enum(~w[everyone roles]),
+      access: Schema.enum_of(Room, :access),
       role_ids: array_of(uuid()),
       settings: %{
         type: :object,

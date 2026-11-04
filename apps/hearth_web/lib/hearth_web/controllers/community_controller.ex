@@ -13,7 +13,6 @@ defmodule HearthWeb.CommunityController do
   alias Hearth.IAM
   alias HearthWeb.Authors
   alias HearthWeb.CommunityExtras
-  alias HearthWeb.CommunityRequestJSON
   alias Plug.Conn
 
   tags ["Communities"]
@@ -97,8 +96,7 @@ defmodule HearthWeb.CommunityController do
       {:requested, request} ->
         conn
         |> put_status(:accepted)
-        |> put_view(CommunityRequestJSON)
-        |> render(:show, request: request, people: Authors.people([request.requester_id]))
+        |> render(:create, request: request, people: Authors.people([request.requester_id]))
 
       error ->
         error

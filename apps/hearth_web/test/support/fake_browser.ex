@@ -9,6 +9,7 @@ defmodule HearthWeb.FakeBrowser do
   alias ExWebRTC.MediaStreamTrack
   alias ExWebRTC.PeerConnection
   alias ExWebRTC.SessionDescription
+  alias HearthWeb.VoiceChannel
   alias Phoenix.Socket.Message
 
   def start!(socket, session_id, name, payload \\ %{}) do
@@ -29,7 +30,7 @@ defmodule HearthWeb.FakeBrowser do
   def init({socket, session_id, name, test, payload}) do
     socket = %{socket | transport_pid: self()}
 
-    case join(socket, HearthWeb.VoiceChannel, "voice:#{session_id}", payload) do
+    case join(socket, VoiceChannel, "voice:#{session_id}", payload) do
       {:ok, reply, channel} ->
         {:ok, pc} = PeerConnection.start_link()
 

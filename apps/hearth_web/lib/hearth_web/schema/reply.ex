@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.Reply do
   use JSV.Schema
 
+  alias Hearth.Forum
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.Media
   alias HearthWeb.Schema.UserSummary
 
@@ -33,7 +35,7 @@ defmodule HearthWeb.Schema.Reply do
       child_count: non_neg_integer(),
       descendant_count: non_neg_integer(),
       helpful_count: non_neg_integer(),
-      status: enum(~w[published pending removed]),
+      status: Schema.enum_of(Forum.Reply, :status),
       deleted: boolean(description: "Kept because it has answers"),
       edited_at: nullable(string(format: :"date-time")),
       inserted_at: string(format: :"date-time"),

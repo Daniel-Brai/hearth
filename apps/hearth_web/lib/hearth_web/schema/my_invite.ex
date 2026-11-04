@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.MyInvite do
   use JSV.Schema
 
+  alias Hearth.Communities.Community
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.UserSummary
 
   defschema %{
@@ -20,7 +22,7 @@ defmodule HearthWeb.Schema.MyInvite do
           slug: string(),
           name: string(),
           tagline: nullable(string()),
-          hue: enum(~w[ink blue violet purple pink red orange yellow green aqua]),
+          hue: Schema.enum_of(Community, :hue),
           logo_id: nullable(uuid())
         }
       },

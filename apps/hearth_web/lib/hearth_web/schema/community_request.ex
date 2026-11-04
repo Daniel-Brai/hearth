@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.CommunityRequest do
   use JSV.Schema
 
+  alias Hearth.Communities.Request
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.UserSummary
 
   defschema %{
@@ -28,11 +30,11 @@ defmodule HearthWeb.Schema.CommunityRequest do
       name: string(),
       tagline: nullable(string()),
       description: nullable(string()),
-      hue: enum(~w[ink blue violet purple pink red orange yellow green aqua]),
-      visibility: enum(~w[public_indexed public invite_only private]),
+      hue: Schema.enum_of(Request, :hue),
+      visibility: Schema.enum_of(Request, :visibility),
       template: string(),
       note: nullable(string()),
-      status: enum(~w[pending approved declined]),
+      status: Schema.enum_of(Request, :status),
       requester: nullable(UserSummary),
       community_id: nullable(uuid()),
       community_slug: nullable(string()),

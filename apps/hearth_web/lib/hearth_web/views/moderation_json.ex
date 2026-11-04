@@ -1,4 +1,5 @@
 defmodule HearthWeb.ModerationJSON do
+  alias HearthWeb.BanJSON
   alias HearthWeb.PageJSON
   alias HearthWeb.UserJSON
 
@@ -25,6 +26,8 @@ defmodule HearthWeb.ModerationJSON do
   def show(%{item: item} = assigns), do: item(item, assigns)
 
   def counts(%{counts: counts}), do: %{counts: counts}
+
+  def ban_author(%{ban: ban, people: people}), do: BanJSON.serialize(ban, people)
 
   def screening_summary(%{summary: summary}), do: summary
 

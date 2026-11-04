@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.VoiceRecording do
   use JSV.Schema
 
+  alias Hearth.Voice.Recording
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.VoiceRecordingSpeaker
 
   defschema %{
@@ -39,7 +41,7 @@ defmodule HearthWeb.Schema.VoiceRecording do
           string(description: "The event's title or the session's topic, null for a plain room")
         ),
       status:
-        enum(~w[recording processing ready failed],
+        Schema.enum_of(Recording, :status,
           description:
             "Recording while the session goes on, then processing until the video is made"
         ),

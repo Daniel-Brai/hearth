@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.Community do
   use JSV.Schema
 
+  alias Hearth.Communities
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.Link
   alias HearthWeb.Schema.Room
   alias HearthWeb.Schema.UserSummary
@@ -37,11 +39,11 @@ defmodule HearthWeb.Schema.Community do
       name: string(),
       tagline: nullable(string()),
       description: nullable(string()),
-      hue: enum(~w[ink blue violet purple pink red orange yellow green aqua]),
+      hue: Schema.enum_of(Communities.Community, :hue),
       logo_id: nullable(uuid()),
       banner_id: nullable(uuid()),
-      visibility: enum(~w[public_indexed public invite_only private]),
-      moderation: enum(~w[full reports none]),
+      visibility: Schema.enum_of(Communities.Community, :visibility),
+      moderation: Schema.enum_of(Communities.Community, :moderation),
       welcome_message: nullable(string()),
       template: string(),
       owner_id: nullable(uuid()),

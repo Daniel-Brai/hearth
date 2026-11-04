@@ -21,7 +21,8 @@ defmodule HearthWeb.CommunityRequestJSON do
 
   def show(%{request: request, people: people}), do: serialize(request, people)
 
-  defp serialize(request, people) do
+  @spec serialize(map(), map()) :: map()
+  def serialize(request, people) do
     request
     |> Map.take(@fields)
     |> Map.put(:requester, UserJSON.summary(people[request.requester_id]))

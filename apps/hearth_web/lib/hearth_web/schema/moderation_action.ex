@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.ModerationAction do
   use JSV.Schema
 
+  alias Hearth.Moderation.Action
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.UserSummary
 
   defschema %{
@@ -11,23 +13,8 @@ defmodule HearthWeb.Schema.ModerationAction do
     required: ~w[id action subject_type subject_id reason metadata actor target inserted_at]a,
     properties: %{
       id: uuid(),
-      action: enum(~w[
-        removed
-        restored
-        kept
-        banned
-        unbanned
-        server_muted
-        server_mute_lifted
-        disconnected
-        moved_to_listeners
-        recording_started
-        recording_stopped
-        pinned
-        locked
-        changed
-      ]),
-      subject_type: enum(~w[post reply message user community room]),
+      action: Schema.enum_of(Action, :action),
+      subject_type: Schema.enum_of(Action, :subject_type),
       subject_id: uuid(),
       reason: nullable(string()),
       metadata: %{type: :object},

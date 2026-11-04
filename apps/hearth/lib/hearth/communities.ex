@@ -73,7 +73,7 @@ defmodule Hearth.Communities do
 
   @topic "communities"
   @open [:public_indexed, :public]
-  @levels ~w[full reports none]a
+  @levels Ecto.Enum.values(Community, :moderation)
 
   @owner_role "owner"
   @role_fields ~w[name color position permissions]a
@@ -561,12 +561,10 @@ defmodule Hearth.Communities do
     end
   end
 
-  @spec email_invites(
-          User.t(),
-          Community.t(),
-          [%{email: String.t(), role_key: String.t()}],
-          nil | String.t()
-        ) :: {:ok, [InviteEmail.t()]} | {:error, :forbidden | Changeset.t()}
+  @type email_entry :: %{email: String.t(), role_key: String.t()}
+
+  @spec email_invites(User.t(), Community.t(), [email_entry()], nil | String.t()) ::
+          {:ok, [InviteEmail.t()]} | {:error, :forbidden | Changeset.t()}
   def email_invites(%User{} = user, %Community{} = community, entries, note \\ nil)
       when is_list(entries) do
     roles = entries |> Enum.map(& &1.role_key) |> Enum.uniq()

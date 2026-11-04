@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.Instance do
   use JSV.Schema
 
+  alias Hearth.Communities.InstanceSettings
+  alias Hearth.Roles
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.Recording
   alias HearthWeb.Schema.Screening
   alias HearthWeb.Schema.Transcription
@@ -29,7 +32,7 @@ defmodule HearthWeb.Schema.Instance do
       logo: nullable(string(description: "Null uses Hearth's")),
       icon: nullable(string(description: "Null uses Hearth's")),
       sign_in: array_of(enum(~w[email github google])),
-      community_creation: enum(~w[admins request anyone]),
+      community_creation: Schema.enum_of(InstanceSettings, :creation),
       push_public_key: nullable(string(description: "Null when push is off")),
       upload_limits: UploadLimits,
       screening: Screening,
@@ -37,7 +40,7 @@ defmodule HearthWeb.Schema.Instance do
       voice: Voice,
       recording: Recording,
       roles:
-        array_of(enum(~w[web rtc media ai]),
+        array_of(enum(Roles.all()),
           description: "A feature whose role is missing is off"
         )
     }

@@ -4,8 +4,17 @@ defmodule HearthWeb.Schema.InstanceUpdate do
   defschema %{
     title: "InstanceUpdate",
     type: :object,
-    required: ~w[enabled current_version latest_version update_available release_name
-                 release_url notes published_at checked_at]a,
+    required: ~w[
+      enabled
+      current_version
+      latest_version
+      update_available
+      release_name
+      release_url
+      notes
+      published_at
+      checked_at
+    ]a,
     properties: %{
       enabled: boolean(description: "False when UPDATE_CHECK=false turned the daily check off"),
       current_version: string(),

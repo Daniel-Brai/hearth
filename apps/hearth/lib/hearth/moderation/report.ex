@@ -6,6 +6,7 @@ defmodule Hearth.Moderation.Report do
   alias Ecto.Changeset
   alias Hearth.Common.T
   alias Hearth.Moderation.Item
+  alias Hearth.Moderation.Subject
 
   @fields [:reason, :note]
   @reasons ~w[spam harassment hate sexual violence off_topic other]a
@@ -46,7 +47,7 @@ defmodule Hearth.Moderation.Report do
   def exists_for?(%Item{id: item_id}, reporter_id),
     do: exists?(item_id: item_id, reporter_id: reporter_id)
 
-  @spec open_subjects(T.id(), Hearth.Moderation.Subject.type(), [T.id()]) :: [T.id()]
+  @spec open_subjects(T.id(), Subject.type(), [T.id()]) :: [T.id()]
   def open_subjects(reporter_id, subject_type, subject_ids) when is_list(subject_ids) do
     query =
       from r in __MODULE__,

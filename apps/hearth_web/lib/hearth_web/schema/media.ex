@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.Media do
   use JSV.Schema
 
+  alias Hearth.Media.Asset
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.MediaUrls
 
   defschema %{
@@ -23,10 +25,10 @@ defmodule HearthWeb.Schema.Media do
     properties: %{
       id: uuid(),
       name: string(),
-      purpose: enum(~w[attachment avatar logo]),
+      purpose: Schema.enum_of(Asset, :purpose),
       content_type: string(),
       byte_size: pos_integer(),
-      status: enum(~w[uploading processing ready held blocked failed]),
+      status: Schema.enum_of(Asset, :status),
       failure: nullable(string()),
       width: nullable(pos_integer()),
       height: nullable(pos_integer()),

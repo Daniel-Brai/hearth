@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.InviteEmail do
   use JSV.Schema
 
+  alias Hearth.Communities
+  alias HearthWeb.Schema
+
   defschema %{
     title: "InviteEmail",
     type: :object,
@@ -9,7 +12,7 @@ defmodule HearthWeb.Schema.InviteEmail do
       id: uuid(),
       email: string(),
       role_key: string(),
-      status: enum(~w[pending accepted declined revoked]),
+      status: Schema.enum_of(Communities.InviteEmail, :status),
       inserted_at: string(format: :"date-time")
     }
   }

@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.Post do
   use JSV.Schema
 
+  alias Hearth.Forum
+  alias Hearth.Voice.Session
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.Media
   alias HearthWeb.Schema.Reaction
   alias HearthWeb.Schema.UserSummary
@@ -41,7 +44,7 @@ defmodule HearthWeb.Schema.Post do
       author: nullable(UserSummary),
       title: string(),
       body: string(),
-      status: enum(~w[published pending removed]),
+      status: Schema.enum_of(Forum.Post, :status),
       pinned: boolean(),
       locked: boolean(),
       answer_reply_id: nullable(uuid()),
@@ -58,7 +61,7 @@ defmodule HearthWeb.Schema.Post do
           type: :object,
           description: "Only on a single post",
           required: [:session_id, :room_id, :mode],
-          properties: %{session_id: uuid(), room_id: uuid(), mode: enum(~w[stage open])}
+          properties: %{session_id: uuid(), room_id: uuid(), mode: Schema.enum_of(Session, :mode)}
         }),
       watching: boolean(description: "False signed out"),
       reactions: array_of(Reaction),

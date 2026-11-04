@@ -103,9 +103,9 @@ defmodule Hearth.Auth do
     end
   end
 
-  @spec sign_up_details(String.t()) ::
-          {:ok, %{name: nil | String.t(), username: nil | String.t()}}
-          | {:error, :invalid | :expired}
+  @type sign_up_details :: %{name: nil | String.t(), username: nil | String.t()}
+
+  @spec sign_up_details(String.t()) :: {:ok, sign_up_details()} | {:error, :invalid | :expired}
   def sign_up_details(sign_up_token) when is_binary(sign_up_token) do
     with {:ok, token} <- Token.find_random(:sign_up, sign_up_token) do
       {:ok, %{name: token.data["name"], username: token.data["username"]}}

@@ -8,6 +8,7 @@ defmodule Hearth.Chat.Message do
   alias Hearth.Chat.ConversationMember
   alias Hearth.Chat.RoomRead
   alias Hearth.Common.T
+  alias Hearth.Vault
 
   @changeable [:body, :attachment_ids]
   @sounds ~w[tada rimshot trombone yodel crickets drama horn 56k]
@@ -25,7 +26,7 @@ defmodule Hearth.Chat.Message do
     field :author_id, Ecto.UUID
     field :reply_to_id, Ecto.UUID
     field :thread_root_id, Ecto.UUID
-    field :body, Hearth.Vault.Binary, default: ""
+    field :body, Vault.Binary, default: ""
     field :depth, :integer, default: 0
     field :path, {:array, Ecto.UUID}, default: []
     field :child_count, :integer, default: 0
@@ -143,10 +144,10 @@ defmodule Hearth.Chat.Message do
     |> Repo.update()
   end
 
-  @spec hide_preview(t(), boolean()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  @spec hide_preview(t(), boolean()) :: {:ok, t()} | {:error, Changeset.t()}
   def hide_preview(%__MODULE__{} = record, hidden?) do
     record
-    |> Ecto.Changeset.change(preview_hidden_at: if(hidden?, do: DateTime.utc_now()))
+    |> Changeset.change(preview_hidden_at: if(hidden?, do: DateTime.utc_now()))
     |> Repo.update()
   end
 

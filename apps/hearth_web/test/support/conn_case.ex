@@ -2,8 +2,11 @@ defmodule HearthWeb.ConnCase do
   use ExUnit.CaseTemplate
 
   alias Hearth.Common
+  alias Hearth.DataCase
+  alias HearthWeb.OpenAPISpec
   alias HearthWeb.Plugs.ApiVersion
   alias HearthWeb.Schema.Event
+  alias Plug.Conn
 
   using do
     quote do
@@ -20,13 +23,13 @@ defmodule HearthWeb.ConnCase do
   # Every conn is sent as the web app sends it, as JSON with the API version
   # it pins.
   setup tags do
-    Hearth.DataCase.setup_sandbox(tags)
+    DataCase.setup_sandbox(tags)
 
     conn =
       Phoenix.ConnTest.build_conn()
-      |> Plug.Conn.put_req_header("accept", "application/json")
-      |> Plug.Conn.put_req_header("content-type", "application/json")
-      |> Plug.Conn.put_req_header("hearth-version", ApiVersion.latest())
+      |> Conn.put_req_header("accept", "application/json")
+      |> Conn.put_req_header("content-type", "application/json")
+      |> Conn.put_req_header("hearth-version", ApiVersion.latest())
 
     {:ok, conn: conn}
   end
@@ -38,11 +41,11 @@ defmodule HearthWeb.ConnCase do
   end
 
   def bearer_conn(conn, token) do
-    Plug.Conn.put_req_header(conn, "authorization", "Bearer " <> token)
+    Conn.put_req_header(conn, "authorization", "Bearer " <> token)
   end
 
   def valid_response(conn, status) do
-    Oaskit.Test.valid_response(HearthWeb.OpenAPISpec, conn, status)
+    Oaskit.Test.valid_response(OpenAPISpec, conn, status)
   end
 
   def sign_token(claims, pem, headers \\ %{}) do
@@ -84,19 +87,21 @@ defmodule HearthWeb.ConnCase do
     |> File.read!()
   end
 
-  def events_with_undescribed_fields do
-    for schema <- Event.all(),
-        event = struct(schema.event()),
-        described = schema.json_schema().properties |> Map.keys() |> Enum.sort(),
-        sent = event |> schema.event().broadcast_with() |> Map.keys() |> Enum.sort(),
-        described != sent,
-        do: schema
-  end
+  def events_with_undescribed_fields, do: Enum.reject(Event.all(), &describes_what_it_sends?/1)
 
   def events_with_other_names do
     for schema <- Event.all(),
         event = struct(schema.event()),
         schema.json_schema().title != schema.event().broadcast_as(event),
         do: schema
+  end
+
+  defp describes_what_it_sends?(schema) do
+    sent =
+      schema.event() |> struct() |> schema.event().broadcast_with() |> Map.keys() |> Enum.sort()
+
+    %{properties: properties, required: required} = schema.json_schema()
+
+    properties |> Map.keys() |> Enum.sort() == sent and Enum.sort(required) == sent
   end
 end

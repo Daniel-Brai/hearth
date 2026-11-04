@@ -61,7 +61,7 @@ defmodule Hearth.Application do
           {Hearth.Forum.Supervisor, [:web]},
           {Hearth.Chat.Supervisor, [:web]},
           {Hearth.Events.Supervisor, [:web]},
-          {Hearth.RTC.Supervisor, [:rtc]},
+          {RTC.Supervisor, [:rtc]},
           {Hearth.Voice.Supervisor, [:rtc]},
           {Hearth.Voice.Listener.Communities, [:rtc]}
         ] ++ Enum.map(Moderation.servings() ++ AI.servings(), &{&1, [:ai]}),

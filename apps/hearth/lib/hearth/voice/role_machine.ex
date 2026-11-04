@@ -1,6 +1,7 @@
 defmodule Hearth.Voice.RoleMachine do
   use XFsm.Machine
 
+  alias Hearth.Voice.Participant
   alias XFsm.Machine
 
   # A routing state so the machine starts at whatever role it was given
@@ -40,8 +41,8 @@ defmodule Hearth.Voice.RoleMachine do
   state :host do
   end
 
-  @spec next(Hearth.Voice.Participant.role(), :invite | :demote) ::
-          {:ok, Hearth.Voice.Participant.role()} | {:error, :invalid_transition}
+  @spec next(Participant.role(), :invite | :demote) ::
+          {:ok, Participant.role()} | {:error, :invalid_transition}
   def next(role, event) when is_atom(role) and is_atom(event) do
     machine = Machine.init(__MODULE__, input: %{role: role})
 

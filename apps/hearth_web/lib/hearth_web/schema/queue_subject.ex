@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.QueueSubject do
   use JSV.Schema
 
+  alias Hearth.Forum.Post
+  alias Hearth.Moderation.Item
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.Media
   alias HearthWeb.Schema.UserSummary
 
@@ -22,12 +25,12 @@ defmodule HearthWeb.Schema.QueueSubject do
       attachments
     ]a,
     properties: %{
-      type: enum(~w[post reply message]),
+      type: Schema.enum_of(Item, :subject_type),
       id: uuid(),
       author: nullable(UserSummary),
       title: nullable(string()),
       body: string(),
-      status: enum(~w[published pending removed]),
+      status: Schema.enum_of(Post, :status),
       post_id: nullable(uuid()),
       room_id: nullable(uuid()),
       conversation_id: nullable(uuid()),

@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.LevelBody do
   use JSV.Schema
 
+  alias Hearth.Communities.Community
+  alias HearthWeb.Schema
+
   defschema %{
     title: "LevelBody",
     type: :object,
@@ -8,7 +11,7 @@ defmodule HearthWeb.Schema.LevelBody do
     required: [:level],
     additionalProperties: false,
     properties: %{
-      level: nullable(enum(~w[full reports none]))
+      level: nullable(Schema.enum_of(Community, :moderation))
     }
   }
 end

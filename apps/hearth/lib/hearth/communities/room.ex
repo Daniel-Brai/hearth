@@ -10,7 +10,6 @@ defmodule Hearth.Communities.Room do
   alias Hearth.Communities.RoomRole
   alias Hearth.Communities.RoomSettings
 
-  @levels ~w[full reports none]a
   # The moderation level changes through Hearth.Moderation.set_level/3, which logs it
   @fields ~w[type name topic position access]a
   @changeable [:settings | @fields -- [:type]]
@@ -21,7 +20,7 @@ defmodule Hearth.Communities.Room do
     field :name, :string
     field :topic, :string
     field :position, :integer, default: 0
-    field :moderation, Ecto.Enum, values: @levels
+    field :moderation, Ecto.Enum, values: Ecto.Enum.values(Community, :moderation)
     field :archived_at, :utc_datetime_usec
     field :access, Ecto.Enum, values: [:everyone, :roles], default: :everyone
 
@@ -158,7 +157,7 @@ defmodule Hearth.Communities.Room do
   defp with_roles({:ok, room}), do: {:ok, Repo.preload(room, :room_roles)}
   defp with_roles({:error, _changeset} = error), do: error
 
-  @spec put_moderation(t(), nil | Hearth.Communities.Community.level()) ::
+  @spec put_moderation(t(), nil | Community.level()) ::
           {:ok, t()} | {:error, Changeset.t()}
   def put_moderation(%__MODULE__{} = room, level) do
     room

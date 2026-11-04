@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.ScheduleEventBody do
   use JSV.Schema
 
+  alias Hearth.Events.Event
+  alias HearthWeb.Schema
+
   defschema %{
     title: "ScheduleEventBody",
     type: :object,
@@ -17,11 +20,11 @@ defmodule HearthWeb.Schema.ScheduleEventBody do
           maxLength: 64,
           description: "IANA zone such as Africa/Lagos"
         ),
-      repeat: enum(~w[none daily weekly biweekly monthly]),
-      place: enum(~w[room link]),
+      repeat: Schema.enum_of(Event, :repeat),
+      place: Schema.enum_of(Event, :place),
       room_id: nullable(uuid()),
       url: nullable(string(maxLength: 2_000)),
-      talk_mode: nullable(enum(~w[stage open]))
+      talk_mode: nullable(Schema.enum_of(Event, :talk_mode))
     }
   }
 end

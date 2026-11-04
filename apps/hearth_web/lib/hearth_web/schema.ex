@@ -8,6 +8,11 @@ defmodule HearthWeb.Schema do
     object(required: [:data, :meta], properties: %{data: array_of(item), meta: PageMeta})
   end
 
+  # The values come from the domain field so the API can't drift from what is stored
+  @spec enum_of(module(), atom(), keyword()) :: map()
+  def enum_of(schema, field, opts \\ []) when is_atom(schema) and is_atom(field),
+    do: enum(Ecto.Enum.dump_values(schema, field), opts)
+
   @spec paging() :: keyword()
   def paging do
     [

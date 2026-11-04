@@ -11,9 +11,25 @@ defmodule HearthWeb.Sitemap do
 
   # Signed in areas and screens nobody searches for
   @disallow ~w[
-    /api/ /signin /join/ /new /people /dm/ /settings /requests /invites /events
-    /c/*/chat/ /c/*/voice/ /c/*/sessions/ /c/*/new /c/*/invite /c/*/moderation
-    /c/*/roles /c/*/log /*?
+    /api/
+    /signin
+    /join/
+    /new
+    /people
+    /dm/
+    /settings
+    /requests
+    /invites
+    /events
+    /c/*/chat/
+    /c/*/voice/
+    /c/*/sessions/
+    /c/*/new
+    /c/*/invite
+    /c/*/moderation
+    /c/*/roles
+    /c/*/log
+    /*?
   ]
 
   @spec robots() :: String.t()

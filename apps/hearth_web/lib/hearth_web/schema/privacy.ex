@@ -1,7 +1,10 @@
 defmodule HearthWeb.Schema.Privacy do
   use JSV.Schema
 
-  @audience enum(~w[everyone members nobody])
+  alias Hearth.Accounts
+  alias HearthWeb.Schema
+
+  @audience Schema.enum_of(Accounts.Privacy, :presence)
 
   defschema %{
     title: "Privacy",
@@ -10,7 +13,7 @@ defmodule HearthWeb.Schema.Privacy do
     additionalProperties: false,
     properties: %{
       show_name: boolean(description: "False shows only the username"),
-      show_communities: enum(~w[common everyone nobody]),
+      show_communities: Schema.enum_of(Accounts.Privacy, :show_communities),
       presence: @audience,
       last_seen: @audience,
       avatar: @audience

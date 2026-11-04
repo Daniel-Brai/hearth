@@ -1,6 +1,7 @@
 defmodule HearthWeb.RecordingControllerTest do
   use HearthWeb.ConnCase, async: true
 
+  alias Faker.Lorem
   alias Hearth.Common
   alias Hearth.TestUtils
   alias Hearth.Voice.Recording
@@ -131,7 +132,7 @@ defmodule HearthWeb.RecordingControllerTest do
       member: member,
       recording: recording
     } do
-      body = %{title: Faker.Lorem.sentence()}
+      body = %{title: Lorem.sentence()}
 
       assert %{"code" => "forbidden"} =
                conn
@@ -141,7 +142,7 @@ defmodule HearthWeb.RecordingControllerTest do
     end
 
     test "rename recording", %{conn: conn, owner: owner, recording: recording} do
-      body = %{title: Faker.Lorem.sentence()}
+      body = %{title: Lorem.sentence()}
 
       assert %{"title" => title} =
                conn

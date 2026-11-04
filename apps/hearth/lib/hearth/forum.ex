@@ -163,7 +163,7 @@ defmodule Hearth.Forum do
   def moderate(%Post{} = post, status), do: Post.put_status(post, status)
   def moderate(%Reply{} = reply, status), do: Reply.put_status(reply, status)
 
-  @spec get_reply(Hearth.Common.T.id()) :: {:ok, Reply.t()} | {:error, :not_found}
+  @spec get_reply(T.id()) :: {:ok, Reply.t()} | {:error, :not_found}
   def get_reply(id) when is_binary(id) do
     case Reply.get(id: id, deleted_at: nil) do
       nil -> {:error, :not_found}
@@ -187,12 +187,14 @@ defmodule Hearth.Forum do
     |> Post.paginate()
   end
 
-  # Posts and replies waiting on a report still count since they still show in feeds
-  @spec author_counts(T.id(), [T.id()]) :: %{
+  @type author_counts :: %{
           posts: non_neg_integer(),
           answers: non_neg_integer(),
           people_helped: non_neg_integer()
         }
+
+  # Posts and replies waiting on a report still count since they still show in feeds
+  @spec author_counts(T.id(), [T.id()]) :: author_counts()
   def author_counts(author_id, community_ids) when is_list(community_ids) do
     %{
       posts: Post.count_by_author(author_id, community_ids),

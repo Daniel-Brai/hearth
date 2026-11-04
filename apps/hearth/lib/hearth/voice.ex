@@ -293,9 +293,9 @@ defmodule Hearth.Voice do
     length(orphans)
   end
 
-  @spec join(User.t(), Session.t(), pid(), keyword()) ::
-          {:ok, %{peer: pid(), snapshot: map(), ice_servers: [RTC.Turn.ice_server()]}}
-          | {:error, error()}
+  @type joined :: %{peer: pid(), snapshot: map(), ice_servers: [RTC.Turn.ice_server()]}
+
+  @spec join(User.t(), Session.t(), pid(), keyword()) :: {:ok, joined()} | {:error, error()}
   def join(%User{} = user, %Session{} = session, channel, opts \\ []) when is_pid(channel) do
     may_speak? = session.host_id == user.id or can?(user, :speak, session)
 
@@ -488,12 +488,14 @@ defmodule Hearth.Voice do
     end
   end
 
-  @spec recording_urls(Recording.t()) :: %{
+  @type recording_urls :: %{
           video: nil | String.t(),
           download: nil | String.t(),
           poster: nil | String.t(),
           speakers: %{T.id() => String.t()}
         }
+
+  @spec recording_urls(Recording.t()) :: recording_urls()
   def recording_urls(%Recording{status: :ready} = recording) do
     %{
       video: signed(recording.video_key),

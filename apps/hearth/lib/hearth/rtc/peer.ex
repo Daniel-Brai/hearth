@@ -287,7 +287,7 @@ defmodule Hearth.RTC.Peer do
   defp subscribe(state, {publisher, kind} = source) do
     track = MediaStreamTrack.new(kind, [publisher])
     {:ok, tr} = PeerConnection.add_transceiver(state.pc, track, direction: :sendonly)
-    {:ok, _owner} = Registry.register(Hearth.RTC.Tracks, key(state, source), {state.pc, track.id})
+    {:ok, _owner} = Registry.register(RTC.Tracks, key(state, source), {state.pc, track.id})
 
     entry = %{transceiver: tr.id, track: track.id}
 
@@ -300,7 +300,7 @@ defmodule Hearth.RTC.Peer do
 
   defp unsubscribe(state, source) do
     %{transceiver: id, track: track_id} = Map.fetch!(state.outbound, source)
-    :ok = Registry.unregister_match(Hearth.RTC.Tracks, key(state, source), {state.pc, track_id})
+    :ok = Registry.unregister_match(RTC.Tracks, key(state, source), {state.pc, track_id})
     :ok = PeerConnection.stop_transceiver(state.pc, id)
 
     %{
@@ -351,7 +351,7 @@ defmodule Hearth.RTC.Peer do
   defp forward(state, kind, packet) do
     state = state |> hear(kind, packet) |> record(kind, packet) |> phrase(kind, packet)
 
-    Registry.dispatch(Hearth.RTC.Tracks, key(state, {state.user_id, kind}), fn entries ->
+    Registry.dispatch(RTC.Tracks, key(state, {state.user_id, kind}), fn entries ->
       for {_owner, {pc, track_id}} <- entries, do: PeerConnection.send_rtp(pc, track_id, packet)
     end)
 

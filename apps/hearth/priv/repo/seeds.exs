@@ -6,11 +6,13 @@
 #   dana_dm        sends the reported direct message
 # The owner of "Moderation Lab" is SEED_OWNER (default danielbrai), which must already exist
 
+alias Ecto.Changeset
 alias Hearth.Accounts
 alias Hearth.Chat
 alias Hearth.Communities
 alias Hearth.Forum
 alias Hearth.Moderation
+alias Hearth.Repo
 
 if Mix.env() != :dev, do: raise("The seed is for the dev database only")
 
@@ -39,8 +41,8 @@ defmodule Seed do
   # Nothing in the app makes someone an instance admin but being the first account, so the seed sets it.
   def instance_admin!(user) do
     user
-    |> Ecto.Changeset.change(is_instance_admin: true)
-    |> Hearth.Repo.update!()
+    |> Changeset.change(is_instance_admin: true)
+    |> Repo.update!()
   end
 
   def community!(owner, slug, params) do

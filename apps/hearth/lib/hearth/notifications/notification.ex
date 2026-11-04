@@ -9,8 +9,18 @@ defmodule Hearth.Notifications.Notification do
   alias Hearth.Repo
 
   @fields ~w[actor_id community_id kind subject_type subject_id data]a
-  @kinds ~w[reply mention dm answer event_scheduled event_reminder live_started invite report
-             transcript_ready]a
+  @kinds ~w[
+    reply
+    mention
+    dm
+    answer
+    event_scheduled
+    event_reminder
+    live_started
+    invite
+    report
+    transcript_ready
+  ]a
 
   @flop_options [
     filterable: [:user_id],

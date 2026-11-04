@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.VoiceSession do
   use JSV.Schema
 
+  alias Hearth.Voice.Session
+  alias HearthWeb.Schema
+
   defschema %{
     title: "VoiceSession",
     type: :object,
@@ -24,7 +27,7 @@ defmodule HearthWeb.Schema.VoiceSession do
       host_id: nullable(uuid()),
       event_id: nullable(uuid()),
       post_id: nullable(uuid()),
-      mode: enum(~w[stage open]),
+      mode: Schema.enum_of(Session, :mode),
       topic: nullable(string()),
       started_at: string(format: :"date-time"),
       ended_at: nullable(string(format: :"date-time", description: "Null while it is live")),

@@ -1,4 +1,5 @@
 defmodule HearthWeb.CommunityJSON do
+  alias HearthWeb.CommunityRequestJSON
   alias HearthWeb.RoomJSON
   alias HearthWeb.UserJSON
 
@@ -19,6 +20,9 @@ defmodule HearthWeb.CommunityJSON do
   ]a
 
   def index(%{communities: communities}), do: Enum.map(communities, &serialize/1)
+
+  def create(%{request: request, people: people}),
+    do: CommunityRequestJSON.serialize(request, people)
 
   def create(%{community: community}), do: serialize(community)
 

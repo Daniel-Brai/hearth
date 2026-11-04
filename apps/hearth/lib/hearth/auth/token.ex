@@ -6,6 +6,7 @@ defmodule Hearth.Auth.Token do
   alias Ecto.Changeset
   alias Hearth.Common.T
   alias Hearth.Repo
+  alias Hearth.Vault
 
   @contexts ~w[session sign_in_code sign_up change_email undo_email_change transfer_ownership]a
   @fields ~w[user_id context token_hash sent_to data user_agent ip expires_at]a
@@ -29,7 +30,7 @@ defmodule Hearth.Auth.Token do
     field :attempts, :integer, default: 0
     field :user_agent, :string
     # Sealed at rest since it says roughly where someone signs in from
-    field :ip, Hearth.Vault.Binary
+    field :ip, Vault.Binary
     field :expires_at, :utc_datetime_usec
 
     timestamps(updated_at: false)

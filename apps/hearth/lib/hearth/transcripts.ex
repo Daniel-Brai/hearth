@@ -59,13 +59,16 @@ defmodule Hearth.Transcripts do
     end
   end
 
+  @type post_ref :: %{:id => T.id(), :community_id => T.id(), optional(atom()) => any()}
+
+  @type post_transcript :: %{
+          transcript: Transcript.t(),
+          session: Session.t(),
+          room_name: String.t()
+        }
+
   # Only members see it, so the post doesn't point outsiders at a page they can't open
-  @spec for_post(nil | User.t(), %{
-          :id => T.id(),
-          :community_id => T.id(),
-          optional(atom()) => any()
-        }) ::
-          nil | %{transcript: Transcript.t(), session: Session.t(), room_name: String.t()}
+  @spec for_post(nil | User.t(), post_ref()) :: nil | post_transcript()
   def for_post(%User{} = user, %{id: post_id, community_id: community_id}) do
     with :ok <- on(),
          true <- IAM.member?(user, community_id) and not Communities.banned?(user, community_id),

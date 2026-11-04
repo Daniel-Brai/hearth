@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.Settings do
   use JSV.Schema
 
+  alias Hearth.Accounts
+  alias HearthWeb.Schema
+
   defschema %{
     title: "Settings",
     type: :object,
@@ -19,7 +22,7 @@ defmodule HearthWeb.Schema.Settings do
     ]a,
     additionalProperties: false,
     properties: %{
-      theme: enum(~w[system light dark]),
+      theme: Schema.enum_of(Accounts.Settings, :theme),
       ui_sounds: boolean(),
       play_sounds: boolean(),
       haptics: boolean(),
@@ -35,7 +38,7 @@ defmodule HearthWeb.Schema.Settings do
         type: :object,
         additionalProperties: boolean()
       },
-      digest: enum(~w[daily weekly off])
+      digest: Schema.enum_of(Accounts.Settings, :digest)
     }
   }
 end

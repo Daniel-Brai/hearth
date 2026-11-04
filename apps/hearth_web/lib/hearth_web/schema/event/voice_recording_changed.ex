@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.Event.VoiceRecordingChanged do
   use JSV.Schema
 
+  alias Hearth.Voice.Recording
+  alias HearthWeb.Schema
+
   defschema %{
     title: "VoiceRecordingChanged",
     type: :object,
@@ -14,7 +17,7 @@ defmodule HearthWeb.Schema.Event.VoiceRecordingChanged do
       community_id: uuid(),
       room_id: uuid(),
       recording_id: uuid(),
-      status: enum(~w[recording processing ready failed]),
+      status: Schema.enum_of(Recording, :status),
       started_by_id: nullable(uuid()),
       started_at: string(format: :"date-time")
     }

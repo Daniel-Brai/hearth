@@ -1,13 +1,16 @@
 defmodule HearthWeb.Schema.UpdateSettingsBody do
   use JSV.Schema
 
+  alias Hearth.Accounts.Settings
+  alias HearthWeb.Schema
+
   defschema %{
     title: "UpdateSettingsBody",
     type: :object,
     description: "Only the settings sent change",
     additionalProperties: false,
     properties: %{
-      theme: enum(~w[system light dark]),
+      theme: Schema.enum_of(Settings, :theme),
       ui_sounds: boolean(),
       play_sounds: boolean(),
       haptics: boolean(),
@@ -23,7 +26,7 @@ defmodule HearthWeb.Schema.UpdateSettingsBody do
         type: :object,
         additionalProperties: boolean()
       },
-      digest: enum(~w[daily weekly off])
+      digest: Schema.enum_of(Settings, :digest)
     }
   }
 end

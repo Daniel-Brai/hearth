@@ -8,17 +8,16 @@ defmodule Hearth.Communities.Request do
   alias Hearth.Communities.Community
   alias Hearth.Communities.Template
 
-  @hues ~w[ink blue violet purple pink red orange yellow green aqua]a
   @fields ~w[name tagline description hue visibility template note]a
 
   schema "community_requests" do
     field :name, :string
     field :tagline, :string
     field :description, :string
-    field :hue, Ecto.Enum, values: @hues, default: :orange
+    field :hue, Ecto.Enum, values: Ecto.Enum.values(Community, :hue), default: :orange
 
     field :visibility, Ecto.Enum,
-      values: ~w[public_indexed public invite_only private]a,
+      values: Ecto.Enum.values(Community, :visibility),
       default: :public
 
     field :template, :string, default: "blank"

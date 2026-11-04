@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.Notification do
   use JSV.Schema
 
+  alias Hearth.Notifications
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.UserSummary
 
   defschema %{
@@ -9,9 +11,7 @@ defmodule HearthWeb.Schema.Notification do
     required: ~w[id kind actor community_id subject_type subject_id data read_at inserted_at]a,
     properties: %{
       id: uuid(),
-      kind:
-        enum(~w[reply mention dm answer event_scheduled event_reminder live_started invite report
-            transcript_ready]),
+      kind: Schema.enum_of(Notifications.Notification, :kind),
       actor: nullable(UserSummary),
       community_id: nullable(uuid()),
       subject_type: string(),

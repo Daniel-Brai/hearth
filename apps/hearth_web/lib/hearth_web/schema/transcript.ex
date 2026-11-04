@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.Transcript do
   use JSV.Schema
 
+  alias Hearth.Transcripts
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.TranscriptSegment
   alias HearthWeb.Schema.TranscriptSpeaker
   alias HearthWeb.Schema.UserSummary
@@ -40,7 +42,7 @@ defmodule HearthWeb.Schema.Transcript do
       room_name: string(),
       post_id: nullable(uuid()),
       topic: nullable(string()),
-      status: enum(~w[queued transcribing ready failed]),
+      status: Schema.enum_of(Transcripts.Transcript, :status),
       failure: nullable(string()),
       language: nullable(string()),
       duration_ms: nullable(integer()),

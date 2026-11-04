@@ -6,7 +6,8 @@ defmodule HearthWeb.BanJSON do
   def index(%{bans: bans, people: people}), do: Enum.map(bans, &serialize(&1, people))
   def show(%{ban: ban, people: people}), do: serialize(ban, people)
 
-  defp serialize(ban, people) do
+  @spec serialize(map(), map()) :: map()
+  def serialize(ban, people) do
     ban
     |> Map.take(@fields)
     |> Map.merge(%{

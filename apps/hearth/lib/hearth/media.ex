@@ -36,6 +36,15 @@ defmodule Hearth.Media do
 
   @topic "media"
 
+  @type variant_url :: %{
+          width: pos_integer(),
+          height: pos_integer(),
+          format: atom(),
+          url: String.t()
+        }
+
+  @type urls :: %{original: String.t(), download: String.t(), variants: [variant_url()]}
+
   @type upload ::
           %{url: String.t(), headers: %{String.t() => String.t()}}
           | %{upload_id: String.t(), part_size: pos_integer(), parts: pos_integer()}
@@ -73,8 +82,10 @@ defmodule Hearth.Media do
     end
   end
 
+  @type requested :: %{media: Asset.t(), upload: nil | upload()}
+
   @spec request_upload(User.t(), map()) ::
-          {:ok, %{media: Asset.t(), upload: nil | upload()}}
+          {:ok, requested()}
           | {:error, :too_many_unfinished | :rate_limited | Changeset.t() | term()}
   def request_upload(%User{} = user, %{} = params) do
     RequestUpload.execute(user, params) >>>
@@ -134,15 +145,7 @@ defmodule Hearth.Media do
 
   def complete_upload(%User{}, %Asset{}, _parts), do: {:error, :forbidden}
 
-  @spec urls(Asset.t()) ::
-          nil
-          | %{
-              original: String.t(),
-              download: String.t(),
-              variants: [
-                %{width: pos_integer(), height: pos_integer(), format: atom(), url: String.t()}
-              ]
-            }
+  @spec urls(Asset.t()) :: nil | urls()
   def urls(%Asset{status: :ready} = media) do
     {:ok, original} = Storage.get_url(media.bucket_key)
 

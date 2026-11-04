@@ -1,14 +1,18 @@
 defmodule HearthWeb.Schema.ModeratedContent do
   use JSV.Schema
 
+  alias Hearth.Forum.Post
+  alias Hearth.Moderation.Item
+  alias HearthWeb.Schema
+
   defschema %{
     title: "ModeratedContent",
     type: :object,
     required: [:subject_type, :subject_id, :status],
     properties: %{
-      subject_type: enum(~w[post reply message]),
+      subject_type: Schema.enum_of(Item, :subject_type),
       subject_id: uuid(),
-      status: enum(~w[published pending removed])
+      status: Schema.enum_of(Post, :status)
     }
   }
 end

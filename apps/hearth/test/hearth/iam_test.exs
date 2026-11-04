@@ -1,15 +1,16 @@
 defmodule Hearth.IAMTest do
   use Hearth.DataCase, async: true
 
-  doctest Hearth.IAM.Spec
-
   alias Faker.Lorem
   alias Hearth.Common
   alias Hearth.Communities
   alias Hearth.IAM
   alias Hearth.IAM.Membership
   alias Hearth.IAM.Role
+  alias Hearth.IAM.Spec
   alias Hearth.TestUtils
+
+  doctest Spec
 
   setup do
     %{id: community_id} = TestUtils.create_random_community!()

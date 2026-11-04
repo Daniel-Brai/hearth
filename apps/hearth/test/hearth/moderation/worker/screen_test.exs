@@ -1,6 +1,7 @@
 defmodule Hearth.Moderation.Worker.ScreenTest do
   use Hearth.DataCase, async: true
 
+  alias Hearth.Communities.Community
   alias Hearth.Forum
   alias Hearth.Moderation.Worker.Screen
   alias Hearth.TestUtils
@@ -30,9 +31,7 @@ defmodule Hearth.Moderation.Worker.ScreenTest do
       post = TestUtils.create_random_post!(author, community, body: "[unsafe]")
 
       :ok =
-        TestUtils.update_rows!(Hearth.Communities.Community, [id: community.id],
-          moderation: :reports
-        )
+        TestUtils.update_rows!(Community, [id: community.id], moderation: :reports)
 
       assert :ok = perform_job(Screen, %{subject_type: "post", subject_id: post.id})
       assert {:ok, %{status: :published}} = Forum.get_post(id: post.id)

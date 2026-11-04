@@ -1,6 +1,10 @@
 defmodule HearthWeb.Schema.Me do
   use JSV.Schema
 
+  alias HearthWeb.Schema.Link
+  alias HearthWeb.Schema.Privacy
+  alias HearthWeb.Schema.Settings
+
   defschema %{
     title: "Me",
     type: :object,
@@ -33,9 +37,9 @@ defmodule HearthWeb.Schema.Me do
       location: nullable(string()),
       timezone: nullable(string()),
       locale: nullable(string()),
-      links: array_of(HearthWeb.Schema.Link),
-      privacy: HearthWeb.Schema.Privacy,
-      settings: HearthWeb.Schema.Settings,
+      links: array_of(Link),
+      privacy: Privacy,
+      settings: Settings,
       is_instance_admin: boolean()
     }
   }

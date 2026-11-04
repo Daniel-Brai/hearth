@@ -200,15 +200,17 @@ defmodule Hearth.Chat do
   end
 
   @type room_unread :: %{
-          room_id: Hearth.Common.T.id(),
-          community_id: Hearth.Common.T.id(),
+          room_id: T.id(),
+          community_id: T.id(),
           count: pos_integer()
         }
 
-  @spec unread_counts(User.t()) :: %{
+  @type unread_counts :: %{
           rooms: [room_unread()],
-          conversations: %{Hearth.Common.T.id() => pos_integer()}
+          conversations: %{T.id() => pos_integer()}
         }
+
+  @spec unread_counts(User.t()) :: unread_counts()
   def unread_counts(%User{} = user) do
     joined = IAM.joined_at(user)
     rooms = joined |> Map.keys() |> Communities.list_visible_rooms(:text, user)
@@ -225,7 +227,7 @@ defmodule Hearth.Chat do
     }
   end
 
-  @spec list_reactions(User.t(), [Message.t()]) :: %{Hearth.Common.T.id() => [Reaction.summary()]}
+  @spec list_reactions(User.t(), [Message.t()]) :: %{T.id() => [Reaction.summary()]}
   def list_reactions(%User{id: user_id}, messages) when is_list(messages),
     do: messages |> Enum.map(& &1.id) |> Reaction.summaries(user_id)
 
@@ -263,7 +265,7 @@ defmodule Hearth.Chat do
           {:ok, Message.t()} | {:error, Changeset.t()}
   def moderate(%Message{} = message, status), do: Message.put_status(message, status)
 
-  @spec get_message(Hearth.Common.T.id()) :: {:ok, Message.t()} | {:error, :not_found}
+  @spec get_message(T.id()) :: {:ok, Message.t()} | {:error, :not_found}
   def get_message(id) when is_binary(id) do
     case Message.get(id: id, deleted_at: nil) do
       nil -> {:error, :not_found}
@@ -272,7 +274,7 @@ defmodule Hearth.Chat do
   end
 
   # Every id must be a message still showing in the room that someone wrote, oldest first
-  @spec get_promotable(Room.t(), [Hearth.Common.T.id()]) ::
+  @spec get_promotable(Room.t(), [T.id()]) ::
           {:ok, [Message.t()]} | {:error, :invalid_messages}
   def get_promotable(%Room{id: id}, ids) when is_list(ids) do
     count = ids |> Enum.uniq() |> length()
@@ -287,7 +289,7 @@ defmodule Hearth.Chat do
   @spec note_promoted(
           User.t(),
           Room.t(),
-          %{:id => Hearth.Common.T.id(), :title => String.t(), optional(atom()) => any()}
+          %{:id => T.id(), :title => String.t(), optional(atom()) => any()}
         ) ::
           {:ok, Message.t()} | {:error, Changeset.t()}
   def note_promoted(%User{} = user, %Room{} = room, %{id: post_id, title: title}) do
@@ -307,7 +309,7 @@ defmodule Hearth.Chat do
     end
   end
 
-  @spec get_conversation(User.t(), Hearth.Common.T.id()) ::
+  @spec get_conversation(User.t(), T.id()) ::
           {:ok, Conversation.t()} | {:error, :not_found}
   def get_conversation(%User{id: user_id}, id) when is_binary(id) do
     with %Conversation{} = conversation <- Conversation.get(id: id, preload: :members),

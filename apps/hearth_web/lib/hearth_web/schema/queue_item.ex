@@ -1,6 +1,8 @@
 defmodule HearthWeb.Schema.QueueItem do
   use JSV.Schema
 
+  alias Hearth.Moderation.Item
+  alias HearthWeb.Schema
   alias HearthWeb.Schema.QueueReport
   alias HearthWeb.Schema.QueueSubject
   alias HearthWeb.Schema.UserSummary
@@ -32,9 +34,9 @@ defmodule HearthWeb.Schema.QueueItem do
       id: uuid(),
       community_id: nullable(uuid(description: "Null for a direct message")),
       room_id: nullable(uuid()),
-      source: enum(~w[automatic report instance]),
-      status: enum(~w[pending kept removed dismissed]),
-      subject_type: enum(~w[post reply message]),
+      source: Schema.enum_of(Item, :source),
+      status: Schema.enum_of(Item, :status),
+      subject_type: Schema.enum_of(Item, :subject_type),
       subject_id: uuid(),
       reason: nullable(string()),
       note: nullable(string()),

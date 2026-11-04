@@ -13,4 +13,5 @@ export type NotificationCreatedKind =
   | 'event_reminder'
   | 'live_started'
   | 'invite'
+  | 'report'
   | 'transcript_ready';

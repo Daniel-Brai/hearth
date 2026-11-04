@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.CommunityTemplate do
   use JSV.Schema
 
+  alias Hearth.Events.Event
+  alias HearthWeb.Schema
+
   defschema %{
     title: "CommunityTemplate",
     type: :object,
@@ -23,7 +26,7 @@ defmodule HearthWeb.Schema.CommunityTemplate do
             title: string(),
             days: pos_integer(),
             mins: pos_integer(),
-            repeat: enum(~w[none daily weekly biweekly monthly])
+            repeat: Schema.enum_of(Event, :repeat)
           }
         }),
       placeholder: %{

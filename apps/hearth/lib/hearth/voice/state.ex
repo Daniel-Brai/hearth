@@ -2,6 +2,7 @@ defmodule Hearth.Voice.State do
   alias Hearth.Common.T
   alias Hearth.Voice.Participant
   alias Hearth.Voice.RoleMachine
+  alias Hearth.Voice.Session
   alias Hearth.Voice.ShareMachine
 
   @enforce_keys ~w[session_id room_id community_id host_id mode limit]a
@@ -41,7 +42,7 @@ defmodule Hearth.Voice.State do
           receive: [{T.id(), :audio | :video}]
         }
 
-  @spec new(Hearth.Voice.Session.t(), [Participant.t()], pos_integer()) :: t()
+  @spec new(Session.t(), [Participant.t()], pos_integer()) :: t()
   def new(session, participants, limit) do
     %__MODULE__{
       session_id: session.id,

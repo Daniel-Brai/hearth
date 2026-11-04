@@ -1,6 +1,9 @@
 defmodule HearthWeb.Schema.CommunityEvent do
   use JSV.Schema
 
+  alias Hearth.Events.Event
+  alias HearthWeb.Schema
+
   defschema %{
     title: "CommunityEvent",
     type: :object,
@@ -34,10 +37,10 @@ defmodule HearthWeb.Schema.CommunityEvent do
         nullable(string(format: :"date-time", description: "For a repeating event")),
       duration_min: integer(),
       timezone: string(),
-      repeat: enum(~w[none daily weekly biweekly monthly]),
-      place: enum(~w[room link]),
+      repeat: Schema.enum_of(Event, :repeat),
+      place: Schema.enum_of(Event, :place),
       url: nullable(string()),
-      talk_mode: nullable(enum(~w[stage open])),
+      talk_mode: nullable(Schema.enum_of(Event, :talk_mode)),
       cancelled_at: nullable(string(format: :"date-time")),
       interested_ids: array_of(uuid(), description: "The host first")
     }

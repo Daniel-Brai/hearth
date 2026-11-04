@@ -3,6 +3,7 @@ defmodule Hearth.Notifications.MessagesTest do
 
   alias Faker.Company
   alias Faker.Internet
+  alias Hearth.Accounts.User
   alias Hearth.Common
   alias Hearth.Notifications.Anonymous
   alias Hearth.Notifications.CatchUp
@@ -101,7 +102,7 @@ defmodule Hearth.Notifications.MessagesTest do
 
   test "render CatchUp" do
     community = %{id: Common.new_id(), name: "Night Owls", slug: "night-owls"}
-    author = %Hearth.Accounts.User{username: "ada", display_name: "Ada"}
+    author = %User{username: "ada", display_name: "Ada"}
 
     post = %{id: Common.new_id(), pinned_at: nil, reply_count: 4, helpful_count: 1}
 
