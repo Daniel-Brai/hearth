@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.5](https://github.com/daniel-brai/hearth/compare/v0.0.4...v0.0.5) (2026-11-04)
+
+
+
+
+### Features:
+
+* web: add a formatting toolbar to posts and replies and highlight C, C++ and Haskell
+
 ## [v0.0.4](https://github.com/daniel-brai/hearth/compare/v0.0.3...v0.0.4) (2026-11-04)
 
 
