@@ -3,11 +3,14 @@ defmodule Hearth.Forum.ScheduledPost do
 
   import Ecto.Changeset
   import Ecto.Query
-  import Hearth.Repo.Changeset, only: [validate_send_at: 1]
+  import Hearth.Repo.Changeset, only: [validate_from_now: 3]
 
   alias Ecto.Changeset
   alias Hearth.Common.T
   alias Hearth.Repo
+
+  # Far enough ahead to be worth waiting for and no more than a month out
+  @send_window [after: {1, :minute}, before: {30, :day}]
 
   @changeable ~w[kind_id title body attachment_ids send_at]a
 
@@ -43,7 +46,7 @@ defmodule Hearth.Forum.ScheduledPost do
     |> update_change(:title, &String.trim/1)
     |> update_change(:body, &String.trim/1)
     |> validate_required(~w[title kind_id send_at]a)
-    |> validate_send_at()
+    |> validate_from_now(:send_at, @send_window)
     |> validate_length(:title, max: 150)
     |> validate_length(:body, max: 40_000)
     |> validate_length(:attachment_ids, max: 10)
@@ -54,7 +57,7 @@ defmodule Hearth.Forum.ScheduledPost do
   def reschedule_changeset(%__MODULE__{} = scheduled, %DateTime{} = send_at) do
     scheduled
     |> change(send_at: send_at, failure: nil)
-    |> validate_send_at()
+    |> validate_from_now(:send_at, @send_window)
   end
 
   # The reason it couldn't go up, kept as a short code the app turns into words

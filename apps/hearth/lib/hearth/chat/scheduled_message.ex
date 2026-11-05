@@ -3,12 +3,15 @@ defmodule Hearth.Chat.ScheduledMessage do
 
   import Ecto.Changeset
   import Ecto.Query
-  import Hearth.Repo.Changeset, only: [validate_send_at: 1]
+  import Hearth.Repo.Changeset, only: [validate_from_now: 3]
 
   alias Ecto.Changeset
   alias Hearth.Common.T
   alias Hearth.Repo
   alias Hearth.Vault
+
+  # Far enough ahead to be worth waiting for and no more than a month out
+  @send_window [after: {1, :minute}, before: {30, :day}]
 
   @changeable ~w[body attachment_ids send_at]a
 
@@ -41,7 +44,7 @@ defmodule Hearth.Chat.ScheduledMessage do
     |> cast(params, @changeable)
     |> update_change(:body, &String.trim/1)
     |> validate_required([:send_at])
-    |> validate_send_at()
+    |> validate_from_now(:send_at, @send_window)
     |> validate_length(:body, max: 4_000)
     |> validate_length(:attachment_ids, max: 10)
     |> validate_not_command()
@@ -53,7 +56,7 @@ defmodule Hearth.Chat.ScheduledMessage do
   def reschedule_changeset(%__MODULE__{} = scheduled, %DateTime{} = send_at) do
     scheduled
     |> change(send_at: send_at, failure: nil)
-    |> validate_send_at()
+    |> validate_from_now(:send_at, @send_window)
   end
 
   # The reason it couldn't send, kept as a short code the app turns into words

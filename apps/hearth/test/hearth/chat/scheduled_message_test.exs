@@ -34,7 +34,7 @@ defmodule Hearth.Chat.ScheduledMessageTest do
       params = %{body: Lorem.sentence(), send_at: TestUtils.in_minutes(-5)}
 
       assert {:error, changeset} = Chat.schedule_message(member, room, params)
-      assert %{send_at: ["must be at least a minute from now"]} = errors_on(changeset)
+      assert %{send_at: ["must be at least 1 minute from now"]} = errors_on(changeset)
     end
 
     test "fails for a time more than a month out", %{member: member, room: room} do

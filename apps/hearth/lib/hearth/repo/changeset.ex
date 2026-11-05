@@ -25,24 +25,39 @@ defmodule Hearth.Repo.Changeset do
     end)
   end
 
-  # Far enough ahead to be worth waiting for and no more than a month out
-  @spec validate_send_at(Changeset.t(), atom()) :: Changeset.t()
-  def validate_send_at(changeset, field \\ :send_at) do
+  @type offset :: {pos_integer(), :second | :minute | :hour | :day}
+
+  # Keeps a date and time inside a window measured from now, such as
+  # `after: {1, :minute}, before: {30, :day}`. Either side can be left out
+  @spec validate_from_now(Changeset.t(), atom(), after: offset(), before: offset()) ::
+          Changeset.t()
+  def validate_from_now(changeset, field, opts) do
     validate_change(changeset, field, fn ^field, at ->
       now = DateTime.utc_now()
 
-      cond do
-        DateTime.before?(at, DateTime.add(now, 1, :minute)) ->
-          [{field, "must be at least a minute from now"}]
-
-        DateTime.after?(at, DateTime.add(now, 30, :day)) ->
-          [{field, "must be within 30 days"}]
-
-        true ->
-          []
-      end
+      Enum.reject(
+        [too_soon(field, at, now, opts[:after]), too_late(field, at, now, opts[:before])],
+        &is_nil/1
+      )
     end)
   end
+
+  defp too_soon(_field, _at, _now, nil), do: nil
+
+  defp too_soon(field, at, now, {amount, unit} = offset) do
+    if DateTime.before?(at, DateTime.add(now, amount, unit)),
+      do: {field, "must be at least #{span(offset)} from now"}
+  end
+
+  defp too_late(_field, _at, _now, nil), do: nil
+
+  defp too_late(field, at, now, {amount, unit} = offset) do
+    if DateTime.after?(at, DateTime.add(now, amount, unit)),
+      do: {field, "must be within #{span(offset)}"}
+  end
+
+  defp span({1, unit}), do: "1 #{unit}"
+  defp span({amount, unit}), do: "#{amount} #{unit}s"
 
   defp message(opts, default, message_opts) do
     case Keyword.get(opts, :message, default) do

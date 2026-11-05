@@ -55,7 +55,7 @@ defmodule Hearth.Forum.ScheduledPostTest do
       }
 
       assert {:error, changeset} = Forum.schedule_post(member, community, params)
-      assert %{send_at: ["must be at least a minute from now"]} = errors_on(changeset)
+      assert %{send_at: ["must be at least 1 minute from now"]} = errors_on(changeset)
     end
 
     test "waits until its time", %{member: member, community: community, kinds: kinds} do
