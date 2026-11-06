@@ -24,6 +24,10 @@ export function canDo(state: AppState, cid: string | null | undefined, perm: Per
   return state.communities[cid]?.permissions.includes(perm) ?? false;
 }
 
+/** The person who asked can close their poll, and so can a moderator */
+export const mayClosePoll = (state: AppState, cid: string | null, author: string) =>
+  author === state.me || canDo(state, cid, 'content.remove');
+
 export const isMod = (state: AppState, cid: string | null | undefined) =>
   canDo(state, cid, 'content.remove');
 

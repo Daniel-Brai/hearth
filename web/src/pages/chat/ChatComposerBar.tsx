@@ -6,6 +6,7 @@ import { plural, typingLine } from '@/domain/format';
 import { canDo, displayName } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
+import { PollButton } from '@/features/polls/NewPollDialog';
 import { SendLaterButton } from '@/features/schedule/SendLater';
 import { useUi } from '@/runtime/ui-store';
 
@@ -134,10 +135,13 @@ export function MessageBox({
                 onStopReplying={composer.stopReplying}
               />
             ) : (
-              <SendLaterButton
-                disabled={!composer.text.trim() && !composer.files.length}
-                onPick={composer.schedule}
-              />
+              <>
+                {target.room !== null ? <PollButton chatKey={target.key} /> : null}
+                <SendLaterButton
+                  disabled={!composer.text.trim() && !composer.files.length}
+                  onPick={composer.schedule}
+                />
+              </>
             )
           }
         />

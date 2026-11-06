@@ -16,6 +16,7 @@ import type { Message } from '@/domain/types';
 import { BoostMenu, Boosts } from '@/features/boosts/BoostMenu';
 import { InlineMarkdown, Markdown } from '@/features/markdown/Markdown';
 import { useModerationActions } from '@/features/moderation/use-moderation-actions';
+import { PollCard } from '@/features/polls/PollCard';
 import { firstUrl, useLinkPreview } from '@/features/previews';
 import { ReplyingTo } from '@/features/threads/ReplyingTo';
 import { routes } from '@/runtime/routes';
@@ -142,7 +143,7 @@ function ChatMessage({ message: m, grouped, chat, answers }: MessageItemProps) {
           />
         ) : null}
 
-        {hasText ? <MessageBubble message={m} chat={chat} /> : null}
+        {hasText ? <MessageContent message={m} chat={chat} mine={mine} /> : null}
 
         {hasText ? tools : null}
       </div>
@@ -158,6 +159,29 @@ function ChatMessage({ message: m, grouped, chat, answers }: MessageItemProps) {
         onToggle={(key) => gateway.chat.toggleBoost(target.key, m.id, key)}
       />
     </div>
+  );
+}
+
+/** A poll's question shows on its card, and every other message in a bubble */
+function MessageContent({
+  message: m,
+  chat,
+  mine,
+}: {
+  readonly message: Message;
+  readonly chat: ChatContext;
+  readonly mine: boolean;
+}) {
+  if (!m.poll) return <MessageBubble message={m} chat={chat} />;
+
+  return (
+    <PollCard
+      chatKey={chat.target.key}
+      messageId={m.id}
+      question={m.text}
+      poll={m.poll}
+      canClose={mine || chat.mod}
+    />
   );
 }
 
@@ -354,7 +378,7 @@ function MessageMenu({
       <MenuItem icon="link" onSelect={copyLink}>
         Copy link
       </MenuItem>
-      {mine ? (
+      {mine && !m.poll ? (
         <MenuItem icon="pencil" keys="up" onSelect={() => chat.startEdit(m.id)}>
           Edit
         </MenuItem>

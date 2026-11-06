@@ -17,6 +17,7 @@ import type {
   MessageReacted,
   MessageRemoved,
   NotificationCreated,
+  PollUpdated,
   PostCreated,
   PostReacted,
   ReplyCreated,
@@ -48,6 +49,7 @@ export type ChannelEvents = {
   MessageReacted: MessageReacted;
   MessageRemoved: MessageRemoved;
   SoundPlayed: SoundPlayed;
+  PollUpdated: PollUpdated;
   ContentRemoved: ContentRemoved;
   ContentRestored: ContentRestored;
   PostCreated: PostCreated;

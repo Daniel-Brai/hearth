@@ -96,7 +96,7 @@ defmodule HearthWeb.Access.VisibilityTest do
 
       assert conn
              |> auth_conn(stranger)
-             |> get(~p"/api/rooms/#{room.id}/voice-session")
+             |> get(~p"/api/rooms/#{room.id}/voice-sessions/current")
              |> response(404)
     end
 
@@ -236,7 +236,7 @@ defmodule HearthWeb.Access.VisibilityTest do
     test "hides its voice", %{conn: conn, member: member, voice: voice, session: session} do
       assert conn
              |> auth_conn(member)
-             |> get(~p"/api/rooms/#{voice.id}/voice-session")
+             |> get(~p"/api/rooms/#{voice.id}/voice-sessions/current")
              |> response(404)
 
       assert conn

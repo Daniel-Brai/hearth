@@ -13,8 +13,10 @@ import {
   feed,
   feedEmpty,
   isMod,
+  mayClosePoll,
   modLevel,
   myRolesIn,
+  newestOpenPoll,
   presence,
   sharesCommunity,
   soundAccess,
@@ -217,5 +219,15 @@ describe('presence', () => {
 
   it('falls back to when they were last seen', () => {
     expect(someone({ lastSeen: '3h' })).toEqual({ online: false, label: 'Last seen 3h ago' });
+  });
+});
+
+describe('polls', () => {
+  it('finds the newest poll still taking votes', () => {
+    expect(newestOpenPoll(state, 'elixir/office-hours', new Date())?.id).toBe('v4');
+  });
+
+  it('lets the person who asked close their poll', () => {
+    expect(mayClosePoll({ ...state, me: 'ada' }, 'elixir', 'ada')).toBe(true);
   });
 });

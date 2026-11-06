@@ -33,7 +33,7 @@ defmodule Hearth.Chat.Message do
     field :descendant_count, :integer, default: 0
     field :recent_repliers, {:array, Ecto.UUID}, default: []
     field :status, Ecto.Enum, values: ~w[published pending removed]a, default: :published
-    field :kind, Ecto.Enum, values: ~w[text promoted action sound]a, default: :text
+    field :kind, Ecto.Enum, values: ~w[text promoted action sound poll]a, default: :text
     field :post_id, Ecto.UUID
     field :edited_at, :utc_datetime_usec
     field :preview_hidden_at, :utc_datetime_usec
@@ -57,7 +57,7 @@ defmodule Hearth.Chat.Message do
           descendant_count: integer(),
           recent_repliers: [T.id()],
           status: :published | :pending | :removed,
-          kind: :text | :promoted | :action | :sound,
+          kind: :text | :promoted | :action | :sound | :poll,
           post_id: nil | T.id(),
           edited_at: nil | DateTime.t(),
           preview_hidden_at: nil | DateTime.t(),
@@ -100,16 +100,26 @@ defmodule Hearth.Chat.Message do
 
   defp validate_kind(changeset) do
     case get_field(changeset, :kind) do
-      :sound -> validate_inclusion(changeset, :body, @sounds)
-      :action -> validate_change(changeset, :attachment_ids, &no_files/2)
-      _other -> changeset
+      :sound ->
+        validate_inclusion(changeset, :body, @sounds)
+
+      :action ->
+        validate_change(changeset, :attachment_ids, &no_files/2)
+
+      :poll ->
+        changeset
+        |> validate_length(:body, max: 300)
+        |> validate_change(:attachment_ids, &no_files/2)
+
+      _other ->
+        changeset
     end
   end
 
   defp no_files(:attachment_ids, []), do: []
 
   defp no_files(:attachment_ids, [_file | _rest]),
-    do: [attachment_ids: "can't come with an action"]
+    do: [attachment_ids: "can't come with this kind of message"]
 
   @type viewer :: nil | :all | T.id()
 

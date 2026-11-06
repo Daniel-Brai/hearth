@@ -25,6 +25,7 @@ import { visibilityOf } from '@/domain/audience';
 import { KIND_LIB, ROOM_DEFAULTS, SOUNDS, TEMPLATES, TITLE_MAX } from '@/domain/catalog';
 import { nowTime } from '@/domain/format';
 import { stripPrefix } from '@/domain/links';
+import { pollOpen, pollProblem, withVote } from '@/domain/polls';
 import { MOST_SCHEDULED, sendAtProblem } from '@/domain/schedule';
 import {
   canDo,
@@ -54,6 +55,7 @@ import type {
   Message,
   ModerationLevel,
   ModLogAction,
+  NewPoll,
   Permission,
   Post,
   PostKind,
@@ -1402,6 +1404,73 @@ export class MockGateway implements HearthGateway {
         const m = state.chats[key]?.find((x) => x.id === id);
         if (m) toggleBoost(m.boosts, emoji);
       }),
+    startPoll: async (key: string, poll: NewPoll): Promise<Result> => {
+      const state = this.state();
+      const [cid] = key.split('/') as [string, string];
+      const problem = pollProblem(poll);
+
+      if (cid === 'dm') return fail('Polls go in rooms, not direct messages.');
+      if (!canDo(state, cid, 'message.create'))
+        return fail('Join ' + community(state, cid)!.name + ' to start a poll there');
+      if (problem) return fail(problem);
+
+      const id = this.store.nextId('m');
+
+      this.store.set((d) => {
+        (d.chats[key] ??= []).push({
+          id,
+          who: this.me(),
+          text: poll.question.trim(),
+          time: nowTime(),
+          boosts: [],
+          poll: {
+            id: 'poll-' + id,
+            multiple: poll.multiple,
+            closesAt: poll.closesAt,
+            closedAt: null,
+            voters: 0,
+            options: poll.options.map((label, i) => ({
+              id: id + '-' + i,
+              label: label.trim(),
+              votes: 0,
+            })),
+            mine: [],
+          },
+        });
+      });
+
+      if (poll.closesAt) this.arm('poll-' + id, poll.closesAt, () => this.endPoll(key, id));
+
+      return ok(undefined);
+    },
+    vote: async (key: string, id: string, optionIds: string[]): Promise<Result> => {
+      const poll = this.state().chats[key]?.find((m) => m.id === id)?.poll;
+
+      if (!poll) return fail('That poll was deleted.');
+      if (!pollOpen(poll, new Date())) return fail('This poll has closed.');
+      if (!poll.multiple && optionIds.length > 1) return fail('Pick one choice.');
+
+      this.store.set((state) => {
+        const m = state.chats[key]?.find((x) => x.id === id);
+        if (m?.poll) m.poll = withVote(m.poll, optionIds);
+      });
+
+      return ok(undefined);
+    },
+    closePoll: async (key: string, id: string): Promise<Result> => {
+      const state = this.state();
+      const [cid] = key.split('/') as [string, string];
+      const m = state.chats[key]?.find((x) => x.id === id);
+
+      if (!m?.poll) return fail('That poll was deleted.');
+      if (m.who !== this.me() && !canDo(state, cid, 'content.remove'))
+        return fail('Only the person who asked or a moderator can close it.');
+
+      this.disarm('poll-' + id);
+      this.endPoll(key, id);
+
+      return ok(undefined);
+    },
     hidePreview: (key: string, id: string) =>
       this.store.set((state) => {
         const m = state.chats[key]?.find((x) => x.id === id);
@@ -1796,6 +1865,13 @@ export class MockGateway implements HearthGateway {
   private readonly scheduleTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   /** A timer can't wait much past 24 days, so one set further out checks again when it wakes */
+  private endPoll(key: string, id: string) {
+    this.store.set((state) => {
+      const m = state.chats[key]?.find((x) => x.id === id);
+      if (m?.poll && m.poll.closedAt === null) m.poll.closedAt = new Date().toISOString();
+    });
+  }
+
   private arm(id: string, sendAt: string, fire: () => void) {
     const at = new Date(sendAt).getTime();
 

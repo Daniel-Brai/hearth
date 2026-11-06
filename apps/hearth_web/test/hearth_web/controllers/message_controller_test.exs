@@ -45,6 +45,18 @@ defmodule HearthWeb.MessageControllerTest do
                |> valid_response(200)
     end
 
+    test "shows a poll's totals", %{conn: conn, owner: owner, member: member, room: room} do
+      poll = TestUtils.start_random_poll!(owner, room)
+      [option | _options] = poll.options
+      {:ok, _view} = Chat.vote(member, poll, [option.id])
+
+      assert %{"data" => [%{"poll" => %{"voters" => 1}}]} =
+               conn
+               |> auth_conn(member)
+               |> get(~p"/api/rooms/#{room.id}/messages")
+               |> valid_response(200)
+    end
+
     test "lists messages newest first", %{conn: conn, owner: owner, member: member, room: room} do
       {:ok, _older} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
       {:ok, newest} = Chat.send_message(member, room, %{body: Lorem.sentence()})

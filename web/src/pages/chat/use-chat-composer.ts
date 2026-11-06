@@ -172,7 +172,7 @@ export function useChatComposer({
   };
 
   const editLast = () => {
-    const last = messages.findLast((m) => m.who === me && !m.system);
+    const last = messages.findLast((m) => m.who === me && !m.system && !m.poll);
     if (last) startEdit(last.id);
   };
 

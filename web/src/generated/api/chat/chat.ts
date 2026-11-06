@@ -15,6 +15,7 @@ import type {
   MessageListRoomParams,
   NoContentResponse,
   NotFoundResponse,
+  Poll,
   PreviewBody,
   ReactionBody,
   RescheduleBody,
@@ -22,11 +23,14 @@ import type {
   ScheduledMessage,
   SendMessageBody,
   StartConversationBody,
+  StartPollBody,
   Toggle,
   TooManyRequestsResponse,
   UnauthorizedResponse,
   UnprocessableContentResponse,
   Unread,
+  UpdatePollBody,
+  VoteBody,
 } from '../../schemas';
 
 import { customFetch } from '../../../api/custom-fetch';
@@ -1024,6 +1028,229 @@ export const messageRead = async (
   });
 };
 
+export type pollShowResponse200 = {
+  data: Poll;
+  status: 200;
+};
+
+export type pollShowResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pollShowResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type pollShowResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type pollShowResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type pollShowResponseSuccess = pollShowResponse200 & {
+  headers: Headers;
+};
+export type pollShowResponseError = (
+  pollShowResponse401 | pollShowResponse403 | pollShowResponse404 | pollShowResponse422
+) & {
+  headers: Headers;
+};
+
+export type pollShowResponse = pollShowResponseSuccess | pollShowResponseError;
+
+export const getPollShowUrl = (id: string) => {
+  return `/api/polls/${id}`;
+};
+
+/**
+ * @summary Show a poll
+ */
+export const pollShow = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<pollShowResponse> => {
+  return customFetch<pollShowResponse>(getPollShowUrl(id), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export type pollUpdateResponse200 = {
+  data: Poll;
+  status: 200;
+};
+
+export type pollUpdateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type pollUpdateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pollUpdateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type pollUpdateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type pollUpdateResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type pollUpdateResponseSuccess = pollUpdateResponse200 & {
+  headers: Headers;
+};
+export type pollUpdateResponseError = (
+  | pollUpdateResponse400
+  | pollUpdateResponse401
+  | pollUpdateResponse403
+  | pollUpdateResponse404
+  | pollUpdateResponse422
+) & {
+  headers: Headers;
+};
+
+export type pollUpdateResponse = pollUpdateResponseSuccess | pollUpdateResponseError;
+
+export const getPollUpdateUrl = (id: string) => {
+  return `/api/polls/${id}`;
+};
+
+/**
+ * Its starter or anyone with content.remove
+ * @summary Close a poll
+ */
+export const pollUpdate = async (
+  id: string,
+  updatePollBody: UpdatePollBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<pollUpdateResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<pollUpdateResponse>(getPollUpdateUrl(id), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updatePollBody),
+  });
+};
+
+export type pollVoteResponse200 = {
+  data: Poll;
+  status: 200;
+};
+
+export type pollVoteResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type pollVoteResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pollVoteResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type pollVoteResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type pollVoteResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type pollVoteResponseSuccess = pollVoteResponse200 & {
+  headers: Headers;
+};
+export type pollVoteResponseError = (
+  | pollVoteResponse400
+  | pollVoteResponse401
+  | pollVoteResponse403
+  | pollVoteResponse404
+  | pollVoteResponse422
+) & {
+  headers: Headers;
+};
+
+export type pollVoteResponse = pollVoteResponseSuccess | pollVoteResponseError;
+
+export const getPollVoteUrl = (id: string) => {
+  return `/api/polls/${id}/vote`;
+};
+
+/**
+ * Members only, until it closes. No choices takes the vote back
+ * @summary Vote in a poll, or change my vote
+ */
+export const pollVote = async (
+  id: string,
+  voteBody: VoteBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<pollVoteResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<pollVoteResponse>(getPollVoteUrl(id), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(voteBody),
+  });
+};
+
 export type messageListRoomResponse200 = {
   data: MessageListRoom200;
   status: 200;
@@ -1278,5 +1505,96 @@ export const messageRoomSchedule = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(scheduleMessageBody),
+  });
+};
+
+export type pollCreateResponse201 = {
+  data: ChatMessage;
+  status: 201;
+};
+
+export type pollCreateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type pollCreateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pollCreateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type pollCreateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type pollCreateResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type pollCreateResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type pollCreateResponseSuccess = pollCreateResponse201 & {
+  headers: Headers;
+};
+export type pollCreateResponseError = (
+  | pollCreateResponse400
+  | pollCreateResponse401
+  | pollCreateResponse403
+  | pollCreateResponse404
+  | pollCreateResponse422
+  | pollCreateResponse429
+) & {
+  headers: Headers;
+};
+
+export type pollCreateResponse = pollCreateResponseSuccess | pollCreateResponseError;
+
+export const getPollCreateUrl = (roomId: string) => {
+  return `/api/rooms/${roomId}/polls`;
+};
+
+/**
+ * Anyone who can send messages there can ask. It arrives as a message whose body is the question
+ * @summary Start a poll in a room
+ */
+export const pollCreate = async (
+  roomId: string,
+  startPollBody: StartPollBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<pollCreateResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<pollCreateResponse>(getPollCreateUrl(roomId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(startPollBody),
   });
 };

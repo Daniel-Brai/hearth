@@ -219,6 +219,25 @@ export type ScheduledPost = {
   failure: string | null;
 };
 
+/** Totals only. Nobody sees who picked what */
+export type Poll = {
+  id: string;
+  multiple: boolean;
+  closesAt: string | null;
+  closedAt: string | null;
+  voters: number;
+  options: { id: string; label: string; votes: number }[];
+  /** The choices the viewer picked */
+  mine: string[];
+};
+
+export type NewPoll = {
+  question: string;
+  options: string[];
+  multiple: boolean;
+  closesAt: string | null;
+};
+
 export type Message = {
   id: string;
   who: string;
@@ -236,6 +255,8 @@ export type Message = {
   system?: boolean;
   moderated?: boolean;
   promoted?: { id: string; title: string };
+  /** Set on a poll, whose question is the text */
+  poll?: Poll;
 };
 
 export type RoomSoundMode = 'everyone' | 'roles' | 'people';

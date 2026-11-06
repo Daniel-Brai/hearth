@@ -27,6 +27,7 @@ import { PageMeta } from '@/shell/PageMeta';
 
 import { IdleRoomCard } from './IdleRoomCard';
 import { JoinCard } from './JoinCard';
+import { LivePoll } from './LivePoll';
 import { LiveRoom } from './LiveRoom';
 import type { ChatToggle } from './LiveRoomControls';
 import { RoomRecordings } from './RoomRecordings';
@@ -228,6 +229,8 @@ function InRoom({
             rid={rid}
             chat={{ open: chatOpen, unread, toggle: () => setChatOpen((o) => !o) }}
           />
+
+          <LivePoll cid={cid} rid={rid} />
 
           <RoomRecordings cid={cid} rid={rid} />
         </Measure>

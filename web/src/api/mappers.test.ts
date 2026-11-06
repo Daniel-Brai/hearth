@@ -244,6 +244,7 @@ describe('toMessage', () => {
     reactions: [],
     preview_hidden: false,
     mentions_all: false,
+    poll: null,
   } satisfies ChatMessage;
 
   it('keeps the message it answers', () => {
@@ -266,6 +267,7 @@ describe('toMessage', () => {
       reactions: [{ emoji: '🔥', count: 2, mine: true }],
       preview_hidden: false,
       mentions_all: false,
+      poll: null,
     } satisfies ChatMessage;
 
     expect(toMessage(message)).toMatchObject({
@@ -297,6 +299,7 @@ describe('toMessage', () => {
       reactions: [],
       preview_hidden: false,
       mentions_all: false,
+      poll: null,
     } satisfies ChatMessage;
 
     expect(toMessage(message)).toMatchObject({

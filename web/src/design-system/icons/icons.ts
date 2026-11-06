@@ -102,6 +102,7 @@ export const ICONS = {
   italic: '<path d="M19 4h-9M14 20H5M15 4 9 20"/>',
   code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
   'code-block': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m10 9-3 3 3 3M14 9l3 3-3 3"/>',
+  poll: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16h8M7 11h12M7 6h3"/>',
   'list-ordered': '<path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
   quote: '<path d="M3 21c3 0 7-1 7-8V5H3v7h4c0 3-2 5-4 5M14 21c3 0 7-1 7-8V5h-7v7h4c0 3-2 5-4 5"/>',
   file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',

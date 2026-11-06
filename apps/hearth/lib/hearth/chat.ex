@@ -1,7 +1,7 @@
 defmodule Hearth.Chat do
-  events = [MessageCreated, MessageRemoved, ScheduledMessageChanged]
+  events = [MessageCreated, MessageRemoved, PollUpdated, ScheduledMessageChanged]
 
-  default = [Conversation, Message, ScheduledMessage | events]
+  default = [Conversation, Message, Poll, ScheduledMessage | events]
 
   exports =
     case Mix.env() do
@@ -34,6 +34,7 @@ defmodule Hearth.Chat do
   alias Hearth.Chat.Command.ScheduleMessage
   alias Hearth.Chat.Command.SendMessage
   alias Hearth.Chat.Command.StartConversation
+  alias Hearth.Chat.Command.StartPoll
   alias Hearth.Chat.Conversation
   alias Hearth.Chat.ConversationMember
   alias Hearth.Chat.Message
@@ -41,6 +42,9 @@ defmodule Hearth.Chat do
   alias Hearth.Chat.MessageEdited
   alias Hearth.Chat.MessageReacted
   alias Hearth.Chat.MessageRemoved
+  alias Hearth.Chat.Poll
+  alias Hearth.Chat.PollUpdated
+  alias Hearth.Chat.PollVote
   alias Hearth.Chat.Reaction
   alias Hearth.Chat.ReadMarkers
   alias Hearth.Chat.RoomActivity
@@ -58,6 +62,13 @@ defmodule Hearth.Chat do
   @topic "chat"
 
   @type place :: Room.t() | Conversation.t()
+
+  @type poll_view :: %{
+          poll: Poll.t(),
+          counts: %{T.id() => pos_integer()},
+          voters: non_neg_integer(),
+          mine: [T.id()]
+        }
 
   @spec subscribe_to_pubsub() :: :ok
   def subscribe_to_pubsub, do: PubSub.subscribe(@topic)
@@ -81,21 +92,78 @@ defmodule Hearth.Chat do
          {:ok, parent} <- fetch_parent(place, reply_to_id),
          {:ok, message} <-
            SendMessage.execute(user, [kind: kind] ++ where_in(place), parent, params) do
-      broadcast(%MessageCreated{
-        message_id: message.id,
-        room_id: message.room_id,
-        conversation_id: message.conversation_id,
-        author_id: user.id,
-        reply_to_id: message.reply_to_id,
-        reply_to_author_id: get_in(parent.author_id)
-      })
-
-      with %Room{} <- place,
-           do: broadcast(%RoomActivity{room_id: place.id, community_id: place.community_id})
-
-      played(message)
-
+      announce(message, place, parent)
       {:ok, message}
+    end
+  end
+
+  # Anyone who can write in a room can ask, and polls stay out of direct messages
+  @spec start_poll(User.t(), place(), map()) ::
+          {:ok, Message.t()}
+          | {:error, :forbidden | :archived | :not_found | :pending | Changeset.t()}
+  def start_poll(%User{}, %Conversation{}, %{}), do: {:error, :forbidden}
+
+  def start_poll(%User{} = user, %Room{} = room, %{} = params) do
+    with :ok <- may_write(user, room),
+         {:ok, message} <- StartPoll.execute(user, room, params) do
+      announce(message, room, nil)
+      {:ok, message}
+    end
+  end
+
+  @spec get_poll(User.t(), T.id()) :: {:ok, Poll.t()} | {:error, :forbidden | :not_found}
+  def get_poll(%User{} = user, id) when is_binary(id) do
+    with {:ok, poll} <- fetch_poll(id),
+         {:ok, room} <- Communities.get_room(id: poll.room_id),
+         :ok <- may_read(user, room) do
+      {:ok, poll}
+    end
+  end
+
+  @spec list_polls(User.t(), [Message.t()]) :: %{T.id() => poll_view()}
+  def list_polls(%User{id: user_id}, messages) when is_list(messages) do
+    messages
+    |> Enum.filter(&(&1.kind == :poll))
+    |> Enum.map(& &1.id)
+    |> Poll.for_messages()
+    |> view_polls(user_id)
+  end
+
+  @spec poll_view(User.t(), Poll.t()) :: poll_view()
+  def poll_view(%User{id: user_id}, %Poll{} = poll),
+    do: [poll] |> view_polls(user_id) |> Map.fetch!(poll.message_id)
+
+  # Members vote, and a new vote replaces the last one until the poll closes
+  @spec vote(User.t(), Poll.t(), [T.id()]) ::
+          {:ok, poll_view()}
+          | {:error, :forbidden | :not_found | :poll_closed | :invalid_choice}
+  def vote(%User{} = user, %Poll{} = poll, option_ids) when is_list(option_ids) do
+    option_ids = Enum.uniq(option_ids)
+
+    with :ok <- open(poll),
+         :ok <- may_vote(user, poll),
+         :ok <- valid_choice(poll, option_ids),
+         {:ok, _picked} <- PollVote.replace(poll.id, user.id, option_ids) do
+      updated(poll)
+      {:ok, poll_view(user, poll)}
+    end
+  end
+
+  # Its starter or a moderator closes it early
+  @spec close_poll(User.t(), Poll.t()) ::
+          {:ok, Poll.t()} | {:error, :forbidden | :not_found | :poll_closed | Changeset.t()}
+  def close_poll(%User{} = user, %Poll{} = poll) do
+    with :ok <- open(poll),
+         :ok <- may_close(user, poll) do
+      expire_poll(poll)
+    end
+  end
+
+  @spec expire_poll(Poll.t()) :: {:ok, Poll.t()} | {:error, Changeset.t()}
+  def expire_poll(%Poll{} = poll) do
+    with {:ok, poll} <- Poll.close(poll) do
+      updated(poll)
+      {:ok, poll}
     end
   end
 
@@ -179,7 +247,8 @@ defmodule Hearth.Chat do
           {:ok, Message.t()}
           | {:error,
              :forbidden | :not_found | :too_many_attachments | :invalid_attachment | Changeset.t()}
-  def edit_message(%User{}, %Message{kind: :sound}, %{}), do: {:error, :forbidden}
+  def edit_message(%User{}, %Message{kind: kind}, %{}) when kind in [:sound, :poll],
+    do: {:error, :forbidden}
 
   def edit_message(%User{id: id} = user, %Message{author_id: id} = message, %{} = params) do
     with {:ok, place} <- place_of(message),
@@ -543,6 +612,108 @@ defmodule Hearth.Chat do
       true -> :ok
       false -> {:error, :no_shared_community}
     end
+  end
+
+  defp announce(%Message{} = message, place, parent) do
+    broadcast(%MessageCreated{
+      message_id: message.id,
+      room_id: message.room_id,
+      conversation_id: message.conversation_id,
+      author_id: message.author_id,
+      reply_to_id: message.reply_to_id,
+      reply_to_author_id: get_in(parent.author_id)
+    })
+
+    with %Room{} <- place,
+         do: broadcast(%RoomActivity{room_id: place.id, community_id: place.community_id})
+
+    played(message)
+  end
+
+  # A poll whose message was deleted is gone too
+  defp fetch_poll(id) do
+    with %Poll{} = poll <- Poll.get(id: id, preload: :options),
+         true <- Message.exists?(id: poll.message_id, deleted_at: nil) do
+      {:ok, poll}
+    else
+      _gone -> {:error, :not_found}
+    end
+  end
+
+  defp view_polls(polls, user_id) do
+    ids = Enum.map(polls, & &1.id)
+    counts = PollVote.counts(ids)
+    voters = PollVote.voters(ids)
+    picked = PollVote.picked_by(ids, user_id)
+
+    Map.new(polls, fn poll ->
+      {poll.message_id,
+       %{
+         poll: poll,
+         counts: counts,
+         voters: Map.get(voters, poll.id, 0),
+         mine: Map.get(picked, poll.id, [])
+       }}
+    end)
+  end
+
+  defp open(poll) do
+    case Poll.open?(poll) do
+      true -> :ok
+      false -> {:error, :poll_closed}
+    end
+  end
+
+  defp may_vote(user, %Poll{room_id: room_id}) do
+    with {:ok, room} <- Communities.get_room(id: room_id),
+         :ok <- may_read(user, room) do
+      case IAM.member?(user, room.community_id) do
+        true -> :ok
+        false -> {:error, :forbidden}
+      end
+    end
+  end
+
+  defp valid_choice(%Poll{multiple: false}, [_one, _two | _rest]), do: {:error, :invalid_choice}
+
+  defp valid_choice(%Poll{options: options}, option_ids) do
+    known = MapSet.new(options, & &1.id)
+
+    case Enum.all?(option_ids, &MapSet.member?(known, &1)) do
+      true -> :ok
+      false -> {:error, :invalid_choice}
+    end
+  end
+
+  defp may_close(%User{id: user_id} = user, %Poll{} = poll) do
+    case Message.get(id: poll.message_id) do
+      %Message{author_id: ^user_id} -> :ok
+      %Message{} -> moderates(user, poll.room_id)
+      nil -> {:error, :not_found}
+    end
+  end
+
+  defp moderates(user, room_id) do
+    with {:ok, room} <- Communities.get_room(id: room_id) do
+      case IAM.can?(user, :remove, %{type: :content, community_id: room.community_id}) do
+        true -> :ok
+        false -> {:error, :forbidden}
+      end
+    end
+  end
+
+  # Totals only, so a room sees the count move without learning who voted
+  defp updated(%Poll{} = poll) do
+    counts = PollVote.counts([poll.id])
+
+    broadcast(%PollUpdated{
+      poll_id: poll.id,
+      message_id: poll.message_id,
+      room_id: poll.room_id,
+      voters: [poll.id] |> PollVote.voters() |> Map.get(poll.id, 0),
+      counts: Enum.map(poll.options, &%{option_id: &1.id, votes: Map.get(counts, &1.id, 0)}),
+      closed_at: poll.closed_at
+    })
   end
 
   defp broadcast(event), do: PubSub.broadcast(@topic, event)

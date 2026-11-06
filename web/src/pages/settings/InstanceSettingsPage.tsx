@@ -20,7 +20,7 @@ export function InstanceSettingsPage() {
 
   return (
     <>
-      <PageHeader label="instance settings" eyebrow="Instance" title="Instance settings" />
+      <PageHeader label="instance settings" eyebrow="Instance" title="Settings" />
 
       <main id="main">
         <Measure narrow className="grid gap-4">

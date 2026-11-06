@@ -1,6 +1,7 @@
 defmodule HearthWeb.MessageJSON do
   alias HearthWeb.Attachments
   alias HearthWeb.PageJSON
+  alias HearthWeb.PollJSON
   alias HearthWeb.UserJSON
 
   @fields ~w[
@@ -46,11 +47,19 @@ defmodule HearthWeb.MessageJSON do
       attachments: if(hidden, do: [], else: Map.get(attachments, message.id, [])),
       reactions: if(hidden, do: [], else: reactions(assigns, message)),
       preview_hidden: message.preview_hidden_at != nil,
-      mentions_all: not hidden and assigns |> mentions_all() |> MapSet.member?(message.id)
+      mentions_all: not hidden and assigns |> mentions_all() |> MapSet.member?(message.id),
+      poll: if(hidden, do: nil, else: poll(assigns, message))
     })
   end
 
   defp mentions_all(assigns), do: Map.get(assigns, :mentions_all, MapSet.new())
+
+  defp poll(assigns, message) do
+    case assigns |> Map.get(:polls, %{}) |> Map.get(message.id) do
+      nil -> nil
+      view -> PollJSON.serialize(view)
+    end
+  end
 
   # Views that don't load reactions, such as a new message, have none
   defp reactions(assigns, message),

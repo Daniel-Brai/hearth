@@ -1,0 +1,52 @@
+@layer components {
+.poll { background: var(--color-canvas); border: 1px solid var(--color-ink-lightest); border-radius: 0.9rem; display: grid; gap: 0.6rem; inline-size: min(100%, 26rem); padding: 0.8rem 0.9rem 0.7rem; }
+.poll--live { border-color: color-mix(in oklab, var(--color-link) 45%, var(--color-ink-lightest)); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-link) 12%, transparent); inline-size: 100%; }
+.poll__head { align-items: center; display: flex; font-size: var(--text-xx-small); gap: 0.5rem; justify-content: space-between; letter-spacing: 0.04em; text-transform: uppercase; }
+.poll__kind { align-items: center; color: var(--color-link); display: inline-flex; font-weight: 800; gap: 0.35rem; }
+.poll--live .poll__kind::before { animation: poll-pulse 1.6s ease-in-out infinite; background: var(--color-negative); border-radius: 50%; block-size: 0.45rem; content: ""; inline-size: 0.45rem; }
+.poll__how { color: var(--color-ink-medium); font-weight: 700; }
+.poll__question { font-size: var(--text-medium); font-weight: 750; line-height: 1.3; overflow-wrap: anywhere; }
+.poll__options { display: grid; gap: 0.4rem; list-style: none; margin: 0; padding: 0; }
+
+.poll__option {
+  align-items: center; background: var(--color-ink-lightest); border: 1px solid transparent; border-radius: 0.6rem; color: var(--color-ink); cursor: pointer; display: grid; gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto; inline-size: 100%; isolation: isolate; min-block-size: 2.6rem; overflow: hidden; padding: 0.45rem 0.8rem; position: relative; text-align: start;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+.poll__option:hover:not(:disabled) { border-color: color-mix(in oklab, var(--color-link) 55%, transparent); }
+.poll__option:active:not(:disabled) { transform: scale(0.99); }
+.poll__option:focus-visible { outline: 2px solid var(--color-link); outline-offset: 2px; }
+.poll__option:disabled { cursor: default; }
+.poll__option.is-picked { border-color: var(--color-link); }
+
+/* The bar grows behind the label as votes come in */
+.poll__bar { background: color-mix(in oklab, var(--color-ink) 9%, transparent); inset: 0 auto 0 0; position: absolute; transition: inline-size 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: -1; }
+.poll__option.is-picked .poll__bar { background: color-mix(in oklab, var(--color-link) 22%, transparent); }
+
+.poll__label { font-weight: 600; overflow-wrap: anywhere; }
+.poll__option.is-picked .poll__label { font-weight: 750; }
+.poll__share { align-items: center; color: var(--color-ink-medium); display: inline-flex; font-size: var(--text-small); font-variant-numeric: tabular-nums; font-weight: 700; gap: 0.3rem; }
+.poll__share svg { block-size: 0.85rem; inline-size: 0.85rem; }
+.poll__option.is-picked .poll__share { color: var(--color-link); }
+
+.poll__foot { align-items: center; color: var(--color-ink-medium); display: flex; flex-wrap: wrap; font-size: var(--text-x-small); gap: 0.25rem 0.75rem; }
+.poll__closing { font-weight: 700; }
+.poll.is-closed .poll__closing { color: var(--color-ink); }
+.poll__close { margin-inline-start: auto; }
+
+@keyframes poll-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .poll__bar, .poll__option { transition: none; }
+  .poll--live .poll__kind::before { animation: none; }
+}
+}
+
+@layer components {
+.new-poll { display: grid; gap: 1rem; }
+.new-poll__choices { display: grid; gap: 0.4rem; list-style: none; margin: 0 0 0.3rem; padding: 0; }
+.new-poll__choice { align-items: center; display: grid; gap: 0.25rem; grid-template-columns: minmax(0, 1fr) auto; }
+}
+
+@layer components {
+.new-poll__when { grid-column: 1 / -1; }
+}

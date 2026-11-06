@@ -194,6 +194,7 @@ defmodule HearthWeb.MessageController do
         authors: Authors.load(message),
         attachments: Attachments.load(message, :message),
         reactions: Chat.list_reactions(auth, [message]),
+        polls: Chat.list_polls(auth, [message]),
         mentions_all: Chat.mentions_all([message])
       )
     end
@@ -464,6 +465,7 @@ defmodule HearthWeb.MessageController do
         authors: Authors.load(messages),
         attachments: Attachments.load(messages, :message),
         reactions: Chat.list_reactions(auth, messages),
+        polls: Chat.list_polls(auth, messages),
         mentions_all: Chat.mentions_all(messages)
       )
     end

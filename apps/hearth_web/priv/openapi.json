@@ -286,17 +286,28 @@
             "type": "string"
           },
           "kind": {
-            "description": "A promoted message is the room's note about a new post, an action is a /me line and a sound is a /play whose body is its name",
+            "description": "A promoted message is the room's note about a new post, an action is a /me line, a sound is a /play whose body is its name and a poll's body is its question",
             "enum": [
               "text",
               "promoted",
               "action",
-              "sound"
+              "sound",
+              "poll"
             ]
           },
           "mentions_all": {
             "description": "Its @all notified everyone who can see the room",
             "type": "boolean"
+          },
+          "poll": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Poll"
+              }
+            ]
           },
           "post_id": {
             "description": "The post a promoted note points at",
@@ -357,7 +368,8 @@
           "attachments",
           "reactions",
           "preview_hidden",
-          "mentions_all"
+          "mentions_all",
+          "poll"
         ],
         "type": "object"
       },
@@ -3516,6 +3528,150 @@
         ],
         "type": "object"
       },
+      "Poll": {
+        "title": "Poll",
+        "description": "Totals only. Who voted for what stays private",
+        "properties": {
+          "closed_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "closes_at": {
+            "description": "When it closes by itself",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "message_id": {
+            "description": "The chat message whose body is the question",
+            "format": "uuid",
+            "type": "string"
+          },
+          "mine": {
+            "description": "The choices the viewer picked",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "multiple": {
+            "description": "People may pick more than one choice",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/PollOption"
+            },
+            "type": "array"
+          },
+          "voters": {
+            "description": "How many people voted",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "message_id",
+          "multiple",
+          "closes_at",
+          "closed_at",
+          "voters",
+          "options",
+          "mine"
+        ],
+        "type": "object"
+      },
+      "PollOption": {
+        "title": "PollOption",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "votes": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "votes"
+        ],
+        "type": "object"
+      },
+      "PollUpdated": {
+        "title": "PollUpdated",
+        "description": "On room:<id> after each vote and when the poll closes, with the new totals",
+        "properties": {
+          "closed_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts": {
+            "items": {
+              "properties": {
+                "option_id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "votes": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "option_id",
+                "votes"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "message_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "poll_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "room_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "voters": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "poll_id",
+          "message_id",
+          "room_id",
+          "voters",
+          "counts",
+          "closed_at"
+        ],
+        "type": "object"
+      },
       "Post": {
         "title": "Post",
         "properties": {
@@ -5609,6 +5765,44 @@
         ],
         "type": "object"
       },
+      "StartPollBody": {
+        "title": "StartPollBody",
+        "additionalProperties": false,
+        "properties": {
+          "closes_at": {
+            "description": "Closes by itself then, from a minute to a week ahead. Null stays open",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "multiple": {
+            "default": false,
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "minItems": 2,
+            "type": "array"
+          },
+          "question": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "options"
+        ],
+        "type": "object"
+      },
       "StartVoiceSessionBody": {
         "title": "StartVoiceSessionBody",
         "additionalProperties": false,
@@ -6199,6 +6393,20 @@
         },
         "required": [
           "community_creation"
+        ],
+        "type": "object"
+      },
+      "UpdatePollBody": {
+        "title": "UpdatePollBody",
+        "additionalProperties": false,
+        "properties": {
+          "closed": {
+            "const": true,
+            "description": "Closes it for good"
+          }
+        },
+        "required": [
+          "closed"
         ],
         "type": "object"
       },
@@ -7430,6 +7638,25 @@
           "hands",
           "speaking",
           "participants"
+        ],
+        "type": "object"
+      },
+      "VoteBody": {
+        "title": "VoteBody",
+        "additionalProperties": false,
+        "properties": {
+          "option_ids": {
+            "description": "Replaces the viewer's earlier vote. Empty takes it back",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          }
+        },
+        "required": [
+          "option_ids"
         ],
         "type": "object"
       },
@@ -12437,6 +12664,179 @@
         "summary": "Mark a notification read"
       }
     },
+    "/api/polls/{id}": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "poll_show_35OHVIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Show a poll"
+      },
+      "patch": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Its starter or anyone with content.remove",
+        "operationId": "poll_update_35OHVIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePollBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Close a poll"
+      }
+    },
+    "/api/polls/{id}/vote": {
+      "put": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Members only, until it closes. No choices takes the vote back",
+        "operationId": "poll_vote_35OHVIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Vote in a poll, or change my vote"
+      }
+    },
     "/api/posts/drafts": {
       "get": {
         "tags": [
@@ -14595,6 +14995,72 @@
           "required": true
         },
         "summary": "Schedule a message in a room"
+      }
+    },
+    "/api/rooms/{room_id}/polls": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessage"
+                }
+              }
+            },
+            "description": "Started"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
+          }
+        },
+        "description": "Anyone who can send messages there can ask. It arrives as a message whose body is the question",
+        "operationId": "poll_create_35OHVIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartPollBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Start a poll in a room"
       }
     },
     "/api/rooms/{room_id}/posts": {

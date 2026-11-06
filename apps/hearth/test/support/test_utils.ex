@@ -165,6 +165,22 @@ defmodule Hearth.TestUtils do
     scheduled
   end
 
+  def random_poll_params(opts \\ []) do
+    %{
+      question: Lorem.sentence(),
+      options: Enum.map(1..Keyword.get(opts, :choices, 3), &"#{Lorem.word()} #{&1}"),
+      multiple: Keyword.get(opts, :multiple, false),
+      closes_at: Keyword.get(opts, :closes_at)
+    }
+  end
+
+  def start_random_poll!(author, room, opts \\ []) do
+    {:ok, message} = Chat.start_poll(author, room, random_poll_params(opts))
+    %{poll: poll} = Chat.list_polls(author, [message])[message.id]
+
+    poll
+  end
+
   def schedule_random_post!(author, community, opts \\ []) do
     [kind | _kinds] = Forum.list_kinds(community.id)
 

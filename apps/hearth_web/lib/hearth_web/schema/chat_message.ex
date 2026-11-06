@@ -4,6 +4,7 @@ defmodule HearthWeb.Schema.ChatMessage do
   alias Hearth.Chat.Message
   alias HearthWeb.Schema
   alias HearthWeb.Schema.Media
+  alias HearthWeb.Schema.Poll
   alias HearthWeb.Schema.Reaction
   alias HearthWeb.Schema.UserSummary
 
@@ -29,6 +30,7 @@ defmodule HearthWeb.Schema.ChatMessage do
       reactions
       preview_hidden
       mentions_all
+      poll
     ]a,
     properties: %{
       id: uuid(),
@@ -43,7 +45,7 @@ defmodule HearthWeb.Schema.ChatMessage do
       kind:
         Schema.enum_of(Message, :kind,
           description:
-            "A promoted message is the room's note about a new post, an action is a /me line and a sound is a /play whose body is its name"
+            "A promoted message is the room's note about a new post, an action is a /me line, a sound is a /play whose body is its name and a poll's body is its question"
         ),
       post_id: nullable(uuid(description: "The post a promoted note points at")),
       deleted: boolean(),
@@ -52,7 +54,8 @@ defmodule HearthWeb.Schema.ChatMessage do
       attachments: array_of(Media),
       reactions: array_of(Reaction, description: "Empty once deleted or removed"),
       preview_hidden: boolean(description: "Its link card was taken off"),
-      mentions_all: boolean(description: "Its @all notified everyone who can see the room")
+      mentions_all: boolean(description: "Its @all notified everyone who can see the room"),
+      poll: nullable(Poll)
     }
   }
 end

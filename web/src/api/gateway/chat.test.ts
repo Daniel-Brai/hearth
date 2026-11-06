@@ -740,3 +740,111 @@ describe('chat.promote', () => {
     expect(store.get().posts[0]?.fromChat).toEqual({ room: 'general', count: 2 });
   });
 });
+
+const signedInToGardeners = async () => {
+  routes['POST /api/auth/sessions'] = { status: 200, body: session };
+
+  routes['GET /api/communities/gardeners'] = {
+    status: 200,
+    body: { community, kinds: [], membership: null },
+  };
+
+  routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+  routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+
+  const signedIn = gateway();
+  await signedIn.gateway.session.verifyCode('ada@example.com', '123456');
+
+  return signedIn;
+};
+
+const apiPoll = {
+  id: 'p1',
+  message_id: 'm1',
+  multiple: false,
+  closes_at: null,
+  closed_at: null,
+  voters: 0,
+  options: [
+    { id: 'o1', label: 'Tea', votes: 0 },
+    { id: 'o2', label: 'Coffee', votes: 0 },
+  ],
+  mine: [],
+};
+
+const pollMessage = { ...message('m1', 'Tea or coffee?'), kind: 'poll' as const, poll: apiPoll };
+
+describe('chat.startPoll', () => {
+  it('refuses a poll with one choice', async () => {
+    const { gateway: g } = await signedInToGardeners();
+
+    const r = await g.chat.startPoll('gardeners/general', {
+      question: 'Tea or coffee?',
+      options: ['Tea'],
+      multiple: false,
+      closesAt: null,
+    });
+
+    expect(r).toEqual({ ok: false, error: 'Add at least two choices.' });
+  });
+
+  it('shows the poll in the chat', async () => {
+    routes['POST /api/rooms/r1/polls'] = { status: 201, body: pollMessage };
+
+    const { store, gateway: g } = await signedInToGardeners();
+
+    await g.chat.startPoll('gardeners/general', {
+      question: 'Tea or coffee?',
+      options: ['Tea', 'Coffee'],
+      multiple: false,
+      closesAt: null,
+    });
+
+    expect(store.get().chats['gardeners/general']?.[0]?.poll?.id).toBe('p1');
+  });
+});
+
+describe('chat.vote', () => {
+  it('sends the picks and keeps the server totals', async () => {
+    routes['POST /api/rooms/r1/polls'] = { status: 201, body: pollMessage };
+    routes['PUT /api/polls/p1/vote'] = {
+      status: 200,
+      body: { ...apiPoll, voters: 5, mine: ['o2'] },
+    };
+
+    const { store, gateway: g } = await signedInToGardeners();
+    const spec = {
+      question: 'Tea or coffee?',
+      options: ['Tea', 'Coffee'],
+      multiple: false,
+      closesAt: null,
+    };
+    await g.chat.startPoll('gardeners/general', spec);
+
+    await g.chat.vote('gardeners/general', 'm1', ['o2']);
+
+    expect(sent).toContainEqual(expect.objectContaining({ body: { option_ids: ['o2'] } }));
+    expect(store.get().chats['gardeners/general']?.[0]?.poll?.voters).toBe(5);
+  });
+
+  it('puts the totals back when the poll has closed', async () => {
+    routes['POST /api/rooms/r1/polls'] = { status: 201, body: pollMessage };
+
+    routes['PUT /api/polls/p1/vote'] = {
+      status: 400,
+      body: { code: 'poll_closed', message: 'Poll closed.' },
+    };
+
+    const { store, gateway: g } = await signedInToGardeners();
+    const spec = {
+      question: 'Tea or coffee?',
+      options: ['Tea', 'Coffee'],
+      multiple: false,
+      closesAt: null,
+    };
+    await g.chat.startPoll('gardeners/general', spec);
+
+    expect((await g.chat.vote('gardeners/general', 'm1', ['o1'])).ok).toBe(false);
+    expect(store.get().chats['gardeners/general']?.[0]?.poll?.voters).toBe(0);
+  });
+});

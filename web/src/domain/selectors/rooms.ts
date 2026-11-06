@@ -1,7 +1,8 @@
 import { ROOM_DEFAULTS } from '@/domain/catalog';
+import { pollOpen } from '@/domain/polls';
 
 import type { AppState } from '../app-state';
-import type { RoomAccess, RoomSettings } from '../types';
+import type { Message, RoomAccess, RoomSettings } from '../types';
 import { canDo, isOwner, myRolesIn, roleName, roleRef, rolesOf } from './access';
 import { community } from './communities';
 
@@ -104,3 +105,7 @@ export function mayTalk(state: AppState): boolean {
 
   return role !== 'listener' || room?.mode === 'open';
 }
+
+/** The newest poll in a room's chat that still takes votes */
+export const newestOpenPoll = (state: AppState, key: string, now: Date): Message | null =>
+  state.chats[key]?.findLast((m) => m.poll !== undefined && pollOpen(m.poll, now)) ?? null;

@@ -8,6 +8,7 @@ import type {
   Message,
   Permission,
   Person,
+  Poll,
   Post,
   PostKind,
   Recording,
@@ -21,6 +22,7 @@ import type {
 import type {
   Community as ApiCommunity,
   LinkPreview as ApiLinkPreview,
+  Poll as ApiPoll,
   Post as ApiPost,
   PostKind as ApiPostKind,
   Reply as ApiReply,
@@ -278,6 +280,16 @@ export const toRoomSettings = (
   },
 });
 
+export const toPoll = (poll: ApiPoll): Poll => ({
+  id: poll.id,
+  multiple: poll.multiple,
+  closesAt: poll.closes_at,
+  closedAt: poll.closed_at,
+  voters: poll.voters,
+  options: poll.options.map((o) => ({ id: o.id, label: o.label, votes: o.votes })),
+  mine: poll.mine,
+});
+
 export const toMessage = (message: ChatMessage): Message => ({
   id: message.id,
   who: message.author?.id ?? '',
@@ -288,11 +300,15 @@ export const toMessage = (message: ChatMessage): Message => ({
   mentionsAll: message.mentions_all,
   parent: message.reply_to_id,
   edited: message.edited_at !== null,
-  system: message.deleted || message.status === 'removed' || message.kind !== 'text',
+  system:
+    message.deleted ||
+    message.status === 'removed' ||
+    (message.kind !== 'text' && message.kind !== 'poll'),
   moderated: message.status === 'removed',
   ...(message.kind === 'promoted' && message.post_id
     ? { promoted: { id: message.post_id, title: message.body ?? '' } }
     : {}),
+  ...(message.poll ? { poll: toPoll(message.poll) } : {}),
   files: toAttachments(message.attachments),
   // Messages only count their direct answers
   answerCounts: { direct: message.child_count, total: message.child_count },

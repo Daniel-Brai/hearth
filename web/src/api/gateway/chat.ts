@@ -1,9 +1,10 @@
 import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
 import type { AppState } from '@/domain/app-state';
 import { SOUNDS } from '@/domain/catalog';
+import { pollProblem, withVote } from '@/domain/polls';
 import { failureText, sendAtProblem } from '@/domain/schedule';
 import { canDo, soundAccess } from '@/domain/selectors';
-import type { Attachment, LinkPreview, Message, ScheduledMessage } from '@/domain/types';
+import type { Attachment, LinkPreview, Message, Poll, ScheduledMessage } from '@/domain/types';
 import {
   conversationCreate,
   conversationIndex,
@@ -22,6 +23,9 @@ import {
   messageUnread,
   messageUnschedule,
   messageUpdate,
+  pollCreate,
+  pollUpdate,
+  pollVote,
 } from '@/generated/api/chat/chat';
 import { postPromote } from '@/generated/api/forum/forum';
 import { mediaUnfurl } from '@/generated/api/media/media';
@@ -32,7 +36,7 @@ import type {
 import { isTune, playTune } from '@/runtime/sounds';
 
 import { sendFiles } from '../attachments';
-import { timeOf, toAttachments, toLinkPreview, toMessage, toPerson } from '../mappers';
+import { timeOf, toAttachments, toLinkPreview, toMessage, toPerson, toPoll } from '../mappers';
 import { getRealtime, type Topic } from '../realtime';
 import { setCount, setMine } from './boosts';
 import { call, errorCode, failed, type GatewayContext } from './context';
@@ -265,6 +269,12 @@ export function createChatGateway(
       });
   };
 
+  const setPoll = (key: string, id: string, change: (poll: Poll) => Poll) =>
+    ctx.store.set((state) => {
+      const message = state.chats[key]?.find((m) => m.id === id);
+      if (message?.poll) message.poll = change(message.poll);
+    });
+
   const load = {
     chat: async (key: string) => {
       await ctx.sessionLoaded;
@@ -288,6 +298,18 @@ export function createChatGateway(
             if (ctx.store.get().settings.sounds && isTune(e.sound)) playTune(e.sound);
           }),
           realtime.onPush(t, 'MessageEdited', (e) => void refresh(key, e.message_id, false)),
+          // Others' votes move the totals, and the viewer's own picks stay as they are
+          realtime.onPush(t, 'PollUpdated', (e) =>
+            setPoll(key, e.message_id, (poll) => ({
+              ...poll,
+              voters: e.voters,
+              closedAt: e.closed_at,
+              options: poll.options.map((o) => ({
+                ...o,
+                votes: e.counts.find((c) => c.option_id === o.id)?.votes ?? o.votes,
+              })),
+            })),
+          ),
           // The reactor's own screen changed when they tapped, so only others take the count
           realtime.onPush(t, 'MessageReacted', (e) => {
             if (e.user_id === ctx.store.get().me) return;
@@ -504,6 +526,62 @@ export function createChatGateway(
       });
     },
 
+    startPoll: async (key, poll) => {
+      const problem = pollProblem(poll);
+
+      if (problem) return fail(problem);
+
+      const place = await placeOf(key);
+
+      if (!place.ok) return place;
+      if (place.value.kind !== 'room') return fail('Polls go in rooms, not direct messages.');
+
+      const answer = await call(() =>
+        pollCreate(place.value.id, {
+          question: poll.question.trim(),
+          options: poll.options.map((o) => o.trim()),
+          multiple: poll.multiple,
+          closes_at: poll.closesAt,
+        }),
+      );
+
+      if (answer.status !== 201) return failed(answer);
+
+      ctx.rememberMessages(key, [answer.data]);
+
+      return ok(undefined);
+    },
+    vote: async (key, id, optionIds) => {
+      const before = ctx.store.get().chats[key]?.find((m) => m.id === id)?.poll;
+
+      if (!before) return fail('That poll was deleted.');
+
+      setPoll(key, id, (poll) => withVote(poll, optionIds));
+
+      const answer = await call(() => pollVote(before.id, { option_ids: optionIds }));
+
+      if (answer.status !== 200) {
+        setPoll(key, id, () => before);
+        return failed(answer);
+      }
+
+      setPoll(key, id, () => toPoll(answer.data));
+
+      return ok(undefined);
+    },
+    closePoll: async (key, id) => {
+      const poll = ctx.store.get().chats[key]?.find((m) => m.id === id)?.poll;
+
+      if (!poll) return fail('That poll was deleted.');
+
+      const answer = await call(() => pollUpdate(poll.id, { closed: true }));
+
+      if (answer.status !== 200) return failed(answer);
+
+      setPoll(key, id, () => toPoll(answer.data));
+
+      return ok(undefined);
+    },
     toggleBoost: (key, id, emoji) => {
       if (id.startsWith('pending-')) return;
 

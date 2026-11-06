@@ -248,6 +248,10 @@ defmodule HearthWeb.Router do
 
     get "/rooms/:room_id/messages", MessageController, :list_room
     post "/rooms/:room_id/messages", MessageController, :send_room
+    post "/rooms/:room_id/polls", PollController, :create
+    get "/polls/:id", PollController, :show
+    patch "/polls/:id", PollController, :update
+    put "/polls/:id/vote", PollController, :vote
     post "/rooms/:room_id/posts", PostController, :promote
     get "/conversations", ConversationController, :index
     post "/conversations", ConversationController, :create

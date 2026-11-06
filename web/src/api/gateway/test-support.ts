@@ -174,6 +174,7 @@ export const message = (id: string, body: string) => ({
   reactions: [],
   preview_hidden: false,
   mentions_all: false,
+  poll: null,
 });
 
 export const file = {

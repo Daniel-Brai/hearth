@@ -1302,6 +1302,27 @@ export const SEED = {
         parent: 'v2',
         boosts: [],
       },
+      {
+        id: 'v4',
+        who: 'ada',
+        text: 'Where do you keep state that has to survive a restart?',
+        time: '3:08 PM',
+        boosts: [],
+        poll: {
+          id: 'poll-v4',
+          multiple: false,
+          closesAt: null,
+          closedAt: null,
+          voters: 11,
+          options: [
+            { id: 'v4-0', label: 'ETS owned by a longer lived process', votes: 6 },
+            { id: 'v4-1', label: 'Postgres', votes: 3 },
+            { id: 'v4-2', label: 'Persistent term', votes: 1 },
+            { id: 'v4-3', label: "I let it reset and that's fine", votes: 1 },
+          ],
+          mine: [],
+        },
+      },
     ],
     'elixir/general': [
       {
@@ -1327,6 +1348,26 @@ export const SEED = {
         time: '2:52 PM',
         parent: 'g2',
         boosts: [],
+      },
+      {
+        id: 'g4',
+        who: 'priya',
+        text: 'Which topics should the next office hours cover?',
+        time: '2:58 PM',
+        boosts: [{ e: ':+1:', n: 2, mine: false }],
+        poll: {
+          id: 'poll-g4',
+          multiple: true,
+          closesAt: null,
+          closedAt: null,
+          voters: 9,
+          options: [
+            { id: 'g4-0', label: 'LiveView streams', votes: 6 },
+            { id: 'g4-1', label: 'Oban workflows', votes: 4 },
+            { id: 'g4-2', label: 'Releases and clustering', votes: 5 },
+          ],
+          mine: [],
+        },
       },
     ],
     'elixir/showcase': [

@@ -6,6 +6,7 @@
 import type { ChatMessageKind } from './chat-message-kind';
 import type { ChatMessageStatus } from './chat-message-status';
 import type { Media } from './media';
+import type { Poll } from './poll';
 import type { Reaction } from './reaction';
 import type { UserSummary } from './user-summary';
 
@@ -28,10 +29,11 @@ export interface ChatMessage {
   edited_at: string | null;
   id: string;
   inserted_at: string;
-  /** A promoted message is the room's note about a new post, an action is a /me line and a sound is a /play whose body is its name */
+  /** A promoted message is the room's note about a new post, an action is a /me line, a sound is a /play whose body is its name and a poll's body is its question */
   kind: ChatMessageKind;
   /** Its @all notified everyone who can see the room */
   mentions_all: boolean;
+  poll: null | Poll;
   /**
    * The post a promoted note points at
    * @nullable

@@ -9,6 +9,7 @@ import type {
   InviteLink,
   LinkPreview,
   ModerationLevel,
+  NewPoll,
   Permission,
   Post,
   PostKind,
@@ -310,6 +311,9 @@ export interface HearthGateway {
     edit(key: string, id: string, patch: { text: string; files: readonly Attachment[] }): Result;
     remove(key: string, id: string): void;
     toggleBoost(key: string, id: string, emoji: string): void;
+    startPoll(key: string, poll: NewPoll): Promise<Result>;
+    vote(key: string, id: string, optionIds: string[]): Promise<Result>;
+    closePoll(key: string, id: string): Promise<Result>;
     hidePreview(key: string, id: string): void;
     linkPreview(url: string): Promise<LinkPreview | null>;
     loadReplies(key: string, parent: string): Promise<Result>;
