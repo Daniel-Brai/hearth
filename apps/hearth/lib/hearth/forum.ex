@@ -1,7 +1,7 @@
 defmodule Hearth.Forum do
   events = [AnswerMarked, KindsChanged, PostCreated, ReplyCreated, ScheduledPostChanged]
 
-  default = [Draft, Kind, Post, Reply, ScheduledPost | events]
+  default = [Bookmark, Draft, Kind, Post, Reply, ScheduledPost | events]
 
   exports =
     case Mix.env() do
@@ -29,11 +29,13 @@ defmodule Hearth.Forum do
   alias Hearth.Accounts.User
   alias Hearth.Buffer
   alias Hearth.Chat
+  alias Hearth.Common
   alias Hearth.Common.T
   alias Hearth.Communities
   alias Hearth.Communities.Community
   alias Hearth.Communities.Room
   alias Hearth.Forum.AnswerMarked
+  alias Hearth.Forum.Bookmark
   alias Hearth.Forum.Command.CreateDefaultKinds
   alias Hearth.Forum.Command.CreatePost
   alias Hearth.Forum.Command.CreateReply
@@ -61,6 +63,7 @@ defmodule Hearth.Forum do
   alias Hearth.Forum.ReplyCreated
   alias Hearth.Forum.ScheduledPost
   alias Hearth.Forum.ScheduledPostChanged
+  alias Hearth.Forum.SearchHit
   alias Hearth.IAM
   alias Hearth.PubSub
   alias Hearth.Repo.Page
@@ -460,6 +463,46 @@ defmodule Hearth.Forum do
   def watched(%User{} = user, %Post{} = post), do: watched(user, [post])
   def watched(%User{} = user, posts), do: PostWatch.watched(user.id, Enum.map(posts, & &1.id))
 
+  @spec bookmark_post(User.t(), Post.t(), boolean()) :: :ok
+  def bookmark_post(%User{} = user, %Post{} = post, true), do: Bookmark.put(user.id, post.id)
+  def bookmark_post(%User{} = user, %Post{} = post, false), do: Bookmark.remove(user.id, post.id)
+
+  @spec bookmarked(nil | User.t(), Post.t() | [Post.t()]) :: MapSet.t(T.id())
+  def bookmarked(nil, _posts), do: MapSet.new()
+  def bookmarked(%User{} = user, %Post{} = post), do: bookmarked(user, [post])
+
+  def bookmarked(%User{} = user, posts),
+    do: Bookmark.bookmarked(user.id, Enum.map(posts, & &1.id))
+
+  # Saved posts stay saved after access is lost and just stop showing
+  @spec list_bookmarks(User.t(), keyword()) :: Page.t() | {:error, Flop.Meta.t()}
+  def list_bookmarks(%User{} = user, opts \\ []) when is_list(opts) do
+    opts
+    |> Keyword.merge(bookmarked_by: user.id, community_id: Communities.readable_ids(user))
+    |> Keyword.merge(status: :published, deleted_at: nil)
+    |> Keyword.merge(order_by: [:bookmarked_at, :id], order_directions: [:desc, :desc])
+    |> Post.paginate()
+  end
+
+  @spec search_posts(nil | User.t(), String.t(), keyword()) ::
+          Page.t() | {:error, :invalid_cursor}
+  def search_posts(viewer, text, opts \\ []) when is_binary(text) and is_list(opts) do
+    words = Common.search_words(text)
+    readable = Communities.readable_ids(viewer)
+
+    community_ids =
+      case opts[:community_id] do
+        nil -> readable
+        id -> Enum.filter(readable, &(&1 == id))
+      end
+
+    with {:ok, matches, next} <- Post.search(words, community_ids, opts) do
+      matches
+      |> Enum.map(&search_hit(&1, words))
+      |> Page.new(next)
+    end
+  end
+
   @spec list_unread_since(User.t(), [T.id()], DateTime.t(), pos_integer()) :: [Post.t()]
   def list_unread_since(%User{} = user, community_ids, %DateTime{} = since, limit),
     do: Post.unread_since(user.id, community_ids, since, limit)
@@ -513,6 +556,21 @@ defmodule Hearth.Forum do
     with %Draft{} = draft <- get_draft(user, community), do: Draft.delete(draft)
 
     :ok
+  end
+
+  @excerpt_length 160
+
+  # A post found only through a reply shows that reply so the match is visible
+  defp search_hit(%{tier: 0} = match, words) do
+    excerpt = Common.excerpt_around(match.reply_body, words, @excerpt_length)
+
+    %SearchHit{post: match.post, reply_id: match.reply_id, excerpt: excerpt}
+  end
+
+  defp search_hit(%{post: post}, words) do
+    excerpt = Common.excerpt_around(post.body, words, @excerpt_length)
+
+    %SearchHit{post: post, reply_id: nil, excerpt: excerpt}
   end
 
   defp fetch_kind(community_id, kind_id) when is_binary(kind_id) do

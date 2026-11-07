@@ -31,6 +31,7 @@ defmodule HearthWeb.Schema.Post do
       reported
       in_review
       watching
+      bookmarked
       live
       from_chat
       transcript
@@ -64,6 +65,7 @@ defmodule HearthWeb.Schema.Post do
           properties: %{session_id: uuid(), room_id: uuid(), mode: Schema.enum_of(Session, :mode)}
         }),
       watching: boolean(description: "False signed out"),
+      bookmarked: boolean(description: "Saved by the viewer, false signed out"),
       reactions: array_of(Reaction),
       seen: boolean(description: "The viewer has read it, false signed out"),
       transcript:

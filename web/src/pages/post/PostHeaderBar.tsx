@@ -57,6 +57,7 @@ export function PostHeaderBar({
             text={plainText(post.body).slice(0, 160) || null}
             label="Share post"
           />
+          {viewer === 'member' ? <SaveButton post={post} /> : null}
           {viewer === 'member' ? <WatchButton post={post} /> : null}
           {viewer === 'unknown' ? <span className="skel skel--avatar" aria-hidden="true" /> : null}
           <PostMenu post={post} view={view} onEdit={onEdit} />
@@ -70,6 +71,12 @@ async function toggleWatch(gateway: HearthGateway, flash: (text: string) => void
   const watching = post.watching;
   const r = await gateway.posts.toggleWatch(post.id);
   flash(r.ok ? (watching ? 'Stopped watching' : 'Watching. You will get new replies.') : r.error);
+}
+
+async function toggleSave(gateway: HearthGateway, flash: (text: string) => void, post: Post) {
+  const saved = post.bookmarked;
+  const r = await gateway.posts.toggleSave(post.id);
+  flash(r.ok ? (saved ? 'Removed from Saved' : 'Saved. Find it under Saved.') : r.error);
 }
 
 function sharePost(post: Post, flash: (text: string) => void) {
@@ -100,6 +107,25 @@ function WatchButton({ post }: { readonly post: Post }) {
       data-tip="Watch"
     >
       <Icon name="eye" />
+    </IconButton>
+  );
+}
+
+function SaveButton({ post }: { readonly post: Post }) {
+  const gateway = useGateway();
+  const flash = useUi((s) => s.flash);
+
+  return (
+    <IconButton
+      id="post-save"
+      on={post.bookmarked}
+      className="hide-mobile"
+      onClick={() => void toggleSave(gateway, flash, post)}
+      aria-pressed={post.bookmarked}
+      aria-label={post.bookmarked ? 'Remove from Saved' : 'Save for later'}
+      data-tip={post.bookmarked ? 'Saved' : 'Save'}
+    >
+      <Icon name="bookmark" />
     </IconButton>
   );
 }
@@ -240,6 +266,15 @@ function PhoneItems({
       {share ? (
         <MenuItem icon="share" className="mobile-only" onSelect={() => sharePost(post, flash)}>
           Share
+        </MenuItem>
+      ) : null}
+      {watch ? (
+        <MenuItem
+          icon="bookmark"
+          className="mobile-only"
+          onSelect={() => void toggleSave(gateway, flash, post)}
+        >
+          {post.bookmarked ? 'Remove from Saved' : 'Save'}
         </MenuItem>
       ) : null}
       {watch ? (

@@ -44,6 +44,8 @@ export default [
       route(patterns.roles, at('roles')),
       route(routes.events, at('events'), { id: 'events' }),
       route(routes.people, at('people')),
+      route(routes.saved, at('saved')),
+      route(routes.search, at('search')),
       route(routes.settings, at('settings')),
       route(routes.settingsProfile, at('edit-profile')),
       route(routes.settingsInstance, at('instance-settings')),

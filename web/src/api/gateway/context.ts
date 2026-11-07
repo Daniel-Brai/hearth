@@ -1,8 +1,9 @@
 import { onServer } from '@/data/env';
 import { fail, ok, type Result } from '@/data/gateway';
 import type { Store } from '@/data/store';
-import type { RoomSettings } from '@/domain/types';
+import type { Message, RoomSettings } from '@/domain/types';
 import { lexMarkdown } from '@/features/markdown/markdown';
+import { communityShow } from '@/generated/api/communities/communities';
 import { userIndex } from '@/generated/api/people/people';
 import type {
   ChatMessage,
@@ -202,6 +203,18 @@ export class GatewayContext {
     return this.kindsFor.has(communityId);
   }
 
+  /** Posts from communities never opened need those communities known to show their names */
+  async learnCommunities(ids: readonly string[]) {
+    const unknown = [...new Set(ids)].filter((id) => !this.knowsKindsOf(id));
+
+    await Promise.all(
+      unknown.map(async (id) => {
+        const answer = await call(() => communityShow(id));
+        if (answer.status === 200) this.rememberCommunity(answer.data.community, answer.data);
+      }),
+    );
+  }
+
   // The server renders signed out so its answer has no permissions for whoever signs in
   private readonly detailFor = new Map<string, string | null>();
 
@@ -287,18 +300,25 @@ export class GatewayContext {
       // Messages already here take the server's text and answer counts so edits, deletes and new replies show
       const fresh = new Map(messages.map((m) => [m.id, toMessage(m)]));
 
+      // A deleted poll that has answers stays as a marker so its poll goes too
       const kept = (state.chats[key] ?? []).map((m) => {
         const now = fresh.get(m.id);
-        return now
-          ? {
-              ...m,
-              text: now.text,
-              edited: now.edited ?? false,
-              system: now.system ?? false,
-              moderated: now.moderated ?? false,
-              ...(now.answerCounts ? { answerCounts: now.answerCounts } : {}),
-            }
-          : m;
+
+        if (!now) return m;
+
+        const merged: Message = {
+          ...m,
+          text: now.text,
+          edited: now.edited ?? false,
+          system: now.system ?? false,
+          moderated: now.moderated ?? false,
+          ...(now.answerCounts ? { answerCounts: now.answerCounts } : {}),
+        };
+
+        if (now.poll) merged.poll = now.poll;
+        else delete merged.poll;
+
+        return merged;
       });
 
       const known = new Set(kept.map((m) => m.id));

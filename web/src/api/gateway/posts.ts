@@ -6,12 +6,14 @@ import { communityShow } from '@/generated/api/communities/communities';
 import {
   postAllSeen,
   postAnswer,
+  postBookmark,
   postCommunitySeen,
   postCreate,
   postDelete,
   postDiscardDraft,
   postDrafts,
   postHelpful,
+  postListBookmarks,
   postListScheduled,
   postLock,
   postPin,
@@ -20,8 +22,10 @@ import {
   postReschedule,
   postSaveDraft,
   postSchedule,
+  postSearch,
   postSeen,
   postShow,
+  postUnbookmark,
   postUnschedule,
   postUpdate,
   postWatch,
@@ -60,6 +64,17 @@ const setWatching = (state: AppState, id: string, watching: boolean) => {
   const post = state.posts.find((p) => p.id === id);
   if (post) post.watching = watching;
 };
+
+// Unsaving takes the post off the Saved list at once and saving puts it back at the top
+const setSaved = (state: AppState, id: string, saved: boolean) => {
+  const post = state.posts.find((p) => p.id === id);
+  if (post) post.bookmarked = saved;
+
+  state.saved.ids = state.saved.ids.filter((i) => i !== id);
+  if (saved) state.saved.ids.unshift(id);
+};
+
+const SAVED_PAGE = 20;
 
 const findReply = (state: AppState, postId: string, replyId: string) =>
   state.posts.find((p) => p.id === postId)?.replies.find((r) => r.id === replyId);
@@ -309,6 +324,35 @@ export function createPostsGateway(ctx: GatewayContext) {
 
       return ok(undefined);
     },
+
+    saved: async (more = false) => {
+      await ctx.sessionLoaded;
+
+      const after = more ? ctx.store.get().saved.after : null;
+
+      if (more && !after) return ok(undefined);
+
+      const answer = await call(() =>
+        postListBookmarks(after ? { after, limit: SAVED_PAGE } : { limit: SAVED_PAGE }),
+      );
+
+      if (answer.status !== 200) return failed(answer);
+
+      const { data, meta } = answer.data;
+
+      await ctx.learnCommunities(data.map((p) => p.community_id));
+      ctx.rememberPosts(data);
+
+      ctx.store.set((state) => {
+        const ids = data.map((p) => p.id);
+        const known = new Set(state.saved.ids);
+
+        state.saved.ids = after ? [...state.saved.ids, ...ids.filter((i) => !known.has(i))] : ids;
+        state.saved.after = meta.has_next ? meta.after : null;
+      });
+
+      return ok(undefined);
+    },
   } satisfies Partial<HearthGateway['load']>;
 
   const posts: HearthGateway['posts'] = {
@@ -414,6 +458,46 @@ export function createPostsGateway(ctx: GatewayContext) {
       if (answer.status !== 200) ctx.store.set((state) => setWatching(state, id, !watching));
 
       return answered(answer);
+    },
+
+    toggleSave: async (id) => {
+      const post = ctx.store.get().posts.find((p) => p.id === id);
+
+      if (!post) return fail('That post is not loaded.');
+
+      const saved = !post.bookmarked;
+
+      ctx.store.set((state) => setSaved(state, id, saved));
+
+      const answer = await call(() => (saved ? postBookmark(id) : postUnbookmark(id)));
+
+      if (answer.status !== 204) ctx.store.set((state) => setSaved(state, id, !saved));
+
+      return answered(answer);
+    },
+
+    search: async (query, cid, after = null) => {
+      const communityId = cid ? ctx.communityIds.get(cid) : undefined;
+
+      const answer = await call(() =>
+        postSearch({
+          q: query,
+          ...(communityId ? { community_id: communityId } : {}),
+          ...(after ? { after } : {}),
+        }),
+      );
+
+      if (answer.status !== 200) return failed(answer);
+
+      const { data, meta } = answer.data;
+
+      await ctx.learnCommunities(data.map((h) => h.post.community_id));
+      ctx.rememberPosts(data.map((h) => h.post));
+
+      return ok({
+        hits: data.map((h) => ({ id: h.post.id, reply: h.reply_id, excerpt: h.excerpt })),
+        after: meta.has_next ? meta.after : null,
+      });
     },
 
     toggleBoost: async (id, emoji) => {

@@ -131,6 +131,7 @@ export const post = {
   reported: false,
   in_review: false,
   watching: false,
+  bookmarked: false,
   live: null,
   from_chat: null,
   transcript: null,

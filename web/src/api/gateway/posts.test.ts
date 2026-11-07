@@ -247,6 +247,81 @@ describe('posts.toggleWatch', () => {
   });
 });
 
+describe('posts.toggleSave', () => {
+  it('unsaves again and says why when the server refuses', async () => {
+    const { gateway: g, store } = await openPost([]);
+
+    routes['POST /api/posts/p1/bookmark'] = { status: 404, body: { message: 'Not found' } };
+
+    const saving = g.posts.toggleSave('p1');
+
+    expect(store.get().saved.ids).toEqual(['p1']);
+    expect(await saving).toEqual({ ok: false, error: 'Not found' });
+    expect(store.get().posts[0]?.bookmarked).toBe(false);
+    expect(store.get().saved.ids).toEqual([]);
+  });
+
+  it('takes a saved post off the list', async () => {
+    const { gateway: g, store } = await openPost([], { bookmarked: true });
+
+    routes['DELETE /api/posts/p1/bookmark'] = { status: 204 };
+
+    expect((await g.posts.toggleSave('p1')).ok).toBe(true);
+    expect(store.get().posts[0]?.bookmarked).toBe(false);
+  });
+});
+
+describe('posts.search', () => {
+  it('says why when the server refuses', async () => {
+    const { gateway: g } = gateway();
+
+    routes['GET /api/posts'] = { status: 429, body: { message: 'Slow down' } };
+
+    expect(await g.posts.search('hydr', null)).toEqual({ ok: false, error: 'Slow down' });
+  });
+
+  it('keeps the posts it found', async () => {
+    const { gateway: g, store } = gateway();
+
+    routes['GET /api/communities/c1'] = {
+      status: 200,
+      body: { community, kinds: [kind], membership: null },
+    };
+
+    routes['GET /api/posts'] = {
+      status: 200,
+      body: page([{ post, reply_id: 'r1', excerpt: 'Hello' }]),
+    };
+
+    expect(await g.posts.search('hel', null)).toEqual({
+      ok: true,
+      value: { hits: [{ id: 'p1', reply: 'r1', excerpt: 'Hello' }], after: null },
+    });
+
+    expect(store.get().posts[0]?.c).toBe('gardeners');
+  });
+});
+
+describe('load.saved', () => {
+  it('lists saved posts newest first', async () => {
+    const { gateway: g, store } = gateway();
+
+    routes['GET /api/communities/c1'] = {
+      status: 200,
+      body: { community, kinds: [kind], membership: null },
+    };
+
+    routes['GET /api/posts/bookmarks'] = {
+      status: 200,
+      body: page([{ ...post, bookmarked: true }]),
+    };
+
+    await g.load.saved();
+
+    expect(store.get().saved).toEqual({ ids: ['p1'], after: null });
+  });
+});
+
 describe('posts.toggleHelpful', () => {
   it('takes the mark back and says why when the server refuses', async () => {
     const { gateway: g, store } = await openPost([]);

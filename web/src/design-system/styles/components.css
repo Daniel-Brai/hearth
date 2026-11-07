@@ -1296,7 +1296,7 @@ a.origin-note:hover { filter: brightness(0.98); }
 @media (any-hover: hover) {
   .post-row__foot { flex-wrap: nowrap; }
   .post-row__actions { inset: 0.75rem 1rem auto auto; position: absolute; pointer-events: none; z-index: 2; }
-  .post-row__actions .btn { background: var(--color-canvas); }
+  .post-row__actions .btn:not(.is-on) { background: var(--color-canvas); }
   .post-row.has-thumb .post-row__actions { inset-inline-end: 7.2rem; }
   .post-row:hover .post-row__actions, .post-row:focus-within .post-row__actions { pointer-events: auto; }
   .feed--compact .post-row__actions { inset-block-start: 0.35rem; inset-inline-end: 0.4rem; }
@@ -1339,6 +1339,8 @@ a.origin-note:hover { filter: brightness(0.98); }
 }
 @container main (max-width: 40rem) {
   .composer__send kbd { display: none; }
+}
+@container main (max-width: 32rem) {
   .composer--block .composer__row { grid-template-areas: "field field field field" "count count count count" "tools tools tools tools" "attach . . send"; row-gap: 0.2rem; }
   .composer--block .composer__count { padding-block: 0.1rem 0.15rem; }
   .composer--block .composer__tools { gap: 0; justify-content: space-between; }

@@ -595,6 +595,7 @@ export const SEED = {
     },
   },
   activity: {},
+  saved: { ids: [], after: null },
   posts: [
     {
       id: 'p20',
@@ -606,6 +607,7 @@ export const SEED = {
       seen: false,
       pinned: false,
       watching: false,
+      bookmarked: false,
       tags: ['ikoyi', '10k'],
       body: [
         'Starts at the Falomo roundabout, along Bourdillon, around Parkview and back. Mostly flat, good tarmac. Water at the filling station at 4k and the kiosk at 7k.\n\n**Go early.** Traffic picks up after 6:30.',
@@ -667,6 +669,7 @@ export const SEED = {
       seen: true,
       pinned: true,
       watching: true,
+      bookmarked: true,
       tags: ['beginners'],
       body: [
         '5k at a talking pace. We walk when anyone needs to. Bring water and say hi in #general if you are coming for the first time.',
@@ -689,6 +692,7 @@ export const SEED = {
       seen: false,
       pinned: false,
       watching: true,
+      bookmarked: false,
       tags: ['achebe', 'october'],
       body: [
         'What did you make of Okonkwo in the first chapters? I keep thinking about how fear drives almost everything he does.\n\n_No spoilers past chapter 6 here please._',
@@ -723,6 +727,7 @@ export const SEED = {
       seen: true,
       pinned: false,
       watching: false,
+      bookmarked: false,
       tags: ['adichie', 'next-month'],
       body: ['It pairs well with this month. Long, but it reads quickly once you are in.'],
       helpful: 9,
@@ -743,6 +748,7 @@ export const SEED = {
       seen: false,
       pinned: false,
       watching: true,
+      bookmarked: false,
       tags: ['otp', 'genserver'],
       body: [
         'I have a GenServer that caches the filter settings for each dashboard. When it crashes and the supervisor restarts it, every setting is gone and people see the defaults again.',
@@ -892,6 +898,7 @@ export const SEED = {
       seen: false,
       pinned: false,
       watching: false,
+      bookmarked: false,
       tags: ['oban', 'migration'],
       body: [
         'Our background jobs ran in a separate Node service with Redis and a pile of hand written retry logic. We moved them into the Elixir app with Oban, on the Postgres we already had.',
@@ -930,6 +937,7 @@ export const SEED = {
       seen: true,
       pinned: true,
       watching: false,
+      bookmarked: false,
       tags: ['release'],
       body: [
         'Elixir 1.20 ships more type inference across function calls, faster compiles for large projects and clearer warnings for patterns that can never match.',
@@ -953,6 +961,7 @@ export const SEED = {
       seen: true,
       pinned: false,
       watching: false,
+      bookmarked: false,
       tags: ['releases'],
       body: [
         'Every app I deploy ends up with the same multi stage Dockerfile around `mix release`. Would a default one make sense, or does that cut against keeping Mix small?',
@@ -987,6 +996,7 @@ export const SEED = {
       seen: false,
       pinned: false,
       watching: false,
+      bookmarked: false,
       tags: ['liveview', 'streams'],
       body: [
         'I have a stream of 50k rows, infinite scroll with `phx-viewport-bottom`, and a filter form. When the filter changes I reset the stream, but the scroll position stays at the bottom and immediately loads page 2.',
@@ -1033,6 +1043,7 @@ export const SEED = {
       seen: true,
       pinned: false,
       watching: false,
+      bookmarked: false,
       tags: ['presence'],
       body: [
         'Phoenix Presence for cursors, a single LiveView for the board, and SVG for drawing. No JavaScript framework, about 300 lines all in.',
@@ -1055,6 +1066,7 @@ export const SEED = {
       seen: false,
       pinned: false,
       watching: true,
+      bookmarked: false,
       tags: ['parsing', 'errors'],
       body: [
         'My Pratt parser stops at the first syntax error, so people fix one mistake at a time. How do you keep parsing and report all of them without a cascade of nonsense errors after the first? @danielbrai',
@@ -1077,6 +1089,7 @@ export const SEED = {
       seen: true,
       pinned: true,
       watching: true,
+      bookmarked: false,
       tags: ['reading-group', 'papers'],
       body: [
         'Each month we pick one paper, read it over two weeks and talk it through in the voice room. First pick: Pierce and Turner, *Local Type Inference*.',
@@ -1110,6 +1123,7 @@ export const SEED = {
       seen: true,
       pinned: false,
       watching: false,
+      bookmarked: false,
       tags: ['ci', 'macos'],
       body: [
         'What is everyone using to sign and notarize in GitHub Actions? I want the certificate out of the repo and out of logs.',

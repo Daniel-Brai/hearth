@@ -18,6 +18,8 @@ export interface Post {
   attachments: Media[];
   author: null | UserSummary;
   body: string;
+  /** Saved by the viewer, false signed out */
+  bookmarked: boolean;
   community_id: string;
   /** @nullable */
   edited_at: string | null;

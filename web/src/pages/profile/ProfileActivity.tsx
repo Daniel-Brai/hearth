@@ -1,10 +1,10 @@
 import { startTransition, useState } from 'react';
 
 import { useGateway } from '@/app/gateway-context';
-import type { Result } from '@/data/gateway';
 import { useLoad } from '@/data/use-load';
-import { Button, EmptyState, Icon, Link, Pill, Segmented } from '@/design-system';
+import { EmptyState, Icon, Link, Pill, Segmented } from '@/design-system';
 import { InlineMarkdown } from '@/features/markdown/Markdown';
+import { ScrollMore } from '@/features/paging/ScrollMore';
 import { PostRow } from '@/pages/shared/PostRow';
 
 import { useProfileActivity, type ProfileReply } from './use-profile-view';
@@ -74,7 +74,7 @@ function ProfilePosts({ id, handle, mine }: TabProps) {
         />
       ) : null}
       {postsMore ? (
-        <ShowMore
+        <ScrollMore
           id="profile-posts-more"
           more={() => gateway.load.activity(handle, 'posts', true)}
         />
@@ -109,45 +109,10 @@ function ProfileReplies({ id, handle, mine }: TabProps) {
         />
       ) : null}
       {repliesMore ? (
-        <ShowMore
+        <ScrollMore
           id="profile-replies-more"
           more={() => gateway.load.activity(handle, 'replies', true)}
         />
-      ) : null}
-    </div>
-  );
-}
-
-function ShowMore({ id, more }: { readonly id: string; readonly more: () => Promise<Result> }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const showMore = async () => {
-    setLoading(true);
-
-    try {
-      const result = await more();
-      setError(result.ok ? null : result.error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="grid justify-items-center gap-1 py-2">
-      <Button
-        id={id}
-        variant="borderless"
-        onClick={() => void showMore()}
-        disabled={loading}
-        busy={loading}
-      >
-        {loading ? 'Loading' : 'Show more'}
-      </Button>
-      {error ? (
-        <span className="small subtle" role="alert">
-          {error}
-        </span>
       ) : null}
     </div>
   );

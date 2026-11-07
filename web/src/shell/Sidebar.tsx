@@ -139,6 +139,13 @@ function LoadedSidebar() {
             {view.unseen > 0 ? <Badge red count={view.unseen} /> : null}
           </NavLink>
 
+          <NavLink to={routes.saved} className="side-link" id="side-saved">
+            <span className="side-link__icon">
+              <Icon name="bookmark" />
+            </span>
+            <span className="side-link__name">Saved</span>
+          </NavLink>
+
           <div className="side-section">
             <div className="side-label">
               <span>Communities</span>

@@ -24,6 +24,7 @@ defmodule Hearth.Common do
 
   defdelegate normalize(value), to: Text
   defdelegate valid_username?(value), to: Text
+  defdelegate search_words(text), to: Text
 
   defdelegate mail_domain_status(email), to: MailDomain, as: :status
   defdelegate email_status(email), to: MailDomain, as: :address_status
@@ -33,6 +34,7 @@ defmodule Hearth.Common do
   defdelegate first_link(markdown), to: Markdown
   defdelegate plain_text(markdown), to: Markdown
   defdelegate excerpt(markdown, max_length), to: Markdown
+  defdelegate excerpt_around(markdown, words, max_length), to: Markdown
 
   defdelegate span(name, attributes, fun), to: Trace
 

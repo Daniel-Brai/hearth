@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { Badge, Button, cn, Dialog, EmptyState, Icon, Keys, Link } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
+import { searchWords } from '@/domain/search';
 import {
   canDo,
   displayName,
@@ -16,6 +18,7 @@ import {
   postHref,
   voiceOn,
 } from '@/domain/selectors';
+import type { Post } from '@/domain/types';
 import { recentJumps, rememberJump } from '@/runtime/jump-recent';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
@@ -37,6 +40,24 @@ type Item = {
 
 const icon = (name: Parameters<typeof Icon>[0]['name']) => <Icon name={name} />;
 
+function postItem(state: AppState, p: Post): Item {
+  const name = state.communities[p.c]?.name ?? '';
+
+  return {
+    href: postHref(p),
+    label: p.title,
+    group: 'Posts',
+    icon: icon('scroll'),
+    hint: name || null,
+    search: p.tags.map((t) => '#' + t).join(' ') + ' ' + p.kind + ' ' + name,
+    count: null,
+    live: false,
+  };
+}
+
+const SEARCH_GROUP = 'Search everything';
+const SERVER_DELAY_MS = 250;
+
 function buildIndex(state: AppState): Item[] {
   const items: Item[] = [];
 
@@ -54,6 +75,7 @@ function buildIndex(state: AppState): Item[] {
   });
 
   add({ href: routes.events, label: 'Events', group: 'Go to', icon: icon('calendar') });
+  add({ href: routes.saved, label: 'Saved', group: 'Go to', icon: icon('bookmark') });
   add({ href: routes.settings, label: 'Settings', group: 'Go to', icon: icon('gear') });
 
   if (state.me)
@@ -166,17 +188,7 @@ function buildIndex(state: AppState): Item[] {
 
   state.posts
     .filter((p) => state.communities[p.c]?.joined)
-    .forEach((p) =>
-      add({
-        href: postHref(p),
-        label: p.title,
-        group: 'Posts',
-        icon: icon('scroll'),
-        hint: state.communities[p.c]!.name,
-        search:
-          p.tags.map((t) => '#' + t).join(' ') + ' ' + p.kind + ' ' + state.communities[p.c]!.name,
-      }),
-    );
+    .forEach((p) => items.push(postItem(state, p)));
 
   Object.keys(state.people).forEach((id) => {
     if (id === state.me) return;
@@ -214,6 +226,7 @@ function buildIndex(state: AppState): Item[] {
 const MANAGE_WORDS = ['mod', 'moder', 'role', 'invit'];
 
 export function JumpDialog() {
+  const gateway = useGateway();
   const closeDialog = useUi((s) => s.closeDialog);
   const navigate = useNavigate();
   const { community } = useRouteContext();
@@ -223,6 +236,20 @@ export function JumpDialog() {
   const [index, setIndex] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  // Posts the server found for a query even ones this browser never loaded
+  const [found, setFound] = useState<{ query: string; ids: string[] }>({ query: '', ids: [] });
+  const asking = useRef<number | null>(null);
+
+  const askServer = (value: string) => {
+    if (asking.current !== null) window.clearTimeout(asking.current);
+    if (!searchWords(value).length) return;
+
+    asking.current = window.setTimeout(() => {
+      void gateway.posts.search(value, null).then((r) => {
+        if (r.ok) setFound({ query: value, ids: r.value.hits.map((h) => h.id) });
+      });
+    }, SERVER_DELAY_MS);
+  };
 
   const all = useMemo(() => buildIndex(state), [state]);
   const joined = joinedCids(state);
@@ -238,13 +265,33 @@ export function JumpDialog() {
           .toLowerCase();
       const score = (i: Item) =>
         (i.label.toLowerCase().startsWith(words[0]!) ? 0 : 1) + (i.group === 'Manage' ? 0 : 0.5);
-      return all
+      const local = all
         .filter((i) => {
           const text = hay(i);
           return words.every((w) => text.includes(w));
         })
-        .sort((a, b) => score(a) - score(b))
-        .slice(0, 40);
+        .sort((a, b) => score(a) - score(b));
+
+      const shown = new Set(local.map((i) => i.href));
+
+      const fromServer = (found.query === query ? found.ids : [])
+        .map((id) => state.posts.find((p) => p.id === id))
+        .filter((p) => p !== undefined)
+        .map((p) => postItem(state, p))
+        .filter((i) => !shown.has(i.href));
+
+      const everything: Item = {
+        href: routes.searchFor(query.trim()),
+        label: `Search posts for “${query.trim()}”`,
+        group: SEARCH_GROUP,
+        icon: icon('search'),
+        hint: null,
+        search: null,
+        count: null,
+        live: false,
+      };
+
+      return [...[...local, ...fromServer].slice(0, 40), everything];
     }
 
     const items = new Map<string, Item>();
@@ -279,7 +326,7 @@ export function JumpDialog() {
     const go = all.filter((i) => i.group === 'Go to' && !recent.some((r) => r.href === i.href));
 
     return [...recent, ...here, ...go].slice(0, 40);
-  }, [all, query, community, state]);
+  }, [all, query, community, state, found]);
 
   const groups = useMemo(() => {
     const out: { title: string; items: (Item & { index: number })[] }[] = [];
@@ -340,6 +387,7 @@ export function JumpDialog() {
           onChange={(e) => {
             setQuery(e.target.value);
             setIndex(0);
+            askServer(e.target.value);
           }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') {
@@ -394,7 +442,7 @@ export function JumpDialog() {
           </div>
         ))}
 
-        {!items.length ? (
+        {items.every((i) => i.group === SEARCH_GROUP) ? (
           <EmptyState small art="search" title="Nothing matches that" text={emptyText} />
         ) : null}
       </div>

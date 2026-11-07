@@ -68,6 +68,44 @@ defmodule Hearth.Common.Markdown do
     Text.truncate(readable, max_length)
   end
 
+  @lead_words 4
+  @word_breaks ~w[- / . , ( ) " ' ` : ;]
+
+  @doc """
+  Readable text cut to max_length characters starting a few words before the first one that matches
+
+      iex> text = "Forms keep their values when the socket reconnects, so form recovery needs ids on inputs"
+      iex> Hearth.Common.Markdown.excerpt_around(text, ["recovery"], 50)
+      "…socket reconnects, so form recovery needs ids…"
+
+      iex> Hearth.Common.Markdown.excerpt_around("Written for the Catch up email preview", ["email"], 160)
+      "Written for the Catch up email preview"
+  """
+  @spec excerpt_around(T.markdown(), [String.t()], pos_integer()) :: String.t()
+  def excerpt_around(markdown, words, max_length) do
+    text = plain_text(markdown)
+    tokens = String.split(text)
+
+    fits = String.length(text) <= max_length
+
+    case Enum.find_index(tokens, &matches?(&1, words)) do
+      at when is_integer(at) and at > @lead_words and not fits ->
+        rest = tokens |> Enum.drop(at - @lead_words) |> Enum.join(" ")
+        "…" <> Text.truncate(rest, max_length - 1)
+
+      _start ->
+        Text.truncate(text, max_length)
+    end
+  end
+
+  # Split like search splits words so form-recovery matches recovery
+  defp matches?(token, words) do
+    token
+    |> String.downcase()
+    |> String.split(@word_breaks, trim: true)
+    |> Enum.any?(&String.starts_with?(&1, words))
+  end
+
   defp lines(markdown) do
     {lines, _open_fence} =
       markdown

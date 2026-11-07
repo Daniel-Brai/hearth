@@ -24,6 +24,17 @@ defmodule HearthWeb.PostJSON do
 
   def pinned(%{posts: posts} = assigns), do: Enum.map(posts, &serialize(&1, assigns))
 
+  def search(%{page: page} = assigns) do
+    hits =
+      Enum.map(page.data, fn hit ->
+        %{post: serialize(hit.post, assigns), reply_id: hit.reply_id, excerpt: hit.excerpt}
+      end)
+
+    %{data: hits, meta: PageJSON.meta(page.meta)}
+  end
+
+  def list_bookmarks(assigns), do: index(assigns)
+
   def create(%{post: post} = assigns), do: serialize(post, assigns)
   def show(%{post: post} = assigns), do: serialize(post, assigns)
   def update(%{post: post} = assigns), do: serialize(post, assigns)
@@ -52,6 +63,7 @@ defmodule HearthWeb.PostJSON do
       reported: flagged?(assigns, :reported, post),
       in_review: flagged?(assigns, :in_review, post),
       watching: flagged?(assigns, :watching, post),
+      bookmarked: flagged?(assigns, :bookmarked, post),
       live: live(assigns, post),
       from_chat: from_chat(post, authors),
       transcript: transcript(assigns, post),

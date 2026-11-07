@@ -41,6 +41,8 @@ export function Bar() {
   const closeTrays = useUi((s) => s.closeTrays);
   const openDialog = useUi((s) => s.openDialog);
   const toasts = useUi((s) => s.toasts);
+  // The Search screen has its own box and a second one here would only compete with it
+  const onSearch = useLocation().pathname === routes.search;
 
   const view = useAppState((state) => ({
     live: liveRooms(state),
@@ -96,18 +98,22 @@ export function Bar() {
         ) : null}
       </div>
 
-      <button
-        type="button"
-        className="bar__jump"
-        onClick={() => openDialog('jump')}
-        aria-label="Jump to anything"
-        data-tip="Search"
-        data-tip-pos="top"
-      >
-        <Icon name="search" />
-        <span className="bar__jump-label">Jump to anything</span>
-        <Keys combo={view.jumpKey} />
-      </button>
+      {onSearch ? (
+        <span aria-hidden="true" />
+      ) : (
+        <button
+          type="button"
+          className="bar__jump"
+          onClick={() => openDialog('jump')}
+          aria-label="Jump to anything"
+          data-tip="Search"
+          data-tip-pos="top"
+        >
+          <Icon name="search" />
+          <span className="bar__jump-label">Jump to anything</span>
+          <Keys combo={view.jumpKey} />
+        </button>
+      )}
 
       <div className="bar__end">
         <IconButton

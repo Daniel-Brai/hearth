@@ -184,6 +184,7 @@ describe('toPost and toReply', () => {
       reported: false,
       in_review: false,
       watching: true,
+      bookmarked: false,
       live: null,
       from_chat: null,
       transcript: null,

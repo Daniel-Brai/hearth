@@ -168,6 +168,7 @@ export type Post = {
   seen: boolean;
   pinned: boolean;
   watching: boolean;
+  bookmarked: boolean;
   tags: string[];
   body: string[];
   helpful: number;
@@ -312,6 +313,13 @@ type AuthoredReply = {
   helpful: number;
   age: string;
   answer: boolean;
+};
+
+/** A post search found and the reply that matched when the post itself didn't */
+export type SearchHit = {
+  readonly id: string;
+  readonly reply: string | null;
+  readonly excerpt: string;
 };
 
 export type ProfileActivity = {

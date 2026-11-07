@@ -1,7 +1,7 @@
 import { ok, type HearthGateway, type Result } from '@/data/gateway';
 import { personIdByHandle } from '@/domain/selectors';
 import type { ProfileActivity } from '@/domain/types';
-import { communityMembers, communityShow } from '@/generated/api/communities/communities';
+import { communityMembers } from '@/generated/api/communities/communities';
 import { userIndex, userPosts, userReplies, userShow } from '@/generated/api/people/people';
 import type { AuthoredReply, Profile } from '@/generated/schemas';
 
@@ -37,16 +37,6 @@ export function createPeopleGateway(
   loadRoles: (cid: string) => Promise<Result>,
 ) {
   // Someone's posts can sit in communities this browser hasn't seen, whose slugs and kinds come from their detail
-  const learnCommunities = (ids: readonly string[]) =>
-    Promise.all(
-      [...new Set(ids)]
-        .filter((id) => !ctx.knowsKindsOf(id))
-        .map(async (id) => {
-          const answer = await call(() => communityShow(id));
-          if (answer.status === 200) ctx.rememberCommunity(answer.data.community, answer.data);
-        }),
-    );
-
   const toAuthored = ({ reply, post, answer }: AuthoredReply) => ({
     id: reply.id,
     postId: post.id,
@@ -67,7 +57,7 @@ export function createPeopleGateway(
 
     const { data, meta } = answer.data;
 
-    await learnCommunities(data.map((p) => p.community_id));
+    await ctx.learnCommunities(data.map((p) => p.community_id));
     ctx.rememberPosts(data);
 
     ctx.store.set((state) => {
@@ -93,7 +83,7 @@ export function createPeopleGateway(
 
     const { data, meta } = answer.data;
 
-    await learnCommunities(data.map((r) => r.post.community_id));
+    await ctx.learnCommunities(data.map((r) => r.post.community_id));
     ctx.rememberMentions(data.map((r) => r.reply.body));
 
     ctx.store.set((state) => {

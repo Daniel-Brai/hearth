@@ -206,7 +206,9 @@ defmodule HearthWeb.Router do
     post "/invites/:code/accept", InviteController, :accept
     delete "/invites/:code", InviteController, :delete
 
+    get "/posts", PostController, :search
     get "/posts/drafts", PostController, :drafts
+    get "/posts/bookmarks", PostController, :list_bookmarks
     put "/communities/:community_id/posts/draft", PostController, :save_draft
     delete "/communities/:community_id/posts/draft", PostController, :discard_draft
     get "/posts/scheduled", PostController, :list_scheduled
@@ -229,6 +231,8 @@ defmodule HearthWeb.Router do
     post "/posts/:id/reactions", PostController, :react
     post "/posts/:id/seen", PostController, :seen
     put "/posts/:id/watch", PostController, :watch
+    post "/posts/:id/bookmark", PostController, :bookmark
+    delete "/posts/:id/bookmark", PostController, :unbookmark
 
     get "/posts/:post_id/replies", ReplyController, :index
     post "/posts/:post_id/replies", ReplyController, :create

@@ -128,7 +128,8 @@ defmodule HearthWeb.UserController do
         attachments: Attachments.load(posts, :post),
         reported: Reports.load(posts, auth, :post),
         in_review: Reports.in_review(posts, :post),
-        watching: Forum.watched(auth, posts)
+        watching: Forum.watched(auth, posts),
+        bookmarked: Forum.bookmarked(auth, posts)
       )
     end
   end

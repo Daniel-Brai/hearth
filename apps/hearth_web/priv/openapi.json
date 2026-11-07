@@ -3704,6 +3704,10 @@
           "body": {
             "type": "string"
           },
+          "bookmarked": {
+            "description": "Saved by the viewer, false signed out",
+            "type": "boolean"
+          },
           "community_id": {
             "format": "uuid",
             "type": "string"
@@ -3885,6 +3889,7 @@
           "reported",
           "in_review",
           "watching",
+          "bookmarked",
           "live",
           "from_chat",
           "transcript",
@@ -4015,6 +4020,32 @@
           "emoji",
           "on",
           "count"
+        ],
+        "type": "object"
+      },
+      "PostSearchHit": {
+        "title": "PostSearchHit",
+        "properties": {
+          "excerpt": {
+            "description": "Plain text around the first match",
+            "type": "string"
+          },
+          "post": {
+            "$ref": "#/components/schemas/Post"
+          },
+          "reply_id": {
+            "description": "The reply that matched when the post itself didn't",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "post",
+          "reply_id",
+          "excerpt"
         ],
         "type": "object"
       },
@@ -12837,6 +12868,172 @@
         "summary": "Vote in a poll, or change my vote"
       }
     },
+    "/api/posts": {
+      "get": {
+        "tags": [
+          "Forum"
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/PostSearchHit"
+                      },
+                      "type": "array"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
+          }
+        },
+        "description": "Only in communities the person asking may read. Title matches come first then body then replies",
+        "operationId": "post_search_PKGICIA",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only this community",
+            "in": "query",
+            "name": "community_id",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Search posts"
+      }
+    },
+    "/api/posts/bookmarks": {
+      "get": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/Post"
+                      },
+                      "type": "array"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Newest saved first without posts I can no longer read",
+        "operationId": "post_list_bookmarks_PKGICIA",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "List my saved posts"
+      }
+    },
     "/api/posts/drafts": {
       "get": {
         "tags": [
@@ -13269,6 +13466,82 @@
           "required": true
         },
         "summary": "Mark the reply that answers a post"
+      }
+    },
+    "/api/posts/{id}/bookmark": {
+      "delete": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "post_unbookmark_PKGICIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Take a post out of my saved posts"
+      },
+      "post": {
+        "tags": [
+          "Forum"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "operationId": "post_bookmark_PKGICIA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Save a post for later"
       }
     },
     "/api/posts/{id}/helpful": {

@@ -13,6 +13,7 @@ export function emptyState(): AppState {
     archivedRooms: {},
     posts: [],
     activity: {},
+    saved: { ids: [], after: null },
     transcripts: {},
     recordings: {},
     chats: {},

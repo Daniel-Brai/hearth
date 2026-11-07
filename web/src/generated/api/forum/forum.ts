@@ -19,6 +19,10 @@ import type {
   Post,
   PostIndex200,
   PostIndexParams,
+  PostListBookmarks200,
+  PostListBookmarksParams,
+  PostSearch200,
+  PostSearchParams,
   PromoteBody,
   ReactionBody,
   Reply,
@@ -495,6 +499,127 @@ export const postCommunitySeen = async (
   return customFetch<postCommunitySeenResponse>(getPostCommunitySeenUrl(communityId), {
     ...options,
     method: 'POST',
+  });
+};
+
+export type postSearchResponse200 = {
+  data: PostSearch200;
+  status: 200;
+};
+
+export type postSearchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type postSearchResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postSearchResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
+export type postSearchResponseSuccess = postSearchResponse200 & {
+  headers: Headers;
+};
+export type postSearchResponseError = (
+  postSearchResponse400 | postSearchResponse422 | postSearchResponse429
+) & {
+  headers: Headers;
+};
+
+export type postSearchResponse = postSearchResponseSuccess | postSearchResponseError;
+
+export const getPostSearchUrl = (params: PostSearchParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/posts?${stringifiedParams}` : `/api/posts`;
+};
+
+/**
+ * Only in communities the person asking may read. Title matches come first then body then replies
+ * @summary Search posts
+ */
+export const postSearch = async (
+  params: PostSearchParams,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postSearchResponse> => {
+  return customFetch<postSearchResponse>(getPostSearchUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export type postListBookmarksResponse200 = {
+  data: PostListBookmarks200;
+  status: 200;
+};
+
+export type postListBookmarksResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type postListBookmarksResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postListBookmarksResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postListBookmarksResponseSuccess = postListBookmarksResponse200 & {
+  headers: Headers;
+};
+export type postListBookmarksResponseError = (
+  postListBookmarksResponse400 | postListBookmarksResponse401 | postListBookmarksResponse422
+) & {
+  headers: Headers;
+};
+
+export type postListBookmarksResponse =
+  postListBookmarksResponseSuccess | postListBookmarksResponseError;
+
+export const getPostListBookmarksUrl = (params?: PostListBookmarksParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/posts/bookmarks?${stringifiedParams}`
+    : `/api/posts/bookmarks`;
+};
+
+/**
+ * Newest saved first without posts I can no longer read
+ * @summary List my saved posts
+ */
+export const postListBookmarks = async (
+  params?: PostListBookmarksParams,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postListBookmarksResponse> => {
+  return customFetch<postListBookmarksResponse>(getPostListBookmarksUrl(params), {
+    ...options,
+    method: 'GET',
   });
 };
 
@@ -1059,6 +1184,102 @@ export const postAnswer = async (
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(answerBody),
+  });
+};
+
+export type postUnbookmarkResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type postUnbookmarkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postUnbookmarkResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postUnbookmarkResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postUnbookmarkResponseSuccess = postUnbookmarkResponse204 & {
+  headers: Headers;
+};
+export type postUnbookmarkResponseError = (
+  postUnbookmarkResponse401 | postUnbookmarkResponse404 | postUnbookmarkResponse422
+) & {
+  headers: Headers;
+};
+
+export type postUnbookmarkResponse = postUnbookmarkResponseSuccess | postUnbookmarkResponseError;
+
+export const getPostUnbookmarkUrl = (id: string) => {
+  return `/api/posts/${id}/bookmark`;
+};
+
+/**
+ * @summary Take a post out of my saved posts
+ */
+export const postUnbookmark = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postUnbookmarkResponse> => {
+  return customFetch<postUnbookmarkResponse>(getPostUnbookmarkUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export type postBookmarkResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type postBookmarkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type postBookmarkResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type postBookmarkResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type postBookmarkResponseSuccess = postBookmarkResponse204 & {
+  headers: Headers;
+};
+export type postBookmarkResponseError = (
+  postBookmarkResponse401 | postBookmarkResponse404 | postBookmarkResponse422
+) & {
+  headers: Headers;
+};
+
+export type postBookmarkResponse = postBookmarkResponseSuccess | postBookmarkResponseError;
+
+export const getPostBookmarkUrl = (id: string) => {
+  return `/api/posts/${id}/bookmark`;
+};
+
+/**
+ * @summary Save a post for later
+ */
+export const postBookmark = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<postBookmarkResponse> => {
+  return customFetch<postBookmarkResponse>(getPostBookmarkUrl(id), {
+    ...options,
+    method: 'POST',
   });
 };
 

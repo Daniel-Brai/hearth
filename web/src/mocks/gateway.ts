@@ -27,6 +27,7 @@ import { nowTime } from '@/domain/format';
 import { stripPrefix } from '@/domain/links';
 import { pollOpen, pollProblem, withVote } from '@/domain/polls';
 import { MOST_SCHEDULED, sendAtProblem } from '@/domain/schedule';
+import { searchWords } from '@/domain/search';
 import {
   canDo,
   canRequestCommunity,
@@ -64,6 +65,7 @@ import type {
   ReportReason,
   RoomAccess,
   RoomSettings,
+  SearchHit,
   UserSettings,
   Visibility,
   VoiceMode,
@@ -77,6 +79,7 @@ import { profileActivity } from './activity';
 import { mockLinkPreview } from './link-previews';
 import { grantPermissions } from './permissions';
 import { showVisibleRooms, type Offstage } from './private-rooms';
+import { mockHit } from './search';
 import { rememberTourDone } from './tour-memory';
 
 const SUBJECT_TYPE = { Post: 'post', Reply: 'reply', Message: 'message' } as const;
@@ -128,6 +131,13 @@ export class MockGateway implements HearthGateway {
         const id = personIdByHandle(state, handle);
         if (id) state.activity[id] = profileActivity(state, id);
       });
+      return ok(undefined);
+    },
+    saved: async () => {
+      this.store.set((state) => {
+        state.saved.ids = state.posts.filter((p) => p.bookmarked).map((p) => p.id);
+      });
+
       return ok(undefined);
     },
     moderation: loaded,
@@ -887,6 +897,34 @@ export class MockGateway implements HearthGateway {
 
       return ok(undefined);
     },
+    toggleSave: async (id: string): Promise<Result> => {
+      this.store.set((state) => {
+        const p = state.posts.find((x) => x.id === id);
+
+        if (!p) return;
+
+        p.bookmarked = !p.bookmarked;
+        state.saved.ids = state.saved.ids.filter((i) => i !== id);
+        if (p.bookmarked) state.saved.ids.unshift(id);
+      });
+
+      return ok(undefined);
+    },
+    search: async (
+      query: string,
+      cid: string | null,
+    ): Promise<Result<{ hits: SearchHit[]; after: string | null }>> => {
+      const state = this.state();
+      const words = searchWords(query);
+
+      const hits = state.posts
+        .filter((p) => (cid ? p.c === cid : state.communities[p.c]?.joined))
+        .filter((p) => !p.removed && !p.pending)
+        .map((p) => mockHit(p, words))
+        .filter((hit) => hit !== null);
+
+      return ok({ hits: words.length ? hits : [], after: null });
+    },
     loadReplies: (_postId: string, _parent: string): Promise<Result> =>
       Promise.resolve(ok(undefined)),
     toggleBoost: async (id: string, emoji: string): Promise<Result> => {
@@ -932,6 +970,7 @@ export class MockGateway implements HearthGateway {
           seen: true,
           pinned: false,
           watching: true,
+          bookmarked: false,
           tags: extractTags(d, spec.title + ' ' + spec.body, spec.c),
           body: spec.body.trim() ? [spec.body.trim()] : [],
           files: spec.files ?? [],
@@ -1503,6 +1542,7 @@ export class MockGateway implements HearthGateway {
           seen: true,
           pinned: false,
           watching: true,
+          bookmarked: false,
           tags: extractTags(d, msgs.map((m) => m.text).join(' '), cid),
           body: [
             first.text,

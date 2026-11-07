@@ -6,9 +6,11 @@ defmodule Hearth.Forum.Post do
 
   alias Ecto.Changeset
   alias Hearth.Common.T
+  alias Hearth.Forum.Bookmark
   alias Hearth.Forum.Kind
   alias Hearth.Forum.PostRead
   alias Hearth.Forum.PostTag
+  alias Hearth.Forum.Reply
   alias Hearth.Forum.Tag
 
   @fields ~w[title body kind_id attachment_ids]a
@@ -16,9 +18,14 @@ defmodule Hearth.Forum.Post do
 
   @flop_options [
     filterable: ~w[community_id kind_id status]a,
-    sortable: ~w[last_activity_at inserted_at id]a,
+    sortable: ~w[last_activity_at inserted_at bookmarked_at id]a,
     default_order: %{order_by: [:last_activity_at, :id], order_directions: [:desc, :desc]},
-    default_limit: 20
+    default_limit: 20,
+    adapter_opts: [
+      join_fields: [
+        bookmarked_at: [binding: :bookmark, field: :inserted_at, ecto_type: :utc_datetime_usec]
+      ]
+    ]
   ]
 
   schema "posts" do
@@ -41,6 +48,8 @@ defmodule Hearth.Forum.Post do
     field :source_room_id, Ecto.UUID
     field :source_message_count, :integer
     field :promoted_by_id, Ecto.UUID
+    # Postgres fills it from the title and body
+    field :search, :string, load_in_query: false, writable: :never
 
     belongs_to :kind, Kind
     many_to_many :tags, Tag, join_through: PostTag, on_replace: :delete
@@ -68,6 +77,7 @@ defmodule Hearth.Forum.Post do
           source_room_id: nil | T.id(),
           source_message_count: nil | pos_integer(),
           promoted_by_id: nil | T.id(),
+          search: nil | String.t(),
           kind_id: T.id(),
           attachment_ids: nil | [T.id()]
         }
@@ -129,6 +139,140 @@ defmodule Hearth.Forum.Post do
       )
 
     Repo.all(query)
+  end
+
+  @type match :: %{
+          post: t(),
+          tier: 0..2,
+          reply_id: nil | T.id(),
+          reply_body: nil | String.t()
+        }
+
+  # 2 when the title matches, 1 when only the body does and 0 when only a reply does
+  defmacrop tier(search, terms) do
+    quote do
+      fragment(
+        "CASE WHEN ts_filter(?, '{a}') @@ to_tsquery('simple', ?) THEN 2 WHEN ? @@ to_tsquery('simple', ?) THEN 1 ELSE 0 END",
+        unquote(search),
+        unquote(terms),
+        unquote(search),
+        unquote(terms)
+      )
+    end
+  end
+
+  # Every word must match as the start of a word in the post or one of its replies
+  # Pages go by tier then latest activity and the cursor holds the last row's place in that order
+  @spec search([String.t()], [T.id()], keyword()) ::
+          {:ok, [match()], nil | String.t()} | {:error, :invalid_cursor}
+  def search([], _community_ids, _opts), do: {:ok, [], nil}
+
+  def search(words, community_ids, opts) do
+    limit = opts[:limit] || 20
+    terms = Enum.map_join(words, " & ", &(&1 <> ":*"))
+
+    with {:ok, position} <- decode_cursor(opts[:after]) do
+      matches =
+        terms
+        |> search_query(community_ids)
+        |> after_position(position, terms)
+        |> limit(^(limit + 1))
+        |> Repo.all()
+
+      {page, rest} = Enum.split(matches, limit)
+
+      {:ok, page, next_cursor(page, rest)}
+    end
+  end
+
+  defp search_query(terms, community_ids) do
+    in_posts =
+      from p in __MODULE__,
+        where: fragment("? @@ to_tsquery('simple', ?)", p.search, ^terms),
+        select: p.id
+
+    in_replies = terms |> matching_replies() |> select([r], r.post_id)
+
+    best_reply =
+      terms
+      |> matching_replies()
+      |> distinct([r], r.post_id)
+      |> order_by([r], asc: r.post_id, desc: r.helpful_count, asc: r.id)
+
+    from p in __MODULE__,
+      left_join: r in subquery(best_reply),
+      on: r.post_id == p.id,
+      where: p.id in subquery(union(in_posts, ^in_replies)),
+      where: p.community_id in ^community_ids,
+      where: p.status == :published and is_nil(p.deleted_at),
+      order_by: [desc: tier(p.search, ^terms), desc: p.last_activity_at, desc: p.id],
+      select: %{post: p, tier: tier(p.search, ^terms), reply_id: r.id, reply_body: r.body}
+  end
+
+  defp after_position(query, nil, _terms), do: query
+
+  defp after_position(query, {tier, at, id}, terms) do
+    where(
+      query,
+      [p],
+      fragment(
+        "(?, ?, ?) < (?, ?, ?)",
+        tier(p.search, ^terms),
+        p.last_activity_at,
+        p.id,
+        ^tier,
+        ^at,
+        type(^id, Ecto.UUID)
+      )
+    )
+  end
+
+  defp next_cursor(_page, []), do: nil
+
+  defp next_cursor(page, _rest) do
+    %{tier: tier, post: post} = List.last(page)
+    at = DateTime.to_unix(post.last_activity_at, :microsecond)
+
+    Base.url_encode64("#{tier}|#{at}|#{post.id}", padding: false)
+  end
+
+  defp decode_cursor(nil), do: {:ok, nil}
+
+  defp decode_cursor(cursor) do
+    with {:ok, raw} <- Base.url_decode64(cursor, padding: false),
+         [tier, at, id] <- String.split(raw, "|"),
+         {tier, ""} when tier in 0..2 <- Integer.parse(tier),
+         {at, ""} <- Integer.parse(at),
+         {:ok, at} <- DateTime.from_unix(at, :microsecond),
+         {:ok, id} <- Ecto.UUID.cast(id) do
+      {:ok, {tier, at, id}}
+    else
+      _invalid -> {:error, :invalid_cursor}
+    end
+  end
+
+  # The expression matches the replies_search_index migration so Postgres can use it
+  defp matching_replies(terms) do
+    from r in Reply,
+      where: fragment("to_tsvector('simple', ?) @@ to_tsquery('simple', ?)", r.body, ^terms),
+      where: r.status == :published and is_nil(r.deleted_at)
+  end
+
+  defp query_from(opts, base) do
+    {user_id, filters} = Keyword.pop(opts, :bookmarked_by)
+
+    filters
+    |> super(base)
+    |> bookmarked_by(user_id)
+  end
+
+  defp bookmarked_by(query, nil), do: query
+
+  defp bookmarked_by(query, user_id) do
+    join(query, :inner, [p], b in Bookmark,
+      as: :bookmark,
+      on: b.post_id == p.id and b.user_id == ^user_id
+    )
   end
 
   @spec pin(t(), boolean()) :: {:ok, t()} | {:error, Changeset.t()}

@@ -22,6 +22,22 @@ defmodule Hearth.Common.Text do
   def valid_username?(_value), do: false
 
   @doc """
+  The distinct lowercased words of a search, at most eight, with punctuation dropped
+
+      iex> Hearth.Common.Text.search_words("LiveView  form-recovery liveview?")
+      ["liveview", "form", "recovery"]
+  """
+  # Only letters and digits survive so the tsquery built from them stays free of its syntax
+  @spec search_words(String.t()) :: [String.t()]
+  def search_words(text) when is_binary(text) do
+    text
+    |> String.downcase()
+    |> String.split(~r/[^\p{L}\p{N}]+/u, trim: true)
+    |> Enum.uniq()
+    |> Enum.take(8)
+  end
+
+  @doc """
   Text cut to max_length characters at a nearby word boundary ending in …
 
       iex> Hearth.Common.Text.truncate("Keep the state in the DOM, not on the controller", 24)

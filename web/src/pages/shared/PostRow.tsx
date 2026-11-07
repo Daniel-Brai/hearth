@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { Button, ButtonLink, cn, Icon, Img, Link, Pill } from '@/design-system';
@@ -20,11 +22,14 @@ import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
 import { PersonAvatar } from '@/shell/people';
+import { useViewer } from '@/shell/use-guest';
 
 export type PostRowProps = {
   readonly post: Post;
   readonly selected?: boolean | undefined;
   readonly showCommunity?: boolean | undefined;
+  /** Shown in place of the start of the body like the part a search found */
+  readonly excerpt?: ReactNode;
 };
 
 type PostRowView = {
@@ -49,7 +54,7 @@ function usePostRowView(post: Post): PostRowView {
   }));
 }
 
-export function PostRow({ post, selected, showCommunity }: PostRowProps) {
+export function PostRow({ post, selected, showCommunity, excerpt }: PostRowProps) {
   const gateway = useGateway();
   const view = usePostRowView(post);
 
@@ -78,14 +83,15 @@ export function PostRow({ post, selected, showCommunity }: PostRowProps) {
 
       <h3 className="post-row__title">{post.title}</h3>
 
-      {post.body[0] ? (
-        <InlineMarkdown
-          as="p"
-          className="post-row__excerpt"
-          text={post.body[0]}
-          community={post.c}
-        />
-      ) : null}
+      {excerpt ??
+        (post.body[0] ? (
+          <InlineMarkdown
+            as="p"
+            className="post-row__excerpt"
+            text={post.body[0]}
+            community={post.c}
+          />
+        ) : null)}
 
       {post.tags.length ? (
         <div className="tags">
@@ -214,6 +220,7 @@ function PostRowActions({
   const gateway = useGateway();
   const flash = useUi((s) => s.flash);
   const settle = useFlashFailure();
+  const member = useViewer() === 'member';
 
   const pin = async () => {
     const pinned = post.pinned;
@@ -248,6 +255,19 @@ function PostRowActions({
         text={plainText(post.body).slice(0, 160) || null}
         label="Share post"
       />
+
+      {member ? (
+        <Button
+          size="tiny"
+          className="post-row__save"
+          on={post.bookmarked}
+          aria-pressed={post.bookmarked}
+          onClick={() => settle(gateway.posts.toggleSave(post.id))}
+        >
+          <Icon name="bookmark" />
+          <span>{post.bookmarked ? 'Saved' : 'Save'}</span>
+        </Button>
+      ) : null}
 
       {canPin ? (
         <Button size="tiny" onClick={pin}>

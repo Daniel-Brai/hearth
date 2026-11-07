@@ -45,6 +45,8 @@ export type AppState = {
   archivedRooms: Record<string, ArchivedRoom[]>;
   posts: Post[];
   activity: Record<string, ProfileActivity>;
+  // Saved posts newest saved first, loaded with the Saved screen
+  saved: { ids: string[]; after: string | null };
   transcripts: Record<string, Transcript>;
   recordings: Record<string, Recording>;
   chats: Record<string, Message[]>;

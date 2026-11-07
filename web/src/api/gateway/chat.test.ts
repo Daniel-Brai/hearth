@@ -827,6 +827,29 @@ describe('chat.vote', () => {
     expect(store.get().chats['gardeners/general']?.[0]?.poll?.voters).toBe(5);
   });
 
+  it('drops a poll its starter deleted', async () => {
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([pollMessage]) };
+
+    const { store, gateway: g } = gateway();
+    const deleted = { ...pollMessage, body: null, deleted: true, child_count: 2, poll: null };
+
+    await g.load.chat('gardeners/general');
+
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: page([deleted]) };
+    pushes.get('room:r1 MessageRemoved')?.({ message_id: 'm1' });
+
+    await vi.waitFor(() =>
+      expect(store.get().chats['gardeners/general']?.[0]?.poll).toBeUndefined(),
+    );
+  });
+
   it('puts the totals back when the poll has closed', async () => {
     routes['POST /api/rooms/r1/polls'] = { status: 201, body: pollMessage };
 

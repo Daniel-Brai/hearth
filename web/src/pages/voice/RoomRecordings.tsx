@@ -49,7 +49,7 @@ export function RoomRecordings({ cid, rid }: RoomRecordingsProps) {
           disabled={loading}
           onClick={() => void showMore()}
         >
-          {loading ? 'Loading' : 'Show older recordings'}
+          Show older recordings
         </Button>
       ) : null}
     </div>

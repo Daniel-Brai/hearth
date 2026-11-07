@@ -1,0 +1,11 @@
+@layer components {
+  .search-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .search-bar__box { flex: 1 1 14rem; position: relative; display: grid; min-inline-size: 0; }
+  .search-bar .input { padding-inline-start: 2.4rem; inline-size: 100%; }
+  .search-bar__icon { position: absolute; inset-inline-start: 0.85rem; inset-block-start: 50%; translate: 0 -50%; color: var(--color-ink-dark); display: inline-grid; pointer-events: none; }
+  .search-bar__filter { flex: none; }
+  .search-results { transition: opacity 150ms ease; }
+  .search-results.is-stale { opacity: 0.55; }
+  .search-hit mark { background: color-mix(in oklab, var(--color-link) 18%, transparent); color: inherit; border-radius: 0.2em; padding-inline: 0.1em; }
+  .search-hit__where { font-weight: 700; color: var(--color-ink-dark); }
+}

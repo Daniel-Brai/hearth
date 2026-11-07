@@ -32,6 +32,18 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     }) as unknown as MediaQueryList;
 }
 
+// jsdom lays nothing out so nothing ever scrolls into view. Tests that need it stub their own
+if (typeof window !== 'undefined' && !window.IntersectionObserver) {
+  window.IntersectionObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  } as unknown as typeof IntersectionObserver;
+}
+
 // jsdom lays nothing out, so scrolling an element does nothing
 if (typeof Element !== 'undefined') {
   Element.prototype.scrollTo ??= () => undefined;

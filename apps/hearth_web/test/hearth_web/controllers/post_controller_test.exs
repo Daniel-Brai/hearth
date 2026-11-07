@@ -433,6 +433,115 @@ defmodule HearthWeb.PostControllerTest do
     end
   end
 
+  describe "search" do
+    test "fails without words", %{conn: conn} do
+      assert %{"errors" => errors} = conn |> get(~p"/api/posts") |> valid_response(422)
+      assert ["The q field is required."] = errors["q"]
+    end
+
+    test "fails with a bad cursor", %{conn: conn} do
+      assert %{"code" => "invalid_cursor"} =
+               conn |> get(~p"/api/posts?q=hydrating&after=nope") |> valid_response(400)
+    end
+
+    test "leaves out private communities", %{conn: conn, owner: owner} do
+      private = TestUtils.create_random_forum!(owner, visibility: :private)
+      _post = TestUtils.create_random_post!(owner, private, title: "Hydrating forms")
+
+      assert %{"data" => []} = conn |> get(~p"/api/posts?q=hydrating") |> valid_response(200)
+    end
+
+    test "finds a post", %{conn: conn, member: member, community: community} do
+      post = TestUtils.create_random_post!(member, community, title: "Hydrating forms")
+
+      assert %{"data" => [%{"post" => %{"id" => id}, "reply_id" => nil}]} =
+               conn |> auth_conn(member) |> get(~p"/api/posts?q=hydr") |> valid_response(200)
+
+      assert id == post.id
+    end
+
+    test "pages with a cursor", %{conn: conn, member: member, community: community} do
+      _older = TestUtils.create_random_post!(member, community, title: "Hydrating forms")
+      _newer = TestUtils.create_random_post!(member, community, title: "Hydrating tables")
+
+      assert %{"meta" => %{"has_next" => true, "after" => cursor}} =
+               conn |> get(~p"/api/posts?q=hydrating&limit=1") |> valid_response(200)
+
+      assert %{"meta" => %{"has_next" => false}} =
+               conn
+               |> get(~p"/api/posts?q=hydrating&limit=1&after=#{cursor}")
+               |> valid_response(200)
+    end
+
+    test "finds a reply", %{conn: conn, member: member, post: post} do
+      {:ok, reply} = Forum.reply(member, post, %{body: "Try a zanzibar adapter"})
+
+      assert %{"data" => [%{"reply_id" => reply_id}]} =
+               conn |> get(~p"/api/posts?q=zanzibar") |> valid_response(200)
+
+      assert reply_id == reply.id
+    end
+  end
+
+  describe "bookmark" do
+    test "fails signed out", %{conn: conn, post: post} do
+      assert conn |> post(~p"/api/posts/#{post.id}/bookmark") |> valid_response(401)
+    end
+
+    test "returns 404 if private", %{conn: conn, owner: owner, member: member} do
+      private = TestUtils.create_random_forum!(owner, visibility: :private)
+      hidden = TestUtils.create_random_post!(owner, private)
+
+      assert conn
+             |> auth_conn(member)
+             |> post(~p"/api/posts/#{hidden.id}/bookmark")
+             |> valid_response(404)
+    end
+
+    test "saves a post", %{conn: conn, member: member, post: post} do
+      assert conn
+             |> auth_conn(member)
+             |> post(~p"/api/posts/#{post.id}/bookmark")
+             |> response(204)
+
+      assert %{"bookmarked" => true} =
+               conn |> auth_conn(member) |> get(~p"/api/posts/#{post.id}") |> valid_response(200)
+    end
+  end
+
+  describe "unbookmark" do
+    test "fails signed out", %{conn: conn, post: post} do
+      assert conn |> delete(~p"/api/posts/#{post.id}/bookmark") |> valid_response(401)
+    end
+
+    test "takes a post out", %{conn: conn, member: member, post: post} do
+      :ok = Forum.bookmark_post(member, post, true)
+
+      assert conn
+             |> auth_conn(member)
+             |> delete(~p"/api/posts/#{post.id}/bookmark")
+             |> response(204)
+
+      assert %{"bookmarked" => false} =
+               conn |> auth_conn(member) |> get(~p"/api/posts/#{post.id}") |> valid_response(200)
+    end
+  end
+
+  describe "list_bookmarks" do
+    test "fails signed out", %{conn: conn} do
+      assert conn |> get(~p"/api/posts/bookmarks") |> valid_response(401)
+    end
+
+    test "lists saved posts", %{conn: conn, member: member, post: post} do
+      :ok = Forum.bookmark_post(member, post, true)
+
+      assert %{"data" => [%{"id" => id, "bookmarked" => true}]} =
+               conn |> auth_conn(member) |> get(~p"/api/posts/bookmarks") |> valid_response(200)
+
+      assert id == post.id
+    end
+  end
+
   describe "promote" do
     setup %{community: community, member: member} do
       room = TestUtils.get_room!(community, type: :text)

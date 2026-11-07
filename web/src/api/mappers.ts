@@ -215,6 +215,7 @@ export function toPost(post: ApiPost, c: string, kind: string, replies: Reply[] 
     seen: post.seen,
     pinned: post.pinned,
     watching: post.watching,
+    bookmarked: post.bookmarked,
     tags: [],
     body: paragraphs(post.body),
     helpful: post.helpful_count,

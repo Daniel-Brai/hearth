@@ -29,6 +29,8 @@ const SHAPES: readonly [string, SkeletonKind, Width][] = [
   [patterns.profile, 'profile', 'wide'],
   [patterns.moderation, 'queue', 'wide'],
   [routes.people, 'list', 'narrow'],
+  [routes.saved, 'feed', 'narrow'],
+  [routes.search, 'feed', 'narrow'],
   [routes.settings, 'settings', 'narrow'],
   [routes.settingsProfile, 'form', 'narrow'],
   [routes.settingsInstance, 'settings', 'narrow'],

@@ -18,6 +18,7 @@ import type {
   ReportReason,
   RoomAccess,
   RoomSettings,
+  SearchHit,
   UserSettings,
   Visibility,
   VoiceMode,
@@ -157,6 +158,7 @@ export interface HearthGateway {
     people(): Promise<Result>;
     profile(handle: string): Promise<Result>;
     activity(handle: string, tab: 'posts' | 'replies', more?: boolean): Promise<Result>;
+    saved(more?: boolean): Promise<Result>;
     mentionable(cid: string, query: string): Promise<Result>;
     moderation(cid: string): Promise<Result>;
     moderationLog(cid: string): Promise<Result>;
@@ -255,6 +257,12 @@ export interface HearthGateway {
     togglePin(id: string): Promise<Result>;
     toggleLock(id: string): Promise<Result>;
     toggleWatch(id: string): Promise<Result>;
+    toggleSave(id: string): Promise<Result>;
+    search(
+      query: string,
+      cid: string | null,
+      after?: string | null,
+    ): Promise<Result<{ hits: SearchHit[]; after: string | null }>>;
     toggleBoost(id: string, emoji: string): Promise<Result>;
     loadReplies(postId: string, parent: string): Promise<Result>;
     create(spec: {

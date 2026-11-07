@@ -60,6 +60,7 @@ defmodule HearthWeb.PostController do
         reported: Reports.load(posts, auth, :post),
         in_review: Reports.in_review(posts, :post),
         watching: Forum.watched(auth, posts),
+        bookmarked: Forum.bookmarked(auth, posts),
         reactions: Forum.list_reactions(auth, posts),
         seen: Forum.seen(auth, posts)
       )
@@ -88,7 +89,55 @@ defmodule HearthWeb.PostController do
         reported: Reports.load(posts, auth, :post),
         in_review: Reports.in_review(posts, :post),
         watching: Forum.watched(auth, posts),
+        bookmarked: Forum.bookmarked(auth, posts),
         reactions: Forum.list_reactions(auth, posts),
+        seen: Forum.seen(auth, posts)
+      )
+    end
+  end
+
+  operation :search,
+    summary: "Search posts",
+    description:
+      "Only in communities the person asking may read. Title matches come first then body then replies",
+    parameters: [
+      q: [in: :query, required: true, schema: %{type: :string, minLength: 1, maxLength: 200}],
+      community_id: [
+        in: :query,
+        schema: %{type: :string, format: :uuid},
+        description: "Only this community"
+      ],
+      limit: [in: :query, schema: %{type: :integer, minimum: 1, maximum: 50, default: 20}],
+      after: [in: :query, schema: %{type: :string}]
+    ],
+    responses: [
+      ok: {Schema.page(Schema.PostSearchHit), description: "OK"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      too_many_requests: %Reference{"$ref": "#/components/responses/too_many_requests"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{
+    "q" => ~V[required|string|max:200],
+    "community_id" => ~V[uuid],
+    "limit" => ~V[between:1,50],
+    "after" => ~V[string]
+  }
+
+  rate_limit :search, limit: 120, scale: :timer.minutes(1)
+
+  def search(%Conn{assigns: %{auth: auth}} = conn, %{"q" => text} = params) do
+    opts = [community_id: params["community_id"]] ++ Paging.opts(conn)
+
+    with %{data: hits} = page <- Forum.search_posts(auth, text, opts) do
+      posts = Enum.map(hits, & &1.post)
+
+      render(conn, :search,
+        page: page,
+        authors: Authors.load(posts),
+        attachments: Attachments.load(posts, :post),
+        watching: Forum.watched(auth, posts),
+        bookmarked: Forum.bookmarked(auth, posts),
         seen: Forum.seen(auth, posts)
       )
     end
@@ -136,7 +185,8 @@ defmodule HearthWeb.PostController do
         attachments: Attachments.load(post, :post),
         reported: Reports.load(post, auth, :post),
         in_review: Reports.in_review(post, :post),
-        watching: Forum.watched(auth, post)
+        watching: Forum.watched(auth, post),
+        bookmarked: Forum.bookmarked(auth, post)
       )
     end
   end
@@ -180,7 +230,8 @@ defmodule HearthWeb.PostController do
         post: post,
         authors: Authors.load(post),
         attachments: Attachments.load(post, :post),
-        watching: Forum.watched(auth, post)
+        watching: Forum.watched(auth, post),
+        bookmarked: Forum.bookmarked(auth, post)
       )
     end
   end
@@ -205,6 +256,7 @@ defmodule HearthWeb.PostController do
         reported: Reports.load(post, auth, :post),
         in_review: Reports.in_review(post, :post),
         watching: Forum.watched(auth, post),
+        bookmarked: Forum.bookmarked(auth, post),
         live: Voice.live_on_posts([post.id]),
         reactions: Forum.list_reactions(auth, [post]),
         seen: Forum.seen(auth, [post]),
@@ -252,7 +304,8 @@ defmodule HearthWeb.PostController do
         attachments: Attachments.load(post, :post),
         reported: Reports.load(post, auth, :post),
         in_review: Reports.in_review(post, :post),
-        watching: Forum.watched(auth, post)
+        watching: Forum.watched(auth, post),
+        bookmarked: Forum.bookmarked(auth, post)
       )
     end
   end
@@ -311,7 +364,8 @@ defmodule HearthWeb.PostController do
         attachments: Attachments.load(post, :post),
         reported: Reports.load(post, auth, :post),
         in_review: Reports.in_review(post, :post),
-        watching: Forum.watched(auth, post)
+        watching: Forum.watched(auth, post),
+        bookmarked: Forum.bookmarked(auth, post)
       )
     end
   end
@@ -347,7 +401,8 @@ defmodule HearthWeb.PostController do
         attachments: Attachments.load(post, :post),
         reported: Reports.load(post, auth, :post),
         in_review: Reports.in_review(post, :post),
-        watching: Forum.watched(auth, post)
+        watching: Forum.watched(auth, post),
+        bookmarked: Forum.bookmarked(auth, post)
       )
     end
   end
@@ -385,7 +440,8 @@ defmodule HearthWeb.PostController do
         attachments: Attachments.load(post, :post),
         reported: Reports.load(post, auth, :post),
         in_review: Reports.in_review(post, :post),
-        watching: Forum.watched(auth, post)
+        watching: Forum.watched(auth, post),
+        bookmarked: Forum.bookmarked(auth, post)
       )
     end
   end
@@ -525,6 +581,82 @@ defmodule HearthWeb.PostController do
     with {:ok, post} <- find_post(id, auth),
          :ok <- Forum.watch_post(auth, post, watching) do
       render(conn, :watch, on: watching)
+    end
+  end
+
+  operation :list_bookmarks,
+    summary: "List my saved posts",
+    description: "Newest saved first without posts I can no longer read",
+    security: [%{"bearer" => []}],
+    parameters: Schema.paging(),
+    responses: [
+      ok: {Schema.page(Schema.Post), description: "OK"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"limit" => ~V[between:1,50], "after" => ~V[string], "before" => ~V[string]}
+
+  def list_bookmarks(%Conn{assigns: %{auth: %{}}} = conn, _params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with %{data: posts} = page <- Forum.list_bookmarks(auth, Paging.opts(conn)) do
+      render(conn, :list_bookmarks,
+        page: page,
+        authors: Authors.load(posts),
+        attachments: Attachments.load(posts, :post),
+        reported: Reports.load(posts, auth, :post),
+        in_review: Reports.in_review(posts, :post),
+        watching: Forum.watched(auth, posts),
+        bookmarked: Forum.bookmarked(auth, posts),
+        reactions: Forum.list_reactions(auth, posts),
+        seen: Forum.seen(auth, posts)
+      )
+    end
+  end
+
+  operation :bookmark,
+    summary: "Save a post for later",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def bookmark(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, post} <- find_post(id, auth),
+         :ok <- Forum.bookmark_post(auth, post, true) do
+      send_resp(conn, :no_content, "")
+    end
+  end
+
+  operation :unbookmark,
+    summary: "Take a post out of my saved posts",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def unbookmark(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, post} <- find_post(id, auth),
+         :ok <- Forum.bookmark_post(auth, post, false) do
+      send_resp(conn, :no_content, "")
     end
   end
 
