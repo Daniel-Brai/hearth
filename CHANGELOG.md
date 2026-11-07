@@ -5,6 +5,19 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.6](https://github.com/daniel-brai/hearth/compare/v0.0.5...v0.0.6) (2026-11-07)
+
+
+
+
+### Features:
+
+* add room groups and fold manage links in the sidebar
+
+* add post search and saved posts
+
+* add live polls to chat and voice rooms
+
 ## [v0.0.5](https://github.com/daniel-brai/hearth/compare/v0.0.4...v0.0.5) (2026-11-04)
 
 
