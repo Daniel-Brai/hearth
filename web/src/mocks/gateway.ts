@@ -26,6 +26,7 @@ import { KIND_LIB, ROOM_DEFAULTS, SOUNDS, TEMPLATES, TITLE_MAX } from '@/domain/
 import { nowTime } from '@/domain/format';
 import { stripPrefix } from '@/domain/links';
 import { pollOpen, pollProblem, withVote } from '@/domain/polls';
+import { applyLayout, nextPlace, type RoomLayout } from '@/domain/room-layout';
 import { MOST_SCHEDULED, sendAtProblem } from '@/domain/schedule';
 import { searchWords } from '@/domain/search';
 import {
@@ -587,6 +588,7 @@ export class MockGateway implements HearthGateway {
         topic: string;
         access?: RoomAccess;
         roleIds?: string[];
+        group?: string | null;
       },
     ): Promise<Result<{ id: string }>> => {
       await latency(200);
@@ -608,9 +610,11 @@ export class MockGateway implements HearthGateway {
         const x = d.communities[cid]!;
         const access: RoomAccess = spec.access ?? 'everyone';
         const roleIds = access === 'roles' ? [...(spec.roleIds ?? [])] : [];
+        const group = spec.group ?? null;
+        const position = nextPlace(x, group);
 
         if (spec.type === 'text') {
-          x.rooms.push({ id, name: id, unread: 0, access, roleIds });
+          x.rooms.push({ id, name: id, unread: 0, group, position, access, roleIds });
           d.roomSettings[cid + '/' + id] = {
             ...clone(ROOM_DEFAULTS as RoomSettings),
             topic: spec.topic.trim(),
@@ -625,6 +629,8 @@ export class MockGateway implements HearthGateway {
             topic: spec.topic.trim(),
             host: this.me(),
             postId: null,
+            group,
+            position,
             access,
             roleIds,
           });
@@ -655,6 +661,80 @@ export class MockGateway implements HearthGateway {
         room.roleIds = access === 'roles' ? [...roleIds] : [];
         this.log(d, cid, 'changed', 'changed who can see ' + room.name);
       });
+
+      return ok(undefined);
+    },
+    setGroup: async (cid: string, rid: string, group: string | null): Promise<Result> => {
+      await latency(200);
+
+      if (!canDo(this.state(), cid, 'room.update'))
+        return fail('You need the Manage rooms permission');
+
+      this.store.set((d) => {
+        const x = d.communities[cid]!;
+        const room = x.rooms.find((r) => r.id === rid) ?? x.voice.find((v) => v.id === rid);
+
+        if (!room || (room.group ?? null) === group) return;
+
+        room.position = nextPlace(x, group);
+        room.group = group;
+      });
+
+      return ok(undefined);
+    },
+    createGroup: async (cid: string, name: string): Promise<Result<{ id: string }>> => {
+      await latency(200);
+
+      if (!canDo(this.state(), cid, 'room.update'))
+        return fail('You need the Manage rooms permission');
+
+      const id = this.store.nextId('g');
+
+      this.store.set((d) => {
+        d.communities[cid]!.groups.push({ id, name: name.trim() });
+      });
+
+      return ok({ id });
+    },
+    renameGroup: async (cid: string, id: string, name: string): Promise<Result> => {
+      await latency(200);
+
+      if (!canDo(this.state(), cid, 'room.update'))
+        return fail('You need the Manage rooms permission');
+
+      this.store.set((d) => {
+        const group = d.communities[cid]!.groups.find((g) => g.id === id);
+        if (group) group.name = name.trim();
+      });
+
+      return ok(undefined);
+    },
+    deleteGroup: async (cid: string, id: string): Promise<Result> => {
+      await latency(200);
+
+      if (!canDo(this.state(), cid, 'room.update'))
+        return fail('You need the Manage rooms permission');
+
+      this.store.set((d) => {
+        const x = d.communities[cid]!;
+
+        for (const room of [...x.rooms, ...x.voice].filter((r) => r.group === id)) {
+          room.position = nextPlace(x, null);
+          room.group = null;
+        }
+
+        x.groups = x.groups.filter((g) => g.id !== id);
+      });
+
+      return ok(undefined);
+    },
+    arrange: async (cid: string, layout: RoomLayout): Promise<Result> => {
+      await latency(200);
+
+      if (!canDo(this.state(), cid, 'room.update'))
+        return fail('You need the Manage rooms permission');
+
+      this.store.set((d) => applyLayout(d.communities[cid]!, layout));
 
       return ok(undefined);
     },
@@ -2459,6 +2539,7 @@ function buildCommunity(state: AppState, store: Store, spec: CommunitySpec, owne
     place: null,
     listed: true,
     verified: null,
+    groups: [],
     stats: { helpedWeek: 0, answered: 0, replyMins: 0, ageDays: 0 },
     moderation: 'none',
   };

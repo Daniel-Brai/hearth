@@ -29,6 +29,7 @@ import {
 } from '@/domain/selectors';
 import type { ModerationLevel, RoomSettings, RoomSoundMode } from '@/domain/types';
 import { RoomAccessSetting } from '@/features/rooms/RoomAccessSetting';
+import { RoomGroupField } from '@/features/rooms/RoomGroupField';
 import { communityPeople, LEVELS } from '@/pages/chat/chat-select';
 import { LeaveDialog } from '@/pages/compose/LeaveDialog';
 import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
@@ -113,6 +114,7 @@ function RoomSettingsForm({ cid, room }: { readonly cid: string; readonly room: 
       sounds: s.sounds,
       accessText: access.ok ? null : access.reason + '.',
       roomCount: community(state, cid)?.rooms.length ?? 0,
+      group: community(state, cid)?.rooms.find((r) => r.id === room)?.group ?? null,
     };
   });
 
@@ -209,6 +211,16 @@ function RoomSettingsForm({ cid, room }: { readonly cid: string; readonly room: 
                   placeholder="What this room is for"
                 />
               </Field>
+              <RoomGroupField
+                id="room-group"
+                cid={cid}
+                value={view.group}
+                onChange={(group) =>
+                  void gateway.rooms.setGroup(cid, room, group).then((r) => {
+                    if (!r.ok) flash(r.error);
+                  })
+                }
+              />
             </Panel>
 
             <Panel className="grid gap-5" id="room-settings-access">

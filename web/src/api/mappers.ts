@@ -153,6 +153,11 @@ const toPermissions = (permissions: readonly string[]): Permission[] =>
 const accessOf = (room: ApiCommunity['rooms'][number]) =>
   room.role_ids ? { access: room.access, roleIds: room.role_ids } : { access: room.access };
 
+const placeOf = (room: ApiCommunity['rooms'][number]) => ({
+  group: room.group_id,
+  position: room.position,
+});
+
 export function toCommunity(
   community: ApiCommunity,
   detail: CommunityDetail | null = null,
@@ -179,7 +184,7 @@ export function toCommunity(
     welcome: community.welcome_message ?? '',
     rooms: rooms
       .filter((r) => r.type === 'text')
-      .map((r): Room => ({ id: r.slug, name: r.name, unread: 0, ...accessOf(r) })),
+      .map((r): Room => ({ id: r.slug, name: r.name, unread: 0, ...placeOf(r), ...accessOf(r) })),
     voice: rooms
       .filter((r) => r.type === 'voice')
       .map((r): VoiceRoom => ({
@@ -190,8 +195,10 @@ export function toCommunity(
         topic: r.topic,
         host: '',
         postId: null,
+        ...placeOf(r),
         ...accessOf(r),
       })),
+    groups: community.room_groups.map((g) => ({ id: g.id, name: g.name })),
     summary: null,
     kinds: detail ? detail.kinds.map(toKind) : [],
     categories: community.categories,

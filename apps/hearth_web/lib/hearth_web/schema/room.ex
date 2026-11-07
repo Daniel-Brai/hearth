@@ -9,7 +9,7 @@ defmodule HearthWeb.Schema.Room do
     title: "Room",
     type: :object,
     required:
-      ~w[id community_id type slug name topic position moderation access settings archived_at]a,
+      ~w[id community_id type slug name topic group_id position moderation access settings archived_at]a,
     properties: %{
       id: uuid(),
       community_id: uuid(),
@@ -17,7 +17,8 @@ defmodule HearthWeb.Schema.Room do
       slug: string(),
       name: string(),
       topic: nullable(string()),
-      position: integer(),
+      group_id: nullable(uuid()),
+      position: integer(description: "Order within its group, or among the rooms in no group"),
       moderation: nullable(Schema.enum_of(Communities.Room, :moderation)),
       access: Schema.enum_of(Communities.Room, :access),
       settings: RoomSettings,

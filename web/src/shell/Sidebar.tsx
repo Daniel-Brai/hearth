@@ -34,14 +34,17 @@ import {
   upcomingEvents,
   voiceOn,
 } from '@/domain/selectors';
-import { PrivateLock } from '@/features/rooms/PrivateLock';
+import type { VoiceRoom } from '@/domain/types';
 import { brandFor } from '@/runtime/brand';
+import { toggleFolded, useFolded } from '@/runtime/folded-groups';
 import { keyOf } from '@/runtime/keys';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 
 import { AccountMenu } from './AccountMenu';
+import { FoldHeader } from './FoldHeader';
 import { PersonAvatar } from './people';
+import { SidebarRooms } from './SidebarRooms';
 import { SidebarSkeleton } from './SidebarSkeleton';
 import { useRouteContext } from './use-route-context';
 
@@ -317,9 +320,9 @@ function DirectMessages({
   );
 }
 
-function CommunitySection({ cid, open }: { readonly cid: string; readonly open: boolean }) {
-  const openDialog = useUi((s) => s.openDialog);
+const NO_VOICE: VoiceRoom[] = [];
 
+function CommunitySection({ cid, open }: { readonly cid: string; readonly open: boolean }) {
   const view = useAppState((state) => {
     const c = state.communities[cid]!;
     return {
@@ -331,7 +334,8 @@ function CommunitySection({ cid, open }: { readonly cid: string; readonly open: 
       live: voiceOn(state) && c.voice.some((v) => v.live),
       eventLive: upcomingEvents(state, cid).some((e) => evState(e) === 'live'),
       rooms: c.rooms,
-      voice: voiceOn(state) ? c.voice : [],
+      voice: voiceOn(state) ? c.voice : NO_VOICE,
+      groups: c.groups,
       canRooms: canDo(state, cid, 'room.update'),
       canInvite: canDo(state, cid, 'invite.create'),
       // Bans alone still reach the screen, without a count
@@ -374,87 +378,125 @@ function CommunitySection({ cid, open }: { readonly cid: string; readonly open: 
           ) : null}
         </NavLink>
 
-        {view.rooms.map((r) => (
-          <NavLink
-            key={r.id}
-            to={routes.chat(cid, r.id)}
-            className={r.unread ? 'side-link unread' : 'side-link'}
-          >
-            <span className="side-link__icon">
-              <Icon name="hash" />
-            </span>
-            <span className="side-link__name">{r.name}</span>
-            <PrivateLock room={r} />
-            {r.unread ? <Badge count={r.unread} /> : null}
-          </NavLink>
-        ))}
+        <SidebarRooms
+          cid={cid}
+          rooms={view.rooms}
+          voice={view.voice}
+          groups={view.groups}
+          canRooms={view.canRooms}
+        />
 
-        {view.voice.map((v) => (
-          <NavLink key={v.id} to={routes.voice(cid, v.id)} className="side-link">
-            <span className="side-link__icon">
-              <Icon name="volume" />
-            </span>
-            <span className="side-link__name">{v.name}</span>
-            <PrivateLock room={v} />
-            {v.live ? <Badge red count={v.listeners} /> : null}
-          </NavLink>
-        ))}
-
-        {view.canRooms ? (
-          <button
-            type="button"
-            className="side-link subtle side-link--new"
-            onClick={() => openDialog('newRoom', { community: cid })}
-          >
-            <span className="side-link__icon">
-              <Icon name="plus" />
-            </span>
-            <span className="side-link__name">Add a room</span>
-          </button>
-        ) : null}
-
-        {view.canRooms ? (
-          <button
-            type="button"
-            id={`archived-rooms-${cid}`}
-            className="side-link subtle side-link--new"
-            onClick={() => openDialog('archivedRooms', { community: cid })}
-          >
-            <span className="side-link__icon">
-              <Icon name="archive" />
-            </span>
-            <span className="side-link__name">Archived rooms</span>
-          </button>
-        ) : null}
-
-        {view.canInvite ? (
-          <NavLink to={routes.invite(cid)} className="side-link subtle">
-            <span className="side-link__icon">
-              <Icon name="invite" />
-            </span>
-            <span className="side-link__name">Invite people</span>
-          </NavLink>
-        ) : null}
-
-        {view.mod ? (
-          <NavLink to={routes.moderation(cid)} className="side-link subtle">
-            <span className="side-link__icon">
-              <Icon name="shield" />
-            </span>
-            <span className="side-link__name">Moderation</span>
-            {view.queue ? <Badge red>{cap(view.queue)}</Badge> : null}
-          </NavLink>
-        ) : null}
-
-        {view.canRoles ? (
-          <NavLink to={routes.roles(cid)} className="side-link subtle">
-            <span className="side-link__icon">
-              <Icon name="roles" />
-            </span>
-            <span className="side-link__name">Roles</span>
-          </NavLink>
-        ) : null}
+        <ManageLinks
+          cid={cid}
+          canRooms={view.canRooms}
+          canInvite={view.canInvite}
+          mod={view.mod}
+          queue={view.queue}
+          canRoles={view.canRoles}
+        />
       </div>
     </details>
+  );
+}
+
+type ManageProps = {
+  readonly cid: string;
+  readonly canRooms: boolean;
+  readonly canInvite: boolean;
+  readonly mod: boolean;
+  readonly queue: number;
+  readonly canRoles: boolean;
+};
+
+function ManageLinks({ cid, canRooms, canInvite, mod, queue, canRoles }: ManageProps) {
+  const folded = useFolded(`manage:${cid}`, true);
+
+  const invite = canInvite ? (
+    <NavLink to={routes.invite(cid)} className="side-link subtle">
+      <span className="side-link__icon">
+        <Icon name="invite" />
+      </span>
+      <span className="side-link__name">Invite people</span>
+    </NavLink>
+  ) : null;
+
+  if (!canRooms && !mod && !canRoles) return invite;
+
+  return (
+    <div className="side-group" id={`manage-${cid}`}>
+      <FoldHeader
+        label="Manage"
+        folded={folded}
+        onToggle={() => toggleFolded(`manage:${cid}`, true)}
+      >
+        {folded && queue ? <Badge red>{cap(queue)}</Badge> : null}
+      </FoldHeader>
+
+      {folded ? null : (
+        <>
+          {invite}
+          {canRooms ? <RoomTools cid={cid} /> : null}
+          {mod ? <ModerationLink cid={cid} queue={queue} /> : null}
+          {canRoles ? (
+            <NavLink to={routes.roles(cid)} className="side-link subtle">
+              <span className="side-link__icon">
+                <Icon name="roles" />
+              </span>
+              <span className="side-link__name">Roles</span>
+            </NavLink>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+function RoomTools({ cid }: { readonly cid: string }) {
+  const openDialog = useUi((s) => s.openDialog);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="side-link subtle side-link--new"
+        onClick={() => openDialog('newRoom', { community: cid })}
+      >
+        <span className="side-link__icon">
+          <Icon name="plus" />
+        </span>
+        <span className="side-link__name">Add a room</span>
+      </button>
+
+      <NavLink to={routes.arrangeRooms(cid)} className="side-link subtle">
+        <span className="side-link__icon">
+          <Icon name="list" />
+        </span>
+        <span className="side-link__name">Arrange rooms</span>
+      </NavLink>
+
+      <button
+        type="button"
+        id={`archived-rooms-${cid}`}
+        className="side-link subtle side-link--new"
+        onClick={() => openDialog('archivedRooms', { community: cid })}
+      >
+        <span className="side-link__icon">
+          <Icon name="archive" />
+        </span>
+        <span className="side-link__name">Archived rooms</span>
+      </button>
+    </>
+  );
+}
+
+function ModerationLink({ cid, queue }: { readonly cid: string; readonly queue: number }) {
+  return (
+    <NavLink to={routes.moderation(cid)} className="side-link subtle">
+      <span className="side-link__icon">
+        <Icon name="shield" />
+      </span>
+      <span className="side-link__name">Moderation</span>
+      {queue ? <Badge red>{cap(queue)}</Badge> : null}
+    </NavLink>
   );
 }

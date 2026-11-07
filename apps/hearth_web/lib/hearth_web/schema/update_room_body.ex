@@ -12,6 +12,7 @@ defmodule HearthWeb.Schema.UpdateRoomBody do
     properties: %{
       name: string(minLength: 1, maxLength: 40),
       topic: nullable(string(maxLength: 200)),
+      group_id: nullable(uuid(description: "Null for no group. Without a position it goes last")),
       position: integer(minimum: 0),
       access: Schema.enum_of(Room, :access),
       role_ids: array_of(uuid()),

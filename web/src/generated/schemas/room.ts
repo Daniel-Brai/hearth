@@ -13,9 +13,12 @@ export interface Room {
   /** @nullable */
   archived_at: string | null;
   community_id: string;
+  /** @nullable */
+  group_id: string | null;
   id: string;
   moderation: RoomModeration;
   name: string;
+  /** Order within its group, or among the rooms in no group */
   position: number;
   /** Who can see a private room, for people with room.update */
   role_ids?: string[];

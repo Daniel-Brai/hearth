@@ -82,6 +82,7 @@ export const previewCommunity = (
   moderation: 'none',
   owner_id: ownerId,
   rooms: [],
+  room_groups: [],
   template: 'blank',
   visibility: 'invite_only',
   welcome_message: null,

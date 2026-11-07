@@ -54,6 +54,7 @@ const community: Community = {
   owner_id: 'u1',
   links: [{ url: 'https://example.com', label: null }],
   categories: [],
+  room_groups: [],
   rooms: [
     {
       id: 'r1',
@@ -62,6 +63,7 @@ const community: Community = {
       slug: 'general',
       name: 'general',
       topic: null,
+      group_id: null,
       position: 0,
       moderation: null,
       access: 'everyone',
@@ -75,6 +77,7 @@ const community: Community = {
       slug: 'lounge',
       name: 'Lounge',
       topic: 'Hang out',
+      group_id: null,
       position: 1,
       moderation: null,
       access: 'everyone',
@@ -88,6 +91,7 @@ const community: Community = {
       slug: 'old',
       name: 'old',
       topic: null,
+      group_id: null,
       position: 2,
       moderation: null,
       access: 'everyone',

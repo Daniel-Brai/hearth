@@ -6,6 +6,16 @@ type Toast = { id: number; msg: string; show: boolean };
 
 type ConfirmAnswer = { choice: string | null; note: string };
 
+/** A one line note submits on Enter */
+export type ConfirmNote = {
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  max?: number;
+  oneLine?: boolean;
+  initial?: string;
+};
+
 type Confirm = {
   title: string;
   body: string;
@@ -14,7 +24,7 @@ type Confirm = {
   onConfirm: (answer: ConfirmAnswer) => void;
   choices?: readonly { value: string; label: string }[] | undefined;
   choiceLabel?: string | undefined;
-  note?: { label: string; placeholder?: string; required?: boolean; max?: number } | undefined;
+  note?: ConfirmNote | undefined;
 };
 
 type DialogName =

@@ -246,6 +246,7 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
             }),
           ),
           realtime.onPush(topic, 'RoomChanged', () => void load.community(cid)),
+          realtime.onPush(topic, 'RoomLayoutChanged', () => void load.community(cid)),
           realtime.onPush(topic, 'KindsChanged', () => void load.community(cid)),
           realtime.onPush(topic, 'room_access_changed', () => void load.community(cid)),
         ];

@@ -23,6 +23,7 @@ import type {
   ReplyCreated,
   RoomActivity,
   RoomChanged,
+  RoomLayoutChanged,
   ScheduledMessageChanged,
   ScheduledPostChanged,
   SoundPlayed,
@@ -60,6 +61,7 @@ export type ChannelEvents = {
   MemberJoined: MemberJoined;
   MemberLeft: MemberLeft;
   RoomChanged: RoomChanged;
+  RoomLayoutChanged: RoomLayoutChanged;
   RoomActivity: RoomActivity;
   MediaReady: MediaReady;
   MediaFailed: MediaFailed;

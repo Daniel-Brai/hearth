@@ -30,6 +30,7 @@ const voiceRoom = {
   slug: 'office-hours',
   name: 'Office hours',
   topic: null,
+  group_id: null,
   position: 1,
   moderation: null,
   settings: roomSettings,

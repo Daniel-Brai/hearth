@@ -48,10 +48,14 @@ export type PostKind = {
 // A room for some roles lists them as role ids, sent only to people who manage rooms
 export type RoomAccess = 'everyone' | 'roles';
 
+export type RoomGroup = { id: string; name: string };
+
 export type Room = {
   id: string;
   name: string;
   unread: number;
+  group?: string | null | undefined;
+  position?: number | undefined;
   access?: RoomAccess;
   roleIds?: string[];
 };
@@ -68,6 +72,8 @@ export type VoiceMode = 'stage' | 'open';
 export type VoiceRoom = {
   id: string;
   name: string;
+  group?: string | null | undefined;
+  position?: number | undefined;
   live: boolean;
   listeners: number;
   // Who is in the room, for the faces shown to someone outside it
@@ -108,6 +114,7 @@ export type Community = {
   welcome: string;
   rooms: Room[];
   voice: VoiceRoom[];
+  groups: RoomGroup[];
   summary: string | null;
   kinds: PostKind[];
   categories: string[];

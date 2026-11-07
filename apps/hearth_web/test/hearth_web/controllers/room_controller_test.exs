@@ -2,6 +2,7 @@ defmodule HearthWeb.RoomControllerTest do
   use HearthWeb.ConnCase, async: true
 
   alias Faker.Lorem
+  alias Hearth.Common
   alias Hearth.Communities
   alias Hearth.IAM
   alias Hearth.IAM.Role
@@ -211,6 +212,110 @@ defmodule HearthWeb.RoomControllerTest do
 
       assert conn |> auth_conn(owner) |> delete(~p"/api/rooms/#{room.id}") |> response(204)
       assert conn |> auth_conn(owner) |> delete(~p"/api/rooms/#{room.id}") |> valid_response(404)
+    end
+  end
+
+  describe "create_group" do
+    test "fails due to validation", %{conn: conn, owner: owner, community: community} do
+      assert %{"errors" => errors} =
+               conn
+               |> auth_conn(owner)
+               |> post(~p"/api/communities/#{community.id}/room-groups", %{name: ""})
+               |> valid_response(422)
+
+      assert "The name field is required." in errors["name"]
+    end
+
+    test "fails for a member", %{conn: conn, community: community} do
+      member = TestUtils.join_random_member!(community)
+
+      assert conn
+             |> auth_conn(member)
+             |> post(~p"/api/communities/#{community.id}/room-groups", %{name: Lorem.word()})
+             |> valid_response(403)
+    end
+
+    test "adds a group", %{conn: conn, owner: owner, community: community} do
+      body = %{name: Lorem.word()}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> post(~p"/api/communities/#{community.id}/room-groups", body)
+               |> valid_response(201)
+
+      assert response["name"] == body.name
+    end
+  end
+
+  describe "update_group" do
+    test "returns 404 for a group that doesn't exist", %{conn: conn, owner: owner} do
+      assert conn
+             |> auth_conn(owner)
+             |> patch(~p"/api/room-groups/#{Common.new_id()}", %{name: Lorem.word()})
+             |> valid_response(404)
+    end
+
+    test "renames a group", %{conn: conn, owner: owner, community: community} do
+      group = TestUtils.create_random_room_group!(community)
+      body = %{name: Lorem.word()}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/room-groups/#{group.id}", body)
+               |> valid_response(200)
+
+      assert response["name"] == body.name
+    end
+  end
+
+  describe "delete_group" do
+    test "fails for a member", %{conn: conn, community: community} do
+      member = TestUtils.join_random_member!(community)
+      group = TestUtils.create_random_room_group!(community)
+
+      assert conn
+             |> auth_conn(member)
+             |> delete(~p"/api/room-groups/#{group.id}")
+             |> valid_response(403)
+    end
+
+    test "deletes a group", %{conn: conn, owner: owner, community: community} do
+      group = TestUtils.create_random_room_group!(community)
+
+      assert conn |> auth_conn(owner) |> delete(~p"/api/room-groups/#{group.id}") |> response(204)
+    end
+  end
+
+  describe "arrange" do
+    test "fails if a room is left out", %{conn: conn, owner: owner, community: community} do
+      body = %{groups: [], room_ids: []}
+
+      assert %{"code" => "layout_mismatch"} =
+               conn
+               |> auth_conn(owner)
+               |> put(~p"/api/communities/#{community.id}/room-layout", body)
+               |> valid_response(400)
+    end
+
+    test "puts rooms into groups", %{conn: conn, owner: owner, community: community} do
+      group = TestUtils.create_random_room_group!(community)
+      general = TestUtils.get_room!(community, slug: "general")
+      body = %{groups: [%{id: group.id, room_ids: [general.id]}], room_ids: []}
+
+      assert conn
+             |> auth_conn(owner)
+             |> put(~p"/api/communities/#{community.id}/room-layout", body)
+             |> response(204)
+
+      assert %{"community" => %{"room_groups" => [%{"id" => group_id}]}} =
+               conn
+               |> auth_conn(owner)
+               |> get(~p"/api/communities/#{community.id}")
+               |> valid_response(200)
+
+      assert group_id == group.id
     end
   end
 end

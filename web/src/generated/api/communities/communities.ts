@@ -36,6 +36,9 @@ import type {
   PostKind,
   Role,
   Room,
+  RoomGroup,
+  RoomGroupBody,
+  RoomLayoutBody,
   SaveKindsBody,
   TooManyRequestsResponse,
   TransferBody,
@@ -766,6 +769,176 @@ export const communityRoleCreate = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createRoleBody),
+  });
+};
+
+export type roomCreateGroupResponse201 = {
+  data: RoomGroup;
+  status: 201;
+};
+
+export type roomCreateGroupResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type roomCreateGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type roomCreateGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type roomCreateGroupResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type roomCreateGroupResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type roomCreateGroupResponseSuccess = roomCreateGroupResponse201 & {
+  headers: Headers;
+};
+export type roomCreateGroupResponseError = (
+  | roomCreateGroupResponse400
+  | roomCreateGroupResponse401
+  | roomCreateGroupResponse403
+  | roomCreateGroupResponse404
+  | roomCreateGroupResponse422
+) & {
+  headers: Headers;
+};
+
+export type roomCreateGroupResponse = roomCreateGroupResponseSuccess | roomCreateGroupResponseError;
+
+export const getRoomCreateGroupUrl = (communityId: string) => {
+  return `/api/communities/${communityId}/room-groups`;
+};
+
+/**
+ * Needs room.update. It goes last
+ * @summary Add a room group to a community
+ */
+export const roomCreateGroup = async (
+  communityId: string,
+  roomGroupBody: RoomGroupBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<roomCreateGroupResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<roomCreateGroupResponse>(getRoomCreateGroupUrl(communityId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(roomGroupBody),
+  });
+};
+
+export type roomArrangeResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type roomArrangeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type roomArrangeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type roomArrangeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type roomArrangeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type roomArrangeResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type roomArrangeResponseSuccess = roomArrangeResponse204 & {
+  headers: Headers;
+};
+export type roomArrangeResponseError = (
+  | roomArrangeResponse400
+  | roomArrangeResponse401
+  | roomArrangeResponse403
+  | roomArrangeResponse404
+  | roomArrangeResponse422
+) & {
+  headers: Headers;
+};
+
+export type roomArrangeResponse = roomArrangeResponseSuccess | roomArrangeResponseError;
+
+export const getRoomArrangeUrl = (communityId: string) => {
+  return `/api/communities/${communityId}/room-layout`;
+};
+
+/**
+ * Needs room.update. Lists every group and every room that isn't archived once
+ * @summary Arrange a community's rooms and room groups
+ */
+export const roomArrange = async (
+  communityId: string,
+  roomLayoutBody: RoomLayoutBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<roomArrangeResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<roomArrangeResponse>(getRoomArrangeUrl(communityId), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(roomLayoutBody),
   });
 };
 
@@ -2091,6 +2264,142 @@ export const communityRoleUpdate = async (
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(updateRoleBody),
+  });
+};
+
+export type roomDeleteGroupResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type roomDeleteGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type roomDeleteGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type roomDeleteGroupResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type roomDeleteGroupResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type roomDeleteGroupResponseSuccess = roomDeleteGroupResponse204 & {
+  headers: Headers;
+};
+export type roomDeleteGroupResponseError = (
+  | roomDeleteGroupResponse401
+  | roomDeleteGroupResponse403
+  | roomDeleteGroupResponse404
+  | roomDeleteGroupResponse422
+) & {
+  headers: Headers;
+};
+
+export type roomDeleteGroupResponse = roomDeleteGroupResponseSuccess | roomDeleteGroupResponseError;
+
+export const getRoomDeleteGroupUrl = (id: string) => {
+  return `/api/room-groups/${id}`;
+};
+
+/**
+ * Needs room.update. Its rooms move after the rooms in no group
+ * @summary Delete a room group
+ */
+export const roomDeleteGroup = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<roomDeleteGroupResponse> => {
+  return customFetch<roomDeleteGroupResponse>(getRoomDeleteGroupUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export type roomUpdateGroupResponse200 = {
+  data: RoomGroup;
+  status: 200;
+};
+
+export type roomUpdateGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type roomUpdateGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type roomUpdateGroupResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type roomUpdateGroupResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type roomUpdateGroupResponseSuccess = roomUpdateGroupResponse200 & {
+  headers: Headers;
+};
+export type roomUpdateGroupResponseError = (
+  | roomUpdateGroupResponse401
+  | roomUpdateGroupResponse403
+  | roomUpdateGroupResponse404
+  | roomUpdateGroupResponse422
+) & {
+  headers: Headers;
+};
+
+export type roomUpdateGroupResponse = roomUpdateGroupResponseSuccess | roomUpdateGroupResponseError;
+
+export const getRoomUpdateGroupUrl = (id: string) => {
+  return `/api/room-groups/${id}`;
+};
+
+/**
+ * Needs room.update
+ * @summary Rename a room group
+ */
+export const roomUpdateGroup = async (
+  id: string,
+  roomGroupBody: RoomGroupBody,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<roomUpdateGroupResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<roomUpdateGroupResponse>(getRoomUpdateGroupUrl(id), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(roomGroupBody),
   });
 };
 

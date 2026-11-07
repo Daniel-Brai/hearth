@@ -491,6 +491,13 @@
               "null"
             ]
           },
+          "room_groups": {
+            "description": "In order, only those with a room the viewer can see unless they manage rooms",
+            "items": {
+              "$ref": "#/components/schemas/RoomGroup"
+            },
+            "type": "array"
+          },
           "rooms": {
             "items": {
               "$ref": "#/components/schemas/Room"
@@ -545,6 +552,7 @@
           "online_count",
           "links",
           "rooms",
+          "room_groups",
           "categories"
         ],
         "type": "object"
@@ -1368,6 +1376,14 @@
             "enum": [
               "everyone",
               "roles"
+            ]
+          },
+          "group_id": {
+            "description": "Null for no group. Without a position it goes last",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
             ]
           },
           "name": {
@@ -5033,6 +5049,13 @@
             "format": "uuid",
             "type": "string"
           },
+          "group_id": {
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -5049,6 +5072,7 @@
             "type": "string"
           },
           "position": {
+            "description": "Order within its group, or among the rooms in no group",
             "type": "integer"
           },
           "role_ids": {
@@ -5085,6 +5109,7 @@
           "slug",
           "name",
           "topic",
+          "group_id",
           "position",
           "moderation",
           "access",
@@ -5128,6 +5153,105 @@
         "required": [
           "community_id",
           "room_id"
+        ],
+        "type": "object"
+      },
+      "RoomGroup": {
+        "title": "RoomGroup",
+        "properties": {
+          "community_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "community_id",
+          "name",
+          "position"
+        ],
+        "type": "object"
+      },
+      "RoomGroupBody": {
+        "title": "RoomGroupBody",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "RoomLayoutBody": {
+        "title": "RoomLayoutBody",
+        "additionalProperties": false,
+        "properties": {
+          "groups": {
+            "description": "Every group in order, each with its rooms in order",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "room_ids": {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "id",
+                "room_ids"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "room_ids": {
+            "description": "The rooms in no group, in order",
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups",
+          "room_ids"
+        ],
+        "type": "object"
+      },
+      "RoomLayoutChanged": {
+        "title": "RoomLayoutChanged",
+        "description": "On rooms:<community id> when room groups or the order of rooms change",
+        "properties": {
+          "community_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "community_id"
         ],
         "type": "object"
       },
@@ -6605,6 +6729,14 @@
             "enum": [
               "everyone",
               "roles"
+            ]
+          },
+          "group_id": {
+            "description": "Null for no group. Without a position it goes last",
+            "format": "uuid",
+            "type": [
+              "string",
+              "null"
             ]
           },
           "name": {
@@ -9670,6 +9802,125 @@
           "required": true
         },
         "summary": "Add a role to a community"
+      }
+    },
+    "/api/communities/{community_id}/room-groups": {
+      "post": {
+        "tags": [
+          "Communities"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomGroup"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs room.update. It goes last",
+        "operationId": "room_create_group_QNJ3OBA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "community_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomGroupBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Add a room group to a community"
+      }
+    },
+    "/api/communities/{community_id}/room-layout": {
+      "put": {
+        "tags": [
+          "Communities"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs room.update. Lists every group and every room that isn't archived once",
+        "operationId": "room_arrange_QNJ3OBA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "community_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomLayoutBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Arrange a community's rooms and room groups"
       }
     },
     "/api/communities/{community_id}/rooms": {
@@ -14575,6 +14826,107 @@
           "required": true
         },
         "summary": "Change a role"
+      }
+    },
+    "/api/room-groups/{id}": {
+      "delete": {
+        "tags": [
+          "Communities"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs room.update. Its rooms move after the rooms in no group",
+        "operationId": "room_delete_group_QNJ3OBA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Delete a room group"
+      },
+      "patch": {
+        "tags": [
+          "Communities"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomGroup"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs room.update",
+        "operationId": "room_update_group_QNJ3OBA",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomGroupBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Rename a room group"
       }
     },
     "/api/rooms/{id}": {

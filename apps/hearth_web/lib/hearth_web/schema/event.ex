@@ -18,6 +18,7 @@ defmodule HearthWeb.Schema.Event do
     Event.MemberJoined,
     Event.MemberLeft,
     Event.RoomChanged,
+    Event.RoomLayoutChanged,
     Event.RoomActivity,
     Event.MediaReady,
     Event.MediaFailed,

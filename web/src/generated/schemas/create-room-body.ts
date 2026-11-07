@@ -9,6 +9,11 @@ import type { CreateRoomBodyType } from './create-room-body-type';
 export interface CreateRoomBody {
   access?: CreateRoomBodyAccess;
   /**
+   * Null for no group. Without a position it goes last
+   * @nullable
+   */
+  group_id?: string | null;
+  /**
    * @minLength 1
    * @maxLength 40
    */

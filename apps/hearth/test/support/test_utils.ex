@@ -711,6 +711,26 @@ defmodule Hearth.TestUtils do
     Live.whereis(session.id)
   end
 
+  def create_random_room!(community, opts \\ []) do
+    {:ok, owner} = Accounts.get_user(id: community.owner_id)
+    params = Map.merge(%{name: "Room #{System.unique_integer([:positive])}"}, Map.new(opts))
+    {:ok, room} = Communities.create_room(owner, community, params)
+
+    room
+  end
+
+  def create_random_room_group!(community, opts \\ []) do
+    {:ok, owner} = Accounts.get_user(id: community.owner_id)
+    params = %{name: Keyword.get(opts, :name, Lorem.word())}
+    {:ok, group} = Communities.create_room_group(owner, community, params)
+
+    group
+  end
+
+  def create_room_groups!(community, count) do
+    Enum.map(1..count, fn _n -> create_random_room_group!(community) end)
+  end
+
   def create_random_private_room!(community, role_keys, opts \\ []) do
     {:ok, owner} = Accounts.get_user(id: community.owner_id)
     role_ids = for role <- IAM.list_roles(community.id), role.key in role_keys, do: role.id

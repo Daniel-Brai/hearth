@@ -5,6 +5,7 @@ defmodule HearthWeb.Schema.Community do
   alias HearthWeb.Schema
   alias HearthWeb.Schema.Link
   alias HearthWeb.Schema.Room
+  alias HearthWeb.Schema.RoomGroup
   alias HearthWeb.Schema.UserSummary
 
   defschema %{
@@ -31,6 +32,7 @@ defmodule HearthWeb.Schema.Community do
       online_count
       links
       rooms
+      room_groups
       categories
     ]a,
     properties: %{
@@ -55,7 +57,12 @@ defmodule HearthWeb.Schema.Community do
         non_neg_integer(description: "Members connected now, leaving out anyone hiding presence"),
       links: array_of(Link),
       categories: array_of(string(), description: "Category slugs in the order they were picked"),
-      rooms: array_of(Room)
+      rooms: array_of(Room),
+      room_groups:
+        array_of(RoomGroup,
+          description:
+            "In order, only those with a room the viewer can see unless they manage rooms"
+        )
     }
   }
 end

@@ -187,6 +187,20 @@ kbd, .keys kbd {
 .side-community:not([open]) .caret { rotate: -90deg; }
 .side-community .side-link__name { flex: 0 1 auto; }
 .side-community .rooms { padding-inline-start: 1.25rem; display: grid; gap: 1px; margin-block: 0.1rem 0.4rem; }
+.side-group { display: grid; gap: 1px; margin-block-start: 0.35rem; }
+.side-group + .side-group { margin-block-start: 0; }
+.side-group__head { display: flex; align-items: center; gap: 0.4rem; min-block-size: 1.8rem; padding-inline-end: 0.15rem; }
+.side-group__toggle {
+  display: flex; align-items: center; justify-content: flex-start; gap: 0.3rem; flex: 1; min-inline-size: 0; padding: 0.15rem 0.35rem; border: 0; border-radius: 0.4em; background: none; cursor: pointer;
+  font-size: var(--text-small); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-ink-dark); text-align: start;
+}
+.side-group__toggle:hover { color: var(--color-ink); }
+.side-group__toggle .caret { display: inline-grid; place-items: center; margin-inline-start: 0; transition: rotate 180ms var(--ease-out-expo); }
+.side-group__toggle .caret svg { inline-size: 1.1rem; block-size: 1.1rem; }
+.side-group__toggle[aria-expanded="false"] .caret { rotate: -90deg; }
+.side-group__menu { opacity: 0; transition: opacity 120ms ease; }
+.side-group__head:hover .side-group__menu, .side-group__head:focus-within .side-group__menu, .side-group__menu[aria-expanded="true"] { opacity: 1; }
+@media (any-hover: none) { .side-group__menu { opacity: 1; } }
 
 .badge {
   align-items: center;

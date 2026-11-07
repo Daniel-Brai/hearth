@@ -8,10 +8,11 @@ defmodule Hearth.Communities do
     OwnershipTransferred,
     RequestDecided,
     RoomAccessChanged,
-    RoomChanged
+    RoomChanged,
+    RoomLayoutChanged
   ]
 
-  default = [Ban, Community, Invite, Request, Room | events]
+  default = [Ban, Community, Invite, Request, Room, RoomGroup | events]
 
   exports =
     case Mix.env() do
@@ -39,8 +40,10 @@ defmodule Hearth.Communities do
   alias Hearth.Communities.Ban
   alias Hearth.Communities.Category
   alias Hearth.Communities.Command.ApproveRequest
+  alias Hearth.Communities.Command.ArrangeRooms
   alias Hearth.Communities.Command.BanMember
   alias Hearth.Communities.Command.CreateCommunity
+  alias Hearth.Communities.Command.DeleteRoomGroup
   alias Hearth.Communities.Command.EmailInvite
   alias Hearth.Communities.Command.RevokeEmailInvite
   alias Hearth.Communities.Command.SaveRoom
@@ -62,6 +65,8 @@ defmodule Hearth.Communities do
   alias Hearth.Communities.Room
   alias Hearth.Communities.RoomAccessChanged
   alias Hearth.Communities.RoomChanged
+  alias Hearth.Communities.RoomGroup
+  alias Hearth.Communities.RoomLayoutChanged
   alias Hearth.Communities.RoomSettings
   alias Hearth.Communities.Template
   alias Hearth.IAM
@@ -433,9 +438,10 @@ defmodule Hearth.Communities do
   end
 
   @spec create_room(User.t(), Community.t(), map()) ::
-          {:ok, Room.t()} | {:error, :forbidden | Changeset.t()}
+          {:ok, Room.t()} | {:error, :forbidden | :unknown_group | Changeset.t()}
   def create_room(%User{} = user, %Community{} = community, %{} = params) do
     with :ok <- authorize(user, :update, :room, community),
+         :ok <- known_group(community.id, params[:group_id]),
          role_ids = role_ids_in(community.id, params),
          {:ok, room} <- SaveRoom.execute(community.id, params, role_ids) do
       broadcast(%RoomChanged{community_id: community.id, room_id: room.id})
@@ -444,14 +450,73 @@ defmodule Hearth.Communities do
   end
 
   @spec update_room(User.t(), Room.t(), map()) ::
-          {:ok, Room.t()} | {:error, :forbidden | Changeset.t()}
+          {:ok, Room.t()} | {:error, :forbidden | :unknown_group | Changeset.t()}
   def update_room(%User{} = user, %Room{} = room, %{} = params) do
     with :ok <- authorize(user, :update, :room, room),
+         :ok <- known_group(room.community_id, params[:group_id]),
          role_ids = role_ids_in(room.community_id, params),
          {:ok, updated} <- SaveRoom.execute(room, params, role_ids) do
       broadcast(%RoomChanged{community_id: updated.community_id, room_id: updated.id})
       access_changed(room, updated, role_ids)
       {:ok, updated}
+    end
+  end
+
+  # Each community needs its visible rooms loaded
+  @spec list_room_groups([Community.t()], nil | User.t()) :: %{T.id() => [RoomGroup.t()]}
+  def list_room_groups(communities, viewer) when is_list(communities) do
+    ids = Enum.map(communities, & &1.id)
+    managed = managed_in(viewer, ids)
+    groups = ids |> RoomGroup.for_communities() |> Enum.group_by(& &1.community_id)
+
+    Map.new(communities, &{&1.id, shown_groups(&1, Map.get(groups, &1.id, []), managed)})
+  end
+
+  @spec get_room_group(T.id()) :: {:ok, RoomGroup.t()} | {:error, :not_found}
+  def get_room_group(id) when is_binary(id) do
+    case RoomGroup.get(id: id) do
+      nil -> {:error, :not_found}
+      %RoomGroup{} = group -> {:ok, group}
+    end
+  end
+
+  @spec create_room_group(User.t(), Community.t(), map()) ::
+          {:ok, RoomGroup.t()} | {:error, :forbidden | :too_many_groups | Changeset.t()}
+  def create_room_group(%User{} = user, %Community{} = community, %{} = params) do
+    with :ok <- authorize(user, :update, :room, community),
+         {:ok, group} <- RoomGroup.add(community.id, params) do
+      broadcast(%RoomLayoutChanged{community_id: community.id})
+      {:ok, group}
+    end
+  end
+
+  @spec rename_room_group(User.t(), RoomGroup.t(), map()) ::
+          {:ok, RoomGroup.t()} | {:error, :forbidden | Changeset.t()}
+  def rename_room_group(%User{} = user, %RoomGroup{} = group, %{} = params) do
+    with :ok <- authorize(user, :update, :room, group),
+         {:ok, group} <- RoomGroup.update(group, params) do
+      broadcast(%RoomLayoutChanged{community_id: group.community_id})
+      {:ok, group}
+    end
+  end
+
+  @spec delete_room_group(User.t(), RoomGroup.t()) ::
+          {:ok, RoomGroup.t()} | {:error, :forbidden | Changeset.t()}
+  def delete_room_group(%User{} = user, %RoomGroup{} = group) do
+    with :ok <- authorize(user, :update, :room, group),
+         {:ok, group} <- DeleteRoomGroup.execute(group) do
+      broadcast(%RoomLayoutChanged{community_id: group.community_id})
+      {:ok, group}
+    end
+  end
+
+  @spec arrange_rooms(User.t(), Community.t(), ArrangeRooms.layout()) ::
+          :ok | {:error, :forbidden | :layout_mismatch}
+  def arrange_rooms(%User{} = user, %Community{} = community, %{} = layout) do
+    with :ok <- authorize(user, :update, :room, community),
+         :ok <- ArrangeRooms.execute(community.id, layout) do
+      broadcast(%RoomLayoutChanged{community_id: community.id})
+      :ok
     end
   end
 
@@ -750,6 +815,31 @@ defmodule Hearth.Communities do
     case IAM.can?(user, action, %{type: type, community_id: id}) do
       true -> :ok
       false -> {:error, :forbidden}
+    end
+  end
+
+  defp managed_in(nil, _community_ids), do: []
+
+  defp managed_in(%User{} = user, community_ids),
+    do: IAM.communities_with(user, "room.update", community_ids)
+
+  defp shown_groups(community, groups, managed) do
+    case community.id in managed do
+      true ->
+        groups
+
+      false ->
+        used = MapSet.new(community.rooms, & &1.group_id)
+        Enum.filter(groups, &MapSet.member?(used, &1.id))
+    end
+  end
+
+  defp known_group(_community_id, nil), do: :ok
+
+  defp known_group(community_id, group_id) do
+    case RoomGroup.exists?(id: group_id, community_id: community_id) do
+      true -> :ok
+      false -> {:error, :unknown_group}
     end
   end
 

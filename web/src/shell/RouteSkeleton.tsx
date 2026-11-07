@@ -25,6 +25,7 @@ const SHAPES: readonly [string, SkeletonKind, Width][] = [
   [patterns.communityEdit, 'form', 'narrow'],
   [patterns.invite, 'form', 'narrow'],
   [patterns.roles, 'roles', 'wide'],
+  [patterns.arrangeRooms, 'settings', 'narrow'],
   [patterns.log, 'list', 'wide'],
   [patterns.profile, 'profile', 'wide'],
   [patterns.moderation, 'queue', 'wide'],

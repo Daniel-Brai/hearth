@@ -17,10 +17,22 @@ defmodule Hearth.Communities.Command.SaveRoom do
     end)
   end
 
-  defp save(community_id, params) when is_binary(community_id),
-    do: Room.insert(%Room{community_id: community_id}, params)
+  defp save(community_id, params) when is_binary(community_id) do
+    params = Map.put_new_lazy(params, :position, fn -> last(community_id, params[:group_id]) end)
 
-  defp save(%Room{} = room, params), do: Room.update(room, params)
+    Room.insert(%Room{community_id: community_id}, params)
+  end
+
+  defp save(%Room{} = room, params), do: Room.update(room, placed(room, params))
+
+  defp placed(%Room{group_id: same}, %{group_id: same} = params), do: params
+
+  defp placed(room, %{group_id: group_id} = params),
+    do: Map.put_new_lazy(params, :position, fn -> last(room.community_id, group_id) end)
+
+  defp placed(_room, params), do: params
+
+  defp last(community_id, group_id), do: Room.next_position(community_id, group_id)
 
   defp put_roles(_room, nil), do: :ok
   defp put_roles(room, role_ids), do: RoomRole.replace(room, role_ids)

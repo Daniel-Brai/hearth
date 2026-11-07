@@ -42,6 +42,7 @@ export default [
       route(patterns.invite, at('invite')),
       route(patterns.moderation, at('moderation')),
       route(patterns.roles, at('roles')),
+      route(patterns.arrangeRooms, at('arrange-rooms')),
       route(routes.events, at('events'), { id: 'events' }),
       route(routes.people, at('people')),
       route(routes.saved, at('saved')),

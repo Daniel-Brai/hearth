@@ -7,10 +7,11 @@ import {
   DialogFooter,
   DialogTitle,
   Field,
+  Input,
   Select,
   Textarea,
 } from '@/design-system';
-import { useUi } from '@/runtime/ui-store';
+import { useUi, type ConfirmNote } from '@/runtime/ui-store';
 
 const NOTE_MAX = 500;
 
@@ -32,7 +33,7 @@ export function ConfirmDialog() {
 function ConfirmBody({ onClose }: { readonly onClose: () => void }) {
   const confirm = useUi((s) => s.confirm)!;
   const [choice, setChoice] = useState<string | null>(confirm.choices?.[0]?.value ?? null);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(confirm.note?.initial ?? '');
 
   const asks = !!confirm.choices || !!confirm.note;
   const waiting = !!confirm.note?.required && !note.trim();
@@ -63,18 +64,7 @@ function ConfirmBody({ onClose }: { readonly onClose: () => void }) {
       ) : null}
 
       {confirm.note ? (
-        <Field label={confirm.note.label}>
-          <Textarea
-            id="confirm-note"
-            rows={3}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={confirm.note.placeholder}
-            maxLength={confirm.note.max ?? NOTE_MAX}
-            countFrom={(confirm.note.max ?? NOTE_MAX) - 60}
-            required={confirm.note.required}
-          />
-        </Field>
+        <NoteField note={confirm.note} value={note} onChange={setNote} onEnter={run} />
       ) : null}
 
       <DialogFooter>
@@ -89,5 +79,51 @@ function ConfirmBody({ onClose }: { readonly onClose: () => void }) {
         </Button>
       </DialogFooter>
     </DialogBody>
+  );
+}
+
+function NoteField({
+  note,
+  value,
+  onChange,
+  onEnter,
+}: {
+  readonly note: ConfirmNote;
+  readonly value: string;
+  readonly onChange: (value: string) => void;
+  readonly onEnter: () => void;
+}) {
+  const max = note.max ?? NOTE_MAX;
+
+  return (
+    <Field label={note.label}>
+      {note.oneLine ? (
+        <Input
+          id="confirm-note"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            onEnter();
+          }}
+          placeholder={note.placeholder}
+          maxLength={max}
+          required={note.required}
+          autoComplete="off"
+        />
+      ) : (
+        <Textarea
+          id="confirm-note"
+          rows={3}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={note.placeholder}
+          maxLength={max}
+          countFrom={max - 60}
+          required={note.required}
+        />
+      )}
+    </Field>
   );
 }

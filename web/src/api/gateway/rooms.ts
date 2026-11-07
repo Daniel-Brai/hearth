@@ -1,13 +1,18 @@
 import { fail, ok, type HearthGateway, type Result } from '@/data/gateway';
+import { applyLayout } from '@/domain/room-layout';
 import type { ArchivedRoom, ModerationLevel, RoomSettings } from '@/domain/types';
 import { messageRead } from '@/generated/api/chat/chat';
 import {
   roomArchive,
   roomArchived,
+  roomArrange,
   roomCreate,
+  roomCreateGroup,
   roomDelete,
+  roomDeleteGroup,
   roomRestore,
   roomUpdate,
+  roomUpdateGroup,
 } from '@/generated/api/communities/communities';
 import { moderationRoomLevel } from '@/generated/api/moderation/moderation';
 import type { Room as ApiRoom, UpdateRoomBody } from '@/generated/schemas';
@@ -191,6 +196,7 @@ export function createRoomsGateway(
           type: spec.type,
           name: spec.type === 'text' ? slugify(spec.name) : spec.name.trim(),
           topic: spec.topic.trim() || null,
+          ...(spec.group ? { group_id: spec.group } : {}),
           ...(spec.access ? { access: spec.access, role_ids: spec.roleIds ?? [] } : {}),
         }),
       );
@@ -213,6 +219,72 @@ export function createRoomsGateway(
 
     setAccess: (cid, rid, access, roleIds) =>
       change(cid, rid, (id) => roomUpdate(id, { access, role_ids: roleIds }), 200),
+
+    setGroup: (cid, rid, group) =>
+      change(cid, rid, (id) => roomUpdate(id, { group_id: group }), 200),
+
+    createGroup: async (cid, name) => {
+      const communityId = ctx.communityIds.get(cid);
+
+      if (!communityId) return fail(NOT_READY);
+
+      const answer = await call(() => roomCreateGroup(communityId, { name: name.trim() }));
+
+      if (answer.status !== 201) return failed(answer);
+
+      await loadCommunity(cid);
+
+      return ok({ id: answer.data.id });
+    },
+
+    renameGroup: async (cid, id, name) => {
+      const answer = await call(() => roomUpdateGroup(id, { name: name.trim() }));
+
+      if (answer.status !== 200) return failed(answer);
+
+      await loadCommunity(cid);
+
+      return ok(undefined);
+    },
+
+    deleteGroup: async (cid, id) => {
+      const answer = await call(() => roomDeleteGroup(id));
+
+      if (answer.status !== 204) return failed(answer);
+
+      await loadCommunity(cid);
+
+      return ok(undefined);
+    },
+
+    arrange: async (cid, layout) => {
+      const communityId = ctx.communityIds.get(cid);
+      const before = ctx.store.get().communities[cid];
+
+      if (!communityId || !before) return fail(NOT_READY);
+
+      const id = (slug: string) => roomId(cid, slug) ?? slug;
+
+      ctx.store.set((state) => {
+        const community = state.communities[cid];
+        if (community) applyLayout(community, layout);
+      });
+
+      const answer = await call(() =>
+        roomArrange(communityId, {
+          room_ids: layout.rooms.map(id),
+          groups: layout.groups.map((g) => ({ id: g.id, room_ids: g.rooms.map(id) })),
+        }),
+      );
+
+      if (answer.status === 204) return ok(undefined);
+
+      ctx.store.set((state) => {
+        state.communities[cid] = before;
+      });
+
+      return failed(answer);
+    },
 
     archive: (cid, id) => change(cid, id, roomArchive, 200),
     restore: (cid, id) => change(cid, id, roomRestore, 200),

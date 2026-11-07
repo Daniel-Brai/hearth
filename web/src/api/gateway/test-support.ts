@@ -80,6 +80,7 @@ export const community = {
   owner_id: 'u1',
   links: [],
   categories: ['tech'],
+  room_groups: [],
   rooms: [
     {
       id: 'r1',

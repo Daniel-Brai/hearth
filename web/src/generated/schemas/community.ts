@@ -8,6 +8,7 @@ import type { CommunityModeration } from './community-moderation';
 import type { CommunityVisibility } from './community-visibility';
 import type { Link } from './link';
 import type { Room } from './room';
+import type { RoomGroup } from './room-group';
 import type { UserSummary } from './user-summary';
 
 export interface Community {
@@ -44,6 +45,8 @@ export interface Community {
   owner: null | UserSummary;
   /** @nullable */
   owner_id: string | null;
+  /** In order, only those with a room the viewer can see unless they manage rooms */
+  room_groups: RoomGroup[];
   rooms: Room[];
   slug: string;
   /** @nullable */

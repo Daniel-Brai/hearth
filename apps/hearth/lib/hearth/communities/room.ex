@@ -11,7 +11,7 @@ defmodule Hearth.Communities.Room do
   alias Hearth.Communities.RoomSettings
 
   # The moderation level changes through Hearth.Moderation.set_level/3, which logs it
-  @fields ~w[type name topic position access]a
+  @fields ~w[type name topic group_id position access]a
   @changeable [:settings | @fields -- [:type]]
 
   schema "rooms" do
@@ -19,6 +19,7 @@ defmodule Hearth.Communities.Room do
     field :slug, :string
     field :name, :string
     field :topic, :string
+    field :group_id, Ecto.UUID
     field :position, :integer, default: 0
     field :moderation, Ecto.Enum, values: Ecto.Enum.values(Community, :moderation)
     field :archived_at, :utc_datetime_usec
@@ -38,6 +39,7 @@ defmodule Hearth.Communities.Room do
           slug: String.t(),
           name: String.t(),
           topic: nil | String.t(),
+          group_id: nil | T.id(),
           position: integer(),
           moderation: nil | :full | :reports | :none,
           settings: RoomSettings.t(),
@@ -85,9 +87,69 @@ defmodule Hearth.Communities.Room do
   def for_community(community_id) do
     __MODULE__
     |> where([r], r.community_id == ^community_id and is_nil(r.archived_at))
-    |> order_by(:position)
+    |> order_by([:position, :inserted_at])
     |> Repo.all()
   end
+
+  @spec next_position(T.id(), nil | T.id()) :: non_neg_integer()
+  def next_position(community_id, group_id) do
+    query =
+      from r in __MODULE__,
+        where: r.community_id == ^community_id and is_nil(r.archived_at),
+        select: coalesce(max(r.position), -1) + 1
+
+    query |> in_group(group_id) |> Repo.one()
+  end
+
+  @spec ids_in(T.id()) :: [T.id()]
+  def ids_in(community_id) do
+    query =
+      from r in __MODULE__,
+        where: r.community_id == ^community_id and is_nil(r.archived_at),
+        select: r.id
+
+    Repo.all(query)
+  end
+
+  @spec place([T.id()], nil | T.id()) :: :ok
+  def place(room_ids, group_id), do: put_places(room_ids, 0, group_id)
+
+  @spec ungroup(T.id(), T.id()) :: :ok
+  def ungroup(community_id, group_id) do
+    start = next_position(community_id, nil)
+
+    query =
+      from r in __MODULE__,
+        where: r.group_id == ^group_id,
+        order_by: [:position, :inserted_at],
+        select: r.id
+
+    query |> Repo.all() |> put_places(start, nil)
+  end
+
+  defp put_places([], _first, _group_id), do: :ok
+
+  defp put_places(room_ids, first, group_id) do
+    positions = Enum.to_list(first..(first + length(room_ids) - 1))
+
+    query =
+      from r in __MODULE__,
+        join:
+          p in fragment(
+            "SELECT * FROM unnest(?::uuid[], ?::int[]) AS p(id, position)",
+            type(^room_ids, {:array, Ecto.UUID}),
+            ^positions
+          ),
+        on: p.id == r.id,
+        update: [set: [position: p.position, group_id: type(^group_id, Ecto.UUID)]]
+
+    {_count, nil} = Repo.update_all(query, [])
+
+    :ok
+  end
+
+  defp in_group(query, nil), do: where(query, [r], is_nil(r.group_id))
+  defp in_group(query, group_id), do: where(query, [r], r.group_id == ^group_id)
 
   @spec visible_to(Ecto.Queryable.t(), sight()) :: Ecto.Query.t()
   def visible_to(query \\ __MODULE__, %{role_ids: role_ids, managed: managed}) do
@@ -105,7 +167,7 @@ defmodule Hearth.Communities.Room do
     __MODULE__
     |> where([r], r.community_id == ^community_id and is_nil(r.archived_at))
     |> visible_to(sight)
-    |> order_by(:position)
+    |> order_by([:position, :inserted_at])
     |> preload_roles(community_id in sight.managed)
     |> Repo.all()
   end

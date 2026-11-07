@@ -111,6 +111,7 @@ export const routes = {
   invite: (c: string) => `/c/${c}/invite`,
   moderation: (c: string) => `/c/${c}/moderation`,
   roles: (c: string) => `/c/${c}/roles`,
+  arrangeRooms: (c: string) => `/c/${c}/rooms`,
   log: (c: string) => `/c/${c}/log`,
 } as const;
 
@@ -131,6 +132,7 @@ export const patterns = {
   invite: '/c/:community/invite',
   moderation: '/c/:community/moderation',
   roles: '/c/:community/roles',
+  arrangeRooms: '/c/:community/rooms',
   log: '/c/:community/log',
   profile: '/u/:handle',
   dm: '/dm/:handle',

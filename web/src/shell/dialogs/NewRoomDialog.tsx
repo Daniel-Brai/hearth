@@ -17,6 +17,7 @@ import {
 import { voiceOn } from '@/domain/selectors';
 import type { RoomAccess } from '@/domain/types';
 import { RoomAccessField } from '@/features/rooms/RoomAccessField';
+import { RoomGroupField } from '@/features/rooms/RoomGroupField';
 import { routes, slugify } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 
@@ -28,6 +29,7 @@ export function NewRoomDialog() {
   const closeDialog = useUi((s) => s.closeDialog);
   const flash = useUi((s) => s.flash);
   const cid = useUi((s) => s.dialogData.community);
+  const startGroup = useUi((s) => s.dialogData.group);
 
   const communityName = useAppState((state) =>
     typeof cid === 'string' ? (state.communities[cid]?.name ?? null) : null,
@@ -39,6 +41,9 @@ export function NewRoomDialog() {
   const [topic, setTopic] = useState('');
   const [access, setAccess] = useState<RoomAccess>('everyone');
   const [roleIds, setRoleIds] = useState<string[]>([]);
+  const [group, setGroup] = useState<string | null>(
+    typeof startGroup === 'string' ? startGroup : null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -50,7 +55,7 @@ export function NewRoomDialog() {
     setBusy(true);
 
     const r = await gateway.rooms
-      .create(cid, { type, name, topic, access, roleIds })
+      .create(cid, { type, name, topic, access, roleIds, group })
       .finally(() => setBusy(false));
 
     if (!r.ok) {
@@ -144,6 +149,8 @@ export function NewRoomDialog() {
             placeholder={type === 'text' ? 'What this room is for' : 'What people talk about here'}
           />
         </Field>
+
+        <RoomGroupField id="new-room-group" cid={cid} value={group} onChange={setGroup} />
 
         <RoomAccessField
           cid={cid}

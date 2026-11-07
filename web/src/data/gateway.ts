@@ -1,5 +1,6 @@
 import type { AppState } from '@/domain/app-state';
 import type { Audience } from '@/domain/audience';
+import type { RoomLayout } from '@/domain/room-layout';
 import type {
   Attachment,
   CommunityEvent,
@@ -239,9 +240,15 @@ export interface HearthGateway {
         topic: string;
         access?: RoomAccess;
         roleIds?: string[];
+        group?: string | null;
       },
     ): Promise<Result<{ id: string }>>;
     setAccess(cid: string, rid: string, access: RoomAccess, roleIds: string[]): Promise<Result>;
+    setGroup(cid: string, rid: string, group: string | null): Promise<Result>;
+    createGroup(cid: string, name: string): Promise<Result<{ id: string }>>;
+    renameGroup(cid: string, id: string, name: string): Promise<Result>;
+    deleteGroup(cid: string, id: string): Promise<Result>;
+    arrange(cid: string, layout: RoomLayout): Promise<Result>;
     archive(cid: string, id: string): Promise<Result>;
     restore(cid: string, id: string): Promise<Result>;
     destroy(cid: string, id: string): Promise<Result>;

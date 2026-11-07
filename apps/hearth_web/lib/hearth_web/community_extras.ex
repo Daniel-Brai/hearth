@@ -17,10 +17,14 @@ defmodule HearthWeb.CommunityExtras do
     owners = communities |> Enum.map(& &1.owner_id) |> Authors.people()
     categories = communities |> Enum.map(& &1.id) |> Communities.category_slugs()
 
+    communities = Enum.map(communities, &put_rooms(&1, viewer))
+
+    groups =
+      communities |> Enum.filter(&is_list(&1.rooms)) |> Communities.list_room_groups(viewer)
+
     Enum.map(communities, fn community ->
-      community
-      |> put_rooms(viewer)
-      |> Map.merge(%{
+      Map.merge(community, %{
+        room_groups: Map.get(groups, community.id, []),
         logo_url: logos[community.logo_id],
         banner_url: banners[community.banner_id],
         member_count: Map.get(counts, community.id, 0),

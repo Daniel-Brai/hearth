@@ -131,6 +131,10 @@ defmodule HearthWeb.Router do
 
     get "/communities/:community_id/rooms/archived", RoomController, :archived
     post "/communities/:community_id/rooms", RoomController, :create
+    post "/communities/:community_id/room-groups", RoomController, :create_group
+    put "/communities/:community_id/room-layout", RoomController, :arrange
+    patch "/room-groups/:id", RoomController, :update_group
+    delete "/room-groups/:id", RoomController, :delete_group
     post "/communities/:community_id/roles", CommunityRoleController, :create
     put "/communities/:community_id/kinds", CommunityController, :save_kinds
 

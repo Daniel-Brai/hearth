@@ -41,7 +41,13 @@ defmodule HearthWeb.CommunityJSON do
       community:
         community
         |> serialize()
-        |> Map.merge(%{description: nil, welcome_message: nil, links: [], rooms: []}),
+        |> Map.merge(%{
+          description: nil,
+          welcome_message: nil,
+          links: [],
+          rooms: [],
+          room_groups: []
+        }),
       kinds: [],
       membership: nil
     }
@@ -65,6 +71,10 @@ defmodule HearthWeb.CommunityJSON do
     |> Map.put(
       :rooms,
       community.rooms |> Enum.reject(& &1.archived_at) |> Enum.map(&RoomJSON.serialize/1)
+    )
+    |> Map.put(
+      :room_groups,
+      community |> Map.get(:room_groups, []) |> Enum.map(&RoomJSON.group/1)
     )
   end
 
