@@ -4,6 +4,9 @@ defmodule Hearth.Repo.Migrations.CreateChatPollOptionsTable do
   @prefix :chat
   @table :poll_options
 
+  # A new table is empty, so its references and indexes lock nothing anyone is reading
+  # excellent_migrations:safety-assured-for-this-file column_reference_added index_not_concurrently
+
   def change do
     create table(@table, prefix: @prefix, primary_key: false) do
       add :id, :uuid, primary_key: true

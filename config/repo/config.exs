@@ -12,4 +12,7 @@ config :hearth, Hearth.Repo,
 
 config :ecto_sql, migration_module: Hearth.Repo.Migration
 
+# Migrations up to the v0.0.5 release already ran on servers, so only newer ones are checked for unsafe changes
+config :excellent_migrations, start_after: "20261104194849"
+
 import_config "#{config_env()}.exs"

@@ -4,6 +4,9 @@ defmodule Hearth.Repo.Migrations.CreateChatPollsTable do
   @prefix :chat
   @table :polls
 
+  # A new table is empty, so its references and indexes lock nothing anyone is reading
+  # excellent_migrations:safety-assured-for-this-file column_reference_added index_not_concurrently
+
   # A poll is a room message, so deleting the message takes the poll with it
   def change do
     create table(@table, prefix: @prefix, primary_key: false) do

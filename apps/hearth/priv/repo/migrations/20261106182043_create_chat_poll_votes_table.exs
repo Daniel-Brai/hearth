@@ -4,6 +4,9 @@ defmodule Hearth.Repo.Migrations.CreateChatPollVotesTable do
   @prefix :chat
   @table :poll_votes
 
+  # A new table is empty, so its references and indexes lock nothing anyone is reading
+  # excellent_migrations:safety-assured-for-this-file column_reference_added index_not_concurrently
+
   # One row per option a person picked, so a poll that takes several answers has several rows
   def change do
     create table(@table, prefix: @prefix, primary_key: false) do

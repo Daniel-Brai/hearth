@@ -45,6 +45,7 @@ defmodule Hearth.Umbrella.MixProject do
       {:castore, "~> 1.0"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:excellent_migrations, "~> 0.1.10", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.18", only: :test},
       {:git_hooks, "~> 0.9.0", only: :dev, runtime: false},
       {:git_ops, "~> 2.6.1", only: :dev},
