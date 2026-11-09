@@ -27,6 +27,14 @@ Transcripts and screening run on your own machines by default, and nothing goes
 to an outside AI service unless you turn one on. Photos and videos have their
 location and camera details removed before anyone else can see them.
 
+## <img align="absmiddle" src="docs/images/readme/play-icon.svg" width="14" height="14"/> See it in action
+
+A two minute look at Hearth in use. Click the picture to play it.
+
+<p align="center">
+  <a href="docs/images/demo.mp4"><img src="docs/images/demo-poster.webp" alt="Play the Hearth demo video"></a>
+</p>
+
 ## <img align="absmiddle" src="docs/images/readme/star-icon.svg" width="14" height="14"/> Everything in one place
 
 <table>
