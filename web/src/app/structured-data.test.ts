@@ -93,7 +93,7 @@ describe('eventGraph', () => {
       eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
       eventStatus: 'https://schema.org/EventScheduled',
       location: { '@type': 'VirtualLocation', url: `${origin}/c/elixir/voice/office-hours` },
-      organizer: { '@type': 'Person', url: `${origin}/u/adapark` },
+      organizer: { '@type': 'Person', url: `${origin}/u/adacollins` },
     });
   });
 });
@@ -102,7 +102,7 @@ describe('profileGraph, communityGraph, eventsGraph and siteGraph', () => {
   it('describe a person, a community, its events and the site', () => {
     expect(profileGraph(createSeedState(), 'ada', origin)?.[0]).toMatchObject({
       '@type': 'ProfilePage',
-      mainEntity: { '@type': 'Person', alternateName: '@adapark' },
+      mainEntity: { '@type': 'Person', alternateName: '@adacollins' },
     });
 
     expect(communityGraph(createSeedState(), 'elixir', origin)?.[0]).toMatchObject({

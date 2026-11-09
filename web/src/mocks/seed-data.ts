@@ -68,8 +68,8 @@ export const SEED = {
     ada: {
       lastSeen: 'online',
       show: { communities: 'everyone' },
-      name: 'Ada Park',
-      username: 'adapark',
+      name: 'Ada Collins',
+      username: 'adacollins',
       hue: 'violet',
       private: false,
       bio: 'Maintains a few Hex packages. OTP, supervision trees and the occasional bug hunt.',
@@ -77,17 +77,17 @@ export const SEED = {
       posts: 140,
       answers: 63,
       joined: 'Jan 2024',
-      location: 'Seoul',
+      location: 'London',
       links: [
-        { url: 'https://adapark.dev', label: '' },
-        { url: 'https://github.com/adapark', label: '' },
-        { url: 'https://youtube.com/@adapark', label: 'Talks' },
+        { url: 'https://adacollins.dev', label: '' },
+        { url: 'https://github.com/adacollins', label: '' },
+        { url: 'https://youtube.com/@adacollins', label: 'Talks' },
       ],
     },
     marco: {
       lastSeen: '12m',
-      name: 'Marco Ruiz',
-      username: 'marcoruiz',
+      name: 'Promise Okafor',
+      username: 'promiseokafor',
       hue: 'orange',
       private: false,
       bio: 'Phoenix and LiveView all day.',
@@ -95,12 +95,12 @@ export const SEED = {
       posts: 61,
       answers: 22,
       joined: 'Jun 2024',
-      location: 'Madrid',
+      location: 'Port Harcourt',
     },
     lin: {
       lastSeen: 'online',
-      name: 'Lin Chen',
-      username: 'linchen',
+      name: 'Chidinma Eze',
+      username: 'chidinmaeze',
       hue: 'green',
       private: false,
       bio: 'Writes GenServers for fun.',
@@ -108,7 +108,7 @@ export const SEED = {
       posts: 98,
       answers: 41,
       joined: 'Feb 2024',
-      location: 'Taipei',
+      location: 'Ibadan',
     },
     sam: {
       lastSeen: 'online',
@@ -126,8 +126,8 @@ export const SEED = {
     },
     priya: {
       lastSeen: '2h',
-      name: 'Priya Nair',
-      username: 'priyanair',
+      name: 'Funmi Adebayo',
+      username: 'funmiadebayo',
       hue: 'aqua',
       private: false,
       bio: 'Deleted more React than I wrote.',
@@ -135,7 +135,7 @@ export const SEED = {
       posts: 40,
       answers: 15,
       joined: 'Nov 2024',
-      location: 'Bengaluru',
+      location: 'Lagos',
     },
     tobi: {
       lastSeen: 'online',
@@ -237,7 +237,7 @@ export const SEED = {
         },
       ],
       summary:
-        "Supervision was the big topic. Sam's question about a GenServer losing its state on restart got a solid answer from Lin (keep it in ETS, not the process), and it started live in #help. Priya shared an Oban migration that cut 9,000 lines. Office hours are live right now.",
+        "Supervision was the big topic. Sam's question about a GenServer losing its state on restart got a solid answer from Chidinma (keep it in ETS, not the process), and it started live in #help. Funmi shared an Oban migration that cut 9,000 lines. Office hours are live right now.",
     },
     phoenix: {
       moderation: 'full',
@@ -283,7 +283,7 @@ export const SEED = {
         },
       ],
       summary:
-        'Marco asked how to combine LiveView streams with infinite scroll and filters. Two replies so far, no answer marked yet.',
+        'Promise asked how to combine LiveView streams with infinite scroll and filters. Two replies so far, no answer marked yet.',
     },
     plang: {
       moderation: 'full',
@@ -794,7 +794,7 @@ export const SEED = {
           helpful: 3,
           helpfulMine: false,
           body: [
-            'That was it. Moved it to an ETS table and it **just works** now. Thank you @linchen!',
+            'That was it. Moved it to an ETS table and it **just works** now. Thank you @chidinmaeze!',
           ],
         },
         {
@@ -805,7 +805,7 @@ export const SEED = {
           helpful: 11,
           helpfulMine: false,
           body: [
-            "Adding to Lin's answer: if loading the state is slow, return `{:ok, state, {:continue, :load}}` from `init/1` and load it in `handle_continue/2`, so the supervisor is not blocked. We talked through this in office hours, the transcript is linked above. Docs: https://hexdocs.pm/elixir/GenServer.html",
+            "Adding to Chidinma's answer: if loading the state is slow, return `{:ok, state, {:continue, :load}}` from `init/1` and load it in `handle_continue/2`, so the supervisor is not blocked. We talked through this in office hours, the transcript is linked above. Docs: https://hexdocs.pm/elixir/GenServer.html",
           ],
         },
         {
@@ -886,7 +886,7 @@ export const SEED = {
           age: '10m',
           helpful: 2,
           helpfulMine: false,
-          body: ['That point deserves its own post. Lin, want to write it up for the feed?'],
+          body: ['That point deserves its own post. Chidinma, want to write it up for the feed?'],
         },
         {
           id: 'r27',
@@ -1276,7 +1276,7 @@ export const SEED = {
       {
         id: 'm6',
         who: 'ada',
-        text: 'This comes up a lot. Promoting this to a post so it is searchable. Thanks @linchen!',
+        text: 'This comes up a lot. Promoting this to a post so it is searchable. Thanks @chidinmaeze!',
         time: '9:10 AM',
         boosts: [{ e: ':+1:', n: 5, mine: false }],
       },
@@ -1577,7 +1577,7 @@ export const SEED = {
       id: 'l6',
       who: 'marco',
       action: 'changed',
-      text: 'gave Lin the Moderator role',
+      text: 'gave Chidinma the Moderator role',
       reason: '',
       c: 'phoenix',
       age: '4d',
@@ -1862,7 +1862,7 @@ export const SEED = {
       host: 'ada',
       interested: ['lin', 'sam', 'priya', 'jonas', 'marco'],
       cancelled: false,
-      desc: 'Bring your Elixir, OTP and BEAM questions. Ada and Lin answer live, and good answers get written up as posts afterwards.\n\nThis week: **supervision** and keeping state across restarts.',
+      desc: 'Bring your Elixir, OTP and BEAM questions. Ada and Chidinma answer live, and good answers get written up as posts afterwards.\n\nThis week: **supervision** and keeping state across restarts.',
     },
     {
       id: 'e2',
@@ -1901,7 +1901,7 @@ export const SEED = {
       host: 'lin',
       interested: ['sam', 'priya', 'jonas', 'marco', 'dan'],
       cancelled: false,
-      desc: 'Lin walked through producers, batching and back pressure with Broadway.',
+      desc: 'Chidinma walked through producers, batching and back pressure with Broadway.',
     },
     {
       id: 'e3',
