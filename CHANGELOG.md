@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.7](https://github.com/daniel-brai/hearth/compare/v0.0.6...v0.0.7) (2026-11-15)
+
+
+
+
+### Features:
+
+* pin messages in rooms
+
 ## [v0.0.6](https://github.com/daniel-brai/hearth/compare/v0.0.5...v0.0.6) (2026-11-07)
 
 
