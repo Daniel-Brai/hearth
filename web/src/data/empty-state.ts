@@ -14,6 +14,7 @@ export function emptyState(): AppState {
     posts: [],
     activity: {},
     saved: { ids: [], after: null },
+    pins: {},
     transcripts: {},
     recordings: {},
     chats: {},

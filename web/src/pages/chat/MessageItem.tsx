@@ -71,6 +71,16 @@ function SystemMessage({
       </div>
     );
 
+  if (m.pinNotice !== undefined)
+    return (
+      <div className="message--system" id={'msg-' + m.id}>
+        <Icon name="pin" />
+        <span>
+          <strong>{name}</strong> pinned {m.pinNotice ? `“${m.pinNotice}”` : 'a message'}
+        </span>
+      </div>
+    );
+
   if (m.promoted && chat.target.cid)
     return (
       <div className="message--system" id={'msg-' + m.id}>
@@ -144,6 +154,12 @@ function ChatMessage({ message: m, grouped, chat, answers }: MessageItemProps) {
         ) : null}
 
         {hasText ? <MessageContent message={m} chat={chat} mine={mine} /> : null}
+
+        {chat.pinned.has(m.id) ? (
+          <span className="message__pinned" role="img" aria-label="Pinned" data-tip="Pinned">
+            <Icon name="pin" />
+          </span>
+        ) : null}
 
         {hasText ? tools : null}
       </div>
@@ -348,6 +364,15 @@ function MessageMenu({
         })
       : moderation.remove(ref);
 
+  const togglePin = () => {
+    const pinned = chat.pinned.has(m.id);
+    const send = pinned ? gateway.chat.unpin : gateway.chat.pin;
+
+    void send(target.key, m.id).then((r) =>
+      flash(r.ok ? (pinned ? 'Unpinned' : 'Pinned') : r.error),
+    );
+  };
+
   const report = () =>
     moderation.report({
       c: target.cid ?? 'dm',
@@ -381,6 +406,11 @@ function MessageMenu({
       {mine && !m.poll ? (
         <MenuItem icon="pencil" keys="up" onSelect={() => chat.startEdit(m.id)}>
           Edit
+        </MenuItem>
+      ) : null}
+      {chat.pin ? (
+        <MenuItem icon="pin" onSelect={togglePin}>
+          {chat.pinned.has(m.id) ? 'Unpin' : 'Pin'}
         </MenuItem>
       ) : null}
       {!mine && chat.reports ? (

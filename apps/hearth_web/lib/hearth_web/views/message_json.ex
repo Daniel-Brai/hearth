@@ -27,6 +27,9 @@ defmodule HearthWeb.MessageJSON do
 
   def react(%{on: on}), do: %{on: on}
 
+  def list_pinned(%{messages: messages} = assigns),
+    do: Enum.map(messages, &serialize(&1, assigns))
+
   def list_scheduled(%{scheduled: scheduled, media: media}),
     do: Enum.map(scheduled, &serialize_scheduled(&1, media))
 

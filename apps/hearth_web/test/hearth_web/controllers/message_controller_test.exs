@@ -368,6 +368,80 @@ defmodule HearthWeb.MessageControllerTest do
     end
   end
 
+  describe "list_pinned" do
+    test "fails for someone outside the community", %{conn: conn, room: room} do
+      outsider = TestUtils.register_random_user!()
+
+      assert conn
+             |> auth_conn(outsider)
+             |> get(~p"/api/rooms/#{room.id}/messages/pinned")
+             |> valid_response(403)
+    end
+
+    test "lists pinned messages", %{conn: conn, owner: owner, member: member, room: room} do
+      message = TestUtils.send_random_message!(member, room)
+      :ok = Chat.pin_message(owner, message)
+
+      assert [%{"id" => id}] =
+               conn
+               |> auth_conn(member)
+               |> get(~p"/api/rooms/#{room.id}/messages/pinned")
+               |> valid_response(200)
+
+      assert id == message.id
+    end
+  end
+
+  describe "pin" do
+    test "fails without message.pin", %{conn: conn, member: member, room: room} do
+      message = TestUtils.send_random_message!(member, room)
+
+      assert %{"code" => "forbidden"} =
+               conn
+               |> auth_conn(member)
+               |> post(~p"/api/messages/#{message.id}/pin")
+               |> valid_response(403)
+    end
+
+    test "returns 404 for a message that doesn't exist", %{conn: conn, owner: owner} do
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/messages/#{Common.new_id()}/pin")
+             |> valid_response(404)
+    end
+
+    test "pins a message", %{conn: conn, owner: owner, member: member, room: room} do
+      message = TestUtils.send_random_message!(member, room)
+
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/messages/#{message.id}/pin")
+             |> response(204)
+    end
+  end
+
+  describe "unpin" do
+    test "fails without message.pin", %{conn: conn, owner: owner, member: member, room: room} do
+      message = TestUtils.send_random_message!(member, room)
+      :ok = Chat.pin_message(owner, message)
+
+      assert conn
+             |> auth_conn(member)
+             |> delete(~p"/api/messages/#{message.id}/pin")
+             |> valid_response(403)
+    end
+
+    test "unpins a message", %{conn: conn, owner: owner, member: member, room: room} do
+      message = TestUtils.send_random_message!(member, room)
+      :ok = Chat.pin_message(owner, message)
+
+      assert conn
+             |> auth_conn(owner)
+             |> delete(~p"/api/messages/#{message.id}/pin")
+             |> response(204)
+    end
+  end
+
   describe "list_scheduled" do
     test "fails without signing in", %{conn: conn} do
       assert conn |> get(~p"/api/messages/scheduled") |> valid_response(401)

@@ -33,7 +33,7 @@ defmodule Hearth.Chat.Message do
     field :descendant_count, :integer, default: 0
     field :recent_repliers, {:array, Ecto.UUID}, default: []
     field :status, Ecto.Enum, values: ~w[published pending removed]a, default: :published
-    field :kind, Ecto.Enum, values: ~w[text promoted action sound poll]a, default: :text
+    field :kind, Ecto.Enum, values: ~w[text promoted action sound poll pinned]a, default: :text
     field :post_id, Ecto.UUID
     field :edited_at, :utc_datetime_usec
     field :preview_hidden_at, :utc_datetime_usec
@@ -57,7 +57,7 @@ defmodule Hearth.Chat.Message do
           descendant_count: integer(),
           recent_repliers: [T.id()],
           status: :published | :pending | :removed,
-          kind: :text | :promoted | :action | :sound | :poll,
+          kind: :text | :promoted | :action | :sound | :poll | :pinned,
           post_id: nil | T.id(),
           edited_at: nil | DateTime.t(),
           preview_hidden_at: nil | DateTime.t(),
@@ -92,8 +92,9 @@ defmodule Hearth.Chat.Message do
 
   # Text may be left out when files are attached
   defp validate_body(changeset) do
-    case get_field(changeset, :attachment_ids) do
-      [_file | _rest] -> put_change(changeset, :body, get_field(changeset, :body) || "")
+    case {get_field(changeset, :kind), get_field(changeset, :attachment_ids)} do
+      {:pinned, _files} -> put_change(changeset, :body, get_field(changeset, :body) || "")
+      {_kind, [_file | _rest]} -> put_change(changeset, :body, get_field(changeset, :body) || "")
       _none -> validate_required(changeset, [:body])
     end
   end
@@ -103,7 +104,7 @@ defmodule Hearth.Chat.Message do
       :sound ->
         validate_inclusion(changeset, :body, @sounds)
 
-      :action ->
+      kind when kind in [:action, :pinned] ->
         validate_change(changeset, :attachment_ids, &no_files/2)
 
       :poll ->

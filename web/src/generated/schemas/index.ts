@@ -120,6 +120,7 @@ export * from './message-list-conversation-params';
 export * from './message-list-conversation200';
 export * from './message-list-room-params';
 export * from './message-list-room200';
+export * from './message-pins-changed';
 export * from './message-reacted';
 export * from './message-removed';
 export * from './message';

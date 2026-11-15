@@ -607,6 +607,7 @@ export const SEED = {
   },
   activity: {},
   saved: { ids: [], after: null },
+  pins: {},
   posts: [
     {
       id: 'p20',
@@ -1629,6 +1630,7 @@ export const SEED = {
         'room.update',
         'event.create',
         'post.pin',
+        'message.pin',
         'post.answer',
         'chat.promote',
         'mention.all',
@@ -1650,6 +1652,7 @@ export const SEED = {
         'voice-recording.create',
         'event.create',
         'post.pin',
+        'message.pin',
         'post.answer',
         'chat.promote',
         'mention.all',

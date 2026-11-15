@@ -711,6 +711,21 @@ defmodule Hearth.TestUtils do
     Live.whereis(session.id)
   end
 
+  def send_random_message!(user, place, opts \\ []) do
+    params = Map.merge(%{body: Lorem.sentence()}, Map.new(opts))
+    {:ok, message} = Chat.send_message(user, place, params)
+
+    message
+  end
+
+  def send_random_messages!(user, place, count) do
+    Enum.map(1..count, fn _n -> send_random_message!(user, place) end)
+  end
+
+  def pin_messages!(user, messages) do
+    Enum.each(messages, fn message -> :ok = Chat.pin_message(user, message) end)
+  end
+
   def create_random_room!(community, opts \\ []) do
     {:ok, owner} = Accounts.get_user(id: community.owner_id)
     params = Map.merge(%{name: "Room #{System.unique_integer([:positive])}"}, Map.new(opts))

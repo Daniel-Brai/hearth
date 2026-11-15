@@ -22,7 +22,7 @@ import {
 } from '@/data/voice-session';
 import type { AppState } from '@/domain/app-state';
 import { visibilityOf } from '@/domain/audience';
-import { KIND_LIB, ROOM_DEFAULTS, SOUNDS, TEMPLATES, TITLE_MAX } from '@/domain/catalog';
+import { KIND_LIB, MOST_PINS, ROOM_DEFAULTS, SOUNDS, TEMPLATES, TITLE_MAX } from '@/domain/catalog';
 import { nowTime } from '@/domain/format';
 import { stripPrefix } from '@/domain/links';
 import { pollOpen, pollProblem, withVote } from '@/domain/polls';
@@ -1587,6 +1587,42 @@ export class MockGateway implements HearthGateway {
 
       this.disarm('poll-' + id);
       this.endPoll(key, id);
+
+      return ok(undefined);
+    },
+    pin: async (key: string, id: string): Promise<Result> => {
+      const state = this.state();
+      const [cid] = key.split('/') as [string, string];
+      const m = state.chats[key]?.find((x) => x.id === id);
+
+      if (!m || m.system) return fail('That message can no longer be pinned.');
+      if (!canDo(state, cid, 'message.pin')) return fail('You need the Pin messages permission');
+      if (state.pins[key]?.some((p) => p.id === id)) return ok(undefined);
+
+      this.store.set((d) => {
+        d.pins[key] = [clone(m), ...(d.pins[key] ?? [])].slice(0, MOST_PINS);
+        d.chats[key]?.push({
+          id: this.store.nextId('m'),
+          who: this.me(),
+          text: '',
+          time: nowTime(),
+          boosts: [],
+          system: true,
+          pinNotice: m.text.slice(0, 80),
+        });
+      });
+
+      return ok(undefined);
+    },
+    unpin: async (key: string, id: string): Promise<Result> => {
+      const [cid] = key.split('/') as [string, string];
+
+      if (!canDo(this.state(), cid, 'message.pin'))
+        return fail('You need the Pin messages permission');
+
+      this.store.set((d) => {
+        d.pins[key] = (d.pins[key] ?? []).filter((p) => p.id !== id);
+      });
 
       return ok(undefined);
     },

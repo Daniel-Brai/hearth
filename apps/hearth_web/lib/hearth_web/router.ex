@@ -255,6 +255,7 @@ defmodule HearthWeb.Router do
          :conversation_schedule
 
     get "/rooms/:room_id/messages", MessageController, :list_room
+    get "/rooms/:room_id/messages/pinned", MessageController, :list_pinned
     post "/rooms/:room_id/messages", MessageController, :send_room
     post "/rooms/:room_id/polls", PollController, :create
     get "/polls/:id", PollController, :show
@@ -268,6 +269,8 @@ defmodule HearthWeb.Router do
     patch "/messages/:id", MessageController, :update
     delete "/messages/:id", MessageController, :delete
     post "/messages/:id/reactions", MessageController, :react
+    post "/messages/:id/pin", MessageController, :pin
+    delete "/messages/:id/pin", MessageController, :unpin
     post "/messages/:id/read", MessageController, :read
     put "/messages/:id/preview", MessageController, :preview
     get "/messages/unread", MessageController, :unread

@@ -20,6 +20,7 @@ export const DEFAULT_PERMISSIONS: Record<'member' | 'moderator', Permission[]> =
     'voice-recording.create',
     'event.create',
     'post.pin',
+    'message.pin',
     'post.answer',
     'chat.promote',
     'mention.all',

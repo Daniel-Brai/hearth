@@ -7,4 +7,4 @@
 /**
  * A promoted message is the room's note about a new post, an action is a /me line, a sound is a /play whose body is its name and a poll's body is its question
  */
-export type ChatMessageKind = 'text' | 'promoted' | 'action' | 'sound' | 'poll';
+export type ChatMessageKind = 'text' | 'promoted' | 'action' | 'sound' | 'poll' | 'pinned';

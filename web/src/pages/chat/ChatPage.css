@@ -51,3 +51,28 @@
 .members-popup__name small { font-size: var(--text-x-small); }
 .members-popup__message { flex: none; } }
 
+
+@layer components {
+  .pin-bar {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem var(--gutter-right) 0.4rem var(--gutter-left);
+    border-block-end: 1px solid var(--color-ink-lighter); background: var(--color-canvas);
+  }
+  .pin-bar__marks { display: grid; gap: 2px; align-self: stretch; padding-block: 0.15rem; }
+  .pin-bar__mark { inline-size: 3px; border-radius: 2px; background: var(--color-ink-lighter); }
+  .pin-bar__mark.is-on { background: var(--color-link); }
+  .pin-bar__jump {
+    display: flex; align-items: center; gap: 0.6rem; flex: 1; min-inline-size: 0; padding: 0.2rem 0.3rem; border: 0; border-radius: 0.5rem;
+    background: none; color: inherit; cursor: pointer; text-align: start; transition: background-color 120ms ease;
+  }
+  .pin-bar__jump:hover { background: var(--color-ink-lightest); }
+  .pin-bar__jump > svg { flex: none; color: var(--color-ink-dark); }
+  .pin-bar__text { display: grid; min-inline-size: 0; line-height: 1.3; font-size: var(--text-small); }
+  .pin-bar__text strong { color: var(--color-link); font-size: var(--text-x-small); }
+  .message.is-flashed { animation: pin-flash 1.6s ease-out; }
+  @keyframes pin-flash { from { background: var(--color-selected); } to { background: transparent; } }
+}
+
+@layer components {
+  .message__pinned { display: inline-grid; align-self: center; color: var(--color-ink-dark); }
+  .message__pinned svg { inline-size: 0.85rem; block-size: 0.85rem; }
+}

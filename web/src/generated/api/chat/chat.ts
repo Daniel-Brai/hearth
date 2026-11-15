@@ -812,6 +812,126 @@ export const messageUpdate = async (
   });
 };
 
+export type messageUnpinResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type messageUnpinResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageUnpinResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type messageUnpinResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messageUnpinResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messageUnpinResponseSuccess = messageUnpinResponse204 & {
+  headers: Headers;
+};
+export type messageUnpinResponseError = (
+  | messageUnpinResponse401
+  | messageUnpinResponse403
+  | messageUnpinResponse404
+  | messageUnpinResponse422
+) & {
+  headers: Headers;
+};
+
+export type messageUnpinResponse = messageUnpinResponseSuccess | messageUnpinResponseError;
+
+export const getMessageUnpinUrl = (id: string) => {
+  return `/api/messages/${id}/pin`;
+};
+
+/**
+ * Needs message.pin
+ * @summary Unpin a room message
+ */
+export const messageUnpin = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageUnpinResponse> => {
+  return customFetch<messageUnpinResponse>(getMessageUnpinUrl(id), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export type messagePinResponse204 = {
+  data: NoContentResponse;
+  status: 204;
+};
+
+export type messagePinResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type messagePinResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messagePinResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type messagePinResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messagePinResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messagePinResponseSuccess = messagePinResponse204 & {
+  headers: Headers;
+};
+export type messagePinResponseError = (
+  | messagePinResponse400
+  | messagePinResponse401
+  | messagePinResponse403
+  | messagePinResponse404
+  | messagePinResponse422
+) & {
+  headers: Headers;
+};
+
+export type messagePinResponse = messagePinResponseSuccess | messagePinResponseError;
+
+export const getMessagePinUrl = (id: string) => {
+  return `/api/messages/${id}/pin`;
+};
+
+/**
+ * Needs message.pin. A fourth pin takes the place of the oldest
+ * @summary Pin a room message
+ */
+export const messagePin = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messagePinResponse> => {
+  return customFetch<messagePinResponse>(getMessagePinUrl(id), {
+    ...options,
+    method: 'POST',
+  });
+};
+
 export type messagePreviewResponse204 = {
   data: NoContentResponse;
   status: 204;
@@ -1414,6 +1534,64 @@ export const messageSendRoom = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(sendMessageBody),
+  });
+};
+
+export type messageListPinnedResponse200 = {
+  data: ChatMessage[];
+  status: 200;
+};
+
+export type messageListPinnedResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type messageListPinnedResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type messageListPinnedResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type messageListPinnedResponse422 = {
+  data: UnprocessableContentResponse;
+  status: 422;
+};
+
+export type messageListPinnedResponseSuccess = messageListPinnedResponse200 & {
+  headers: Headers;
+};
+export type messageListPinnedResponseError = (
+  | messageListPinnedResponse401
+  | messageListPinnedResponse403
+  | messageListPinnedResponse404
+  | messageListPinnedResponse422
+) & {
+  headers: Headers;
+};
+
+export type messageListPinnedResponse =
+  messageListPinnedResponseSuccess | messageListPinnedResponseError;
+
+export const getMessageListPinnedUrl = (roomId: string) => {
+  return `/api/rooms/${roomId}/messages/pinned`;
+};
+
+/**
+ * Newest pin first, three at most
+ * @summary List a room's pinned messages
+ */
+export const messageListPinned = async (
+  roomId: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<messageListPinnedResponse> => {
+  return customFetch<messageListPinnedResponse>(getMessageListPinnedUrl(roomId), {
+    ...options,
+    method: 'GET',
   });
 };
 

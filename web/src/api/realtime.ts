@@ -14,6 +14,7 @@ import type {
   MemberLeft,
   MessageCreated,
   MessageEdited,
+  MessagePinsChanged,
   MessageReacted,
   MessageRemoved,
   NotificationCreated,
@@ -48,6 +49,7 @@ export type ChannelEvents = {
   MessageCreated: MessageCreated;
   MessageEdited: MessageEdited;
   MessageReacted: MessageReacted;
+  MessagePinsChanged: MessagePinsChanged;
   MessageRemoved: MessageRemoved;
   SoundPlayed: SoundPlayed;
   PollUpdated: PollUpdated;

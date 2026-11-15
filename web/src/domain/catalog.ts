@@ -9,6 +9,9 @@ import type {
 
 const MB = 1024 * 1024;
 
+/** A newer pin takes the place of the oldest, as on the server */
+export const MOST_PINS = 3;
+
 export const UPLOAD_LIMITS = {
   image: 10 * MB,
   video: 100 * MB,
@@ -68,6 +71,7 @@ export const PERMS: readonly [key: Permission, label: string, description: strin
   ['room.delete', 'Delete rooms', 'Delete a room for good, with its messages and events'],
   ['event.create', 'Schedule events', 'Create, edit and cancel community events'],
   ['post.pin', 'Pin posts', 'Keep posts at the top of the feed'],
+  ['message.pin', 'Pin messages', 'Keep up to three messages at the top of a room'],
   ['post.answer', 'Mark answers', 'Stamp the reply that solved a question'],
   [
     'chat.promote',

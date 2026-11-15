@@ -329,6 +329,8 @@ export interface HearthGateway {
     startPoll(key: string, poll: NewPoll): Promise<Result>;
     vote(key: string, id: string, optionIds: string[]): Promise<Result>;
     closePoll(key: string, id: string): Promise<Result>;
+    pin(key: string, id: string): Promise<Result>;
+    unpin(key: string, id: string): Promise<Result>;
     hidePreview(key: string, id: string): void;
     linkPreview(url: string): Promise<LinkPreview | null>;
     loadReplies(key: string, parent: string): Promise<Result>;

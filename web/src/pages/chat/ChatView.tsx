@@ -29,6 +29,7 @@ import {
 import { MessageBox, SelectBar } from './ChatComposerBar';
 import { ChatHeader } from './ChatHeader';
 import { MessageItem } from './MessageItem';
+import { PinnedBar } from './PinnedBar';
 import { PromoteDialog } from './PromoteDialog';
 import { useChatComposer } from './use-chat-composer';
 import { useChatScroll } from './use-chat-scroll';
@@ -44,6 +45,7 @@ type ChatViewProps = {
 
 export function ChatView({ target, embedded = false }: ChatViewProps) {
   const messages = useAppState((state) => state.chats[target.key] ?? NONE);
+  const pins = useAppState((state) => state.pins[target.key] ?? NONE);
   const threads = chatThreads(messages);
 
   const view = useAppState((state) => {
@@ -63,6 +65,7 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
         canDo(state, cid, 'chat.promote') &&
         roomAccess(state, cid, target.room) !== 'roles',
       reports: target.dm !== null || (!!cid && reportsOn(state, cid, target.room)),
+      pin: target.dm === null && canDo(state, cid, 'message.pin'),
       previews: roomSettings(state, target.key).previews,
       soundsOn: state.settings.sounds,
       unmoderated: !!cid && modLevel(state, cid, target.room) === 'none',
@@ -96,6 +99,8 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
     mod: view.mod,
     promote: view.promote,
     reports: view.reports,
+    pin: view.pin,
+    pinned: new Set(pins.map((p) => p.id)),
     previews: view.previews,
     selectMode,
     picked: selection.picked,
@@ -113,6 +118,8 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
 
   const body = (
     <div className="chat">
+      {target.dm === null ? <PinnedBar chatKey={target.key} canPin={view.pin} /> : null}
+
       <MessageList
         messages={messages}
         threads={threads}

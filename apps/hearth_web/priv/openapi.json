@@ -292,7 +292,8 @@
               "promoted",
               "action",
               "sound",
-              "poll"
+              "poll",
+              "pinned"
             ]
           },
           "mentions_all": {
@@ -2706,6 +2707,7 @@
                 "member.ban",
                 "mention.all",
                 "message.create",
+                "message.pin",
                 "post.answer",
                 "post.create",
                 "post.pin",
@@ -2847,6 +2849,20 @@
           "message_id",
           "room_id",
           "conversation_id"
+        ],
+        "type": "object"
+      },
+      "MessagePinsChanged": {
+        "title": "MessagePinsChanged",
+        "description": "On room:<id> when a message is pinned or unpinned there",
+        "properties": {
+          "room_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "room_id"
         ],
         "type": "object"
       },
@@ -12174,6 +12190,93 @@
         "summary": "Edit a message"
       }
     },
+    "/api/messages/{id}/pin": {
+      "delete": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs message.pin",
+        "operationId": "message_unpin_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Unpin a room message"
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/no_content"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Needs message.pin. A fourth pin takes the place of the oldest",
+        "operationId": "message_pin_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Pin a room message"
+      }
+    },
     "/api/messages/{id}/preview": {
       "put": {
         "tags": [
@@ -15555,6 +15658,59 @@
           "required": true
         },
         "summary": "Send a message to a room"
+      }
+    },
+    "/api/rooms/{room_id}/messages/pinned": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChatMessage"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          },
+          "422": {
+            "$ref": "#/components/responses/unprocessable_content"
+          }
+        },
+        "description": "Newest pin first, three at most",
+        "operationId": "message_list_pinned_U4A6L3I",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "List a room's pinned messages"
       }
     },
     "/api/rooms/{room_id}/messages/scheduled": {

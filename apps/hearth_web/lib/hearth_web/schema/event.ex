@@ -6,6 +6,7 @@ defmodule HearthWeb.Schema.Event do
     Event.MessageEdited,
     Event.MessageReacted,
     Event.MessageRemoved,
+    Event.MessagePinsChanged,
     Event.SoundPlayed,
     Event.PollUpdated,
     Event.ContentRemoved,

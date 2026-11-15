@@ -60,6 +60,84 @@ defmodule HearthWeb.MessageController do
     end
   end
 
+  operation :list_pinned,
+    summary: "List a room's pinned messages",
+    description: "Newest pin first, three at most",
+    security: [%{"bearer" => []}],
+    parameters: [room_id: @id],
+    responses: [
+      ok: {%{type: :array, items: Schema.ChatMessage}, description: "OK"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"room_id" => ~V[required|uuid]}
+
+  def list_pinned(%Conn{assigns: %{auth: %{}}} = conn, %{"room_id" => room_id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, room} <- Communities.view_room(auth, id: room_id, archived_at: nil),
+         {:ok, messages} <- Chat.list_pins(auth, room) do
+      render(conn, :list_pinned,
+        messages: messages,
+        authors: Authors.load(messages),
+        attachments: Attachments.load(messages, :message),
+        polls: Chat.list_polls(auth, messages)
+      )
+    end
+  end
+
+  operation :pin,
+    summary: "Pin a room message",
+    description: "Needs message.pin. A fourth pin takes the place of the oldest",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def pin(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, message} <- Chat.get_message(id),
+         :ok <- Chat.pin_message(auth, message) do
+      send_resp(conn, :no_content, "")
+    end
+  end
+
+  operation :unpin,
+    summary: "Unpin a room message",
+    description: "Needs message.pin",
+    security: [%{"bearer" => []}],
+    parameters: [id: @id],
+    responses: [
+      no_content: %Reference{"$ref": "#/components/responses/no_content"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
+    ]
+
+  @validate %{"id" => ~V[required|uuid]}
+
+  def unpin(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    with {:ok, message} <- Chat.get_message(id),
+         :ok <- Chat.unpin_message(auth, message) do
+      send_resp(conn, :no_content, "")
+    end
+  end
+
   operation :send_room,
     summary: "Send a message to a room",
     security: [%{"bearer" => []}],

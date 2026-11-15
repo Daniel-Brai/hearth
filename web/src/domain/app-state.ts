@@ -47,6 +47,8 @@ export type AppState = {
   activity: Record<string, ProfileActivity>;
   // Saved posts newest saved first, loaded with the Saved screen
   saved: { ids: string[]; after: string | null };
+  // Kept apart from chats since a pin may be older than the chat has loaded
+  pins: Record<string, Message[]>;
   transcripts: Record<string, Transcript>;
   recordings: Record<string, Recording>;
   chats: Record<string, Message[]>;

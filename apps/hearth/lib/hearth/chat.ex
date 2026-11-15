@@ -1,7 +1,13 @@
 defmodule Hearth.Chat do
-  events = [MessageCreated, MessageRemoved, PollUpdated, ScheduledMessageChanged]
+  events = [
+    MessageCreated,
+    MessagePinsChanged,
+    MessageRemoved,
+    PollUpdated,
+    ScheduledMessageChanged
+  ]
 
-  default = [Conversation, Message, Poll, ScheduledMessage | events]
+  default = [Conversation, Message, Pin, Poll, ScheduledMessage | events]
 
   exports =
     case Mix.env() do
@@ -30,6 +36,7 @@ defmodule Hearth.Chat do
   alias Hearth.Buffer
   alias Hearth.Chat.Command.DeleteMessage
   alias Hearth.Chat.Command.EditMessage
+  alias Hearth.Chat.Command.PinMessage
   alias Hearth.Chat.Command.RescheduleMessage
   alias Hearth.Chat.Command.ScheduleMessage
   alias Hearth.Chat.Command.SendMessage
@@ -40,8 +47,10 @@ defmodule Hearth.Chat do
   alias Hearth.Chat.Message
   alias Hearth.Chat.MessageCreated
   alias Hearth.Chat.MessageEdited
+  alias Hearth.Chat.MessagePinsChanged
   alias Hearth.Chat.MessageReacted
   alias Hearth.Chat.MessageRemoved
+  alias Hearth.Chat.Pin
   alias Hearth.Chat.Poll
   alias Hearth.Chat.PollUpdated
   alias Hearth.Chat.PollVote
@@ -277,6 +286,8 @@ defmodule Hearth.Chat do
       end
 
     with {:ok, message} <- result do
+      unpinned(message)
+
       broadcast(%MessageRemoved{
         message_id: message.id,
         room_id: message.room_id,
@@ -404,6 +415,44 @@ defmodule Hearth.Chat do
     end
   end
 
+  @pinnable ~w[text action poll]a
+
+  @spec list_pins(User.t(), Room.t()) :: {:ok, [Message.t()]} | {:error, :forbidden | :not_found}
+  def list_pins(%User{} = user, %Room{} = room) do
+    with :ok <- may_read(user, room) do
+      ids = Pin.message_ids(room.id)
+
+      shown =
+        [id: ids, deleted_at: nil, status: :published] |> Message.all() |> Map.new(&{&1.id, &1})
+
+      {:ok, ids |> Enum.map(&shown[&1]) |> Enum.reject(&is_nil/1)}
+    end
+  end
+
+  @spec pin_message(User.t(), Message.t()) ::
+          :ok | {:error, :forbidden | :not_found | :not_pinnable | Changeset.t()}
+  def pin_message(%User{} = user, %Message{} = message) do
+    with {:ok, room} <- room_of(message),
+         :ok <- may_read(user, room),
+         :ok <- may_pin(user, room),
+         :ok <- pinnable(message),
+         {:ok, notice} <- PinMessage.execute(user, room, message) do
+      broadcast(%MessagePinsChanged{room_id: room.id})
+      announce_pin(notice, room)
+    end
+  end
+
+  @spec unpin_message(User.t(), Message.t()) :: :ok | {:error, :forbidden | :not_found}
+  def unpin_message(%User{} = user, %Message{} = message) do
+    with {:ok, room} <- room_of(message),
+         :ok <- may_read(user, room),
+         :ok <- may_pin(user, room) do
+      :ok = Pin.remove(message.id)
+      broadcast(%MessagePinsChanged{room_id: room.id})
+      :ok
+    end
+  end
+
   # Every id must be a message still showing in the room that someone wrote, oldest first
   @spec get_promotable(Room.t(), [T.id()]) ::
           {:ok, [Message.t()]} | {:error, :invalid_messages}
@@ -522,6 +571,21 @@ defmodule Hearth.Chat do
   end
 
   defp viewing(user, %Conversation{}), do: user.id
+
+  defp room_of(%Message{room_id: nil}), do: {:error, :not_found}
+  defp room_of(%Message{room_id: id}), do: Communities.get_room(id: id)
+
+  defp may_pin(user, %Room{community_id: community_id}) do
+    case IAM.can?(user, :pin, %{type: :message, community_id: community_id}) do
+      true -> :ok
+      false -> {:error, :forbidden}
+    end
+  end
+
+  defp pinnable(%Message{kind: kind, status: :published, deleted_at: nil}) when kind in @pinnable,
+    do: :ok
+
+  defp pinnable(%Message{}), do: {:error, :not_pinnable}
 
   defp may_write(user, %Room{} = room) do
     with :ok <- may_read(user, room), do: may_post(user, room)
@@ -714,6 +778,20 @@ defmodule Hearth.Chat do
       counts: Enum.map(poll.options, &%{option_id: &1.id, votes: Map.get(counts, &1.id, 0)}),
       closed_at: poll.closed_at
     })
+  end
+
+  defp announce_pin(nil, _room), do: :ok
+
+  defp announce_pin(%Message{} = notice, room) do
+    announce(notice, room, nil)
+    :ok
+  end
+
+  defp unpinned(%Message{room_id: nil}), do: :ok
+
+  defp unpinned(%Message{} = message) do
+    :ok = Pin.remove(message.id)
+    broadcast(%MessagePinsChanged{room_id: message.room_id})
   end
 
   defp broadcast(event), do: PubSub.broadcast(@topic, event)

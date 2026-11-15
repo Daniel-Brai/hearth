@@ -71,6 +71,11 @@
   operation: pin
   roles: [community.owner, community.moderator]
 
+# Pin room messages to the bar at the top of the room.
+- resource: message
+  operation: pin
+  roles: [community.owner, community.moderator]
+
 # Authors can always mark the answer on their own question.
 - resource: post
   operation: answer

@@ -11,8 +11,10 @@ import {
   messageConversationSchedule,
   messageDelete,
   messageListConversation,
+  messageListPinned,
   messageListRoom,
   messageListScheduled,
+  messagePin,
   messagePreview,
   messageReact,
   messageReschedule,
@@ -20,6 +22,7 @@ import {
   messageSendConversation,
   messageSendRoom,
   messageSendScheduled,
+  messageUnpin,
   messageUnread,
   messageUnschedule,
   messageUpdate,
@@ -269,6 +272,32 @@ export function createChatGateway(
       });
   };
 
+  const loadPins = async (key: string, roomId: string) => {
+    const answer = await call(() => messageListPinned(roomId));
+
+    if (answer.status !== 200) return;
+
+    ctx.store.set((state) => {
+      for (const m of answer.data) if (m.author) state.people[m.author.id] ??= toPerson(m.author);
+
+      state.pins[key] = answer.data.map(toMessage);
+    });
+  };
+
+  const pinning = async (key: string, send: () => Promise<{ status: number; data: unknown }>) => {
+    const place = await placeOf(key);
+
+    if (!place.ok) return place;
+
+    const answer = await call(send);
+
+    if (answer.status !== 204) return failed(answer);
+
+    await loadPins(key, place.value.id);
+
+    return ok(undefined);
+  };
+
   const setPoll = (key: string, id: string, change: (poll: Poll) => Poll) =>
     ctx.store.set((state) => {
       const message = state.chats[key]?.find((m) => m.id === id);
@@ -283,8 +312,11 @@ export function createChatGateway(
 
       if (!place.ok) return place;
 
+      if (place.value.kind === 'room') void loadPins(key, place.value.id);
+
       ctx.watch(topicOf(place.value), (realtime, t) => {
         const stops = [
+          realtime.onPush(t, 'MessagePinsChanged', (e) => void loadPins(key, e.room_id)),
           // A reply isn't in the room's top level, so its parent's answers load too
           realtime.onPush(t, 'MessageCreated', (e) => {
             setTyping(key, e.author_id, false);
@@ -582,6 +614,9 @@ export function createChatGateway(
 
       return ok(undefined);
     },
+    pin: (key, id) => pinning(key, () => messagePin(id)),
+    unpin: (key, id) => pinning(key, () => messageUnpin(id)),
+
     toggleBoost: (key, id, emoji) => {
       if (id.startsWith('pending-')) return;
 

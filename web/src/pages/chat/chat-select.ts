@@ -17,6 +17,8 @@ export type ChatContext = {
   readonly mod: boolean;
   readonly promote: boolean;
   readonly reports: boolean;
+  readonly pin: boolean;
+  readonly pinned: ReadonlySet<string>;
   readonly previews: boolean;
   readonly selectMode: boolean;
   readonly picked: readonly string[];

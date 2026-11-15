@@ -13,6 +13,7 @@ export const PERMISSIONS = [
   'room.delete',
   'event.create',
   'post.pin',
+  'message.pin',
   'post.answer',
   'chat.promote',
   'mention.all',

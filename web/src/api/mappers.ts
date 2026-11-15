@@ -317,6 +317,7 @@ export const toMessage = (message: ChatMessage): Message => ({
     ? { promoted: { id: message.post_id, title: message.body ?? '' } }
     : {}),
   ...(message.poll ? { poll: toPoll(message.poll) } : {}),
+  ...(message.kind === 'pinned' ? { pinNotice: message.body ?? '' } : {}),
   files: toAttachments(message.attachments),
   // Messages only count their direct answers
   answerCounts: { direct: message.child_count, total: message.child_count },

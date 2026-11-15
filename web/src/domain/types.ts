@@ -265,6 +265,8 @@ export type Message = {
   promoted?: { id: string; title: string };
   /** Set on a poll, whose question is the text */
   poll?: Poll;
+  /** The start of the message someone pinned, on the notice that says so */
+  pinNotice?: string;
 };
 
 export type RoomSoundMode = 'everyone' | 'roles' | 'people';

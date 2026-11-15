@@ -16,6 +16,7 @@ export type MembershipPermissionsItem =
   | 'member.ban'
   | 'mention.all'
   | 'message.create'
+  | 'message.pin'
   | 'post.answer'
   | 'post.create'
   | 'post.pin'
