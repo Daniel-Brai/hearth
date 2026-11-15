@@ -29,11 +29,9 @@ location and camera details removed before anyone else can see them.
 
 ## <img align="absmiddle" src="docs/images/readme/play-icon.svg" width="14" height="14"/> See it in action
 
-A two minute look at Hearth in use. Click the picture to play it.
+A two minute look at Hearth in use.
 
-<p align="center">
-  <a href="docs/images/demo.mp4"><img src="docs/images/demo-poster.webp" alt="Play the Hearth demo video"></a>
-</p>
+https://github.com/user-attachments/assets/505fed25-1a26-4072-bf2b-8c39fe00cb83
 
 ## <img align="absmiddle" src="docs/images/readme/star-icon.svg" width="14" height="14"/> Everything in one place
 
