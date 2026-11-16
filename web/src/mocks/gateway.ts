@@ -1626,6 +1626,8 @@ export class MockGateway implements HearthGateway {
 
       return ok(undefined);
     },
+    reach: (key: string, id: string): Promise<Result<boolean>> =>
+      Promise.resolve(ok(this.state().chats[key]?.some((m) => m.id === id) ?? false)),
     hidePreview: (key: string, id: string) =>
       this.store.set((state) => {
         const m = state.chats[key]?.find((x) => x.id === id);

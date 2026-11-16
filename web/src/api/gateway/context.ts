@@ -332,6 +332,25 @@ export class GatewayContext {
     });
   }
 
+  /** Older messages go before every one loaded so the chat stays oldest first */
+  rememberOlder(key: string, messages: readonly ChatMessage[]) {
+    this.rememberMentions(messages.map((m) => m.body));
+
+    this.store.set((state) => {
+      for (const m of messages) if (m.author) state.people[m.author.id] ??= toPerson(m.author);
+
+      const chat = state.chats[key] ?? [];
+      const known = new Set(chat.map((m) => m.id));
+
+      const added = [...messages]
+        .reverse()
+        .map(toMessage)
+        .filter((m) => !known.has(m.id));
+
+      state.chats[key] = [...added, ...chat];
+    });
+  }
+
   rememberKinds(slug: string, kinds: readonly PostKind[]) {
     this.indexKinds(slug, kinds);
 

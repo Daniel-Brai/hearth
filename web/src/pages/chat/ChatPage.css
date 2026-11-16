@@ -66,6 +66,9 @@
   }
   .pin-bar__jump:hover { background: var(--color-ink-lightest); }
   .pin-bar__jump > svg { flex: none; color: var(--color-ink-dark); }
+  .pin-bar__jump:disabled { cursor: progress; }
+  .pin-bar.is-busy .pin-bar__jump > svg { animation: pin-reach 0.9s ease-in-out infinite alternate; }
+  @keyframes pin-reach { to { opacity: 0.3; } }
   .pin-bar__text { display: grid; min-inline-size: 0; line-height: 1.3; font-size: var(--text-small); }
   .pin-bar__text strong { color: var(--color-link); font-size: var(--text-x-small); }
   .message.is-flashed { animation: pin-flash 1.6s ease-out; }

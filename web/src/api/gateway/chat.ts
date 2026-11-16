@@ -34,6 +34,7 @@ import { postPromote } from '@/generated/api/forum/forum';
 import { mediaUnfurl } from '@/generated/api/media/media';
 import type {
   ScheduledMessage as ApiScheduledMessage,
+  PageMeta,
   SendMessageBodyKind,
 } from '@/generated/schemas';
 import { isTune, playTune } from '@/runtime/sounds';
@@ -45,7 +46,7 @@ import { setCount, setMine } from './boosts';
 import { call, errorCode, failed, type GatewayContext } from './context';
 
 type Place = { kind: 'room' | 'conversation'; id: string };
-type Paging = { parent_id?: string };
+type Paging = { parent_id?: string; after?: string };
 type Body = {
   body: string;
   reply_to_id: string | null;
@@ -61,11 +62,16 @@ const topicOf = (place: Place): Topic => `${place.kind}:${place.id}`;
 const TYPING_SHOWN_MS = 5000;
 const TYPING_EVERY_MS = 3000;
 
+// A thousand messages back at most, so one jump can't load a whole room
+const MOST_PAGES_BACK = 20;
+
 function listMessages(place: Place, params: Paging) {
   if (place.kind === 'room') return messageListRoom(place.id, params);
 
   return messageListConversation(place.id, params);
 }
+
+const nextCursor = (meta: PageMeta) => (meta.has_next ? meta.after : null);
 
 function createMessage(place: Place, body: Body) {
   if (place.kind === 'room') return messageSendRoom(place.id, body);
@@ -251,7 +257,36 @@ export function createChatGateway(
 
     ctx.rememberMessages(key, answer.data.data);
 
+    if (!parent && !older.has(key)) older.set(key, nextCursor(answer.data.meta));
+
     return place;
+  };
+
+  // The cursor past the oldest message loaded, null once the chat's first message is in
+  const older = new Map<string, string | null>();
+
+  const loaded = (key: string, id: string) =>
+    ctx.store.get().chats[key]?.some((m) => m.id === id) ?? false;
+
+  const reachBack = async (
+    key: string,
+    place: Place,
+    id: string,
+    pages: number,
+  ): Promise<Result<boolean>> => {
+    const after = older.get(key);
+
+    if (loaded(key, id)) return ok(true);
+    if (!after || pages === 0) return ok(false);
+
+    const answer = await call(() => listMessages(place, { after }));
+
+    if (answer.status !== 200) return failed(answer);
+
+    ctx.rememberOlder(key, answer.data.data);
+    older.set(key, nextCursor(answer.data.meta));
+
+    return reachBack(key, place, id, pages - 1);
   };
 
   const refresh = async (key: string, id: string, removed: boolean) => {
@@ -616,6 +651,12 @@ export function createChatGateway(
     },
     pin: (key, id) => pinning(key, () => messagePin(id)),
     unpin: (key, id) => pinning(key, () => messageUnpin(id)),
+
+    reach: async (key, id) => {
+      const place = await placeOf(key);
+
+      return place.ok ? reachBack(key, place.value, id, MOST_PAGES_BACK) : place;
+    },
 
     toggleBoost: (key, id, emoji) => {
       if (id.startsWith('pending-')) return;

@@ -21,26 +21,40 @@ export function PinnedBar({
   const flash = useUi((s) => s.flash);
   const pins = useAppState((state) => state.pins[chatKey] ?? NONE);
   const [shown, setShown] = useState(0);
+  const [reaching, setReaching] = useState(false);
 
   const pin = pins.length ? pins[shown % pins.length] : undefined;
   const name = useAppState((state) => (pin ? authorName(state, pin.who) : ''));
 
   if (!pin) return null;
 
-  const jump = () => {
-    const message = document.getElementById('msg-' + pin.id);
+  const flashMessage = (id: string) => {
+    const message = document.getElementById('msg-' + id);
 
-    if (message) {
-      message.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      message.classList.add('is-flashed');
-      message.addEventListener('animationend', () => message.classList.remove('is-flashed'), {
-        once: true,
-      });
-    } else {
-      flash('That message is older than this chat shows.');
-    }
+    if (!message) return;
+
+    message.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    message.classList.add('is-flashed');
+    message.addEventListener('animationend', () => message.classList.remove('is-flashed'), {
+      once: true,
+    });
+  };
+
+  // An older message loads first and shows on the next frame
+  const jump = async () => {
+    const id = pin.parent ?? pin.id;
 
     setShown((n) => (n + 1) % pins.length);
+
+    if (document.getElementById('msg-' + id)) return flashMessage(id);
+
+    setReaching(true);
+    const reached = await gateway.chat.reach(chatKey, id);
+    setReaching(false);
+
+    if (!reached.ok) flash(reached.error);
+    else if (!reached.value) flash('That message is too far back to jump to.');
+    else requestAnimationFrame(() => flashMessage(id));
   };
 
   const unpin = () =>
@@ -49,7 +63,7 @@ export function PinnedBar({
   const text = plainText(pin.text) || (pin.files?.length ? 'A file' : 'A message');
 
   return (
-    <div className="pin-bar" id="pin-bar">
+    <div className={cn('pin-bar', reaching && 'is-busy')} id="pin-bar" aria-busy={reaching}>
       {pins.length > 1 ? (
         <span className="pin-bar__marks" aria-hidden="true">
           {pins.map((p) => (
@@ -61,7 +75,8 @@ export function PinnedBar({
       <button
         type="button"
         className="pin-bar__jump"
-        onClick={jump}
+        onClick={() => void jump()}
+        disabled={reaching}
         aria-label={`Pinned message from ${name}. Go to it`}
       >
         <Icon name="pin" />

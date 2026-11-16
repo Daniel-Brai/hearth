@@ -557,6 +557,56 @@ describe('load.chat', () => {
   });
 });
 
+describe('chat.reach', () => {
+  const more = (data: unknown[], after: string | null) => ({
+    ...page(data),
+    meta: { after, before: null, has_next: after !== null, has_previous: false },
+  });
+
+  const opened = async () => {
+    routes['GET /api/communities/gardeners'] = {
+      status: 200,
+      body: { community, kinds: [], membership: null },
+    };
+
+    routes['GET /api/communities/c1/posts'] = { status: 200, body: page([]) };
+    routes['GET /api/communities/c1/posts/pinned'] = { status: 200, body: [] };
+    routes['GET /api/rooms/r1/messages/pinned'] = { status: 200, body: [] };
+
+    routes['GET /api/rooms/r1/messages'] = {
+      status: 200,
+      body: more([message('m3', 'Newest')], 'c1'),
+    };
+
+    const opening = gateway();
+
+    await opening.gateway.load.chat('gardeners/general');
+
+    return opening;
+  };
+
+  it('finds nothing past the start of the chat', async () => {
+    const { gateway: g } = await opened();
+
+    routes['GET /api/rooms/r1/messages'] = { status: 200, body: more([message('m2', 'Hi')], null) };
+
+    expect(await g.chat.reach('gardeners/general', 'gone')).toEqual({ ok: true, value: false });
+  });
+
+  it('loads older messages until the one asked for', async () => {
+    const { store, gateway: g } = await opened();
+
+    routes['GET /api/rooms/r1/messages'] = [
+      { status: 200, body: more([message('m2', 'Older')], 'c2') },
+      { status: 200, body: more([message('m1', 'Oldest')], null) },
+    ];
+
+    expect(await g.chat.reach('gardeners/general', 'm1')).toEqual({ ok: true, value: true });
+
+    expect(store.get().chats['gardeners/general']?.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
+  });
+});
+
 describe('chat inbox', () => {
   it('loads direct messages and unread counts after sign in, and counts new room messages', async () => {
     const other = {

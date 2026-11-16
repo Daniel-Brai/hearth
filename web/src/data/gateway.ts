@@ -331,6 +331,8 @@ export interface HearthGateway {
     closePoll(key: string, id: string): Promise<Result>;
     pin(key: string, id: string): Promise<Result>;
     unpin(key: string, id: string): Promise<Result>;
+    /** Loads older messages until this one is in the chat. False when it is too far back */
+    reach(key: string, id: string): Promise<Result<boolean>>;
     hidePreview(key: string, id: string): void;
     linkPreview(url: string): Promise<LinkPreview | null>;
     loadReplies(key: string, parent: string): Promise<Result>;
