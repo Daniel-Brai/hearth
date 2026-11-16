@@ -14,7 +14,7 @@
 	}
 
 	# Uploads go straight to storage with signed URLs, so no request body here is large
-	@api path /api/* /socket /socket/* /webhooks/* /robots.txt /sitemap.xml /sitemaps/* /og/* /storage/* /healthz/*
+	@api path /api/* /socket /socket/* /webhooks/* /robots.txt /sitemap.xml /sitemaps/* /calendars/* /og/* /storage/* /healthz/*
 	handle @api {
 		reverse_proxy api:4000 {
 			health_uri /healthz/ready

@@ -263,6 +263,45 @@ defmodule Hearth.EventsTest do
     end
   end
 
+  describe "list_calendar_events/2" do
+    test "leaves out events in private rooms", %{
+      owner: owner,
+      community: community,
+      params: params
+    } do
+      room = TestUtils.create_random_private_room!(community, ["member"], type: :voice)
+      {:ok, _hidden} = Events.schedule_event(owner, community, %{params | room_id: room.id})
+
+      assert Events.list_calendar_events(community.id) == []
+    end
+
+    test "leaves out events over a month gone", %{
+      owner: owner,
+      community: community,
+      params: params
+    } do
+      {:ok, _event} = Events.schedule_event(owner, community, params)
+      later = DateTime.add(DateTime.utc_now(), 40, :day)
+
+      assert Events.list_calendar_events(community.id, later) == []
+    end
+
+    test "keeps a repeat going", %{owner: owner, community: community, params: params} do
+      {:ok, weekly} = Events.schedule_event(owner, community, Map.put(params, :repeat, :weekly))
+      later = DateTime.add(DateTime.utc_now(), 40, :day)
+
+      assert [%Event{id: id}] = Events.list_calendar_events(community.id, later)
+      assert id == weekly.id
+    end
+
+    test "keeps a cancelled event", %{owner: owner, community: community, params: params} do
+      {:ok, event} = Events.schedule_event(owner, community, params)
+      {:ok, _cancelled} = Events.cancel_event(owner, event)
+
+      assert [%Event{cancelled_at: %DateTime{}}] = Events.list_calendar_events(community.id)
+    end
+  end
+
   describe "sitemap_events/1" do
     test "leaves out events in private rooms", %{
       owner: owner,

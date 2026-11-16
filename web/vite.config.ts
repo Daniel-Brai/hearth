@@ -130,9 +130,9 @@ export default defineConfig({
     port: 5173,
     host: '127.0.0.1',
     strictPort: true,
-    // Phoenix owns robots, sitemaps and share cards. In production Caddy, or scripts/serve.mjs, routes them there.
+    // Phoenix owns robots, sitemaps, calendar feeds and share cards. In production Caddy, or scripts/serve.mjs, routes them there.
     proxy: Object.fromEntries(
-      ['/robots.txt', '/sitemap.xml', '/sitemaps', '/og'].map((path) => [
+      ['/robots.txt', '/sitemap.xml', '/sitemaps', '/calendars', '/og'].map((path) => [
         path,
         { target: process.env.VITE_API_URL ?? 'http://localhost:4000', changeOrigin: true },
       ]),

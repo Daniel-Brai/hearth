@@ -45,7 +45,7 @@ Probes use `/healthz/live` for liveness and startup, and `/healthz/ready` (which
 
 Pods run as uid 1000 with a read only root filesystem, no privilege escalation and every capability dropped. `/tmp` is an `emptyDir` for the release's scratch files.
 
-**Routing.** The Ingress sends `/api`, `/socket`, `/webhooks`, `/robots.txt`, `/sitemap.xml`, `/sitemaps`, `/og`, `/storage` and `/healthz` to the API, and everything else to the web server, the same split Caddy makes. cert-manager issues the certificate through the `cert-manager.io/cluster-issuer` annotation. Set `httpRoute.enabled` (and `ingress.enabled: false`) to use the Gateway API instead.
+**Routing.** The Ingress sends `/api`, `/socket`, `/webhooks`, `/robots.txt`, `/sitemap.xml`, `/sitemaps`, `/calendars`, `/og`, `/storage` and `/healthz` to the API, and everything else to the web server, the same split Caddy makes. cert-manager issues the certificate through the `cert-manager.io/cluster-issuer` annotation. Set `httpRoute.enabled` (and `ingress.enabled: false`) to use the Gateway API instead.
 
 **Voice.** Browsers send WebRTC media straight to the node that holds their peer connection, over a range of UDP ports. A Service would have to publish 200 UDP ports per node and hide the node's own address from the SFU, so `api-rtc` pods use `hostNetwork` instead, one per node (anti-affinity), and bind `RTC_PORT_RANGE` on the node itself. Open that range in the node's firewall and set `RTC_PUBLIC_IP` when nodes sit behind NAT. coturn runs the same way for people on networks that block UDP. Label the nodes for voice and point `pools.rtc.nodeSelector` at them, as `values.production.yaml` does.
 

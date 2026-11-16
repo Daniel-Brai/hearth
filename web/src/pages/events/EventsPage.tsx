@@ -83,6 +83,7 @@ function useEventsData(cid: string | null, tab: EventsTab) {
   );
 
   const canSchedule = useAppState((state) => !!cid && canDo(state, cid, 'event.create'));
+  const feed = useAppState((state) => community(state, cid)?.visibility === 'public');
 
   const schedulable = useAppState(
     (state) =>
@@ -98,7 +99,7 @@ function useEventsData(cid: string | null, tab: EventsTab) {
     alwaysChanged,
   );
 
-  return { list, count, canSchedule, schedulable };
+  return { list, count, canSchedule, feed, schedulable };
 }
 
 function emptyCopy(tab: EventsTab, canSchedule: boolean) {
@@ -130,7 +131,7 @@ function EventsView({
   const [tab, setTab] = useState<EventsTab>('upcoming');
   const [opened, setOpened] = useState<string | null>(null);
 
-  const { list, count, canSchedule, schedulable } = useEventsData(cid, tab);
+  const { list, count, canSchedule, feed, schedulable } = useEventsData(cid, tab);
   const meta = useEventsMeta(cid, routeEvent, eyebrow);
 
   const openId = opened ?? routeEvent;
@@ -158,6 +159,7 @@ function EventsView({
             onTab={setTab}
             count={count}
             canSchedule={canSchedule}
+            feed={feed}
             schedulable={schedulable}
             onSchedule={(target) => void navigate(routes.eventNew(target))}
           />

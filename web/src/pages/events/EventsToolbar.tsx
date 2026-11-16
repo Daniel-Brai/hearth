@@ -3,6 +3,8 @@ import { Button, CommunityMark, Icon, Segmented } from '@/design-system';
 import { evZone } from '@/domain/events';
 import type { Hue } from '@/domain/types';
 
+import { CalendarFeed } from './CalendarFeed';
+
 export type EventsTab = 'upcoming' | 'past';
 
 export type SchedulableCommunity = {
@@ -19,6 +21,7 @@ export function EventsToolbar({
   onTab,
   count,
   canSchedule,
+  feed,
   schedulable,
   onSchedule,
 }: {
@@ -27,6 +30,7 @@ export function EventsToolbar({
   readonly onTab: (tab: EventsTab) => void;
   readonly count: number;
   readonly canSchedule: boolean;
+  readonly feed: boolean;
   readonly schedulable: readonly SchedulableCommunity[];
   readonly onSchedule: (cid: string) => void;
 }) {
@@ -51,6 +55,8 @@ export function EventsToolbar({
       </span>
 
       <span style={{ flex: 1 }} />
+
+      {cid && feed ? <CalendarFeed cid={cid} /> : null}
 
       {cid && canSchedule ? (
         <Button size="small" variant="reversed" onClick={() => onSchedule(cid)}>

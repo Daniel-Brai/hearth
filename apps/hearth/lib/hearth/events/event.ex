@@ -217,6 +217,20 @@ defmodule Hearth.Events.Event do
     |> Repo.all()
   end
 
+  @spec calendar(T.id(), DateTime.t(), [T.id()]) :: [t()]
+  def calendar(community_id, since, hidden_room_ids) do
+    __MODULE__
+    |> where([e], e.community_id == ^community_id)
+    |> where(
+      [e],
+      e.repeat != :none or
+        fragment("? + make_interval(mins => ?) > ?", e.starts_at, e.duration_min, ^since)
+    )
+    |> outside_rooms(hidden_room_ids)
+    |> order_by(asc: :starts_at, asc: :id)
+    |> Repo.all()
+  end
+
   @spec sitemap_counts([T.id()], [T.id()]) :: %{T.id() => non_neg_integer()}
   def sitemap_counts(community_ids, hidden_room_ids) do
     __MODULE__

@@ -110,6 +110,7 @@ const fromApi = (pathname) =>
   pathname === '/robots.txt' ||
   pathname === '/sitemap.xml' ||
   pathname.startsWith('/sitemaps/') ||
+  pathname.startsWith('/calendars/') ||
   pathname.startsWith('/og/');
 
 async function proxy(req, res) {

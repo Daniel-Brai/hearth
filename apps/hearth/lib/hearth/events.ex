@@ -199,6 +199,16 @@ defmodule Hearth.Events do
     Event.sitemap_entries(community_id, Communities.hidden_room_ids(nil, [community_id]))
   end
 
+  # Calendar apps drop an event that leaves the feed, so past ones stay for a month
+  @spec list_calendar_events(T.id(), DateTime.t()) :: [Event.t()]
+  def list_calendar_events(community_id, now \\ DateTime.utc_now()) do
+    Event.calendar(
+      community_id,
+      DateTime.add(now, -30, :day),
+      Communities.hidden_room_ids(nil, [community_id])
+    )
+  end
+
   @spec count_sitemap_events([T.id()]) :: %{T.id() => non_neg_integer()}
   def count_sitemap_events(community_ids) when is_list(community_ids) do
     Event.sitemap_counts(community_ids, Communities.hidden_room_ids(nil, community_ids))

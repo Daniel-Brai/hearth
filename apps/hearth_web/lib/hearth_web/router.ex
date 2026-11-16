@@ -69,6 +69,7 @@ defmodule HearthWeb.Router do
     get "/robots.txt", SeoController, :robots
     get "/sitemap.xml", SeoController, :sitemap
     get "/sitemaps/:file", SeoController, :sitemap_file
+    get "/calendars/:file", CalendarController, :show
 
     get "/og/communities/:slug", SeoController, :og_community
     get "/og/posts/:id", SeoController, :og_post

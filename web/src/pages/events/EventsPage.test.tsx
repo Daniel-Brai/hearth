@@ -27,3 +27,24 @@ describe('EventsPage viewer', () => {
     expect(screen.getAllByRole('button', { name: 'Interested' }).length).toBeGreaterThan(0);
   });
 });
+
+describe('EventsPage calendar feed', () => {
+  it('offers no feed across all your communities', async () => {
+    await showScreen({
+      path: routes.events,
+      url: routes.events,
+      element: <EventsPage />,
+      hint: true,
+      session: 'ready',
+      signedIn: true,
+    });
+
+    expect(document.getElementById('calendar-feed')).toBeNull();
+  });
+
+  it("offers an open community's feed", async () => {
+    await showScreen({ ...runclub, hint: true, session: 'ready', signedIn: true });
+
+    expect(document.getElementById('calendar-feed')).toBeInTheDocument();
+  });
+});

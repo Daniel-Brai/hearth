@@ -183,6 +183,7 @@ apiPaths:
   - /robots.txt
   - /sitemap.xml
   - /sitemaps
+  - /calendars
   - /og
   - /storage
   - /healthz

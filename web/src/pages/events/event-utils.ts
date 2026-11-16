@@ -56,6 +56,9 @@ export const alwaysChanged = () => false;
 export const eventLink = (e: CommunityEvent, origin: string) =>
   origin + routes.event(e.c, e.id, e.title);
 
+/** A feed calendar apps check again on their own, for communities anyone can read */
+export const calendarFeed = (cid: string, origin: string) => `${origin}/calendars/${cid}.ics`;
+
 export const eventFile = (e: CommunityEvent) => (slugify(e.title) || 'event') + '.ics';
 
 export const interestedText = (e: CommunityEvent) =>
