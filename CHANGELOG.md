@@ -5,6 +5,17 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.8](https://github.com/daniel-brai/hearth/compare/v0.0.7...v0.0.8) (2026-11-16)
+
+
+
+
+### Features:
+
+* subscribe to a community's events calendar
+
+* jump to pins older than the loaded chat
+
 ## [v0.0.7](https://github.com/daniel-brai/hearth/compare/v0.0.6...v0.0.7) (2026-11-15)
 
 

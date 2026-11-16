@@ -2,7 +2,7 @@ defmodule Hearth.Umbrella.MixProject do
   use Mix.Project
 
   # Bumped by `mix git_ops.release` from the commit messages since the last release.
-  @version "0.0.7"
+  @version "0.0.8"
 
   def project do
     [
