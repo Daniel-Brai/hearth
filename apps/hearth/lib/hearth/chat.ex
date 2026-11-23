@@ -593,11 +593,19 @@ defmodule Hearth.Chat do
 
   defp may_write(user, %Conversation{} = conversation), do: may_read(user, conversation)
 
-  defp may_read(user, %Room{community_id: community_id} = room) do
-    case {Communities.room_visible?(user, room), IAM.member?(user, community_id)} do
-      {true, _member?} -> :ok
-      {false, true} -> {:error, :not_found}
-      {false, false} -> Communities.refusal(user, community_id)
+  defp may_read(user, %Room{} = room) do
+    if Communities.room_visible?(user, room) do
+      :ok
+    else
+      refuse_room(user, room.community_id)
+    end
+  end
+
+  defp refuse_room(user, community_id) do
+    if IAM.member?(user, community_id) do
+      {:error, :not_found}
+    else
+      Communities.refusal(user, community_id)
     end
   end
 
