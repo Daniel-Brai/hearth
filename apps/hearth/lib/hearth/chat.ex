@@ -601,18 +601,18 @@ defmodule Hearth.Chat do
     end
   end
 
+  defp may_read(%User{id: user_id}, %Conversation{id: id}) do
+    case ConversationMember.member?(id, user_id) do
+      true -> :ok
+      false -> {:error, :forbidden}
+    end
+  end
+
   defp refuse_room(user, community_id) do
     if IAM.member?(user, community_id) do
       {:error, :not_found}
     else
       Communities.refusal(user, community_id)
-    end
-  end
-
-  defp may_read(%User{id: user_id}, %Conversation{id: id}) do
-    case ConversationMember.member?(id, user_id) do
-      true -> :ok
-      false -> {:error, :forbidden}
     end
   end
 
