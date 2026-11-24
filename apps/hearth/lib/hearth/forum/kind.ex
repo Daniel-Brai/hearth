@@ -45,7 +45,13 @@ defmodule Hearth.Forum.Kind do
     kind
     |> cast(params, @fields)
     |> validate_required(~w[community_id key label icon hue]a)
+    |> validate_length(:key, max: 40)
     |> validate_length(:label, max: 30)
+    |> validate_length(:icon, max: 40)
+    |> validate_length(:hue, max: 20)
+    |> validate_length(:description, max: 300)
+    |> validate_length(:title_hint, max: 120)
+    |> validate_length(:body_hint, max: 2_000)
     |> unique_constraint([:community_id, :key], error_key: :key)
   end
 

@@ -83,6 +83,33 @@ defmodule Hearth.ForumTest do
       assert %{label: [_message]} = errors_on(changeset)
     end
 
+    test "fails for a long body hint", %{owner: owner, community: community} do
+      added = %{
+        label: "Trip report",
+        icon: "map",
+        hue: "green",
+        body_hint: String.duplicate("a", 2_001)
+      }
+
+      input = [added | TestUtils.kinds_input(community)]
+
+      assert {:error, changeset} = Forum.save_kinds(owner, community, input)
+      assert %{body_hint: [_message]} = errors_on(changeset)
+    end
+
+    test "keeps a long body hint", %{owner: owner, community: community} do
+      added = %{
+        label: "Trip report",
+        icon: "map",
+        hue: "green",
+        body_hint: String.duplicate("a", 2_000)
+      }
+
+      input = [added | TestUtils.kinds_input(community)]
+
+      assert {:ok, _kinds} = Forum.save_kinds(owner, community, input)
+    end
+
     test "add a kind", %{owner: owner, community: community} do
       added = %{label: "Trip report", icon: "map", hue: "green"}
       input = [added | TestUtils.kinds_input(community)]
