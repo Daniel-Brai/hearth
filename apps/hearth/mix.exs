@@ -42,7 +42,7 @@ defmodule Hearth.MixProject do
 
   defp deps do
     [
-      {:assent, "~> 0.3"},
+      {:assent, "~> 0.4"},
       {:boundary, "~> 0.10", runtime: false},
       {:bumblebee, "~> 0.8"},
       {:confex, "~> 3.5"},
