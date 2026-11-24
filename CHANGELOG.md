@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.1.0](https://github.com/daniel-brai/hearth/compare/v0.0.9...v0.1.0) (2026-11-24)
+
+
+
+
+### Bug Fixes:
+
+* harden security, speed up queries and tidy the code
+
 ## [v0.0.9](https://github.com/daniel-brai/hearth/compare/v0.0.8...v0.0.9) (2026-11-24)
 
 
