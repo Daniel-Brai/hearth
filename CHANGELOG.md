@@ -5,6 +5,27 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.0.9](https://github.com/daniel-brai/hearth/compare/v0.0.8...v0.0.9) (2026-11-24)
+
+
+
+
+### Bug Fixes:
+
+* deps: upgrade dependencies with security advisories
+
+* check foreign keys and lengths in changesets
+
+* keep long post kind hints
+
+* group the may_read clauses in chat
+
+### Performance Improvements:
+
+* index draft kinds and community request communities
+
+* check room membership once when reading a room
+
 ## [v0.0.8](https://github.com/daniel-brai/hearth/compare/v0.0.7...v0.0.8) (2026-11-16)
 
 
