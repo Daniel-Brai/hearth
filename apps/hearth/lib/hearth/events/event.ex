@@ -71,6 +71,7 @@ defmodule Hearth.Events.Event do
     |> validate_place()
     |> validate_future()
     |> check_constraint(:place, name: :place_has_target, message: "needs a room or a link")
+    |> foreign_key_constraint(:room_id)
   end
 
   @spec cancel(t()) :: {:ok, t()} | {:error, Changeset.t()}

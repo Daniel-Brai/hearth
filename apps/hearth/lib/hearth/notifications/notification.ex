@@ -69,6 +69,7 @@ defmodule Hearth.Notifications.Notification do
     notification
     |> cast(params, @fields)
     |> validate_required(@fields -- ~w[actor_id community_id data]a)
+    |> foreign_key_constraint(:actor_id)
   end
 
   # Capped so a huge backlog costs no more

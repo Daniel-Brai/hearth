@@ -65,6 +65,7 @@ defmodule Hearth.Communities.Room do
     |> put_slug()
     |> validate_required([:slug])
     |> unique_constraint([:community_id, :slug], error_key: :name)
+    |> foreign_key_constraint(:group_id)
   end
 
   defp default_settings(changeset) do

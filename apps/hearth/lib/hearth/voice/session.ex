@@ -57,6 +57,8 @@ defmodule Hearth.Voice.Session do
       name: :sessions_one_live_per_room,
       message: "already has a live session"
     )
+    |> foreign_key_constraint(:event_id)
+    |> foreign_key_constraint(:post_id)
   end
 
   @spec live_in(T.id()) :: nil | t()

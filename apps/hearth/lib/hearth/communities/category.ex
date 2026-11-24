@@ -42,6 +42,8 @@ defmodule Hearth.Communities.Category do
     category
     |> cast(params, @fields)
     |> validate_required(@fields -- [:position])
+    |> validate_length(:slug, max: 30)
+    |> validate_length(:name, max: 50)
     |> unique_constraint(:slug)
   end
 end

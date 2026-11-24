@@ -31,7 +31,9 @@ defmodule Hearth.Auth.Identity do
     identity
     |> cast(params, @fields)
     |> validate_required(@fields -- [:email])
+    |> validate_length(:provider_uid, max: 255)
     |> unique_constraint([:provider, :provider_uid])
     |> unique_constraint([:user_id, :provider])
+    |> foreign_key_constraint(:user_id)
   end
 end

@@ -34,5 +34,6 @@ defmodule Hearth.Notifications.Delivery do
     delivery
     |> cast(params, @fields)
     |> validate_required(~w[template to status]a)
+    |> foreign_key_constraint(:user_id)
   end
 end

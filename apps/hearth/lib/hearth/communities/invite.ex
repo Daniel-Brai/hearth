@@ -43,6 +43,7 @@ defmodule Hearth.Communities.Invite do
     |> cast(params, @changeable)
     |> put_code()
     |> validate_required([:code, :role_key])
+    |> validate_length(:role_key, max: 30)
     |> validate_number(:max_uses, greater_than: 0)
     |> unique_constraint(:code)
   end

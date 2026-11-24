@@ -50,6 +50,7 @@ defmodule Hearth.Forum.ScheduledPost do
     |> validate_length(:title, max: 150)
     |> validate_length(:body, max: 40_000)
     |> validate_length(:attachment_ids, max: 10)
+    |> foreign_key_constraint(:kind_id)
   end
 
   # A new time clears an earlier failure so it is tried again

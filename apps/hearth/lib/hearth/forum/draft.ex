@@ -34,5 +34,6 @@ defmodule Hearth.Forum.Draft do
     |> cast(params, @changeable)
     |> validate_length(:title, max: 150)
     |> validate_length(:body, max: 40_000)
+    |> foreign_key_constraint(:kind_id)
   end
 end

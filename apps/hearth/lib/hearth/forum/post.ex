@@ -91,6 +91,7 @@ defmodule Hearth.Forum.Post do
     |> validate_length(:title, max: 150)
     |> validate_length(:body, max: 40_000)
     |> put_activity()
+    |> foreign_key_constraint(:kind_id)
   end
 
   defp put_activity(%Changeset{data: %{last_activity_at: nil}} = changeset) do

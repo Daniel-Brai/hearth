@@ -35,6 +35,8 @@ defmodule Hearth.IAM.Membership do
     |> cast(params, @fields)
     |> validate_required(@fields)
     |> unique_constraint([:community_id, :user_id], error_key: :user_id)
+    |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:community_id)
   end
 
   @spec create(map(), [Role.t()]) :: {:ok, t()} | {:error, Changeset.t()}

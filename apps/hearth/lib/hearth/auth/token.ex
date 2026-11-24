@@ -63,6 +63,7 @@ defmodule Hearth.Auth.Token do
     |> cast(params, @fields)
     |> validate_required(@fields -- ~w[user_id sent_to data user_agent ip]a)
     |> unique_constraint(:token_hash)
+    |> foreign_key_constraint(:user_id)
   end
 
   @spec ttl(context()) :: pos_integer()

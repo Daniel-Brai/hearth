@@ -50,6 +50,7 @@ defmodule Hearth.IAM.Role do
     |> validate_subset(:permissions, Spec.permissions(:community))
     |> unique_constraint([:community_id, :key], error_key: :key)
     |> unique_constraint(:is_default, name: :roles_one_default_index)
+    |> foreign_key_constraint(:community_id)
   end
 
   @spec for_community(T.id()) :: [t()]

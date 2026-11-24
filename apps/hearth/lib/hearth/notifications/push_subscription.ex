@@ -40,6 +40,7 @@ defmodule Hearth.Notifications.PushSubscription do
     |> validate_length(:auth, max: 100)
     |> validate_change(:endpoint, &secure_url/2)
     |> unique_constraint(:endpoint)
+    |> foreign_key_constraint(:user_id)
   end
 
   @spec link(map()) :: {:ok, t()} | {:error, Changeset.t()}
