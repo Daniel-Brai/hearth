@@ -13,27 +13,19 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
   describe "call/2" do
     test "fails without a token where one is needed", %{conn: conn} do
       assert %{"code" => "missing_token"} =
-               conn
-               |> get(~p"/api/auth/me")
-               |> valid_response(401)
+               conn |> get(~p"/api/auth/me") |> valid_response(401)
     end
 
     test "fails for a token that isn't a JWT", %{conn: conn} do
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn("nope")
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn("nope") |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "fails for a token with no signature", %{conn: conn, user: user} do
       unsigned = unsigned_token(access_claims(user))
 
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn(unsigned <> ".")
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn(unsigned <> ".") |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "fails for a token signed with a shared secret", %{conn: conn, user: user} do
@@ -42,10 +34,7 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
       {_jws, token} = jwk |> JWT.sign(%{"alg" => "HS256"}, claims) |> JWS.compact()
 
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn(token)
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn(token) |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "fails for a token from an unknown key", %{conn: conn, user: user} do
@@ -53,20 +42,14 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
       token = sign_token(access_claims(user), pem)
 
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn(token)
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn(token) |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "fails for a token for another audience", %{conn: conn, user: user} do
       token = sign_token(access_claims(user, %{"aud" => "elsewhere"}), previous_key_pem())
 
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn(token)
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn(token) |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "fails for a token without an expiry", %{conn: conn, user: user} do
@@ -74,10 +57,7 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
       token = sign_token(claims, previous_key_pem())
 
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn(token)
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn(token) |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "fails for an expired token", %{conn: conn, user: user} do
@@ -85,10 +65,7 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
       token = sign_token(access_claims(user, %{"exp" => past}), previous_key_pem())
 
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn(token)
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn(token) |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "fails for a token issued in the future", %{conn: conn, user: user} do
@@ -96,10 +73,7 @@ defmodule HearthWeb.Plugs.AuthenticateTest do
       token = sign_token(access_claims(user, %{"iat" => future}), previous_key_pem())
 
       assert %{"code" => "invalid_token"} =
-               conn
-               |> bearer_conn(token)
-               |> get(~p"/api/auth/me")
-               |> json_response(401)
+               conn |> bearer_conn(token) |> get(~p"/api/auth/me") |> json_response(401)
     end
 
     test "accepts a token from the previous key", %{conn: conn, user: user} do

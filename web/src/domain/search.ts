@@ -9,7 +9,6 @@ const tokens = (text: string) =>
 export const searchWords = (query: string): string[] =>
   [...new Set(tokens(query))].slice(0, MOST_WORDS);
 
-/** Every searched word starts a word somewhere in the text */
 export const coversWords = (text: string, wanted: readonly string[]): boolean => {
   const found = tokens(text);
 
@@ -18,7 +17,6 @@ export const coversWords = (text: string, wanted: readonly string[]): boolean =>
 
 export type MarkedPart = { readonly text: string; readonly hit: boolean; readonly at: number };
 
-/** Splits text so the words that start with a searched word can be marked */
 export const markMatches = (text: string, wanted: readonly string[]): MarkedPart[] =>
   [...words.segment(text)].map((s) => {
     const lower = s.segment.toLowerCase();

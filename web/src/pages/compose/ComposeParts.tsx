@@ -1,8 +1,9 @@
 import { Button, cn, FileList, Icon, Label, Panel, Segmented, Select } from '@/design-system';
 import { TITLE_LONG } from '@/domain/catalog';
-import type { Attachment, PostKind } from '@/domain/types';
+import { attachmentSrc, type Attachment, type PostKind } from '@/domain/types';
 import { Markdown } from '@/features/markdown/Markdown';
 import { SendLaterButton } from '@/features/schedule/SendLater';
+import { looseFiles } from '@/pages/shared/loose-files';
 import { useUi } from '@/runtime/ui-store';
 
 import { KindPicker } from './KindPicker';
@@ -99,7 +100,6 @@ export function PostPreview({
   readonly files: readonly Attachment[];
 }) {
   const openImage = useUi((s) => s.openImage);
-  const looseFiles = files.filter((f) => !body.includes(`attachment:${f.id}`));
 
   return (
     <Panel className="grid gap-3">
@@ -113,11 +113,8 @@ export function PostPreview({
         files={files}
       />
       <FileList
-        files={looseFiles}
-        onOpenImage={(f) => {
-          const src = f.data ?? f.url;
-          if (src) openImage(src, f.name, f.download);
-        }}
+        files={looseFiles(files, body)}
+        onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)}
       />
     </Panel>
   );

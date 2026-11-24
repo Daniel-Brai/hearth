@@ -65,6 +65,7 @@ export function CommunityMark({ hue, letter, logo, size, className }: CommunityM
     ...tintStyle(hue),
     ...(size ? { '--mark-size': size } : {}),
   } as CSSProperties;
+
   return (
     <span className={cn('community-mark', className)} style={style} data-initials={letter}>
       {logo ? <img src={logo} alt="" decoding="async" {...fadeIn} /> : null}

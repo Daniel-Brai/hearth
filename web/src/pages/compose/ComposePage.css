@@ -12,8 +12,7 @@
 .posting-in { max-inline-size: 100%; min-inline-size: 0; }
 .post-to { flex-shrink: 1; max-inline-size: min(18rem, 70vw); min-inline-size: 0; overflow: hidden; }
 
-/* Discard on the left and the two ways to post kept together on the right. On a phone the post
-   button takes the rest of the row */
+/* On a phone the post button takes the rest of the row */
 .publish-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .publish-bar__actions { display: flex; align-items: center; gap: 0.5rem; margin-inline-start: auto; min-inline-size: 0; }
 @media (max-width: 639px) {

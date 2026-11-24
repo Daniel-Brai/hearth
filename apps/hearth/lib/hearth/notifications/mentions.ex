@@ -10,7 +10,7 @@ defmodule Hearth.Notifications.Mentions do
   # More than this is someone pinging a crowd
   @most 10
 
-  # Returns who it was meant for, whatever their own settings
+  # Returns who it was meant for whatever their own settings
   @spec notify(map(), [T.id()]) :: [T.id()]
   def notify(%{actor: actor, community: community, body: body} = mention, skip \\ []) do
     skip = [actor.id | skip]

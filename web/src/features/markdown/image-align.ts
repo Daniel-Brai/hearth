@@ -5,7 +5,7 @@ export const IMAGE_ALIGNS: readonly ImageAlign[] = ['left', 'center', 'right'];
 const isAlign = (value: string): value is ImageAlign =>
   (IMAGE_ALIGNS as readonly string[]).includes(value);
 
-/** The alignment is a fragment on the address, like attachment:abc#left so stored markdown stays standard */
+/** The alignment is a fragment like attachment:abc#left so stored markdown stays standard */
 export function splitImageHref(href: string): { src: string; align: ImageAlign } {
   const hash = href.lastIndexOf('#');
   const fragment = hash >= 0 ? href.slice(hash + 1) : null;
@@ -53,11 +53,13 @@ function carouselAround(text: string, at: number): { start: number; end: number 
 
 export function inCarouselIn(text: string, id: string): boolean {
   const found = findImage(text, id);
+
   return found !== null && carouselAround(text, found.start) !== null;
 }
 
 export function imageAlignIn(text: string, id: string): ImageAlign | null {
   const found = findImage(text, id);
+
   return found ? splitImageHref(found.href).align : null;
 }
 
@@ -131,6 +133,7 @@ export function carouselIn(
 
   for (const image of images) {
     const found = findImage(text, image.id);
+
     if (found && found.start < index && index < found.end) index = found.start;
   }
 

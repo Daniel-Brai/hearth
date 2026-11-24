@@ -16,10 +16,7 @@ defmodule HearthWeb.CommunityRoleControllerTest do
       assert conn |> get(~p"/api/communities/#{private.id}/roles") |> valid_response(404)
     end
 
-    test "returns 404 if invite only", %{
-      conn: conn,
-      owner: owner
-    } do
+    test "returns 404 if invite only", %{conn: conn, owner: owner} do
       community = TestUtils.create_random_community!(owner, visibility: :invite_only)
 
       assert conn
@@ -44,14 +41,12 @@ defmodule HearthWeb.CommunityRoleControllerTest do
     test "fails if not allowed to change roles", %{conn: conn, community: community} do
       member = TestUtils.register_random_user!()
       {:ok, _membership} = Communities.join(member, community)
+      body = %{key: "helper", name: "Helper"}
 
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(member)
-               |> post(~p"/api/communities/#{community.id}/roles", %{
-                 key: "helper",
-                 name: "Helper"
-               })
+               |> post(~p"/api/communities/#{community.id}/roles", body)
                |> valid_response(403)
     end
 
@@ -143,12 +138,12 @@ defmodule HearthWeb.CommunityRoleControllerTest do
       community: community,
       member: member
     } do
+      body = %{keys: ["owner"]}
+
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(owner)
-               |> put(~p"/api/communities/#{community.id}/members/#{member.id}/roles", %{
-                 keys: ["owner"]
-               })
+               |> put(~p"/api/communities/#{community.id}/members/#{member.id}/roles", body)
                |> valid_response(403)
     end
 

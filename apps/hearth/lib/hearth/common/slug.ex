@@ -26,13 +26,10 @@ defmodule Hearth.Common.Slug do
   """
   @spec slugify(String.t()) :: T.slug()
   def slugify(text) when is_binary(text) do
-    decomposed =
+    {slug, _dash?} =
       text
       |> String.downcase()
       |> :unicode.characters_to_nfkd_binary()
-
-    {slug, _dash?} =
-      decomposed
       |> String.codepoints()
       |> Enum.reduce_while({"", false}, &add_char/2)
 
@@ -73,16 +70,11 @@ defmodule Hearth.Common.Slug do
   end
 
   defp append(slug, dash?, letters) do
-    longer =
-      case dash? do
-        true -> slug <> "-" <> letters
-        false -> slug <> letters
-      end
+    longer = if dash?, do: slug <> "-" <> letters, else: slug <> letters
 
-    case String.length(longer) >= @max_length do
-      true -> {:halt, {longer, false}}
-      false -> {:cont, {longer, false}}
-    end
+    if String.length(longer) >= @max_length,
+      do: {:halt, {longer, false}},
+      else: {:cont, {longer, false}}
   end
 
   defp letters(<<codepoint::utf8>>) when codepoint in 0x300..0x36F, do: :accent

@@ -44,6 +44,7 @@ import { useUi } from '@/runtime/ui-store';
 import { AccountMenu } from './AccountMenu';
 import { FoldHeader } from './FoldHeader';
 import { PersonAvatar } from './people';
+import { collapseSidebar, wideScreen } from './sidebar-collapse';
 import { SidebarRooms } from './SidebarRooms';
 import { SidebarSkeleton } from './SidebarSkeleton';
 import { useRouteContext } from './use-route-context';
@@ -91,14 +92,11 @@ function LoadedSidebar() {
     pending: pendingRequests(state).length,
     invites: state.invites.mine.length,
     jumpKey: keyOf('jump', state.settings.keys),
-    collapsed: state.settings.sidebarCollapsed,
   }));
 
   const collapse = () => {
-    if (window.matchMedia('(min-width: 100ch)').matches) {
-      document.documentElement.classList.add('sb-collapsed');
-      localStorage.setItem('hearth-sidebar', 'collapsed');
-    } else setSidebarOpen(false);
+    if (wideScreen()) collapseSidebar(true);
+    else setSidebarOpen(false);
   };
 
   return (
@@ -325,6 +323,7 @@ const NO_VOICE: VoiceRoom[] = [];
 function CommunitySection({ cid, open }: { readonly cid: string; readonly open: boolean }) {
   const view = useAppState((state) => {
     const c = state.communities[cid]!;
+
     return {
       name: c.name,
       hue: c.hue,

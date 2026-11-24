@@ -10,7 +10,7 @@ import { routes } from '@/runtime/routes';
 
 import { useVoiceActions } from './use-voice-actions';
 import { startNotice } from './voice-copy';
-import { VOICE_MODES } from './voice-session';
+import { VOICE_MODES } from './voice-modes';
 
 type IdleRoomCardProps = { readonly cid: string; readonly rid: string };
 

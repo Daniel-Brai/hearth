@@ -92,6 +92,12 @@ const loaded = () => Promise.resolve(ok(undefined));
 
 const clone = <T>(o: T): T => structuredClone(o);
 
+const paragraphsOf = (text: string) =>
+  text
+    .trim()
+    .split('\n\n')
+    .filter((b) => b.trim() !== '');
+
 const PRIVATE_ROOM = "Messages in a private room can't become a post.";
 
 export class MockGateway implements HearthGateway {
@@ -113,8 +119,7 @@ export class MockGateway implements HearthGateway {
     community: loaded,
     post: loaded,
     chat: loaded,
-    // With no server to ask who is in a room, a live one shows its host there.
-    // The stage draws you yourself, so only someone else's room is seeded
+    // A live room shows its host since there is no server to ask. The stage draws you yourself
     voice: async (cid: string, rid: string) => {
       const state = this.state();
       const room = community(state, cid)?.voice.find((v) => v.id === rid);
@@ -164,6 +169,85 @@ export class MockGateway implements HearthGateway {
     const me = this.state().me;
     if (!me) throw new Error('Signed out');
     return me;
+  }
+
+  private postProblem(spec: { c: string; kind: string; title: string }): string | null {
+    const state = this.state();
+    const title = spec.title.trim();
+
+    if (!canDo(state, spec.c, 'post.create'))
+      return 'Join ' + (community(state, spec.c)?.name ?? 'the community') + ' to post there';
+    if (!title) return 'Give your post a title first';
+    if (title.length > TITLE_MAX) return `Keep the title to ${TITLE_MAX} characters.`;
+    if (!postableKinds(state, spec.c).some((k) => k.name === spec.kind))
+      return 'Pick a kind of post';
+
+    return null;
+  }
+
+  private pushMessage(key: string, m: Partial<Message> & { who: string; text: string }) {
+    this.store.set((d) => {
+      (d.chats[key] ??= []).push({ id: this.store.nextId('m'), time: nowTime(), boosts: [], ...m });
+    });
+  }
+
+  private runCommand(key: string, body: string, files: Attachment[]): Result<{ sound?: string }> {
+    const space = body.search(/\s/);
+    const name = (space < 0 ? body.slice(1) : body.slice(1, space)).toLowerCase();
+    const arg = space < 0 ? '' : body.slice(space).trim();
+    const cmd = this.chat.commands(key).find((c) => c.cmd === name);
+
+    if (!cmd)
+      return fail(
+        name
+          ? "There's no /" + name + ' command. Type / to see the ones you can use.'
+          : 'Type a command after the slash, like /play tada.',
+      );
+
+    if (!cmd.ok) return fail(cmd.reason ?? 'You cannot use that here');
+
+    switch (name) {
+      case 'play': {
+        const sound = arg.toLowerCase();
+
+        if (!arg) return fail('Pick a sound, like /play tada.');
+        if (!SOUNDS.includes(sound))
+          return fail(
+            `“${arg}” isn't a sound. Try ${SOUNDS.slice(0, 4).join(', ')} or another from the list.`,
+          );
+
+        this.pushMessage(key, { who: this.me(), system: true, text: 'played “' + sound + '”' });
+
+        return ok({ sound });
+      }
+      case 'me':
+        if (!arg) return fail("Say what you're doing, like /me is reviewing the PR.");
+
+        this.pushMessage(key, { who: this.me(), system: true, text: arg });
+
+        return ok({});
+      case 'shrug':
+        this.pushMessage(key, {
+          who: this.me(),
+          text: [arg, '¯\\_(ツ)_/¯'].filter(Boolean).join(' '),
+          files,
+        });
+
+        return ok({});
+      case 'topic':
+        if (!arg) return fail('Write the new topic after /topic.');
+
+        this.rooms.updateSettings(key, { topic: arg });
+        this.pushMessage(key, {
+          who: this.me(),
+          system: true,
+          text: 'changed the topic to “' + arg + '”',
+        });
+
+        return ok({});
+      default:
+        return fail('Unknown command');
+    }
   }
 
   private log(
@@ -275,7 +359,7 @@ export class MockGateway implements HearthGateway {
   readonly settings = {
     update: (patch: Partial<UserSettings>) => {
       if (patch.tourDone !== undefined) rememberTourDone(patch.tourDone);
-      // Like the server, captions can't be turned on where the instance doesn't transcribe
+      // The server also refuses captions where the instance doesn't transcribe
       const allowed =
         patch.captions && !this.state().instance.transcription
           ? { ...patch, captions: false }
@@ -488,24 +572,22 @@ export class MockGateway implements HearthGateway {
         r.status = decision;
         r.decided = 'now';
 
-        if (decision === 'approved') {
-          const made = buildCommunity(
-            d,
-            this.store,
-            {
-              ...r,
-              tagline: r.tagline ?? '',
-              note: r.note ?? undefined,
-              logo: null,
-              audience: r.visibility === 'public' ? 'indexed' : 'invite',
-            },
-            r.by,
-          );
-          r.communityId = made;
-          return made;
-        }
+        if (decision !== 'approved') return null;
 
-        return null;
+        r.communityId = buildCommunity(
+          d,
+          this.store,
+          {
+            ...r,
+            tagline: r.tagline ?? '',
+            note: r.note ?? undefined,
+            logo: null,
+            audience: r.visibility === 'public' ? 'indexed' : 'invite',
+          },
+          r.by,
+        );
+
+        return r.communityId;
       });
       return slug ? ok({ community: slug }) : ok({});
     },
@@ -836,21 +918,7 @@ export class MockGateway implements HearthGateway {
     }): Promise<Result> => {
       await latency(300);
 
-      const state = this.state();
-      const problem = sendAtProblem(new Date(spec.sendAt), new Date());
-
-      if (!canDo(state, spec.c, 'post.create'))
-        return fail(
-          'Join ' + (community(state, spec.c)?.name ?? 'the community') + ' to post there',
-        );
-
-      if (!spec.title.trim()) return fail('Give your post a title first');
-
-      if (spec.title.trim().length > TITLE_MAX)
-        return fail(`Keep the title to ${TITLE_MAX} characters.`);
-
-      if (!postableKinds(state, spec.c).some((k) => k.name === spec.kind))
-        return fail('Pick a kind of post');
+      const problem = this.postProblem(spec) ?? sendAtProblem(new Date(spec.sendAt), new Date());
 
       if (problem) return fail(problem);
 
@@ -1024,20 +1092,9 @@ export class MockGateway implements HearthGateway {
     }): Promise<Result<{ post: Post }>> => {
       await latency(600);
 
-      const state = this.state();
+      const problem = this.postProblem(spec);
 
-      if (!canDo(state, spec.c, 'post.create'))
-        return fail(
-          'Join ' + (community(state, spec.c)?.name ?? 'the community') + ' to post there',
-        );
-
-      if (!spec.title.trim()) return fail('Give your post a title first');
-
-      if (spec.title.trim().length > TITLE_MAX)
-        return fail(`Keep the title to ${TITLE_MAX} characters.`);
-
-      if (!postableKinds(state, spec.c).some((k) => k.name === spec.kind))
-        return fail('Pick a kind of post');
+      if (problem) return fail(problem);
 
       const post = this.store.set((d) => {
         const p: Post = {
@@ -1089,12 +1146,7 @@ export class MockGateway implements HearthGateway {
 
         if (!post) return;
         post.title = title;
-
-        post.body = patch.body
-          .trim()
-          .split('\n\n')
-          .filter((b) => b.trim() !== '');
-
+        post.body = paragraphsOf(patch.body);
         post.kind = patch.kind;
         post.files = [...patch.files];
         post.editedAt = new Date().toISOString();
@@ -1185,11 +1237,7 @@ export class MockGateway implements HearthGateway {
 
         if (!x) return;
 
-        x.body = patch.body
-          .trim()
-          .split('\n\n')
-          .filter((b) => b.trim() !== '');
-
+        x.body = paragraphsOf(patch.body);
         x.files = [...patch.files];
         x.edited = true;
       });
@@ -1320,7 +1368,7 @@ export class MockGateway implements HearthGateway {
       opts: { files?: Attachment[]; parent?: string | null } = {},
     ): Result<{ sound?: string }> => {
       const state = this.state();
-      const [cid, rid] = key.split('/') as [string, string];
+      const [cid] = key.split('/') as [string, string];
       const body = text.trim();
 
       if (!body && !opts.files?.length) return fail('Write something first.');
@@ -1331,79 +1379,15 @@ export class MockGateway implements HearthGateway {
       if (opts.parent && !state.chats[key]?.some((m) => m.id === opts.parent))
         return fail('That message was deleted, so there is nothing to reply to.');
 
-      const push = (m: Partial<Message> & { who: string; text: string }) =>
-        this.store.set((d) => {
-          (d.chats[key] ??= []).push({
-            id: this.store.nextId('m'),
-            time: nowTime(),
-            boosts: [],
-            ...m,
-          });
-        });
+      if (body.startsWith('/')) return this.runCommand(key, body, opts.files ?? []);
 
-      if (body.startsWith('/')) {
-        const space = body.search(/\s/);
-        const name = (space < 0 ? body.slice(1) : body.slice(1, space)).toLowerCase();
-        const arg = space < 0 ? '' : body.slice(space).trim();
-        const cmd = this.chat.commands(key).find((c) => c.cmd === name);
-
-        if (!cmd)
-          return fail(
-            name
-              ? "There's no /" + name + ' command. Type / to see the ones you can use.'
-              : 'Type a command after the slash, like /play tada.',
-          );
-
-        if (!cmd.ok) return fail(cmd.reason ?? 'You cannot use that here');
-
-        if (name === 'play') {
-          if (!arg) return fail('Pick a sound, like /play tada.');
-
-          if (!SOUNDS.includes(arg.toLowerCase())) {
-            const examples = SOUNDS.slice(0, 4).join(', ');
-
-            return fail(`“${arg}” isn't a sound. Try ${examples} or another from the list.`);
-          }
-
-          push({ who: this.me(), system: true, text: 'played “' + arg.toLowerCase() + '”' });
-
-          return ok({ sound: arg.toLowerCase() });
-        }
-
-        if (name === 'me') {
-          if (!arg) return fail("Say what you're doing, like /me is reviewing the PR.");
-          push({ who: this.me(), system: true, text: arg });
-          return ok({});
-        }
-
-        if (name === 'shrug') {
-          push({
-            who: this.me(),
-            text: [arg, '¯\\_(ツ)_/¯'].filter(Boolean).join(' '),
-            files: opts.files ?? [],
-          });
-          return ok({});
-        }
-
-        if (name === 'topic') {
-          if (!arg) return fail('Write the new topic after /topic.');
-          this.rooms.updateSettings(key, { topic: arg });
-          push({ who: this.me(), system: true, text: 'changed the topic to “' + arg + '”' });
-
-          return ok({});
-        }
-
-        return fail('Unknown command');
-      }
-
-      push({
+      this.pushMessage(key, {
         who: this.me(),
         text: body,
         parent: opts.parent ?? null,
         files: opts.files ?? [],
         mentionsAll: cid !== 'dm' && /(^|\s)@all\b/i.test(body) && canDo(state, cid, 'mention.all'),
       });
-      void rid;
 
       return ok({});
     },
@@ -1953,11 +1937,7 @@ export class MockGateway implements HearthGateway {
       const state = this.state();
       const existing = id ? state.events.find((e) => e.id === id) : null;
 
-      if (
-        existing
-          ? !(existing.host === this.me() || canDo(state, cid, 'event.create'))
-          : !canDo(state, cid, 'event.create')
-      )
+      if (existing?.host !== this.me() && !canDo(state, cid, 'event.create'))
         return fail('You need the Schedule events permission');
 
       if (!spec.title.trim()) return fail('Give the event a name');
@@ -2022,7 +2002,6 @@ export class MockGateway implements HearthGateway {
   private readonly reported = new Set<string>();
   private readonly scheduleTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  /** A timer can't wait much past 24 days, so one set further out checks again when it wakes */
   private endPoll(key: string, id: string) {
     this.store.set((state) => {
       const m = state.chats[key]?.find((x) => x.id === id);
@@ -2030,6 +2009,7 @@ export class MockGateway implements HearthGateway {
     });
   }
 
+  /** A timer can't wait much past 24 days so one set further out checks again when it wakes */
   private arm(id: string, sendAt: string, fire: () => void) {
     const at = new Date(sendAt).getTime();
 
@@ -2521,14 +2501,9 @@ function toggleBoost(boosts: Boost[], e: string) {
     return;
   }
 
-  if (b.mine) {
-    b.n -= 1;
-    b.mine = false;
-    if (b.n <= 0) boosts.splice(boosts.indexOf(b), 1);
-  } else {
-    b.n += 1;
-    b.mine = true;
-  }
+  b.mine = !b.mine;
+  b.n += b.mine ? 1 : -1;
+  if (b.n <= 0) boosts.splice(boosts.indexOf(b), 1);
 }
 
 function buildCommunity(state: AppState, store: Store, spec: CommunitySpec, owner: string) {

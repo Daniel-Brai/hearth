@@ -65,15 +65,9 @@ export function PublicHomePage() {
 
 function PublicCommunityCard({ id }: { readonly id: string }) {
   const c = useAppState((state) => {
-    const x = state.communities[id]!;
-    return {
-      name: x.name,
-      tagline: x.tagline,
-      hue: x.hue,
-      letter: x.letter,
-      logo: x.logo,
-      members: x.members,
-    };
+    const { name, tagline, hue, letter, logo, members } = state.communities[id]!;
+
+    return { name, tagline, hue, letter, logo, members };
   });
 
   return (

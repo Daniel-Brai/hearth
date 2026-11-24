@@ -387,6 +387,8 @@ export function toAttachments(
 
 const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+const minutesText = (ms: number | null) => `${Math.max(1, Math.round((ms ?? 0) / 60_000))} min`;
+
 const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
@@ -425,7 +427,6 @@ export function toRecording(
 
 export function toTranscript(t: ApiTranscript, cid: string): Transcript {
   const who = new Map(t.speakers.map((s) => [s.id, s.user_id ?? '']));
-  const minutes = Math.max(1, Math.round((t.duration_ms ?? 0) / 60_000));
 
   return {
     id: t.session_id,
@@ -434,7 +435,7 @@ export function toTranscript(t: ApiTranscript, cid: string): Transcript {
     room: t.room_name,
     title: t.topic ?? t.room_name,
     date: DAY.format(new Date(t.started_at)),
-    duration: `${minutes} min`,
+    duration: minutesText(t.duration_ms),
     speakers: t.speakers.flatMap((s) => (s.user_id ? [s.user_id] : [])),
     recording: t.recording.id,
     status: t.status,
@@ -448,11 +449,9 @@ export function toTranscript(t: ApiTranscript, cid: string): Transcript {
   };
 }
 
-// A post knows only the room and length, and the transcript page loads the rest
+// A post knows only the room and length and the transcript screen loads the rest
 export function toTranscriptSummary(post: ApiPost, cid: string): Transcript | null {
   if (!post.transcript) return null;
-
-  const minutes = Math.max(1, Math.round((post.transcript.duration_ms ?? 0) / 60_000));
 
   return {
     id: post.transcript.session_id,
@@ -461,7 +460,7 @@ export function toTranscriptSummary(post: ApiPost, cid: string): Transcript | nu
     room: post.transcript.room_name,
     title: post.title,
     date: '',
-    duration: `${minutes} min`,
+    duration: minutesText(post.transcript.duration_ms),
     speakers: [],
     recording: null,
     lines: [],

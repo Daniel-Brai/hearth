@@ -130,7 +130,7 @@ export function shortLink(url: string, max = 48): string {
   if (!URL.canParse(url)) return url;
 
   const u = new URL(url);
-  const clean = stripSuffix(u.host.replace(/^www\./, '') + u.pathname + u.search + u.hash, '/');
+  const clean = stripSuffix(stripPrefix(u.host, ['www.']) + u.pathname + u.search + u.hash, '/');
 
   if (clean.length <= max) return clean;
 

@@ -2,6 +2,7 @@ import type { Token, Tokens } from 'marked';
 
 import type { IconName } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
+import { escapeHtml } from '@/domain/format';
 import {
   allTags,
   canSeeName,
@@ -41,12 +42,8 @@ export type SuggestOptions = {
   readonly commands?: readonly Command[] | undefined;
   readonly sounds?: readonly string[] | undefined;
   readonly chat: boolean;
-  /** Offers @all, for a room composer whose writer holds mention.all */
   readonly mentionAll?: boolean | undefined;
 };
-
-const esc = (s: string) =>
-  s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 const isWordChar = (ch: string) => /\w/.test(ch);
 
@@ -71,12 +68,15 @@ function wordAtCaret(
 
 export function mentionAt(text: string, caret: number): string | null {
   const w = wordAtCaret(text, caret);
+
   return w?.sigil === '@' ? w.word : null;
 }
 
 function looselyIn(name: string, typed: string): boolean {
   let at = 0;
+
   for (const ch of name.toLowerCase()) if (ch === typed[at]) at++;
+
   return at === typed.length;
 }
 
@@ -140,10 +140,12 @@ export function suggest(state: AppState, text: string, caret: number, opts: Sugg
 
   if (w.sigil === '@') {
     const typed = w.word.toLowerCase();
+
     const items: Suggestion[] = Object.keys(state.people)
       .filter((id) => sharesCommunity(state, id) || inCommunity(state, opts.community, id))
       .filter((id) => {
         const p = state.people[id]!;
+
         return (
           !typed ||
           looselyIn(p.username, typed) ||
@@ -226,7 +228,7 @@ export function highlight(state: AppState, text: string, opts: HighlightOptions)
     const cmd = opts.commands?.find((c) => c.cmd === name.toLowerCase());
     const typing = !cmd && (opts.commands ?? []).some((c) => c.cmd.startsWith(name.toLowerCase()));
 
-    out += `<span class="${tokenClass(!!cmd?.ok, typing)}">/${esc(name)}</span>`;
+    out += `<span class="${tokenClass(!!cmd?.ok, typing)}">/${escapeHtml(name)}</span>`;
     rest = space < 0 ? '' : rest.slice(space);
 
     if (cmd?.cmd === 'play' && rest.trim()) {
@@ -240,8 +242,8 @@ export function highlight(state: AppState, text: string, opts: HighlightOptions)
         opts.sounds?.some((s) => s.startsWith(arg.toLowerCase()));
 
       out +=
-        esc(rest.slice(0, lead)) +
-        `<span class="${tokenClass(!!okSound, !!partial)}">${esc(arg)}</span>`;
+        escapeHtml(rest.slice(0, lead)) +
+        `<span class="${tokenClass(!!okSound, !!partial)}">${escapeHtml(arg)}</span>`;
 
       rest = rest.slice(lead + arg.length);
     }
@@ -254,10 +256,12 @@ export function highlight(state: AppState, text: string, opts: HighlightOptions)
   const walk = (list: readonly Token[]) => {
     for (const t of list) {
       const at = rest.indexOf(t.raw, cursor);
+
       if (at < 0) continue;
 
       if (t.type === 'mention') {
         const handleText = (t as MentionToken).handle;
+
         spans.push({
           start: at,
           end: at + t.raw.length,
@@ -290,12 +294,12 @@ export function highlight(state: AppState, text: string, opts: HighlightOptions)
 
   for (const s of spans) {
     out +=
-      esc(rest.slice(last, s.start)) +
-      `<span class="${s.cls}">${esc(rest.slice(s.start, s.end))}</span>`;
+      escapeHtml(rest.slice(last, s.start)) +
+      `<span class="${s.cls}">${escapeHtml(rest.slice(s.start, s.end))}</span>`;
     last = s.end;
   }
 
-  out += esc(rest.slice(last));
+  out += escapeHtml(rest.slice(last));
 
   return out + (text.endsWith('\n') ? '​' : '');
 }

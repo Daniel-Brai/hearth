@@ -50,6 +50,7 @@ export function useModerationActions() {
       onConfirm: ({ note }) =>
         void gateway.moderation.removeContent(ref, note).then((r) => {
           flash(r.ok ? 'Removed and logged' : r.error);
+
           if (r.ok) onDone?.();
         }),
     });

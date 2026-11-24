@@ -91,7 +91,7 @@ defmodule Hearth.TestUtils do
   end
 
   def random_push_sub_params(
-        endpoint \\ "https://push.example.com/#{System.unique_integer([:positive])}"
+        endpoint \\ "https://fcm.googleapis.com/fcm/send/#{System.unique_integer([:positive])}"
       ) do
     {public_key, _private_key} = :crypto.generate_key(:ecdh, :prime256v1)
 
@@ -136,14 +136,8 @@ defmodule Hearth.TestUtils do
     member = join_random_member!(community)
     {:ok, owner} = Accounts.get_user(id: community.owner_id)
     key = "role-#{System.unique_integer([:positive])}"
-
-    {:ok, _role} =
-      Communities.create_role(owner, community, %{
-        key: key,
-        name: Lorem.word(),
-        permissions: permissions
-      })
-
+    params = %{key: key, name: Lorem.word(), permissions: permissions}
+    {:ok, _role} = Communities.create_role(owner, community, params)
     {:ok, _membership} = Communities.set_member_roles(owner, community, member, [key])
 
     member
@@ -557,8 +551,7 @@ defmodule Hearth.TestUtils do
         Map.new(opts)
       )
 
-    {:ok, notification} =
-      Notification.insert(%Notification{user_id: user.id}, params)
+    {:ok, notification} = Notification.insert(%Notification{user_id: user.id}, params)
 
     notification
   end
@@ -614,15 +607,20 @@ defmodule Hearth.TestUtils do
 
   # The messages whose mail writes out a web address outside the button and its fallback line
   def mails_with_addresses(messages, to) do
-    for %module{} = message <- messages,
-        mail = module.to_mail(message, to),
-        {:ok, html} = Mail.render(mail, mail.subject),
-        html
-        |> String.replace(~r{<head>.*</head>}s, "")
-        |> String.replace(~r{If the button doesn't work.*?</span>}s, "")
-        |> String.replace(~r{<[^>]*>}, " ")
-        |> String.contains?("http"),
-        do: module
+    messages
+    |> Enum.filter(&address_in_mail?(&1, to))
+    |> Enum.map(& &1.__struct__)
+  end
+
+  defp address_in_mail?(%module{} = message, to) do
+    mail = module.to_mail(message, to)
+    {:ok, html} = Mail.render(mail, mail.subject)
+
+    html
+    |> String.replace(~r{<head>.*</head>}s, "")
+    |> String.replace(~r{If the button doesn't work.*?</span>}s, "")
+    |> String.replace(~r{<[^>]*>}, " ")
+    |> String.contains?("http")
   end
 
   def child_names(children) do
@@ -651,9 +649,8 @@ defmodule Hearth.TestUtils do
     |> Enum.any?(&(Map.take(&1, Map.keys(wanted)) == wanted))
   end
 
-  # Voice runs outside the test's own supervisor, which would stop it as soon as the
-  # test ends and cut an upload off mid query. It stops in on_exit instead, before
-  # the test's database goes away
+  # Voice runs outside the test's supervisor so the test ending can't cut an upload off mid query
+  # It stops in on_exit before the test's database goes away
   def start_voice! do
     start_supervised!(RTC.Supervisor)
     {:ok, voice} = Voice.Supervisor.start_link()
@@ -775,12 +772,8 @@ defmodule Hearth.TestUtils do
 
   def create_random_voice_room!(community) do
     {:ok, owner} = Accounts.get_user(id: community.owner_id)
-
-    {:ok, room} =
-      Communities.create_room(owner, community, %{
-        name: "Voice #{System.unique_integer([:positive])}",
-        type: :voice
-      })
+    params = %{name: "Voice #{System.unique_integer([:positive])}", type: :voice}
+    {:ok, room} = Communities.create_room(owner, community, params)
 
     room
   end
@@ -934,7 +927,7 @@ defmodule Hearth.TestUtils do
     Transcript.latest(recording_id: recording.id)
   end
 
-  def write_random_track!(recording_id, user_id, kind, offset_ms, seconds) do
+  defp write_random_track!(recording_id, user_id, kind, offset_ms, seconds) do
     dir = Recorder.dir(recording_id)
     n = System.unique_integer([:positive])
     source = Path.join(dir, "source-#{n}")

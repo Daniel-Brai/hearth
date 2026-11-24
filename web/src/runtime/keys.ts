@@ -242,10 +242,8 @@ export function assignKey(id: string, combo: string, custom: Record<string, stri
   const clash = others.find((x) => keyOf(x.id, custom) === combo);
   const old = keyOf(b.id, custom);
 
-  if (clash) {
-    if (old === bindingFor(clash.id)!.key) delete keys[clash.id];
-    else keys[clash.id] = old;
-  }
+  if (clash && old === bindingFor(clash.id)!.key) delete keys[clash.id];
+  else if (clash) keys[clash.id] = old;
 
   if (combo === b.key) delete keys[b.id];
   else keys[b.id] = combo;

@@ -54,7 +54,6 @@ defmodule Hearth.Moderation.Screener.TextModel do
     %{results: [%{text: answer}]} = Serving.batched_run(__MODULE__, prompt(text))
     parse(answer)
   catch
-    # No serving is up yet on any node, which a retry outlives
     :exit, {:noproc, _call} -> {:error, :not_ready}
   end
 

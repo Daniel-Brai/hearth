@@ -34,10 +34,8 @@ defmodule Secrets do
 
     values = Enum.map(mappings, &{&1, value(secrets, &1)})
 
-    case for {%Mapping{optional: false} = mapping, nil} <- values, do: mapping.name do
-      [] -> :ok
-      missing -> raise MissingError, names: missing
-    end
+    missing = for {%Mapping{optional: false} = mapping, nil} <- values, do: mapping.name
+    if missing != [], do: raise(MissingError, names: missing)
 
     found = for {mapping, value} <- values, value != nil, do: {mapping.name, value}
     System.put_env(found)

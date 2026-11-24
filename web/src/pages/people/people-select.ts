@@ -77,6 +77,7 @@ export function sharedSummary(names: readonly string[]): { shown: string | null;
 
 export function lastDmLine(state: AppState, who: string): string {
   const last = (state.chats['dm/' + who] ?? []).at(-1);
+
   if (!last) return 'No messages yet';
 
   return (last.who === state.me ? 'You: ' : '') + plainText(last.text).slice(0, 80);

@@ -232,7 +232,7 @@ export function sfx(name: CueName) {
   if (last.name === name && now - last.at < 120) return;
   last = { name, at: now };
 
-  // Haptics have their own setting, so a cue is felt even with sounds off
+  // Haptics have their own setting so a cue is felt even with sounds off
   feelCue(name);
 
   if (!enabled) return;

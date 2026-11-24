@@ -3,8 +3,7 @@ defmodule Hearth.Moderation.Screener.ImageModel do
   alias Hearth.Moderation.Verdict
   alias Nx.Serving
 
-  # The classifier looks at 224 pixel squares so a bigger picture only
-  # costs time to decode
+  # The classifier looks at 224 pixel squares so a bigger picture only costs time to decode
   @side 256
 
   @spec load(String.t()) :: {Bumblebee.model_info(), Bumblebee.Featurizer.t()}

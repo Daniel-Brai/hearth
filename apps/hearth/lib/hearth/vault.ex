@@ -48,7 +48,7 @@ defmodule Hearth.Vault do
 
   def decrypt(_value), do: :error
 
-  # ENCRYPTION_HASH_KEY must never change, or every digest stops matching
+  # ENCRYPTION_HASH_KEY must never change since every digest would stop matching
   @spec hash(binary()) :: binary()
   def hash(value) when is_binary(value), do: :crypto.mac(:hmac, :sha256, keys().hash, value)
 

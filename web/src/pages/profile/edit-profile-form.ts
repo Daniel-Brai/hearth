@@ -67,7 +67,9 @@ export function formOf(state: AppState, me: string): Form {
 
 function tidyBio(text: string): string {
   let bio = text.trim();
+
   while (bio.includes('\n\n\n')) bio = bio.replaceAll('\n\n\n', '\n\n');
+
   return bio;
 }
 
@@ -89,8 +91,9 @@ export function checkForm(form: Form): { ok: true; spec: ProfileSpec } | (Proble
 
     const url = normalizeUrl(l.url);
 
-    if (!isValidLink(url))
+    if (!isValidLink(url)) {
       return problem(`link-${l.id}`, `“${l.url.trim()}” doesn't look like a link`);
+    }
 
     links.push({ url, label: l.auto ? '' : l.label.trim() });
   }

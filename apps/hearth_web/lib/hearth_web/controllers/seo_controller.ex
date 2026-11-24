@@ -80,6 +80,7 @@ defmodule HearthWeb.SeoController do
   defp event_card(segment) do
     with {:ok, id} <- Common.id_from_segment(segment),
          {:ok, event} <- Events.get_event(id: id),
+         true <- Events.visible?(nil, event),
          {:ok, community} <- public_community(id: event.community_id) do
       images = Media.get_images([community.logo_id, community.banner_id])
 
@@ -168,7 +169,6 @@ defmodule HearthWeb.SeoController do
   defp count(1, one, _many), do: "1 " <> one
   defp count(n, _one, many), do: "#{n} " <> many
 
-  # In the event's own time zone, as people attending it read it.
   defp when_text(event) do
     starts_at =
       case DateTime.shift_zone(event.starts_at, event.timezone) do
@@ -179,8 +179,7 @@ defmodule HearthWeb.SeoController do
     Calendar.strftime(starts_at, "%a %-d %b %Y, %H:%M ") <> starts_at.zone_abbr
   end
 
-  # Every caller sets a plain text or XML content type first, and the XML
-  # escapes what it carries, so a browser never runs the body as a page.
+  # The text or XML content type callers set keeps a browser from running the body as a page
   # sobelow_skip ["XSS.SendResp"]
   defp send_cached(conn, body) do
     conn

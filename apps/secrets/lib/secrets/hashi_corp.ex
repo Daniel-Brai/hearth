@@ -16,7 +16,7 @@ defmodule Secrets.HashiCorp do
         mount = config(:auth_mount) || method
         request = build(url: "/auth/#{mount}/login", json: credentials!(method))
 
-        request |> Req.post!() |> parse_result(&Token.from!/1)
+        request |> Req.post!() |> parse_result(&Token.from!/1, nil)
     end
   end
 
@@ -30,7 +30,7 @@ defmodule Secrets.HashiCorp do
     request |> Req.get!() |> parse_result(&Secret.from!/1, path)
   end
 
-  def build(opts) do
+  defp build(opts) do
     headers =
       case config(:namespace) do
         nil -> []
@@ -44,12 +44,10 @@ defmodule Secrets.HashiCorp do
     |> Req.new()
   end
 
-  def parse_result(response, from, path \\ nil) do
-    case response do
-      %Req.Response{status: 200, body: %{} = body} -> from.(body)
-      %Req.Response{status: status, body: body} -> raise error(status, body, path)
-    end
-  end
+  defp parse_result(%Req.Response{status: 200, body: %{} = body}, from, _path), do: from.(body)
+
+  defp parse_result(%Req.Response{status: status, body: body}, _from, path),
+    do: raise(error(status, body, path))
 
   defp credentials!("kubernetes"), do: %{role: config!(:role), jwt: read_file!(:jwt_file)}
 
@@ -58,8 +56,7 @@ defmodule Secrets.HashiCorp do
 
   defp credentials!(other), do: raise(ArgumentError, "Unknown VAULT_AUTH #{inspect(other)}")
 
-  # Vault's error bodies carry a list of messages, which name paths and
-  # policies but never secret values
+  # Vault error messages name paths and policies but never secret values
   defp error(status, %{} = body, path),
     do: body |> Map.merge(%{"status" => status, "path" => path}) |> Error.from!()
 

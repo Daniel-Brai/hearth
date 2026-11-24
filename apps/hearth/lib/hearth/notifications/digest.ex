@@ -6,9 +6,8 @@ defmodule Hearth.Notifications.Digest do
   alias Hearth.Moderation
   alias Hearth.Notifications.CatchUp
 
-  # As many as Catch up shows for each community
   @per_community 3
-  # Plenty to rank from, while one busy community can't make it slow
+  # Caps the query for one busy community
   @most 500
 
   @spec build(User.t(), :daily | :weekly, DateTime.t()) :: nil | CatchUp.t()
@@ -24,7 +23,7 @@ defmodule Hearth.Notifications.Digest do
     authors = posts |> Enum.map(& &1.author_id) |> Accounts.list_users() |> Map.new(&{&1.id, &1})
     by_community = Enum.group_by(posts, & &1.community_id)
 
-    # Posts come best first so communities follow the order of their best post
+    # Communities follow the order of their best post
     posts
     |> Enum.map(& &1.community_id)
     |> Enum.uniq()

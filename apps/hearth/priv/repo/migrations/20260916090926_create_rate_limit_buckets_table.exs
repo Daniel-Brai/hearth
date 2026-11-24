@@ -4,8 +4,7 @@ defmodule Hearth.Repo.Migrations.CreateRateLimitBucketsTable do
   @prefix :rate_limit
   @table :buckets
 
-  # Buckets are rewritten on every hit and are cheap to lose so the table
-  # skips the write-ahead log
+  # Buckets are rewritten on every hit and cheap to lose so the table skips the write-ahead log
   def change do
     create table(@table, prefix: @prefix, primary_key: false) do
       add :key, :text, primary_key: true

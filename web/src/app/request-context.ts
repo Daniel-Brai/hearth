@@ -53,7 +53,7 @@ export function rememberZone() {
 
 /**
  * Marks this browser as signed in so the server draws the app frame while the session restores.
- * It holds no token and decides no access, since the API and RequireAuth still do
+ * The cookie holds no token and decides no access
  */
 export function rememberSignedIn(signedIn: boolean) {
   if (typeof document === 'undefined') return;
@@ -85,7 +85,7 @@ export function zoneFromCookies(cookies: string | null): string {
   }
 }
 
-/** Whether the browser said it was signed in, the same on the server and at hydration */
+/** The browser's signed in cookie, read the same on the server and at hydration */
 export function useSignedInHint(): boolean {
   return useContext(RequestContext)?.signedIn ?? false;
 }

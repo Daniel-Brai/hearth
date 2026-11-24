@@ -15,7 +15,7 @@ export function setMine(holder: { boosts: Boost[] }, emoji: string, on: boolean)
   if (boost.n <= 0) holder.boosts.splice(holder.boosts.indexOf(boost), 1);
 }
 
-// Someone else's reaction, as the new count the server sent
+// Someone else's reaction comes as the new count the server sent
 export function setCount(holder: { boosts: Boost[] }, emoji: string, count: number) {
   const boost = holder.boosts.find((b) => b.e === emoji);
 

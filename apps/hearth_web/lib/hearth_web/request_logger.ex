@@ -8,7 +8,7 @@ defmodule HearthWeb.RequestLogger do
   @event ~w[phoenix endpoint stop]a
   @hidden_headers ~w[authorization cookie set-cookie]
   # A sign in code only ever arrives in a request, and code in an answer is the error's name
-  # At runtime Phoenix swaps the setting for a compiled matcher, so the list is read here
+  # Phoenix swaps the setting for a compiled matcher at runtime so the list is read at compile time
   @response_filter Application.compile_env(:phoenix, :filter_parameters, []) -- ["code"]
 
   @spec install() :: :ok | {:error, :already_exists}
@@ -20,11 +20,14 @@ defmodule HearthWeb.RequestLogger do
   def handle_event(@event, %{duration: duration}, %{conn: conn}, _config) do
     duration_ms = System.convert_time_unit(duration, :native, :microsecond) / 1_000
     level = level(conn)
+    route = route(conn)
+    # The route keeps invite codes in paths out of the logs
+    path = route || conn.request_path
 
     metadata = [
       method: conn.method,
-      path: conn.request_path,
-      route: route(conn),
+      path: path,
+      route: route,
       status: conn.status,
       duration_ms: Float.round(duration_ms, 1),
       remote_ip: conn.remote_ip |> :inet.ntoa() |> to_string()
@@ -32,7 +35,7 @@ defmodule HearthWeb.RequestLogger do
 
     Logger.log(
       level,
-      fn -> "#{conn.method} #{conn.request_path} #{conn.status} in #{round(duration_ms)}ms" end,
+      fn -> "#{conn.method} #{path} #{conn.status} in #{round(duration_ms)}ms" end,
       metadata
     )
 

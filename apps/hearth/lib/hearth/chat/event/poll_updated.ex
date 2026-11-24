@@ -3,7 +3,7 @@ defmodule Hearth.Chat.PollUpdated do
 
   alias Hearth.Common.T
 
-  # Carries the new totals so a busy room redraws without asking again. Who voted never leaves the server
+  # Carries the new totals so a busy room redraws without asking again
   @fields ~w[poll_id message_id room_id voters counts closed_at]a
   @enforce_keys @fields
   defstruct @fields

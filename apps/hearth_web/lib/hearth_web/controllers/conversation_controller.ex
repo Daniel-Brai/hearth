@@ -73,9 +73,6 @@ defmodule HearthWeb.ConversationController do
   defp find_people(ids) do
     people = Accounts.list_users(ids)
 
-    case length(people) == length(Enum.uniq(ids)) do
-      true -> {:ok, people}
-      false -> {:error, :not_found}
-    end
+    if length(people) == length(Enum.uniq(ids)), do: {:ok, people}, else: {:error, :not_found}
   end
 end

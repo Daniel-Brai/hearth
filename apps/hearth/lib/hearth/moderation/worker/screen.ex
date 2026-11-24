@@ -9,7 +9,7 @@ defmodule Hearth.Moderation.Worker.Screen do
   def perform(%Oban.Job{args: %{"subject_type" => type, "subject_id" => id}}) do
     case @types |> Map.fetch!(type) |> Moderation.screen(id) do
       {:ok, _result} -> :ok
-      {:error, reason} -> {:error, reason}
+      {:error, _reason} = error -> error
     end
   end
 

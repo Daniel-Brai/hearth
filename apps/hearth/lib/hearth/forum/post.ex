@@ -129,7 +129,7 @@ defmodule Hearth.Forum.Post do
   @spec unread_since(T.id(), [T.id()], DateTime.t(), pos_integer()) :: [t()]
   def unread_since(user_id, community_ids, %DateTime{} = since, limit) do
     query =
-      from(p in __MODULE__,
+      from p in __MODULE__,
         left_join: r in PostRead,
         on: r.post_id == p.id and r.user_id == ^user_id,
         where: p.community_id in ^community_ids and p.author_id != ^user_id,
@@ -137,7 +137,6 @@ defmodule Hearth.Forum.Post do
         where: p.inserted_at >= ^since and is_nil(r.post_id),
         order_by: [desc: p.inserted_at],
         limit: ^limit
-      )
 
     Repo.all(query)
   end
@@ -297,7 +296,7 @@ defmodule Hearth.Forum.Post do
     |> Repo.update()
   end
 
-  # Deleted posts move too, since a kind can't go while any post points at it
+  # Deleted posts move too as a kind can't go while any post points at it
   @spec move_kinds([T.id()], T.id()) :: :ok
   def move_kinds(kind_ids, kind_id) do
     __MODULE__

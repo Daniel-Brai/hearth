@@ -166,11 +166,11 @@ defmodule Hearth.Voice.State do
 
   def start_share(%__MODULE__{} = state, user_id) do
     with true <- may_speak?(state, user_id),
-         {:ok, :held} <- share_next(state.share, :start) do
+         {:ok, :held} <- ShareMachine.next(state.share, :start) do
       {:ok, %{state | share: user_id}}
     else
       false -> {:error, :not_on_stage}
-      error -> error
+      {:error, :invalid_transition} -> {:error, :share_taken}
     end
   end
 
@@ -182,7 +182,7 @@ defmodule Hearth.Voice.State do
     end
   end
 
-  # Someone server muted still receives, but what they send is dropped
+  # Someone server muted still receives while what they send is dropped
   @spec routes(t()) :: %{T.id() => route()}
   def routes(%__MODULE__{people: people} = state) do
     speakers = for {id, _p} <- people, may_speak?(state, id), do: id
@@ -210,13 +210,6 @@ defmodule Hearth.Voice.State do
   end
 
   defp put(state, user_id, person), do: %{state | people: Map.put(state.people, user_id, person)}
-
-  defp share_next(holder, event) do
-    case ShareMachine.next(holder, event) do
-      {:error, :invalid_transition} -> {:error, :share_taken}
-      ok -> ok
-    end
-  end
 
   defp drop_share_without_voice(%__MODULE__{share: nil} = state), do: state
 

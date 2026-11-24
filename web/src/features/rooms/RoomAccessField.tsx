@@ -46,7 +46,7 @@ export function RoomAccessField({ cid, access, roleIds, onChange }: RoomAccessFi
   );
 }
 
-/** The roles load here, under their own fallback, so opening a dialog never suspends the screen behind it */
+/** Roles load under their own fallback so opening a dialog never suspends the screen behind it */
 function RoleChips({
   cid,
   roleIds,

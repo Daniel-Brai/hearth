@@ -1,7 +1,8 @@
 defmodule Hearth.ScreeningPolicy do
-  # Forum and Chat can't call Hearth.Moderation, which depends on them so the screening rule lives here
+  # Forum and Chat can't call Hearth.Moderation since it depends on them
 
   use Boundary, deps: [], exports: []
+
   alias Hearth.Common.T
   alias Oban.Job
 
@@ -29,9 +30,12 @@ defmodule Hearth.ScreeningPolicy do
   @spec enqueue(subject_type(), T.id(), boolean() | (-> boolean()), (-> level())) ::
           :ok | {:error, term()}
   def enqueue(type, id, files?, level) when is_function(level, 0) do
-    case applies?(files?, level) do
-      true -> type |> job(id) |> Oban.insert() |> ok()
+    with true <- applies?(files?, level),
+         {:ok, _job} <- type |> job(id) |> Oban.insert() do
+      :ok
+    else
       false -> :ok
+      {:error, _reason} = error -> error
     end
   end
 
@@ -55,9 +59,6 @@ defmodule Hearth.ScreeningPolicy do
 
   defp answer(files?) when is_boolean(files?), do: files?
   defp answer(files?) when is_function(files?, 0), do: files?.()
-
-  defp ok({:ok, _job}), do: :ok
-  defp ok({:error, _reason} = error), do: error
 
   defp config(key), do: :hearth |> Application.fetch_env!(__MODULE__) |> Keyword.fetch!(key)
 end

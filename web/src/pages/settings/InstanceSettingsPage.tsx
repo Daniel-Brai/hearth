@@ -2,11 +2,12 @@ import { useAppState } from '@/data/store';
 import { Badge, Icon, Link, Measure, Panel, SettingsRow } from '@/design-system';
 import { isInstanceAdmin, pendingRequests } from '@/domain/selectors';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
-import { CreationSelect } from '@/pages/settings/CreationSelect';
-import { ScreeningPanel } from '@/pages/settings/ScreeningPanel';
-import { UpdatesPanel } from '@/pages/settings/UpdatesPanel';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
+
+import { CreationSelect } from './CreationSelect';
+import { ScreeningPanel } from './ScreeningPanel';
+import { UpdatesPanel } from './UpdatesPanel';
 
 export function InstanceSettingsPage() {
   const admin = useAppState((state) => isInstanceAdmin(state));

@@ -23,6 +23,7 @@ import { brandFor } from '@/runtime/brand';
 import { hasKeyboard } from '@/runtime/keys';
 import { useUi } from '@/runtime/ui-store';
 
+import { collapseSidebar, wideScreen } from './sidebar-collapse';
 import { useRouteContext } from './use-route-context';
 
 import './Tour.css';
@@ -36,8 +37,6 @@ type Step = {
 };
 
 type Box = { top: number; left: number; width: number; height: number };
-
-const isDesktop = () => window.matchMedia('(min-width: 100ch)').matches;
 
 export function Tour() {
   const gateway = useGateway();
@@ -55,10 +54,7 @@ export function Tour() {
   const [card, setCard] = useState<CSSProperties>({});
 
   const start = useEffectEvent(() => {
-    if (isDesktop()) {
-      document.documentElement.classList.remove('sb-collapsed');
-      localStorage.removeItem('hearth-sidebar');
-    }
+    if (wideScreen()) collapseSidebar(false);
 
     setVisible(buildSteps(getStore().get(), cid).filter((s) => !s.selector || targetOf(s)));
     setIndex(0);
@@ -144,7 +140,7 @@ export function Tour() {
         if (step.selector) targetOf(step)?.scrollIntoView({ block: 'nearest' });
         layout();
       },
-      step.side && !isDesktop() ? 340 : 0,
+      step.side && !wideScreen() ? 340 : 0,
     );
 
     window.addEventListener('resize', schedule);
@@ -163,7 +159,7 @@ export function Tour() {
   const end = (done: boolean) => {
     setIndex(null);
     gateway.settings.finishTour();
-    if (!isDesktop()) setSidebarOpen(false);
+    if (!wideScreen()) setSidebarOpen(false);
     if (done) flash('Enjoy ' + brandName);
   };
 
@@ -174,7 +170,7 @@ export function Tour() {
 
     const target = visible[Math.max(0, next)];
 
-    if (target && !isDesktop()) setSidebarOpen(!!target.side);
+    if (target && !wideScreen()) setSidebarOpen(!!target.side);
     setIndex(Math.max(0, next));
   };
 
@@ -239,7 +235,7 @@ function targetOf(step: Step): Element | null {
   const el = document.querySelector(step.selector);
 
   if (!el) return null;
-  if (step.side && !isDesktop()) return el;
+  if (step.side && !wideScreen()) return el;
 
   const visible = el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
 
@@ -260,8 +256,7 @@ function buildSteps(state: Parameters<typeof joinedCids>[0], cid: string | null)
   const first = here?.name ?? null;
   const keyboard = hasKeyboard();
 
-  const welcome = welcomeStep(name, first, admin, n);
-  const steps: (Step | null)[] = [welcome];
+  const steps: Step[] = [welcomeStep(name, first, admin, n)];
 
   if (admin && !n) {
     steps.push({
@@ -298,6 +293,7 @@ function buildSteps(state: Parameters<typeof joinedCids>[0], cid: string | null)
           ? `New posts from ${first} show up here first. Once you've read something it moves below the line.`
           : "What's new across your communities, newest first. Once you've read something it moves below the line.",
     });
+
     const subject = n === 1 && first ? `${first} has` : 'Each one has';
     const roleNote = runs
       ? 'Your role lets you run things, so Moderation and Roles show up here too.'
@@ -370,7 +366,7 @@ function buildSteps(state: Parameters<typeof joinedCids>[0], cid: string | null)
     text: `${startHint}${keyboardHint}You can take this tour again from Settings.`,
   });
 
-  return steps.filter((s): s is Step => s !== null);
+  return steps;
 }
 
 function welcomeStep(name: string, first: string | null, admin: boolean, n: number): Step {

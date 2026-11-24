@@ -6,6 +6,7 @@ import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
 import { ButtonLink, EmptyState, Icon, Measure, Textarea } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
+import { TITLE_MAX } from '@/domain/catalog';
 import { canDo, joinedCids, kindInfo, postableKinds } from '@/domain/selectors';
 import type { Attachment } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
@@ -30,8 +31,6 @@ import { usePublish } from './use-publish';
 
 import './ComposePage.css';
 
-import { TITLE_MAX } from '@/domain/catalog';
-
 const allowedCommunities = (state: AppState) =>
   joinedCids(state).filter((id) => canDo(state, id, 'post.create'));
 
@@ -42,7 +41,7 @@ export function ComposePage() {
 
   useLoad(() => gateway.load.compose(), 'compose');
 
-  const allowed = useAppState((state) => allowedCommunities(state));
+  const allowed = useAppState(allowedCommunities);
 
   const askedName = useAppState((state) =>
     asked ? (state.communities[asked]?.name ?? null) : null,

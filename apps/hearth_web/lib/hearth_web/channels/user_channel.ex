@@ -25,8 +25,7 @@ defmodule HearthWeb.UserChannel do
     {:noreply, socket}
   end
 
-  # Last seen is when the app was last open so leaving marks it too. A refused join
-  # never opened anything
+  # Leaving marks the last seen time too but a refused join never opened anything
   @impl Phoenix.Channel
   def terminate(_reason, %Socket{joined: true, assigns: %{auth: auth}}),
     do: Accounts.touch_last_seen(auth)

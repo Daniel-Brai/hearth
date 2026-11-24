@@ -1,3 +1,4 @@
+import { scriptJson } from '@/app/hydration';
 import { useOrigin } from '@/app/request-context';
 import { useAppState } from '@/data/store';
 import type { AppState } from '@/domain/app-state';
@@ -6,7 +7,6 @@ import type { CommunityEvent, Reply } from '@/domain/types';
 import { plainText } from '@/features/markdown/plain-text';
 import { routes } from '@/runtime/routes';
 
-// Builders return null for communities that are invite only, private or noindex
 type Thing = { readonly [key: string]: unknown };
 
 type Crumb = { readonly name: string; readonly path: string };
@@ -176,6 +176,7 @@ export function eventGraph(state: AppState, id: string, origin: string): Thing[]
 
 export function eventsGraph(state: AppState, cid: string, origin: string): Thing[] | null {
   const c = communityOf(state, cid);
+
   if (!c || !indexable(state, cid)) return null;
 
   return [
@@ -244,10 +245,7 @@ export function siteGraph(name: string, origin: string): Thing[] {
 }
 
 export function jsonLdText(graph: readonly object[]): string {
-  return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })
-    .replaceAll('<', '\\u003c')
-    .replaceAll(' ', '\\u2028')
-    .replaceAll(' ', '\\u2029');
+  return scriptJson({ '@context': 'https://schema.org', '@graph': graph });
 }
 
 export function useStructuredData(

@@ -1,5 +1,6 @@
 defmodule Hearth.PubSub.WebsocketEvent do
-  # broadcast_as defaults to the module's last name, and broadcast_with to every field so override it to send less
+  # broadcast_as defaults to the module's last name and broadcast_with to every field
+  # Override them to send less
 
   defstruct ~w[name channels data]a
 

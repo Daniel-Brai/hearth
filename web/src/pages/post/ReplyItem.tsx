@@ -18,6 +18,7 @@ import { Composer } from '@/features/composer/Composer';
 import { Markdown } from '@/features/markdown/Markdown';
 import { useModerationActions } from '@/features/moderation/use-moderation-actions';
 import { ReplyingTo } from '@/features/threads/ReplyingTo';
+import { looseFiles } from '@/pages/shared/loose-files';
 import { useUi } from '@/runtime/ui-store';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
 import { PersonAvatar, PersonLink } from '@/shell/people';
@@ -53,8 +54,10 @@ export function ReplyItem({
 
   const save = () => {
     setEditing(false);
+
     void gateway.posts.editReply(post.id, reply.id, draft).then((r) => {
       if (r.ok) return flash('Saved');
+
       flash(r.error);
       setEditing(true);
     });
@@ -166,17 +169,12 @@ function ReplyEditor({
 function ReplyAttachments({ reply }: { readonly reply: Reply }) {
   const openImage = useUi((s) => s.openImage);
 
-  const looseFiles = (reply.files ?? []).filter(
-    (f) => !reply.body.join('\n').includes(`attachment:${f.id}`),
-  );
+  const loose = looseFiles(reply.files, reply.body.join('\n'));
 
-  if (!looseFiles.length) return null;
+  if (!loose.length) return null;
 
   return (
-    <FileList
-      files={looseFiles}
-      onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)}
-    />
+    <FileList files={loose} onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)} />
   );
 }
 
@@ -277,18 +275,22 @@ function ReplyMenu({
 
   const mine = reply.who === view.me;
 
-  const remove = () =>
-    mine
-      ? ask({
-          title: 'Delete this reply?',
-          body: 'This removes it for everyone. Replies under it stay.',
-          action: 'Delete reply',
-          onConfirm: () =>
-            void gateway.posts
-              .removeReply(post.id, reply.id)
-              .then((r) => flash(r.ok ? 'Reply deleted' : r.error)),
-        })
-      : moderation.remove(ref);
+  const remove = () => {
+    if (!mine) {
+      moderation.remove(ref);
+      return;
+    }
+
+    ask({
+      title: 'Delete this reply?',
+      body: 'This removes it for everyone. Replies under it stay.',
+      action: 'Delete reply',
+      onConfirm: () =>
+        void gateway.posts
+          .removeReply(post.id, reply.id)
+          .then((r) => flash(r.ok ? 'Reply deleted' : r.error)),
+    });
+  };
 
   const report = () =>
     moderation.report({

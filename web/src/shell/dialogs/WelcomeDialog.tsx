@@ -13,7 +13,9 @@ export function WelcomeDialog() {
 
   const view = useAppState((state) => {
     const c = typeof cid === 'string' ? state.communities[cid] : undefined;
+
     if (!c) return null;
+
     return {
       name: c.name,
       hue: c.hue,

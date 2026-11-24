@@ -9,8 +9,8 @@ defmodule Hearth.Media.Worker.ProcessImage do
   alias Hearth.Common
   alias Hearth.Media
   alias Hearth.Media.Asset
-  alias Hearth.Media.Command.FailMedia
   alias Hearth.Media.FileType
+  alias Hearth.Media.Processing
   alias Hearth.Media.TempFile
   alias Hearth.Media.Variant
   alias Hearth.Storage
@@ -40,29 +40,24 @@ defmodule Hearth.Media.Worker.ProcessImage do
         make_blurhash() >>>
         finish()
 
-    case result do
-      {:ok, _media} -> :ok
-      {:error, {:cancel, failure, reason}} -> cancel(media, failure, reason)
-      {:error, reason} -> {:error, reason}
-    end
+    Processing.outcome(media, result)
   end
 
   defp download(state) do
-    case Storage.download(state.media.bucket_key, state.path) do
-      :ok -> {:ok, state}
-      {:error, :not_found} -> cancel_with("The file was lost before it was processed.", :missing)
-      error -> error
-    end
+    with :ok <- Processing.download(state.media, state.path), do: {:ok, state}
   end
 
   defp open(state) do
     case Image.open(state.path, access: :sequential, fail_on: :error) do
-      {:ok, image} -> {:ok, Map.put(state, :image, image)}
-      {:error, _reason} -> cancel_with("The file isn't an image that can be read.", :unreadable)
+      {:ok, image} ->
+        {:ok, Map.put(state, :image, image)}
+
+      {:error, _reason} ->
+        Processing.cancel_with("The file isn't an image that can be read.", :unreadable)
     end
   end
 
-  # Every frame of an animation is decoded so each one counts
+  # Counts every frame of an animation
   defp ensure_pixels(%{media: media, image: image} = state) do
     frames =
       case Vimage.header_value(image, "n-pages") do
@@ -72,13 +67,11 @@ defmodule Hearth.Media.Worker.ProcessImage do
 
     case Image.width(image) * Image.height(image) * frames <= @max_pixels do
       true -> {:ok, state}
-      false -> cancel_with("The image is bigger than 50 megapixels.", :too_many_pixels)
+      false -> Processing.cancel_with("The image is bigger than 50 megapixels.", :too_many_pixels)
     end
   end
 
-  # The stored original is written again upright and without its metadata, so a download
-  # never says where or with what a photo was taken. A colour profile is applied first,
-  # since it goes with the rest
+  # Writes the original again upright and without metadata after applying its colour profile
   defp clean_original(%{media: media, path: path} = state) do
     with {:ok, image} <- open_whole(media, path),
          {:ok, {upright, _flags}} <- Image.autorotate(image),
@@ -165,7 +158,7 @@ defmodule Hearth.Media.Worker.ProcessImage do
 
   defp resize(_media, path, width), do: Image.thumbnail(path, width, resize: :down)
 
-  # The hash is made from the smallest size written, as the image was already streamed once
+  # The hash is made from the smallest size written since the image was already streamed once
   defp make_blurhash(state) do
     {_variant, data} = Enum.min_by(state.variants, fn {variant, _data} -> variant.width end)
 
@@ -206,12 +199,5 @@ defmodule Hearth.Media.Worker.ProcessImage do
       {:ok, orientation} when orientation in 5..8 -> {height, width}
       _upright -> {width, height}
     end
-  end
-
-  defp cancel_with(failure, reason), do: {:error, {:cancel, failure, reason}}
-
-  defp cancel(media, failure, reason) do
-    _failed = FailMedia.execute(media, failure)
-    {:cancel, reason}
   end
 end

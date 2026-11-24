@@ -6,7 +6,9 @@ import { createRuntime } from './runtime';
 
 const serverState = () => {
   const state = createSeedState();
+
   state.settings.tourDone = false;
+
   return state;
 };
 

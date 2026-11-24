@@ -19,7 +19,7 @@ defmodule Hearth.Notifications.Worker.TellRoom do
     %{message_id: message_id, url: url, told: told} |> new() |> Oban.insert()
   end
 
-  # People named in the message were told already, so they get one notice
+  # People named in the message were told already so they get one notice
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"message_id" => id, "url" => url, "told" => told}}) do
     with {:ok, message} <- Chat.get_message(id),

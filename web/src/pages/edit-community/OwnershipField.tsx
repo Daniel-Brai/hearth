@@ -26,12 +26,12 @@ export function OwnershipField({
   const members = useAppState((state) => {
     const ids = new Set<string>();
 
-    state.posts
-      .filter((p) => p.c === cid)
-      .forEach((p) => {
-        ids.add(p.author);
-        p.replies.forEach((r) => ids.add(r.who));
-      });
+    for (const p of state.posts) {
+      if (p.c !== cid) continue;
+
+      ids.add(p.author);
+      p.replies.forEach((r) => ids.add(r.who));
+    }
 
     rolesOf(state, cid).forEach((r) => r.members.forEach((id) => ids.add(id)));
 
@@ -40,11 +40,12 @@ export function OwnershipField({
 
   const memberOptions = useAppState(
     (state): SelectOption<string>[] =>
-      members.map((id) => ({
-        value: id,
-        label: displayName(state, id),
-        hint: displayName(state, id) === handle(state, id) ? null : handle(state, id),
-      })),
+      members.map((id) => {
+        const label = displayName(state, id);
+        const at = handle(state, id);
+
+        return { value: id, label, hint: label === at ? null : at };
+      }),
     (a, b) =>
       a.length === b.length &&
       a.every((o, i) => o.value === b[i]?.value && o.label === b[i]?.label),

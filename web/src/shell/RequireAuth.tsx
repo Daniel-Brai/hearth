@@ -11,6 +11,7 @@ export function RequireAuth({ children }: { readonly children: ReactNode }) {
 
   if (!signedIn) {
     const next = location.pathname + location.search;
+
     return (
       <Navigate
         replace

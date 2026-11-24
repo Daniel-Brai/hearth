@@ -141,7 +141,7 @@ defmodule HearthWeb.RecordingControllerTest do
                |> valid_response(403)
     end
 
-    test "rename recording", %{conn: conn, owner: owner, recording: recording} do
+    test "renames the recording", %{conn: conn, owner: owner, recording: recording} do
       body = %{title: Lorem.sentence()}
 
       assert %{"title" => title} =
@@ -167,7 +167,7 @@ defmodule HearthWeb.RecordingControllerTest do
                |> valid_response(403)
     end
 
-    test "delete recording", %{conn: conn, owner: owner, recording: recording} do
+    test "deletes the recording", %{conn: conn, owner: owner, recording: recording} do
       assert conn
              |> auth_conn(owner)
              |> delete(~p"/api/recordings/#{recording.id}")

@@ -39,6 +39,7 @@ async function looksLike(file: File, ext: DocumentExtension): Promise<boolean> {
 
   if (part) {
     const head = await read(file.slice(0, 4));
+
     if (!startsWith(head, Uint8Array.of(0x50, 0x4b, 0x03, 0x04))) return false;
 
     return contains(await read(file.slice(Math.max(0, file.size - ZIP_TAIL))), ascii(part));
@@ -54,6 +55,7 @@ async function looksLike(file: File, ext: DocumentExtension): Promise<boolean> {
 
 export async function isAllowedDocument(file: File): Promise<boolean> {
   const ext = fileExtension(file.name);
+
   if (!isDocumentExtension(ext)) return false;
 
   return looksLike(file, ext);

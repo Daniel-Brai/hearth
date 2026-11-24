@@ -37,7 +37,6 @@ export function useChatComposer({
   const [editing, setEditing] = useState<Message | null>(null);
   const [draft, setDraft] = useState<{ text: string; files: Attachment[] } | null>(null);
 
-  // Leaving the chat stops the indicator for the others at once
   useEffect(() => () => gateway.chat.typing(target.key, false), [gateway, target.key]);
 
   const changeText = (value: string) => {
@@ -146,7 +145,7 @@ export function useChatComposer({
     return true;
   };
 
-  // Editing takes it off the schedule and back into the box, where it can be sent or scheduled again
+  // Editing a scheduled message unschedules it and puts it back in the box
   const restore = (item: ScheduledMessage) => {
     const take = () => {
       if (editing) stopEdit();

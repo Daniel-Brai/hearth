@@ -4,15 +4,7 @@ import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { Badge, Button, EmptyState, Icon, Separator } from '@/design-system';
 import { plural } from '@/domain/format';
-import {
-  canDo,
-  community,
-  isMod,
-  modLevel,
-  reportsOn,
-  roomAccess,
-  roomSettings,
-} from '@/domain/selectors';
+import { canDo, community, isMod, reportsOn, roomAccess, roomSettings } from '@/domain/selectors';
 import type { Message } from '@/domain/types';
 import { Thread } from '@/features/threads/Thread';
 import { buildTree } from '@/features/threads/tree';
@@ -59,7 +51,7 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
       joined: !!c?.joined,
       canChat: target.dm !== null || canDo(state, cid, 'message.create'),
       mod: isMod(state, cid),
-      // Messages in a private room stay there, so they can't become a post
+      // Messages in a private room can't become a post
       promote:
         target.dm === null &&
         canDo(state, cid, 'chat.promote') &&
@@ -68,7 +60,6 @@ export function ChatView({ target, embedded = false }: ChatViewProps) {
       pin: target.dm === null && canDo(state, cid, 'message.pin'),
       previews: roomSettings(state, target.key).previews,
       soundsOn: state.settings.sounds,
-      unmoderated: !!cid && modLevel(state, cid, target.room) === 'none',
     };
   });
 

@@ -1,15 +1,19 @@
+import { useAppState } from '@/data/store';
 import { ButtonLink, EmptyState, Icon } from '@/design-system';
+import { canDo } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
 
 export function PeopleEmpty({
   searching,
   filter,
-  canInvite,
 }: {
   readonly searching: boolean;
   readonly filter: string;
-  readonly canInvite: boolean;
 }) {
+  const canInvite = useAppState(
+    (state) => filter !== 'all' && canDo(state, filter, 'invite.create'),
+  );
+
   if (searching) {
     return (
       <EmptyState

@@ -80,15 +80,18 @@ export default async function handleRequest(
 
   headers.set('Content-Type', 'text/html; charset=utf-8');
 
-  // A screen that couldn't load because the API was down isn't missing so say so and
-  // search engines come back instead of dropping it
+  // An API outage is not a missing screen so search engines should come back
   if (responseStatus >= 400 && loads.errors().some((error) => OUTAGES.has(error))) {
     responseStatus = 503;
     headers.set('Retry-After', '60');
   }
 
-  return new Response(html.replace('</body>', data + '</body>'), {
-    status: responseStatus,
-    headers,
-  });
+  // A function keeps $ in the data from being read as a pattern
+  return new Response(
+    html.replace('</body>', () => data + '</body>'),
+    {
+      status: responseStatus,
+      headers,
+    },
+  );
 }

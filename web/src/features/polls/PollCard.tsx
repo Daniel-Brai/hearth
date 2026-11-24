@@ -36,6 +36,7 @@ export function PollCard({
 
   const pick = async (optionId: string) => {
     const r = await gateway.chat.vote(chatKey, messageId, nextPicks(poll, optionId));
+
     if (!r.ok) flash(r.error);
   };
 
@@ -44,6 +45,7 @@ export function PollCard({
 
     try {
       const r = await gateway.chat.closePoll(chatKey, messageId);
+
       flash(r.ok ? 'Poll closed' : r.error);
     } finally {
       setBusy(false);

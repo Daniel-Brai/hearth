@@ -43,7 +43,7 @@ defmodule Hearth.Notifications.Listener.Auth do
 
   def handle_info(%EmailChangeCodeRequested{} = event, state) do
     with {:ok, user} <- Accounts.get_user(id: event.user_id) do
-      recipient = %Anonymous{name: name(user), email: event.email}
+      recipient = %Anonymous{name: Accounts.display_name(user), email: event.email}
 
       Notifications.send(recipient, %EmailChangeCode{code: event.code, ttl: event.ttl})
     end
@@ -59,7 +59,10 @@ defmodule Hearth.Notifications.Listener.Auth do
         ttl: event.ttl
       }
 
-      Notifications.send(%Anonymous{name: name(user), email: event.email}, message)
+      Notifications.send(
+        %Anonymous{name: Accounts.display_name(user), email: event.email},
+        message
+      )
     end
 
     {:noreply, state}
@@ -73,7 +76,7 @@ defmodule Hearth.Notifications.Listener.Auth do
 
   def handle_info(%EmailChangeConfirmed{} = event, state) do
     with {:ok, user} <- Accounts.get_user(id: event.user_id) do
-      recipient = %Anonymous{name: name(user), email: event.old_email}
+      recipient = %Anonymous{name: Accounts.display_name(user), email: event.old_email}
 
       message = %EmailChanged{
         new_email: event.new_email,
@@ -88,6 +91,4 @@ defmodule Hearth.Notifications.Listener.Auth do
   end
 
   def handle_info(_event, state), do: {:noreply, state}
-
-  defp name(user), do: user.display_name || user.username
 end

@@ -2,7 +2,7 @@ import type { Blocker } from 'react-router';
 
 import { Button, Dialog, DialogBody, DialogFooter, DialogTitle } from '@/design-system';
 
-export type LeaveDialogProps = {
+type LeaveDialogProps = {
   readonly blocker: Blocker;
   readonly title: string;
   readonly text: string;

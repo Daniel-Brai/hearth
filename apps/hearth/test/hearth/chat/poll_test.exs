@@ -129,7 +129,7 @@ defmodule Hearth.Chat.PollTest do
       [first, second | _options] = poll.options
 
       assert {:ok, %{voters: 1, mine: mine}} = Chat.vote(member, poll, [first.id, second.id])
-      assert Enum.sort(mine) == Enum.sort([first.id, second.id])
+      assert MapSet.new(mine) == MapSet.new([first.id, second.id])
     end
 
     test "tells the room the totals", %{owner: owner, member: member, room: room} do

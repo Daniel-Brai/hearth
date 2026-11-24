@@ -42,15 +42,18 @@ export function DatePicker({ value, onChange, label, futureOnly }: DatePickerPro
 
   useEffect(() => {
     if (!open) return;
+
     popup.current?.querySelector<HTMLElement>(`[data-day="${focusKey}"]`)?.focus();
   }, [open, focusKey]);
 
   const toggle = () => {
     if (!open) {
       const start = parseDay(value) ?? new Date();
+
       setMonth(start);
       setFocus(start);
     }
+
     setOpen(!open);
   };
 
@@ -80,6 +83,7 @@ export function DatePicker({ value, onChange, label, futureOnly }: DatePickerPro
     if (!next) return;
 
     e.preventDefault();
+
     if (futureOnly && isPastDay(next)) return;
 
     setFocus(next);

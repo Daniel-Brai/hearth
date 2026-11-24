@@ -1,32 +1,8 @@
 import { addDays } from 'date-fns';
 
-import type { IconName } from '@/design-system';
 import { evEnd, evNext, evState, evWhere } from '@/domain/events';
-import type { Community, CommunityEvent, EventRepeat, VoiceMode } from '@/domain/types';
+import type { Community, CommunityEvent, EventRepeat } from '@/domain/types';
 import { routes, slugify } from '@/runtime/routes';
-
-export const VOICE_MODES: readonly {
-  id: VoiceMode;
-  label: string;
-  icon: IconName;
-  text: string;
-}[] = [
-  {
-    id: 'open',
-    label: 'Open',
-    icon: 'mic',
-    text: 'Anyone here can talk. You join muted and unmute when ready.',
-  },
-  {
-    id: 'stage',
-    label: 'Stage',
-    icon: 'hand',
-    text: 'Speakers talk on stage. Raise your hand to be invited up.',
-  },
-];
-
-export const voiceModeInfo = (id: VoiceMode | undefined) =>
-  VOICE_MODES.find((m) => m.id === (id ?? 'open')) ?? VOICE_MODES[0]!;
 
 export const DURATIONS: readonly { value: string; label: string }[] = [
   { value: '15', label: '15 minutes' },
@@ -56,7 +32,7 @@ export const alwaysChanged = () => false;
 export const eventLink = (e: CommunityEvent, origin: string) =>
   origin + routes.event(e.c, e.id, e.title);
 
-/** A feed calendar apps check again on their own, for communities anyone can read */
+/** A feed calendar apps refresh on their own for communities anyone can read */
 export const calendarFeed = (cid: string, origin: string) => `${origin}/calendars/${cid}.ics`;
 
 export const eventFile = (e: CommunityEvent) => (slugify(e.title) || 'event') + '.ics';
@@ -78,7 +54,13 @@ const stamp = (d: Date) =>
   d.toISOString().replace('.000', '').replaceAll('-', '').replaceAll(':', '');
 
 const escapeText = (s: string) =>
-  s.replaceAll('\\', '\\\\').replaceAll('\n', '\\n').replaceAll(',', '\\,').replaceAll(';', '\\;');
+  s
+    .replaceAll('\\', '\\\\')
+    .replaceAll('\r\n', '\\n')
+    .replaceAll('\r', '\\n')
+    .replaceAll('\n', '\\n')
+    .replaceAll(',', '\\,')
+    .replaceAll(';', '\\;');
 
 /** Depends only on the event so the server and the browser make the same link */
 export function eventIcs(
@@ -109,7 +91,7 @@ export function eventIcs(
   return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
 }
 
-export type EventGroup = { label: string; items: CommunityEvent[] };
+type EventGroup = { label: string; items: CommunityEvent[] };
 
 export function groupEvents(list: CommunityEvent[], past: boolean, now = Date.now()): EventGroup[] {
   if (past) return list.length ? [{ label: 'Earlier', items: list }] : [];

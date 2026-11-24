@@ -212,8 +212,6 @@ function ComposerCancel({
   readonly onStopEditing: () => void;
   readonly onStopReplying: () => void;
 }) {
-  if (!editing && !replyingName) return null;
-
   const label = editing ? 'Stop editing' : 'Stop replying to ' + replyingName;
 
   return (

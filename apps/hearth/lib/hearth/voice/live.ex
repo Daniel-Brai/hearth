@@ -116,11 +116,11 @@ defmodule Hearth.Voice.Live do
 
   @impl GenServer
   def handle_call({:join, user_id, channel, wants_stage?, may_speak?}, _from, state) do
-    voice = state.voice
+    peer_opts = [session_id: state.session.id, user_id: user_id, channel: channel, live: self()]
 
-    with true <- State.room_for?(voice, user_id),
+    with true <- State.room_for?(state.voice, user_id),
          {:ok, state} <- enter(state, user_id, wants_stage?, may_speak?),
-         {:ok, peer} <- start_peer(state, user_id, channel) do
+         {:ok, peer} <- RTC.start_peer(peer_opts) do
       state = state |> drop_peer(user_id) |> cancel_grace(user_id) |> watch(user_id, peer)
       :ok = Session.note_size(state.session.id, map_size(state.voice.people))
       announce(state, user_id)
@@ -145,7 +145,7 @@ defmodule Hearth.Voice.Live do
   def handle_call(:snapshot, _from, state), do: {:reply, snapshot_of(state), state}
 
   def handle_call(:lose, _from, state) do
-    state = stop_recording(state, nil, :lost)
+    state = stop_recording(state, :lost)
     {:ok, session} = EndSession.execute(state.session)
     close_all(state, :lost)
     broadcast(ended(session, :lost))
@@ -161,12 +161,7 @@ defmodule Hearth.Voice.Live do
 
       {user_id, refs} ->
         state = %{state | refs: refs, peers: Map.delete(state.peers, user_id)}
-        state = speaking(state, user_id, false)
-
-        case State.here?(state.voice, user_id) do
-          true -> {:noreply, start_grace(state, user_id)}
-          false -> {:noreply, state}
-        end
+        {:noreply, peer_lost(speaking(state, user_id, false), user_id)}
     end
   end
 
@@ -204,23 +199,29 @@ defmodule Hearth.Voice.Live do
 
   def handle_info(_message, state), do: {:noreply, state}
 
+  # Someone still in the room gets a grace period to reconnect
+  defp peer_lost(state, user_id) do
+    case State.here?(state.voice, user_id) do
+      true -> start_grace(state, user_id)
+      false -> state
+    end
+  end
+
   defp enter(state, user_id, wants_stage?, may_speak?) do
     case State.here?(state.voice, user_id) do
       true ->
         {:ok, state}
 
       false ->
-        role = State.role_on_join(state.voice, user_id, wants_stage?, may_speak?)
-
-        with {:ok, row} <- Participant.enter(state.session.id, user_id, role) do
-          voice = State.join(state.voice, user_id, State.person(row))
-          {:ok, %{state | voice: voice, rows: Map.put(state.rows, user_id, row)}}
-        end
+        add(state, user_id, State.role_on_join(state.voice, user_id, wants_stage?, may_speak?))
     end
   end
 
-  defp start_peer(state, user_id, channel) do
-    RTC.start_peer(session_id: state.session.id, user_id: user_id, channel: channel, live: self())
+  defp add(state, user_id, role) do
+    with {:ok, row} <- Participant.enter(state.session.id, user_id, role) do
+      voice = State.join(state.voice, user_id, State.person(row))
+      {:ok, %{state | voice: voice, rows: Map.put(state.rows, user_id, row)}}
+    end
   end
 
   defp watch(state, user_id, peer) do
@@ -228,7 +229,7 @@ defmodule Hearth.Voice.Live do
     %{state | peers: Map.put(state.peers, user_id, peer), refs: Map.put(state.refs, ref, user_id)}
   end
 
-  # A person joining again replaces their old peer, whose connection is gone
+  # A person joining again replaces their old peer since its connection is gone
   defp drop_peer(state, user_id) do
     case Map.pop(state.peers, user_id) do
       {nil, _peers} ->
@@ -311,14 +312,13 @@ defmodule Hearth.Voice.Live do
 
   # Speech is turned into captions only while someone in the room has them on
   defp act_on({:captions, user_id, on?}, state) do
-    with {:ok, _person} <- State.fetch(state.voice, user_id) do
-      captions =
-        if on?,
-          do: MapSet.put(state.captions, user_id),
-          else: MapSet.delete(state.captions, user_id)
+    captions =
+      if on?,
+        do: MapSet.put(state.captions, user_id),
+        else: MapSet.delete(state.captions, user_id)
 
-      {:ok, %{state | captions: captions}}
-    end
+    with {:ok, _person} <- State.fetch(state.voice, user_id),
+         do: {:ok, %{state | captions: captions}}
   end
 
   defp act_on({:self_mute, user_id, muted?}, state) do
@@ -353,40 +353,26 @@ defmodule Hearth.Voice.Live do
   end
 
   defp act_on({:disconnect, actor, user_id}, state) do
-    with {:ok, _person} <- State.fetch(state.voice, user_id),
-         {:ok, row} <- found(Map.fetch(state.rows, user_id)),
-         {:ok, _row} <-
-           ChangeParticipant.execute(row, %{}, %{
-             actor_id: actor,
-             action: :disconnected,
-             session: state.session
-           }) do
-      peer = state.peers[user_id]
-      state = leave(state, user_id)
-      if peer, do: Peer.close(peer, :disconnected)
+    log = %{actor_id: actor, action: :disconnected, session: state.session}
 
-      {:ok, state}
+    with {:ok, _person} <- State.fetch(state.voice, user_id),
+         {:ok, row} <- Map.fetch(state.rows, user_id),
+         {:ok, _row} <- ChangeParticipant.execute(row, %{}, log) do
+      {:ok, close_peer(state, user_id, :disconnected)}
+    else
+      :error -> {:error, :not_here}
+      error -> error
     end
   end
 
   defp act_on({:remove, user_id}, state) do
-    with {:ok, _person} <- State.fetch(state.voice, user_id) do
-      peer = state.peers[user_id]
-      state = leave(state, user_id)
-      if peer, do: Peer.close(peer, :no_access)
-
-      {:ok, state}
-    end
+    with {:ok, _person} <- State.fetch(state.voice, user_id),
+         do: {:ok, close_peer(state, user_id, :no_access)}
   end
 
   defp act_on({:leave, user_id}, state) do
-    with {:ok, _person} <- State.fetch(state.voice, user_id) do
-      peer = state.peers[user_id]
-      state = leave(state, user_id)
-      if peer, do: Peer.close(peer, :left)
-
-      {:ok, state}
-    end
+    with {:ok, _person} <- State.fetch(state.voice, user_id),
+         do: {:ok, close_peer(state, user_id, :left)}
   end
 
   defp act_on({:start_share, user_id}, state) do
@@ -426,7 +412,7 @@ defmodule Hearth.Voice.Live do
   end
 
   defp act_on(:end, state) do
-    state = stop_recording(state, nil, :ended)
+    state = stop_recording(state, :ended)
     {:ok, session} = EndSession.execute(state.session)
     close_all(state, :ended)
     broadcast(ended(session, :ended))
@@ -436,8 +422,12 @@ defmodule Hearth.Voice.Live do
 
   defp act_on(_unknown, _state), do: {:error, :invalid}
 
-  defp found({:ok, _row} = ok), do: ok
-  defp found(:error), do: {:error, :not_here}
+  defp close_peer(state, user_id, reason) do
+    peer = state.peers[user_id]
+    state = leave(state, user_id)
+    if peer, do: Peer.close(peer, reason)
+    state
+  end
 
   defp log(actor, actor, _action), do: nil
   defp log(actor, _user, action), do: %{actor_id: actor, action: action}
@@ -475,10 +465,10 @@ defmodule Hearth.Voice.Live do
   defp server_muted_by(%{server_muted_by_id: by}, %{server_muted: true}, nil), do: by
   defp server_muted_by(_row, %{server_muted: true}, log), do: log.actor_id
 
-  # Ending or losing the session stops its recording, logged as done by whoever started it
-  defp stop_recording(%{recording: nil} = state, _actor, _reason), do: state
+  # Ending or losing the session stops its recording as if whoever started it did
+  defp stop_recording(%{recording: nil} = state, _reason), do: state
 
-  defp stop_recording(state, nil, reason) do
+  defp stop_recording(state, reason) do
     recording = state.recording
     state = sync(%{state | recording: nil})
     actor = recording.started_by_id || state.session.host_id
@@ -527,19 +517,20 @@ defmodule Hearth.Voice.Live do
   end
 
   defp sync(state) do
-    routes = State.routes(state.voice)
-    record = Capture.route(state.recording)
-    caption = MapSet.size(state.captions) > 0
+    extra = %{record: Capture.route(state.recording), caption: MapSet.size(state.captions) > 0}
 
-    for {user_id, peer} <- state.peers,
-        %{} = route <- [routes[user_id]],
-        do: Peer.route(peer, Map.merge(route, %{record: record, caption: caption}))
+    state.voice
+    |> State.routes()
+    |> Map.take(Map.keys(state.peers))
+    |> Enum.each(fn {user_id, route} ->
+      Peer.route(state.peers[user_id], Map.merge(route, extra))
+    end)
 
     watch_empty(state)
   end
 
-  # A session nobody is in ends soon so its room stops showing as live. One started for an
-  # event stays until the event's time is up, so people arriving late still find it
+  # A session nobody is in ends soon so its room stops showing as live
+  # One started for an event stays until the event is over
   defp watch_empty(%{voice: %{people: people}, empty_timer: nil} = state)
        when map_size(people) == 0,
        do: %{state | empty_timer: Process.send_after(self(), :empty, empty_after(state))}

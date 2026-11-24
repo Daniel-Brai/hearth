@@ -39,7 +39,7 @@ defmodule Hearth.Forum.Command.CreatePost do
   def tag(%Post{} = post, %Community{} = community) do
     rooms =
       community
-      |> Communities.list_rooms()
+      |> Communities.list_rooms(fields: [:slug])
       |> MapSet.new(& &1.slug)
 
     names =

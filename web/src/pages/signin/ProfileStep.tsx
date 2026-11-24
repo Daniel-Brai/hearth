@@ -4,8 +4,8 @@ import { useAppState } from '@/data/store';
 import { Button, ChoiceTiles, Field, Input, InputWithPrefix } from '@/design-system';
 import { stripPrefix } from '@/domain/links';
 import { isUsername, takenText, toUsername, usernameProblem } from '@/domain/username';
-import { PhotoField } from '@/pages/signin/PhotoField';
 
+import { PhotoField } from './PhotoField';
 import type { Privacy, SignIn } from './use-sign-in';
 import { useUsernameTaken } from './use-username-taken';
 

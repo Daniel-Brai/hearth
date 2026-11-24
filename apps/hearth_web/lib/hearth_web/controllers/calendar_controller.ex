@@ -4,7 +4,7 @@ defmodule HearthWeb.CalendarController do
   alias Hearth.Communities
   alias HearthWeb.Calendar
 
-  # The body is iCalendar text with its own content type, so a browser never runs it as a page
+  # The ics content type keeps a browser from running the body as a page
   # sobelow_skip ["XSS.SendResp"]
   def show(conn, %{"file" => file}) do
     with [slug, "ics"] <- String.split(file, "."),

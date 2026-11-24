@@ -40,10 +40,7 @@ defmodule Hearth.ModerationTest do
   end
 
   describe "set_level/3" do
-    test "fails without community.update", %{
-      member: member,
-      community: community
-    } do
+    test "fails without community.update", %{member: member, community: community} do
       assert {:error, :forbidden} = Moderation.set_level(member, community, :full)
     end
 
@@ -170,11 +167,7 @@ defmodule Hearth.ModerationTest do
                Moderation.report(member, :post, post.id, %{reason: :spam})
     end
 
-    test "queues content once", %{
-      member: member,
-      owner: owner,
-      post: post
-    } do
+    test "queues content once", %{member: member, owner: owner, post: post} do
       post_id = post.id
 
       assert {:ok, %Item{source: :report, status: :pending, report_count: 1} = item} =
@@ -213,11 +206,7 @@ defmodule Hearth.ModerationTest do
       assert {:error, :not_full} = Moderation.hold(:post, post.id, %{reason: Lorem.sentence()})
     end
 
-    test "hides held reply from others", %{
-      owner: owner,
-      member: member,
-      author: author
-    } do
+    test "hides held reply from others", %{owner: owner, member: member, author: author} do
       community = TestUtils.create_random_forum!(owner, moderation: :full)
       {:ok, _membership} = Communities.join(author, community)
       {:ok, _membership} = Communities.join(member, community)
@@ -252,11 +241,7 @@ defmodule Hearth.ModerationTest do
       assert Moderation.queue_counts(helper) == %{}
     end
 
-    test "lists items with content.remove", %{
-      member: member,
-      community: community,
-      post: post
-    } do
+    test "lists items with content.remove", %{member: member, community: community, post: post} do
       {:ok, item} = Moderation.report(member, :post, post.id, %{reason: :spam})
       helper = TestUtils.join_with_permissions!(community, ["content.remove"])
 
@@ -337,11 +322,7 @@ defmodule Hearth.ModerationTest do
       assert {:error, :invalid_transition} = Moderation.undo(owner, item)
     end
 
-    test "restores content and reopens item", %{
-      owner: owner,
-      member: member,
-      post: post
-    } do
+    test "restores content and reopens item", %{owner: owner, member: member, post: post} do
       post_id = post.id
       {:ok, item} = Moderation.report(member, :post, post.id, %{reason: :spam})
       {:ok, removed} = Moderation.remove(owner, item, Lorem.sentence())
@@ -382,10 +363,7 @@ defmodule Hearth.ModerationTest do
                Moderation.remove_content(member, :post, post.id, Lorem.sentence())
     end
 
-    test "fails in a private room they can't see", %{
-      author: author,
-      community: community
-    } do
+    test "fails in a private room they can't see", %{author: author, community: community} do
       room = TestUtils.create_random_private_room!(community, ["member"])
       {:ok, message} = Chat.send_message(author, room, %{body: Lorem.sentence()})
       helper = TestUtils.join_with_permissions!(community, ["content.remove"])
@@ -477,13 +455,10 @@ defmodule Hearth.ModerationTest do
       author: author,
       community: community
     } do
-      {:ok, ban} =
-        Moderation.ban(owner, community, author, %{
-          reason: Lorem.sentence(),
-          expires_at: DateTime.add(DateTime.utc_now(), 1, :hour)
-        })
+      params = %{reason: Lorem.sentence(), expires_at: DateTime.add(DateTime.utc_now(), 1, :hour)}
+      {:ok, ban} = Moderation.ban(owner, community, author, params)
 
-      TestUtils.update_rows!(Ban, [id: ban.id], expires_at: TestUtils.minutes_ago(1))
+      :ok = TestUtils.update_rows!(Ban, [id: ban.id], expires_at: TestUtils.minutes_ago(1))
       {:ok, _membership} = Communities.join(author, community)
 
       assert {:ok, %Ban{}} = Moderation.ban(owner, community, author, %{reason: Lorem.sentence()})
@@ -492,21 +467,17 @@ defmodule Hearth.ModerationTest do
 
   describe "ban_username/4" do
     test "fails for a username nobody has", %{owner: owner, community: community} do
+      username = TestUtils.random_username()
+
       assert {:error, :not_found} =
-               Moderation.ban_username(owner, community, TestUtils.random_username(), %{
-                 reason: Lorem.sentence()
-               })
+               Moderation.ban_username(owner, community, username, %{reason: Lorem.sentence()})
     end
 
-    test "bans with or without at sign", %{
-      owner: owner,
-      author: author,
-      community: community
-    } do
+    test "bans with or without at sign", %{owner: owner, author: author, community: community} do
+      params = %{reason: Lorem.sentence()}
+
       assert {:ok, %Ban{}} =
-               Moderation.ban_username(owner, community, "@" <> author.username, %{
-                 reason: Lorem.sentence()
-               })
+               Moderation.ban_username(owner, community, "@" <> author.username, params)
 
       assert Communities.banned?(author, community)
     end

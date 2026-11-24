@@ -4,12 +4,14 @@ import { Marked, Parser, type Tokens, type TokensList } from 'marked';
 import { blurUrl } from '@/design-system/components/blur';
 import { ICONS } from '@/design-system/icons/icons';
 import type { AppState } from '@/domain/app-state';
+import { escapeHtml } from '@/domain/format';
 import { shortLink } from '@/domain/links';
 import { canSeeName, findPerson, findRoom, person } from '@/domain/selectors';
 import { attachmentDownload, attachmentSrc, type Attachment } from '@/domain/types';
 import { routes } from '@/runtime/routes';
 
 import { splitImageHref, type ImageAlign } from './image-align';
+import { isWeb, markdownSource } from './plain-text';
 
 /** The server render has no DOM so it passes one in with setMarkdownWindow */
 let purify = DOMPurify;
@@ -19,13 +21,6 @@ export function setMarkdownWindow(window: WindowLike & { DOMParser: typeof DOMPa
   purify = DOMPurify(window);
   parseHtml = (html) => new window.DOMParser().parseFromString(html, 'text/html');
 }
-
-const esc = (s: string) =>
-  s
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
 
 const icon = (name: keyof typeof ICONS) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -49,53 +44,52 @@ let ctx: RenderContext | null = null;
 let dropImages = false;
 
 function mentionHtml(handleText: string, raw: string) {
-  if (!ctx) return esc(raw);
+  if (!ctx) return escapeHtml(raw);
 
   if (handleText.toLowerCase() === 'all') {
     return ctx.everyone
       ? '<span class="mention mention--me" title="Everyone who can see this room">@all</span>'
-      : esc(raw);
+      : escapeHtml(raw);
   }
 
   const { state } = ctx;
   const id = findPerson(state, handleText);
 
-  if (!id) return esc(raw);
+  if (!id) return escapeHtml(raw);
 
   const p = person(state, id);
   const label = canSeeName(state, id) ? p.name : p.username;
   const me = id === state.me ? ' mention--me' : '';
 
-  return `<a class="mention${me}" href="${routes.profile(p.username)}" title="@${esc(p.username)}">@${esc(label)}</a>`;
+  return `<a class="mention${me}" href="${routes.profile(p.username)}" title="@${escapeHtml(p.username)}">@${escapeHtml(label)}</a>`;
 }
 
 function refHtml(name: string, raw: string) {
-  if (!ctx) return esc(raw);
+  if (!ctx) return escapeHtml(raw);
 
   const { state, community } = ctx;
 
-  if (!community) return esc(raw);
+  if (!community) return escapeHtml(raw);
 
   const room = findRoom(state, name, community);
 
   if (room)
-    return `<a class="ref ref--room" href="${routes.chat(community, room.id)}">#${esc(room.name)}</a>`;
+    return `<a class="ref ref--room" href="${routes.chat(community, room.id)}">#${escapeHtml(room.name)}</a>`;
 
-  return `<a class="ref ref--tag" href="${routes.tag(community, name.toLowerCase())}">#${esc(name)}</a>`;
+  return `<a class="ref ref--tag" href="${routes.tag(community, name.toLowerCase())}">#${escapeHtml(name)}</a>`;
 }
 
 const SAFE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 
 const isSafeHref = (href: string) => {
   if (href.startsWith('/') || href.startsWith('#')) return true;
+
   try {
     return SAFE_PROTOCOLS.has(new URL(href).protocol);
   } catch {
     return false;
   }
 };
-
-const isWeb = (href: string) => href.startsWith('http://') || href.startsWith('https://');
 
 type ResolvedImage = {
   readonly src: string;
@@ -137,6 +131,7 @@ const blurOf = (image: ResolvedImage) =>
 
 const blurAttrs = (image: ResolvedImage) => {
   const blur = blurOf(image);
+
   return blur ? ` data-blur style="--blur: url(${blur})"` : '';
 };
 
@@ -150,7 +145,7 @@ function imageHtml(image: ResolvedImage) {
 
   const style = styles.length ? ` style="${styles.join('; ')}"` : '';
 
-  return `<img class="md-image md-image--${image.align}" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)}${style}${blur ? ' data-blur' : ''} loading="lazy" decoding="async" data-fade="html">`;
+  return `<img class="md-image md-image--${image.align}" src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt)}"${sizeAttrs(image)}${style}${blur ? ' data-blur' : ''} loading="lazy" decoding="async" data-fade="html">`;
 }
 
 /** Images on one line each with no blank line between show as one carousel, placed by the first */
@@ -161,9 +156,9 @@ function carouselHtml(images: readonly ResolvedImage[]) {
   const slides = images.map(
     (image, i) =>
       `<div class="carousel__slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${images.length}"${i === 0 ? '' : ' inert'}>` +
-      `<img class="carousel__backdrop" src="${esc(image.src)}" alt="" loading="lazy" decoding="async">` +
-      `<button type="button" class="carousel__open" data-open-image aria-label="Open ${esc(image.alt)}">` +
-      `<img class="carousel__image" src="${esc(image.src)}" alt="${esc(image.alt)}"${sizeAttrs(image)}${blurAttrs(image)} loading="lazy" decoding="async" data-fade="html"></button></div>`,
+      `<img class="carousel__backdrop" src="${escapeHtml(image.src)}" alt="" loading="lazy" decoding="async">` +
+      `<button type="button" class="carousel__open" data-open-image aria-label="Open ${escapeHtml(image.alt)}">` +
+      `<img class="carousel__image" src="${escapeHtml(image.src)}" alt="${escapeHtml(image.alt)}"${sizeAttrs(image)}${blurAttrs(image)} loading="lazy" decoding="async" data-fade="html"></button></div>`,
   );
 
   const step = (by: number, label: string, disabled: boolean) =>
@@ -185,17 +180,21 @@ const md = new Marked({
   gfm: true,
   breaks: true,
   renderer: {
+    // Raw HTML shows as text so a post can't draw forms or cover the app
+    html({ text }: Tokens.HTML | Tokens.Tag) {
+      return escapeHtml(text);
+    },
     link({ href, title, text, raw }: Tokens.Link) {
       const safe = isSafeHref(href) ? href : '#';
       const external = isWeb(safe);
       // A pasted address is shortened to read, while the link still goes to all of it
       const bare = external && (raw === href || raw === `<${href}>`);
-      const label = bare ? esc(shortLink(href)) : text;
-      const tip = title ?? (bare && label !== esc(href) ? href : null);
-      const t = tip ? ` title="${esc(tip)}"` : '';
+      const label = bare ? escapeHtml(shortLink(href)) : text;
+      const tip = title ?? (bare && label !== escapeHtml(href) ? href : null);
+      const t = tip ? ` title="${escapeHtml(tip)}"` : '';
       const rel = external ? ' target="_blank" rel="noopener nofollow ugc"' : '';
 
-      return `<a class="md-link" href="${esc(safe)}"${rel}${t}>${label}</a>`;
+      return `<a class="md-link" href="${escapeHtml(safe)}"${rel}${t}>${label}</a>`;
     },
     image({ href: rawHref, text }: Tokens.Image) {
       if (dropImages) return '';
@@ -206,14 +205,14 @@ const md = new Marked({
 
       const { src: href } = splitImageHref(rawHref);
 
-      if (!href.startsWith('attachment:')) return esc(text);
+      if (!href.startsWith('attachment:')) return escapeHtml(text);
 
       const f = attachmentFor(href);
 
       if (!f)
-        return `<span class="md-missing">${icon('image')}${esc(text || 'Image')} was removed</span>`;
+        return `<span class="md-missing">${icon('image')}${escapeHtml(text || 'Image')} was removed</span>`;
 
-      return `<a class="md-link" href="${esc(attachmentDownload(f))}" download="${esc(f.name)}">${esc(text || f.name)}</a>`;
+      return `<a class="md-link" href="${escapeHtml(attachmentDownload(f))}" download="${escapeHtml(f.name)}">${escapeHtml(text || f.name)}</a>`;
     },
     paragraph({ tokens }: Tokens.Paragraph) {
       const parts = tokens.filter((t) => t.type !== 'br' && t.raw.trim() !== '');
@@ -228,7 +227,7 @@ const md = new Marked({
     },
     code({ text, lang }: Tokens.Code) {
       const language = lang?.trim().split(' ')[0] || null;
-      const langAttr = language ? ` data-lang="${esc(language)}"` : '';
+      const langAttr = language ? ` data-lang="${escapeHtml(language)}"` : '';
       const lines = text.split('\n').length;
       const long = lines > CODE_COLLAPSE_AFTER;
 
@@ -239,9 +238,9 @@ const md = new Marked({
         : '';
 
       return (
-        `<div class="code-block"${long ? ' data-long' : ''}><div class="code-block__head"><span>${esc(language ?? 'code')}</span>` +
+        `<div class="code-block"${long ? ' data-long' : ''}><div class="code-block__head"><span>${escapeHtml(language ?? 'code')}</span>` +
         `<button type="button" class="code-block__copy" data-copy-code aria-label="Copy code" data-tip="Copy code">${icon('copy')}${icon('check')}</button></div>` +
-        `<pre><code data-code${langAttr}>${esc(text)}</code></pre>${more}</div>`
+        `<pre><code data-code${langAttr}>${escapeHtml(text)}</code></pre>${more}</div>`
       );
     },
   },
@@ -251,14 +250,17 @@ const md = new Marked({
       level: 'inline',
       start(src: string) {
         const m = /(^|[\s(])@[a-z]/i.exec(src);
+
         return m ? m.index + m[1]!.length : undefined;
       },
       tokenizer(src: string) {
         const m = /^@([a-z][\w.]*[\w])/i.exec(src) ?? /^@([a-z])/i.exec(src);
+
         return m ? { type: 'mention', raw: m[0], handle: m[1] } : undefined;
       },
       renderer(t) {
         const token = t as MentionToken;
+
         return mentionHtml(token.handle, token.raw);
       },
     },
@@ -267,14 +269,17 @@ const md = new Marked({
       level: 'inline',
       start(src: string) {
         const m = /(^|[\s(])#[a-z]/i.exec(src);
+
         return m ? m.index + m[1]!.length : undefined;
       },
       tokenizer(src: string) {
         const m = /^#([a-z][\w-]*[\w]|[a-z])/i.exec(src);
+
         return m ? { type: 'ref', raw: m[0], name: m[1] } : undefined;
       },
       renderer(t) {
         const token = t as RefToken;
+
         return refHtml(token.name, token.raw);
       },
     },
@@ -305,6 +310,7 @@ const PURIFY_INLINE = {
 
 function withContext<T>(c: RenderContext, fn: () => T): T {
   ctx = c;
+
   try {
     return fn();
   } finally {
@@ -330,8 +336,8 @@ export function lexMarkdown(text: string): {
 }
 
 export function renderMarkdown(text: string | readonly string[], c: RenderContext): string {
-  const src = Array.isArray(text) ? text.join('\n\n') : String(text);
-  const html = withContext(c, () => md.parse(src, { async: false }));
+  const html = withContext(c, () => md.parse(markdownSource(text), { async: false }));
+
   return purify.sanitize(html, PURIFY_BLOCK);
 }
 
@@ -340,18 +346,20 @@ export function renderInline(
   c: RenderContext,
   noLinks = false,
 ): string {
-  const first = Array.isArray(text) ? text.join('\n\n') : String(text);
   let html: string;
 
   dropImages = true;
 
   try {
     html = withContext(c, () => {
-      const tokens = md.lexer(first);
+      const tokens = md.lexer(markdownSource(text));
+
       const parts = tokens.map((t) => {
         if (t.type === 'code') return ' … ';
+
         return 'tokens' in t && t.tokens ? Parser.parseInline(t.tokens, md.defaults) : null;
       });
+
       return parts.filter((part) => part !== null && part.trim() !== '').join(' ');
     });
   } finally {
@@ -365,6 +373,7 @@ export function renderInline(
 
 function unlink(html: string): string {
   const doc = parseHtml(`<body>${html}</body>`);
+
   doc.querySelectorAll('a').forEach((a) => {
     const span = doc.createElement('span');
 
@@ -372,6 +381,7 @@ function unlink(html: string): string {
     span.append(...a.childNodes);
     a.replaceWith(span);
   });
+
   return doc.body.innerHTML;
 }
 
@@ -389,6 +399,7 @@ export function markdownKey(
 
     return `${id}:${canSeeName(state, id) ? p.name : p.username}:${id === state.me ? 1 : 0}`;
   });
+
   const rooms = community
     ? refs.refs.map((name) => findRoom(state, name, community)?.name ?? '-')
     : [];

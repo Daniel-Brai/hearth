@@ -13,6 +13,7 @@ export function Keys({
 }) {
   const mac = useMac();
   const chords = combo.split(' ');
+
   return (
     <span className={cn('keys', className)} aria-label={combo}>
       {chords.map((chord, i) => (
@@ -35,7 +36,7 @@ export function Keys({
 
 const never = () => () => undefined;
 
-// The server can't tell the platform, so Mac labels wait until hydration ends
+// The server can't tell the platform so Mac labels wait until hydration ends
 const useMac = () =>
   useSyncExternalStore(
     never,

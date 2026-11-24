@@ -106,9 +106,8 @@ defmodule Hearth.Forum.KindLibrary do
 
   @spec for_template(String.t()) :: [map()]
   def for_template(template) do
-    keys = Map.get(@templates, template, @templates["blank"])
-
-    keys
+    template
+    |> keys_for_template()
     |> Enum.with_index()
     |> Enum.map(fn {key, position} ->
       @kinds

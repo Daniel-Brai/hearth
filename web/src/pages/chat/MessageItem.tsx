@@ -12,13 +12,14 @@ import {
   MenuItem,
 } from '@/design-system';
 import { authorName, displayName } from '@/domain/selectors';
-import type { Message } from '@/domain/types';
+import { attachmentSrc, type Message } from '@/domain/types';
 import { BoostMenu, Boosts } from '@/features/boosts/BoostMenu';
 import { InlineMarkdown, Markdown } from '@/features/markdown/Markdown';
 import { useModerationActions } from '@/features/moderation/use-moderation-actions';
 import { PollCard } from '@/features/polls/PollCard';
 import { firstUrl, useLinkPreview } from '@/features/previews';
 import { ReplyingTo } from '@/features/threads/ReplyingTo';
+import { looseFiles } from '@/pages/shared/loose-files';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PersonAvatar, PersonLink } from '@/shell/people';
@@ -48,7 +49,7 @@ function SystemMessage({
   const name = useAppState((state) => authorName(state, m.who));
   const { restore } = useModerationActions();
 
-  if (m.moderated)
+  if (m.moderated) {
     return (
       <div className="message--system" id={'msg-' + m.id}>
         <Icon name="shield" />
@@ -70,8 +71,9 @@ function SystemMessage({
         ) : null}
       </div>
     );
+  }
 
-  if (m.pinNotice !== undefined)
+  if (m.pinNotice !== undefined) {
     return (
       <div className="message--system" id={'msg-' + m.id}>
         <Icon name="pin" />
@@ -80,8 +82,9 @@ function SystemMessage({
         </span>
       </div>
     );
+  }
 
-  if (m.promoted && chat.target.cid)
+  if (m.promoted && chat.target.cid) {
     return (
       <div className="message--system" id={'msg-' + m.id}>
         <Icon name="megaphone" />
@@ -93,6 +96,7 @@ function SystemMessage({
         </span>
       </div>
     );
+  }
 
   return (
     <div className="message--system" id={'msg-' + m.id}>
@@ -178,7 +182,6 @@ function ChatMessage({ message: m, grouped, chat, answers }: MessageItemProps) {
   );
 }
 
-/** A poll's question shows on its card, and every other message in a bubble */
 function MessageContent({
   message: m,
   chat,
@@ -238,18 +241,12 @@ function MessageBubble({
 
 function MessageFiles({ message: m }: { readonly message: Message }) {
   const openImage = useUi((s) => s.openImage);
-  const looseFiles = (m.files ?? []).filter((f) => !m.text.includes(`attachment:${f.id}`));
+  const loose = looseFiles(m.files, m.text);
 
-  if (!looseFiles.length) return null;
+  if (!loose.length) return null;
 
   return (
-    <FileList
-      files={looseFiles}
-      onOpenImage={(f) => {
-        const src = f.data ?? f.url;
-        if (src) openImage(src, f.name, f.download);
-      }}
-    />
+    <FileList files={loose} onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)} />
   );
 }
 
@@ -351,26 +348,29 @@ function MessageMenu({
   const moderation = useModerationActions();
   const ref = { c: target.cid ?? 'dm', kind: 'Message' as const, id: m.id, key: target.key };
 
-  const remove = () =>
-    mine
-      ? ask({
-          title: 'Delete this message?',
-          body: 'It will be removed for everyone in the room.',
-          action: 'Delete message',
-          onConfirm: () => {
-            gateway.chat.remove(target.key, m.id);
-            flash('Message deleted');
-          },
-        })
-      : moderation.remove(ref);
+  const remove = () => {
+    if (!mine) {
+      moderation.remove(ref);
+      return;
+    }
+
+    ask({
+      title: 'Delete this message?',
+      body: 'It will be removed for everyone in the room.',
+      action: 'Delete message',
+      onConfirm: () => {
+        gateway.chat.remove(target.key, m.id);
+        flash('Message deleted');
+      },
+    });
+  };
 
   const togglePin = () => {
     const pinned = chat.pinned.has(m.id);
     const send = pinned ? gateway.chat.unpin : gateway.chat.pin;
+    const done = pinned ? 'Unpinned' : 'Pinned';
 
-    void send(target.key, m.id).then((r) =>
-      flash(r.ok ? (pinned ? 'Unpinned' : 'Pinned') : r.error),
-    );
+    void send(target.key, m.id).then((r) => flash(r.ok ? done : r.error));
   };
 
   const report = () =>

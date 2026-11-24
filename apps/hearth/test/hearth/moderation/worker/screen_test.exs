@@ -24,14 +24,10 @@ defmodule Hearth.Moderation.Worker.ScreenTest do
       assert {:ok, %{status: :published}} = Forum.get_post(id: post.id)
     end
 
-    test "does nothing below full", %{
-      author: author,
-      community: community
-    } do
+    test "does nothing below full", %{author: author, community: community} do
       post = TestUtils.create_random_post!(author, community, body: "[unsafe]")
 
-      :ok =
-        TestUtils.update_rows!(Community, [id: community.id], moderation: :reports)
+      :ok = TestUtils.update_rows!(Community, [id: community.id], moderation: :reports)
 
       assert :ok = perform_job(Screen, %{subject_type: "post", subject_id: post.id})
       assert {:ok, %{status: :published}} = Forum.get_post(id: post.id)

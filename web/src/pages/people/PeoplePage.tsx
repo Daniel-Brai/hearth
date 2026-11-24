@@ -6,7 +6,8 @@ import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
 import { Badge, Button, cn, Icon, Label, Link, Select } from '@/design-system';
 import { cap, plural } from '@/domain/format';
-import { canDo, displayName, handle, joinedCids, person, presence } from '@/domain/selectors';
+import { displayName, handle, person, presence } from '@/domain/selectors';
+import { useCommunityFilter } from '@/pages/shared/use-community-filter';
 import { routes } from '@/runtime/routes';
 import { PageHeader } from '@/shell/PageHeader';
 import { PersonAvatar } from '@/shell/people';
@@ -78,27 +79,13 @@ export function PeoplePage() {
                 <PersonRow key={id} id={id} onMessage={message} />
               ))}
 
-              {ids.length ? null : <EmptyPeople searching={searching} filter={filter} />}
+              {ids.length ? null : <PeopleEmpty searching={searching} filter={filter} />}
             </div>
           </section>
         </div>
       </main>
     </>
   );
-}
-
-function EmptyPeople({
-  searching,
-  filter,
-}: {
-  readonly searching: boolean;
-  readonly filter: string;
-}) {
-  const canInvite = useAppState(
-    (state) => filter !== 'all' && canDo(state, filter, 'invite.create'),
-  );
-
-  return <PeopleEmpty searching={searching} filter={filter} canInvite={canInvite} />;
 }
 
 function PeopleSearch({
@@ -114,16 +101,7 @@ function PeopleSearch({
   readonly filter: string;
   readonly onFilter: (value: string) => void;
 }) {
-  const cids = useAppState(joinedCids);
-
-  const names = useAppState((state) =>
-    joinedCids(state).map((cid) => state.communities[cid]?.name ?? cid),
-  );
-
-  const options = [
-    { value: 'all', label: 'All communities' },
-    ...cids.map((cid, i) => ({ value: cid, label: names[i] ?? cid })),
-  ];
+  const options = useCommunityFilter();
 
   return (
     <div className="people-search">

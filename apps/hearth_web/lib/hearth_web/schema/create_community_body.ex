@@ -17,7 +17,7 @@ defmodule HearthWeb.Schema.CreateCommunityBody do
       logo_id: nullable(uuid(description: "An uploaded image, left out of a request")),
       hue: Schema.enum_of(Community, :hue),
       visibility: Schema.enum_of(Community, :visibility),
-      template: enum(Communities.template_ids()),
+      template: [fields: [:id]] |> Communities.list_templates() |> Enum.map(& &1.id) |> enum(),
       note: nullable(string(maxLength: 1_000)),
       categories:
         array_of(enum(Communities.list_category_slugs()),

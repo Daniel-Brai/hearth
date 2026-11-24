@@ -53,11 +53,7 @@ defmodule HearthWeb.CommunityControllerTest do
       assert id == community.id
     end
 
-    test "shows owner members and logo", %{
-      conn: conn,
-      owner: owner,
-      community: community
-    } do
+    test "shows owner members and logo", %{conn: conn, owner: owner, community: community} do
       logo = TestUtils.upload_random_file!(owner, width: 400, height: 400, purpose: :logo)
 
       :ok = perform_job(ProcessImage, %{media_id: logo.id})
@@ -185,10 +181,7 @@ defmodule HearthWeb.CommunityControllerTest do
                |> valid_response(404)
     end
 
-    test "shows outline of invite only to outsiders", %{
-      conn: conn,
-      owner: owner
-    } do
+    test "shows outline of invite only to outsiders", %{conn: conn, owner: owner} do
       community =
         TestUtils.create_random_forum!(owner,
           visibility: :invite_only,
@@ -239,10 +232,7 @@ defmodule HearthWeb.CommunityControllerTest do
       assert "post.pin" in permissions
     end
 
-    test "counts members online, leaving out anyone hiding it", %{
-      conn: conn,
-      community: community
-    } do
+    test "leaves hidden members out of the online count", %{conn: conn, community: community} do
       online = TestUtils.join_random_member!(community)
       hidden = TestUtils.join_random_member!(community)
       {:ok, _privacy} = Accounts.update_privacy(hidden, %{presence: :nobody})
@@ -267,6 +257,17 @@ defmodule HearthWeb.CommunityControllerTest do
                |> valid_response(403)
     end
 
+    test "fails with someone else's image", %{conn: conn, owner: owner, community: community} do
+      uploader = TestUtils.register_random_user!()
+      image = TestUtils.upload_random_file!(uploader, purpose: :logo)
+
+      assert %{"code" => "invalid_image"} =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/communities/#{community.id}", %{banner_id: image.id})
+               |> valid_response(400)
+    end
+
     test "fails for more than two categories", %{conn: conn, owner: owner, community: community} do
       body = %{categories: ~w[tech games art]}
 
@@ -275,6 +276,15 @@ defmodule HearthWeb.CommunityControllerTest do
                |> auth_conn(owner)
                |> patch(~p"/api/communities/#{community.id}", body)
                |> valid_response(422)
+    end
+
+    test "sets their own logo", %{conn: conn, owner: owner, community: community} do
+      logo = TestUtils.upload_random_file!(owner, purpose: :logo)
+
+      assert conn
+             |> auth_conn(owner)
+             |> patch(~p"/api/communities/#{community.id}", %{logo_id: logo.id})
+             |> valid_response(200)
     end
 
     test "clears a field sent as null", %{conn: conn, owner: owner, community: community} do
@@ -510,10 +520,7 @@ defmodule HearthWeb.CommunityControllerTest do
       assert conn |> get(~p"/api/communities/#{private.id}/members?q=owl") |> valid_response(404)
     end
 
-    test "returns 404 if invite only", %{
-      conn: conn,
-      owner: owner
-    } do
+    test "returns 404 if invite only", %{conn: conn, owner: owner} do
       community = TestUtils.create_random_community!(owner, visibility: :invite_only)
 
       assert conn

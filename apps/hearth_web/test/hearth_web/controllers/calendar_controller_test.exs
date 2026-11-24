@@ -53,6 +53,20 @@ defmodule HearthWeb.CalendarControllerTest do
       assert body =~ "STATUS:CANCELLED"
     end
 
+    test "keeps a line break in a title on one line", %{
+      conn: conn,
+      owner: owner,
+      community: community
+    } do
+      title = "Meet\rBEGIN:VALARM"
+      _event = TestUtils.create_random_community_event!(owner, community, title: title)
+
+      body = conn |> get(~p"/calendars/#{community.slug <> ".ics"}") |> response(200)
+
+      refute body =~ "\rBEGIN:VALARM"
+      assert body =~ "SUMMARY:Meet\\nBEGIN:VALARM"
+    end
+
     test "folds long lines", %{conn: conn, owner: owner, community: community} do
       about = String.duplicate("Bring seeds ", 20)
       _event = TestUtils.create_random_community_event!(owner, community, description: about)

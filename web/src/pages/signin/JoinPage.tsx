@@ -7,7 +7,6 @@ import { useLoad } from '@/data/use-load';
 import { Button, ButtonLink, CommunityMark, EmptyState, Icon, Link } from '@/design-system';
 import { fmt, noun } from '@/domain/format';
 import { community, displayName, roleName } from '@/domain/selectors';
-import { AuthLogo } from '@/pages/signin/AuthLogo';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { PageMeta } from '@/shell/PageMeta';
@@ -15,12 +14,15 @@ import { PersonAvatar } from '@/shell/people';
 import { useViewer } from '@/shell/use-guest';
 import { useSignedIn } from '@/shell/use-signed-in';
 
+import { AuthLogo } from './AuthLogo';
+
 export function JoinPage() {
   const { code } = useParams();
   const signedIn = useSignedIn();
 
-  if (code && !signedIn)
+  if (code && !signedIn) {
     return <Navigate replace to={routes.signIn + '?invite=' + encodeURIComponent(code)} />;
+  }
 
   return <JoinView code={code ?? null} />;
 }
@@ -50,6 +52,7 @@ function JoinInvite({ code }: { readonly code: string | null }) {
 
   const view = useAppState((state) => {
     const c = link ? community(state, link.c) : null;
+
     if (!link || !c || !state.me) return null;
 
     return {
@@ -190,8 +193,9 @@ function JoinActions({ view, preview, onAccept }: JoinActionsProps) {
     );
   }
 
-  if (viewer === 'unknown')
+  if (viewer === 'unknown') {
     return <span className="skel skel--btn" style={{ inlineSize: '100%' }} aria-hidden="true" />;
+  }
 
   if (view.joined) {
     return (

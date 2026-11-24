@@ -97,10 +97,10 @@ defmodule Hearth.TranscriptsTest do
     end
 
     test "fails for a missing line", %{member: member, transcript: transcript} do
+      params = %{text: "Hi"}
+
       assert {:error, :not_found} =
-               Transcripts.edit_segment(member, transcript.session_id, Common.new_id(), %{
-                 text: "Hi"
-               })
+               Transcripts.edit_segment(member, transcript.session_id, Common.new_id(), params)
     end
 
     test "fails for a line of another session", %{member: member, transcript: transcript} do
@@ -122,11 +122,10 @@ defmodule Hearth.TranscriptsTest do
 
     test "fix anyone's line as a moderator", %{owner: owner, transcript: transcript} do
       [_welcome, thanks] = transcript.segments
+      params = %{text: "Thanks all"}
 
       assert {:ok, %Segment{text: "Thanks all"}} =
-               Transcripts.edit_segment(owner, transcript.session_id, thanks.id, %{
-                 text: "Thanks all"
-               })
+               Transcripts.edit_segment(owner, transcript.session_id, thanks.id, params)
     end
   end
 end

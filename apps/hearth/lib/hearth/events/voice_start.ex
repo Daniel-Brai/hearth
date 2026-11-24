@@ -1,5 +1,5 @@
 defmodule Hearth.Events.VoiceStart do
-  # Events can't call Hearth.Voice, which depends on them so the job names its worker by name
+  # Voice depends on Events so this job names its worker as a string instead of calling it
 
   alias Hearth.Events.Event
   alias Oban.Job

@@ -20,8 +20,6 @@ defmodule HearthWeb.ConnCase do
     end
   end
 
-  # Every conn is sent as the web app sends it, as JSON with the API version
-  # it pins.
   setup tags do
     :ok = EctoDoctor.RepeatedQueries.scan_test(tags)
     DataCase.setup_sandbox(tags)
@@ -90,12 +88,7 @@ defmodule HearthWeb.ConnCase do
 
   def events_with_undescribed_fields, do: Enum.reject(Event.all(), &describes_what_it_sends?/1)
 
-  def events_with_other_names do
-    for schema <- Event.all(),
-        event = struct(schema.event()),
-        schema.json_schema().title != schema.event().broadcast_as(event),
-        do: schema
-  end
+  def events_with_other_names, do: Enum.reject(Event.all(), &named_as_sent?/1)
 
   defp describes_what_it_sends?(schema) do
     sent =
@@ -104,5 +97,10 @@ defmodule HearthWeb.ConnCase do
     %{properties: properties, required: required} = schema.json_schema()
 
     properties |> Map.keys() |> Enum.sort() == sent and Enum.sort(required) == sent
+  end
+
+  defp named_as_sent?(schema) do
+    event = struct(schema.event())
+    schema.json_schema().title == schema.event().broadcast_as(event)
   end
 end

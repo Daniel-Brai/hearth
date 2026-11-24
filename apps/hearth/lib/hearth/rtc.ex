@@ -19,9 +19,10 @@ defmodule Hearth.RTC do
 
   @spec peers(term()) :: [pid()]
   def peers(session_id) do
-    for {:peer, ^session_id, _user} = group <- :pg.which_groups(@scope),
-        peer <- members(group),
-        do: peer
+    @scope
+    |> :pg.which_groups()
+    |> Enum.filter(&match?({:peer, ^session_id, _user}, &1))
+    |> Enum.flat_map(&members/1)
   end
 
   @spec start_peer(keyword()) :: DynamicSupervisor.on_start_child()
@@ -41,7 +42,7 @@ defmodule Hearth.RTC do
     |> Enum.min_by(&Map.get(load, &1, 0), fn -> nil end)
   end
 
-  # Empty without a TURN server, which a server with a public IP doesn't need
+  # Empty without a TURN server since a server with a public IP doesn't need one
   @spec ice_servers(T.id()) :: [Turn.ice_server()]
   def ice_servers(user_id), do: Turn.ice_servers(user_id, config())
 
@@ -52,9 +53,8 @@ defmodule Hearth.RTC do
 
   @spec config() :: keyword()
   def config do
-    config = Application.fetch_env!(:hearth, __MODULE__)
-
-    config
+    :hearth
+    |> Application.fetch_env!(__MODULE__)
     |> Keyword.update(:public_ip, nil, &parse_ip/1)
     |> Keyword.update(:port_range, [0], &parse_range/1)
   end

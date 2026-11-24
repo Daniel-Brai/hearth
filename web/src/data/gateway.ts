@@ -219,7 +219,7 @@ export interface HearthGateway {
     update(cid: string, patch: CommunityPatch): Promise<Result>;
     requestTransferCode(cid: string): Promise<Result>;
     transferOwnership(cid: string, to: string, code: string): Promise<Result>;
-    // The address a new community with this name would get, null when it can't be asked
+    // The address a new community with this name would get or null when it can't be asked
     slugFor(name: string): Promise<string | null>;
     decideRequest(
       id: string,
@@ -355,7 +355,7 @@ export interface HearthGateway {
     demote(who: string): Promise<Result>;
     serverMute(who: string, muted: boolean): Promise<Result>;
     disconnect(who: string): Promise<Result>;
-    // screen is captured by the caller during the click
+    // The caller captures the screen during the click
     share(screen: MediaStream | null): Promise<Result>;
     record(on: boolean): Promise<Result>;
     moreRecordings(cid: string, rid: string): Promise<void>;

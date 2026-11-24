@@ -21,11 +21,7 @@ defmodule Hearth.Moderation.ScreeningTest do
   end
 
   describe "screen/2" do
-    test "fails if screener is down", %{
-      admin: admin,
-      author: author,
-      community: community
-    } do
+    test "fails if screener is down", %{admin: admin, author: author, community: community} do
       post = TestUtils.create_random_post!(author, community, body: "[down]")
 
       assert {:error, :not_ready} = Moderation.screen(:post, post.id)
@@ -80,10 +76,7 @@ defmodule Hearth.Moderation.ScreeningTest do
       assert {:ok, :skipped} = Moderation.screen(:post, post.id)
     end
 
-    test "sends unsafe image to admins", %{
-      owner: owner,
-      author: author
-    } do
+    test "sends unsafe image to admins", %{owner: owner, author: author} do
       TestUtils.put_screening(image_floor: :images)
       community = TestUtils.create_random_forum!(owner, moderation: :none)
       {:ok, _membership} = Communities.join(author, community)

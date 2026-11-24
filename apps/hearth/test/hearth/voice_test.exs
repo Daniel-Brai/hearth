@@ -212,6 +212,7 @@ defmodule Hearth.VoiceTest do
 
     test "lets a dropped person go after the grace", %{member: member, community: community} do
       session = TestUtils.start_random_voice_session!(community)
+      %{id: session_id} = session
       %{id: member_id} = member
       channel = TestUtils.start_fake_channel!()
       {:ok, _joined} = Voice.join(member, session, channel)
@@ -219,7 +220,6 @@ defmodule Hearth.VoiceTest do
       send(channel, :stop)
 
       assert_receive %VoiceParticipantChanged{user_id: ^member_id, left: true}
-      session_id = session.id
       assert_receive %VoiceAttendance{session_id: ^session_id, people: 0, user_ids: []}
     end
   end
@@ -637,6 +637,14 @@ defmodule Hearth.VoiceTest do
     end
   end
 
+  describe "start_for_event/1" do
+    test "starts in open talk when the event sets none", %{owner: owner, community: community} do
+      event = TestUtils.create_random_community_event!(owner, community, talk_mode: nil)
+
+      assert {:ok, %Session{mode: :open}} = Voice.start_for_event(event)
+    end
+  end
+
   describe "live_for/1" do
     test "leaves out private rooms they can't see", %{
       owner: owner,
@@ -675,6 +683,13 @@ defmodule Hearth.VoiceTest do
   end
 
   describe "list_recordings/2" do
+    test "fails for someone outside the community", %{room: room, community: community} do
+      stranger = TestUtils.register_random_user!()
+
+      assert {:error, :forbidden} =
+               Voice.list_recordings(stranger, {:room_id, room.id, community.id})
+    end
+
     test "leaves out private rooms they can't see", %{
       owner: owner,
       member: member,
@@ -685,13 +700,6 @@ defmodule Hearth.VoiceTest do
       _recording = TestUtils.insert_random_ready_recording!(session, [{owner.id, "hello"}])
 
       assert {:ok, []} = Voice.list_recordings(member, {:room_id, room.id, community.id})
-    end
-
-    test "fails for someone outside the community", %{room: room, community: community} do
-      stranger = TestUtils.register_random_user!()
-
-      assert {:error, :forbidden} =
-               Voice.list_recordings(stranger, {:room_id, room.id, community.id})
     end
 
     test "lists failed to recorders only", %{

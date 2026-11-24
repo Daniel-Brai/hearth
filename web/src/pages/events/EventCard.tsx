@@ -5,15 +5,16 @@ import { evRepeatLabel, evState, evWhen, evWhere } from '@/domain/events';
 import { canManageEvent, displayName, isInterested } from '@/domain/selectors';
 import type { Community, CommunityEvent } from '@/domain/types';
 import { EventDate } from '@/pages/shared/EventMini';
+import { modeInfo } from '@/pages/voice/voice-modes';
 import { PersonAvatar } from '@/shell/people';
 import { useViewer } from '@/shell/use-guest';
 
-import { eventFile, eventIcs, interestedText, voiceModeInfo } from './event-utils';
+import { eventFile, eventIcs, interestedText } from './event-utils';
 import { EventManageItems } from './EventManageItems';
 import { JoinButton, PlaceLink } from './Place';
 import { useEventActions } from './use-event-actions';
 
-export type EventCardProps = {
+type EventCardProps = {
   readonly event: CommunityEvent;
   readonly showCommunity?: boolean | undefined;
   readonly onOpen: (e: CommunityEvent) => void;
@@ -110,7 +111,7 @@ function EventCardMeta({
   readonly event: CommunityEvent;
   readonly place: EventCardView['place'];
 }) {
-  const mode = voiceModeInfo(event.talk);
+  const mode = modeInfo(event.talk ?? 'open');
   const zone = useDisplayZone();
 
   return (

@@ -50,33 +50,15 @@ defmodule HearthWeb.Sitemap do
 
   @spec index() :: iodata()
   def index do
-    communities =
-      case Instance.indexing?() do
-        true -> Communities.list_indexed()
-        false -> []
-      end
-
+    communities = if(Instance.indexing?(), do: Communities.list_indexed(), else: [])
     ids = Enum.map(communities, & &1.id)
     posts = Forum.sitemap_stats(ids)
     events = Events.count_sitemap_events(ids)
 
-    entries =
-      for community <- communities,
-          {count, last} = Map.get(posts, community.id, {0, nil}),
-          page <- 1..pages(count, Map.get(events, community.id, 0)) do
-        [
-          "<sitemap><loc>",
-          escape(Notifications.url("/sitemaps/" <> file(community.slug, page))),
-          "</loc>",
-          lastmod(last || community.updated_at),
-          "</sitemap>"
-        ]
-      end
-
     [
       ~s(<?xml version="1.0" encoding="UTF-8"?>\n),
       ~s(<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">),
-      entries,
+      Enum.map(communities, &sitemaps(&1, posts, events)),
       "</sitemapindex>\n"
     ]
   end
@@ -96,6 +78,20 @@ defmodule HearthWeb.Sitemap do
        ]}
     else
       _missing -> {:error, :not_found}
+    end
+  end
+
+  defp sitemaps(community, posts, events) do
+    {count, last} = Map.get(posts, community.id, {0, nil})
+
+    for page <- 1..pages(count, Map.get(events, community.id, 0)) do
+      [
+        "<sitemap><loc>",
+        escape(Notifications.url("/sitemaps/" <> file(community.slug, page))),
+        "</loc>",
+        lastmod(last || community.updated_at),
+        "</sitemap>"
+      ]
     end
   end
 
@@ -140,10 +136,13 @@ defmodule HearthWeb.Sitemap do
   defp parse(file) do
     case String.split(file, ".") do
       [slug, "xml"] -> {:ok, slug, 1}
-      [slug, page, "xml"] -> with {n, ""} when n > 1 <- Integer.parse(page), do: {:ok, slug, n}
+      [slug, page, "xml"] -> later_page(slug, Integer.parse(page))
       _other -> :error
     end
   end
+
+  defp later_page(slug, {n, ""}) when n > 1, do: {:ok, slug, n}
+  defp later_page(_slug, _parsed), do: :error
 
   defp url({path, updated_at}),
     do: ["<url><loc>", escape(Notifications.url(path)), "</loc>", lastmod(updated_at), "</url>"]

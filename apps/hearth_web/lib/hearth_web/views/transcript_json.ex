@@ -2,7 +2,18 @@ defmodule HearthWeb.TranscriptJSON do
   alias HearthWeb.RecordingJSON
   alias HearthWeb.UserJSON
 
-  @fields ~w[id session_id recording_id community_id post_id status failure language duration_ms ready_at]a
+  @fields ~w[
+    id
+    session_id
+    recording_id
+    community_id
+    post_id
+    status
+    failure
+    language
+    duration_ms
+    ready_at
+  ]a
 
   def show(%{view: view, room: room, people: people, editable: editable}) do
     %{transcript: transcript, recording: recording, session: session} = view
@@ -17,11 +28,9 @@ defmodule HearthWeb.TranscriptJSON do
       speakers: Enum.map(transcript.speakers, &speaker/1),
       segments: Enum.map(transcript.segments, &segment(&1, editable)),
       silences:
-        for(
-          mark <- transcript.audio_marks,
-          mark.kind == :silence and not mark.removed,
-          do: %{start_ms: mark.start_ms, end_ms: mark.end_ms}
-        ),
+        transcript.audio_marks
+        |> Enum.filter(&(&1.kind == :silence and not &1.removed))
+        |> Enum.map(&Map.take(&1, [:start_ms, :end_ms])),
       people: people |> Map.values() |> Enum.map(&UserJSON.summary/1),
       recording: RecordingJSON.show(%{recording: recording})
     })

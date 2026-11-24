@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 
 import { useGateway } from '@/app/gateway-context';
+import type { Result } from '@/data/gateway';
 import { useAppState } from '@/data/store';
 import { canDo } from '@/domain/selectors';
 import { routes } from '@/runtime/routes';
@@ -29,11 +30,12 @@ export function useRoomActions(
     if (!inList) void navigate(routes.community(cid));
   };
 
-  const restore = () =>
-    void gateway.rooms.restore(cid, id).then((r) => {
-      if (r.ok) leave(`${label} is back`);
-      else flash(r.error);
-    });
+  const settle = (message: string) => (r: Result) => {
+    if (r.ok) leave(message);
+    else flash(r.error);
+  };
+
+  const restore = () => void gateway.rooms.restore(cid, id).then(settle(`${label} is back`));
 
   const archive = () =>
     ask({
@@ -41,11 +43,7 @@ export function useRoomActions(
       body: 'It leaves the sidebar for everyone. Its messages are kept, and you can restore it any time.',
       action: 'Archive room',
       danger: false,
-      onConfirm: () =>
-        void gateway.rooms.archive(cid, id).then((r) => {
-          if (r.ok) leave(`${label} was archived`);
-          else flash(r.error);
-        }),
+      onConfirm: () => void gateway.rooms.archive(cid, id).then(settle(`${label} was archived`)),
     });
 
   const destroy = () =>
@@ -58,11 +56,7 @@ export function useRoomActions(
           title: "This can't be undone",
           body: `${label} and everything in it will be gone for good. Archive it instead to keep its history.`,
           action: 'Delete permanently',
-          onConfirm: () =>
-            void gateway.rooms.destroy(cid, id).then((r) => {
-              if (r.ok) leave(`${label} was deleted`);
-              else flash(r.error);
-            }),
+          onConfirm: () => void gateway.rooms.destroy(cid, id).then(settle(`${label} was deleted`)),
         }),
     });
 

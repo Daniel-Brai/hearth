@@ -1,5 +1,17 @@
 defmodule HearthWeb.RoomJSON do
-  @fields ~w[id community_id type slug name topic group_id position moderation access archived_at]a
+  @fields ~w[
+    id
+    community_id
+    type
+    slug
+    name
+    topic
+    group_id
+    position
+    moderation
+    access
+    archived_at
+  ]a
 
   def archived(%{rooms: rooms}), do: Enum.map(rooms, &serialize/1)
   def create(%{room: room}), do: serialize(room)

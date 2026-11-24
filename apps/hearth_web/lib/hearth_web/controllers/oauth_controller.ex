@@ -75,10 +75,9 @@ defmodule HearthWeb.OAuthController do
     redirect(conn, external: Notifications.url(return_to) <> "#" <> query)
   end
 
-  defp callback_url(provider),
-    do: Endpoint.url() <> "/api/auth/oauth/#{provider}/callback"
+  defp callback_url(provider), do: Endpoint.url() <> "/api/auth/oauth/#{provider}/callback"
 
-  # Browsers read // and /\ as another site so only a plain path may come back
+  # Browsers read // and /\ as another site
   defp return_to("/" <> rest = path) do
     if String.starts_with?(rest, ~w[/ \\]), do: "/signin", else: path
   end

@@ -17,7 +17,7 @@ defmodule Hearth.Media.Command.RenderShareCard do
     end
   end
 
-  # dir comes from TempFile.run/1, made from a new id
+  # dir comes from TempFile.run/1 and is made from a new id
   # sobelow_skip ["Traversal.FileModule"]
   defp draw(card, key, dir) do
     File.mkdir_p!(dir)

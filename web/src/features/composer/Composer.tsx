@@ -16,7 +16,7 @@ import type { Attachment } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
 
 import { ACCEPT, prepareAttachment, withinAttachmentCap } from './composer-files';
-import { highlight } from './composer-text';
+import { highlight, type SuggestOptions } from './composer-text';
 import { ComposerAttachments } from './ComposerAttachments';
 import { ComposerSuggestions } from './ComposerSuggestions';
 import { ComposerTools } from './ComposerTools';
@@ -29,7 +29,7 @@ export type ComposerProps = {
   readonly id: string;
   readonly value: string;
   readonly onChange: (next: string) => void;
-  // Without it there is no send button, for a form that saves the text with the rest
+  // Left out when a form saves the text with the rest so there is no send button
   readonly onSubmit?: (() => void) | undefined;
   readonly placeholder: string;
   readonly label?: string | undefined;
@@ -37,16 +37,7 @@ export type ComposerProps = {
   readonly maxLength?: number | undefined;
   readonly sendLabel?: string | undefined;
   readonly community: string | null;
-  readonly commands?:
-    | readonly {
-        cmd: string;
-        args: string;
-        desc: string;
-        ok: boolean;
-        reason?: string | undefined;
-        icon: string;
-      }[]
-    | undefined;
+  readonly commands?: SuggestOptions['commands'];
   readonly sounds?: readonly string[] | undefined;
   readonly mentionAll?: boolean | undefined;
   // Without a handler there is no attach button and pasted or dropped files are ignored
@@ -75,6 +66,7 @@ type SubmitKeys = {
 function handleSubmitKey(e: KeyboardEvent<HTMLTextAreaElement>, keys: SubmitKeys) {
   if (e.key === 'Escape' && keys.onEscape) {
     keys.onEscape();
+
     return;
   }
 
@@ -82,6 +74,7 @@ function handleSubmitKey(e: KeyboardEvent<HTMLTextAreaElement>, keys: SubmitKeys
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       keys.onSubmit?.();
+
       return;
     }
 
@@ -319,8 +312,8 @@ export function Composer({
   const { dropping, dropProps, onPaste } = useFileDrop(files, addFiles);
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.nativeEvent.isComposing) return;
-    if (handleKey(e)) return;
+    if (e.nativeEvent.isComposing || handleKey(e)) return;
+
     handleSubmitKey(e, { chat, value, onSubmit, onEscape, onEditLast });
   };
 
@@ -361,7 +354,7 @@ export function Composer({
             className="composer__mirror"
             aria-hidden="true"
             dangerouslySetInnerHTML={{
-              __html: highlight(state, value, { commands, sounds, chat, mentionAll }),
+              __html: highlight(state, value, options),
             }}
           />
           <textarea

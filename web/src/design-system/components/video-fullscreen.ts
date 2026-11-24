@@ -13,11 +13,13 @@ export function useFullscreen(
   useEffect(() => {
     const onChange = () => {
       const on = document.fullscreenElement === box.current;
+
       setFullscreen(on);
       if (on) setExpanded(false);
     };
 
     document.addEventListener('fullscreenchange', onChange);
+
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, [box]);
 
@@ -29,16 +31,19 @@ export function useFullscreen(
 
     if (expanded) {
       setExpanded(false);
+
       return;
     }
 
     if (document.fullscreenElement) {
       void document.exitFullscreen();
+
       return;
     }
 
     if (!el.requestFullscreen) {
       v.webkitEnterFullscreen?.();
+
       return;
     }
 

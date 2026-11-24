@@ -29,11 +29,12 @@ defmodule Hearth.Auth.EmailInput do
 
   @spec cast_new(String.t(), String.t()) :: {:ok, String.t()} | {:error, Changeset.t()}
   def cast_new(email, current) when is_binary(email) do
-    with {:ok, email} <- cast(email) do
-      case email == current do
-        true -> {:error, same(email)}
-        false -> {:ok, email}
-      end
+    with {:ok, email} <- cast(email),
+         false <- email == current do
+      {:ok, email}
+    else
+      true -> {:error, same(current)}
+      {:error, _changeset} = error -> error
     end
   end
 

@@ -5,7 +5,7 @@ defmodule Hearth.Communities.Command.SaveRoom do
   alias Hearth.Communities.RoomRole
   alias Hearth.Repo
 
-  # A community id makes a new room. Role ids are left alone when nil, so a rename keeps who can see it
+  # A community id makes a new room. Role ids are left alone when nil so a rename keeps who can see it
   @spec execute(T.id() | Room.t(), map(), nil | [T.id()]) ::
           {:ok, Room.t()} | {:error, Changeset.t()}
   def execute(room_or_community_id, %{} = params, role_ids) do

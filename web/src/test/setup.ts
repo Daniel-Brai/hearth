@@ -10,7 +10,7 @@ if (!globalThis.crypto?.subtle) {
   Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true });
 }
 
-// jsdom has no modal dialogs so a dialog opens as a plain open element, and node tests have none
+// jsdom has no modal dialogs so a dialog opens as a plain open element
 if (typeof HTMLDialogElement !== 'undefined') {
   HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
     this.open = true;
@@ -44,7 +44,7 @@ if (typeof window !== 'undefined' && !window.IntersectionObserver) {
   } as unknown as typeof IntersectionObserver;
 }
 
-// jsdom lays nothing out, so scrolling an element does nothing
+// Scrolling an element does nothing in jsdom
 if (typeof Element !== 'undefined') {
   Element.prototype.scrollTo ??= () => undefined;
   Element.prototype.scrollIntoView ??= () => undefined;

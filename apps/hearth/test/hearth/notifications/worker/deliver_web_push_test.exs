@@ -33,35 +33,26 @@ defmodule Hearth.Notifications.Worker.DeliverWebPushTest do
 
   describe "perform/1" do
     test "ignores deleted subscription", %{subscription: subscription} do
-      PushSubscription.delete(subscription)
+      {:ok, _deleted} = PushSubscription.delete(subscription)
+      args = %{subscription_id: subscription.id, sealed: SealedArgs.seal("{}")}
 
-      assert :ok =
-               perform_job(DeliverWebPush, %{
-                 subscription_id: subscription.id,
-                 sealed: SealedArgs.seal("{}")
-               })
+      assert :ok = perform_job(DeliverWebPush, args)
     end
 
     test "deletes expired subscription", %{subscription: subscription} do
       expect(WebPush, fn %Conn{method: "POST"} = conn -> Conn.send_resp(conn, 410, "") end)
+      args = %{subscription_id: subscription.id, sealed: SealedArgs.seal("{}")}
 
-      assert :ok =
-               perform_job(DeliverWebPush, %{
-                 subscription_id: subscription.id,
-                 sealed: SealedArgs.seal("{}")
-               })
+      assert :ok = perform_job(DeliverWebPush, args)
 
       refute PushSubscription.get(id: subscription.id)
     end
 
     test "cancels payload that is too large", %{subscription: subscription} do
       expect(WebPush, fn %Conn{method: "POST"} = conn -> Conn.send_resp(conn, 413, "") end)
+      args = %{subscription_id: subscription.id, sealed: SealedArgs.seal("{}")}
 
-      assert {:cancel, :payload_too_large} =
-               perform_job(DeliverWebPush, %{
-                 subscription_id: subscription.id,
-                 sealed: SealedArgs.seal("{}")
-               })
+      assert {:cancel, :payload_too_large} = perform_job(DeliverWebPush, args)
     end
 
     test "send push", %{subscription: subscription} do

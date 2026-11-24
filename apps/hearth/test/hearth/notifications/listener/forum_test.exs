@@ -105,9 +105,7 @@ defmodule Hearth.Notifications.Listener.ForumTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    assert %Page{data: [%Notification{kind: :reply}]} =
-             Notifications.list_notifications(watcher)
-
+    assert %Page{data: [%Notification{kind: :reply}]} = Notifications.list_notifications(watcher)
     assert %Page{data: [%Notification{kind: :reply}]} = Notifications.list_notifications(owner)
     assert %Page{data: []} = Notifications.list_notifications(member)
   end
@@ -167,7 +165,6 @@ defmodule Hearth.Notifications.Listener.ForumTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
-    assert %Page{data: [%Notification{kind: :answer}]} =
-             Notifications.list_notifications(member)
+    assert %Page{data: [%Notification{kind: :answer}]} = Notifications.list_notifications(member)
   end
 end

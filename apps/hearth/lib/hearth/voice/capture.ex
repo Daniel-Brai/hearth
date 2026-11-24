@@ -48,37 +48,49 @@ defmodule Hearth.Voice.Capture do
   def upload(%Recording{} = recording) do
     dir = Recorder.dir(recording.id)
 
-    result =
-      case Recorder.stretches(dir) do
-        [] -> FailRecording.execute(recording, "Nothing was recorded.")
-        stretches -> store(recording, stretches)
-      end
-
-    File.rm_rf(dir)
-    result
+    try do
+      store(recording, Recorder.stretches(dir))
+    after
+      File.rm_rf(dir)
+    end
   end
 
+  defp store(recording, []), do: FailRecording.execute(recording, "Nothing was recorded.")
+
   defp store(recording, stretches) do
-    tracks =
-      stretches
-      |> Enum.with_index()
-      |> Enum.map(fn {stretch, n} ->
-        key = Recording.key(recording, "raw/#{n}.#{stretch.kind}.rtp")
-        :ok = Storage.upload_file(key, stretch.path, "application/octet-stream")
+    case upload_tracks(recording, stretches) do
+      {:ok, tracks} ->
+        Recording.put_tracks(recording, Enum.reverse(tracks))
 
-        %Track{
-          user_id: stretch.user_id,
-          kind: stretch.kind,
-          key: key,
-          offset_ms: stretch.offset_ms,
-          duration_ms: stretch.duration_ms
-        }
-      end)
+      {:error, reason} ->
+        Logger.error("Voice recording upload failed: #{inspect(reason)}")
+        FailRecording.execute(recording, "The recording couldn't be saved.")
+    end
+  end
 
-    Recording.put_tracks(recording, tracks)
-  rescue
-    error in MatchError ->
-      Logger.error("Voice recording upload failed: #{inspect(error.term)}")
-      FailRecording.execute(recording, "The recording couldn't be saved.")
+  defp upload_tracks(recording, stretches) do
+    stretches
+    |> Enum.with_index()
+    |> Enum.reduce_while({:ok, []}, fn {stretch, n}, {:ok, tracks} ->
+      case upload_track(recording, stretch, n) do
+        {:ok, track} -> {:cont, {:ok, [track | tracks]}}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp upload_track(recording, stretch, n) do
+    key = Recording.key(recording, "raw/#{n}.#{stretch.kind}.rtp")
+
+    with :ok <- Storage.upload_file(key, stretch.path, "application/octet-stream") do
+      {:ok,
+       %Track{
+         user_id: stretch.user_id,
+         kind: stretch.kind,
+         key: key,
+         offset_ms: stretch.offset_ms,
+         duration_ms: stretch.duration_ms
+       }}
+    end
   end
 end

@@ -6,7 +6,7 @@ import { useUi } from '@/runtime/ui-store';
 
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif';
 
-export type PhotoFieldProps = {
+type PhotoFieldProps = {
   readonly photo: string | null;
   readonly initials: string;
   readonly onChange: (photo: string | null) => void;

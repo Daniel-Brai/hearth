@@ -30,6 +30,7 @@ export function Dialog({
 
   useEffect(() => {
     const el = ref.current;
+
     if (!el) return;
 
     if (open && !el.open) el.showModal();

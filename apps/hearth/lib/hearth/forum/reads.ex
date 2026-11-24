@@ -20,7 +20,7 @@ defmodule Hearth.Forum.Reads do
         }
       end
 
-    # Each node flushes on its own, so a later read from another node must not be undone
+    # Each node flushes on its own and must not undo a later read from another node
     newer =
       from r in PostRead,
         update: [

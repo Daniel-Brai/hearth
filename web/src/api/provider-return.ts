@@ -1,6 +1,32 @@
 import type { ProviderReturn } from '@/data/gateway';
+import { sessionStore } from '@/runtime/browser-storage';
 
 const PROVIDERS = { github: 'GitHub', google: 'Google' } as const;
+
+const STARTED = 'hearth:oauth-started';
+
+/** Marks the tab that left for a provider so only its own return is read */
+export function markProviderStart() {
+  try {
+    sessionStore()?.setItem(STARTED, '1');
+  } catch {
+    // Without storage no return is trusted
+  }
+}
+
+/** A return only counts in the tab that left so a link can't plant someone else's sign up */
+export function takeProviderReturn(hash: string): ProviderReturn | null {
+  const parsed = parseProviderReturn(hash);
+  if (!parsed) return null;
+
+  try {
+    const started = sessionStore()?.getItem(STARTED) === '1';
+    sessionStore()?.removeItem(STARTED);
+    return started ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 export function parseProviderReturn(hash: string): ProviderReturn | null {
   const params = new URLSearchParams(hash.replace(/^#/, ''));

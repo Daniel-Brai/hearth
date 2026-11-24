@@ -117,7 +117,7 @@ defmodule Hearth.Voice do
   @spec live_for(User.t()) :: [Session.t()]
   def live_for(%User{} = user) do
     user
-    |> IAM.community_ids()
+    |> IAM.list_communities()
     |> Communities.list_visible_rooms(:voice, user)
     |> Enum.map(& &1.id)
     |> Session.live_in_rooms()
@@ -142,14 +142,15 @@ defmodule Hearth.Voice do
   def start_for_event(%Event{room_id: nil}), do: {:ok, nil}
 
   def start_for_event(%Event{} = event) do
-    params = %{mode: event.talk_mode || :stage, topic: event.title, event_id: event.id}
+    params = %{mode: event.talk_mode || :open, topic: event.title, event_id: event.id}
 
     with {:ok, room} <- Communities.get_room(id: event.room_id),
-         :ok <- voice_room(room) do
-      case start(room, event.host_id, params) do
-        {:error, :already_live, _session} -> {:ok, nil}
-        result -> result
-      end
+         :ok <- voice_room(room),
+         {:ok, session} <- start(room, event.host_id, params) do
+      {:ok, session}
+    else
+      {:error, :already_live, _session} -> {:ok, nil}
+      error -> error
     end
   end
 
@@ -175,7 +176,7 @@ defmodule Hearth.Voice do
   def live_on_posts(post_ids) when is_list(post_ids),
     do: post_ids |> Session.live_on_posts() |> Map.new(&{&1.post_id, &1})
 
-  # A post is for everyone in the community, so it is never discussed in a private room
+  # A post is for the whole community so it is never discussed in a private room
   defp free_room(community_id) do
     {:ok, community} = Communities.get_community(id: community_id)
 
@@ -193,52 +194,37 @@ defmodule Hearth.Voice do
     end
   end
 
-  # Starting reaches across nodes to run the session, so it gets its own span
   defp start(room, host_id, params) do
+    session = %Session{room_id: room.id, community_id: room.community_id, host_id: host_id}
+
     Common.span("voice.start_session", %{room_id: room.id}, fn ->
-      start_on_node(room, host_id, params)
+      with node when node != nil <- RTC.pick_node(),
+           {:ok, session} <- Session.insert(%{session | node: Atom.to_string(node)}, params),
+           {:ok, _live} <- run(session) do
+        broadcast(%VoiceSessionStarted{
+          session_id: session.id,
+          room_id: session.room_id,
+          community_id: session.community_id,
+          host_id: session.host_id,
+          mode: session.mode,
+          topic: session.topic,
+          post_id: session.post_id
+        })
+
+        {:ok, session}
+      else
+        nil -> {:error, :unavailable}
+        {:error, %Changeset{} = changeset} -> already_live(changeset, room.id)
+        error -> error
+      end
     end)
   end
 
-  defp start_on_node(room, host_id, params) do
-    session = %Session{room_id: room.id, community_id: room.community_id, host_id: host_id}
-
-    with {:ok, node} <- pick_node(),
-         {:ok, session} <- insert(%{session | node: Atom.to_string(node)}, params, room.id),
-         {:ok, _live} <- run(session) do
-      broadcast(%VoiceSessionStarted{
-        session_id: session.id,
-        room_id: session.room_id,
-        community_id: session.community_id,
-        host_id: session.host_id,
-        mode: session.mode,
-        topic: session.topic,
-        post_id: session.post_id
-      })
-
-      {:ok, session}
-    end
-  end
-
-  defp insert(session, params, room_id) do
-    case Session.insert(session, params) do
-      {:ok, session} ->
-        {:ok, session}
-
-      {:error, %Changeset{errors: errors} = changeset} ->
-        with true <- Keyword.has_key?(errors, :room_id),
-             %Session{} = live <- Session.live_in(room_id) do
-          {:error, :already_live, live}
-        else
-          _other -> {:error, changeset}
-        end
-    end
-  end
-
-  defp pick_node do
-    case RTC.pick_node() do
-      nil -> {:error, :unavailable}
-      node -> {:ok, node}
+  # The one live session per room index refused it
+  defp already_live(%Changeset{errors: errors} = changeset, room_id) do
+    case Keyword.has_key?(errors, :room_id) and Session.live_in(room_id) do
+      %Session{} = live -> {:error, :already_live, live}
+      _other -> {:error, changeset}
     end
   end
 
@@ -297,7 +283,8 @@ defmodule Hearth.Voice do
 
   @spec join(User.t(), Session.t(), pid(), keyword()) :: {:ok, joined()} | {:error, error()}
   def join(%User{} = user, %Session{} = session, channel, opts \\ []) when is_pid(channel) do
-    may_speak? = session.host_id == user.id or can?(user, :speak, session)
+    may_speak? =
+      session.host_id == user.id or allowed(user, :speak, session.community_id) == :ok
 
     Common.span("voice.join", %{session_id: session.id}, fn ->
       with :ok <- may_see(user, session),
@@ -332,7 +319,6 @@ defmodule Hearth.Voice do
   @spec leave(User.t(), Session.t()) :: :ok | {:error, error()}
   def leave(%User{id: id}, %Session{} = session), do: act(session, {:leave, id})
 
-  # Captions run on the server's Whisper, so they need transcription on
   @spec captions(User.t(), Session.t(), boolean()) :: :ok | {:error, error() | :transcription_off}
   def captions(%User{id: id}, %Session{} = session, on?) when is_boolean(on?) do
     with :ok <- TranscriptionPolicy.check(), do: act(session, {:captions, id, on?})
@@ -342,12 +328,12 @@ defmodule Hearth.Voice do
   def raise_hand(%User{id: id}, %Session{} = session, true), do: act(session, {:raise_hand, id})
   def raise_hand(%User{id: id}, %Session{} = session, false), do: act(session, {:lower_hand, id})
 
-  # The browser stops sending on its own, this only tells the room
+  # The browser stops sending by itself and this only tells the room
   @spec self_mute(User.t(), Session.t(), boolean()) :: :ok | {:error, error()}
   def self_mute(%User{id: id}, %Session{} = session, muted?) when is_boolean(muted?),
     do: act(session, {:self_mute, id, muted?})
 
-  # Anyone there may react, muted or not since a reaction makes no sound
+  # Anyone there may react even when muted since a reaction makes no sound
   @spec react(User.t(), Session.t(), String.t()) :: :ok | {:error, error()}
   def react(%User{id: id}, %Session{} = session, emoji) when is_binary(emoji) do
     if Regex.match?(@emoji, emoji),
@@ -415,34 +401,23 @@ defmodule Hearth.Voice do
           {:ok, [Recording.t()]} | {:error, :forbidden | :not_found}
   def list_recordings(%User{} = user, {_field, _id, community_id} = scope) do
     with :ok <- may_enter(user, community_id) do
-      failed? = IAM.can?(user, :create, %{type: :"voice.recording", community_id: community_id})
+      failed? = can_record?(user, community_id)
       seen = [community_id] |> Communities.list_visible_rooms(:voice, user) |> MapSet.new(& &1.id)
 
       {:ok, scope |> Recording.list(failed?) |> Enum.filter(&MapSet.member?(seen, &1.room_id))}
     end
   end
 
-  # A room can gather many recordings, so its list comes a page at a time, newest first
   @spec list_room_recordings(User.t(), Room.t(), keyword()) ::
           {:ok, Page.t()} | {:error, error() | Flop.Meta.t()}
   def list_room_recordings(%User{} = user, %Room{} = room, paging) when is_list(paging) do
-    with :ok <- may_read(user, room) do
-      failed? =
-        IAM.can?(user, :create, %{type: :"voice.recording", community_id: room.community_id})
-
-      paging
-      |> Keyword.merge(
-        room_id: room.id,
-        community_id: room.community_id,
-        status: Recording.shown(failed?)
-      )
-      |> Recording.paginate()
-      |> paged()
+    with :ok <- may_read(user, room),
+         shown = user |> can_record?(room.community_id) |> Recording.shown(),
+         filters = [room_id: room.id, community_id: room.community_id, status: shown],
+         %Page{} = page <- paging |> Keyword.merge(filters) |> Recording.paginate() do
+      {:ok, page}
     end
   end
-
-  defp paged(%Page{} = page), do: {:ok, page}
-  defp paged({:error, _meta} = error), do: error
 
   @spec get_recording(keyword()) :: {:ok, Recording.t()} | {:error, :not_found}
   def get_recording(opts) when is_list(opts) do
@@ -600,19 +575,12 @@ defmodule Hearth.Voice do
   end
 
   defp remove_hidden_from(session, user_id) do
-    with {:ok, live} <- local_live(session),
+    with {:ok, live} when node(live) == node() <- live(session),
          {:ok, room} <- Communities.get_room(id: session.room_id) do
       session.id
       |> Participant.present()
       |> Enum.filter(&(user_id in [nil, &1.user_id] and not sees_room?(&1.user_id, room)))
       |> Enum.each(&Live.act(live, {:remove, &1.user_id}))
-    end
-  end
-
-  defp local_live(session) do
-    case live(session) do
-      {:ok, pid} when node(pid) == node() -> {:ok, pid}
-      _elsewhere -> {:error, :not_live}
     end
   end
 
@@ -627,11 +595,12 @@ defmodule Hearth.Voice do
   defp voice_room(%Room{}), do: {:error, :not_found}
 
   defp may_read(user, %Room{} = room) do
-    with :ok <- may_enter(user, room.community_id) do
-      case Communities.room_visible?(user, room) do
-        true -> :ok
-        false -> {:error, :not_found}
-      end
+    with :ok <- may_enter(user, room.community_id),
+         true <- Communities.room_visible?(user, room) do
+      :ok
+    else
+      false -> {:error, :not_found}
+      error -> error
     end
   end
 
@@ -658,21 +627,17 @@ defmodule Hearth.Voice do
   defp may_record(%User{id: id}, %Session{host_id: id}), do: :ok
 
   defp may_record(user, session) do
-    case IAM.can?(user, :create, %{type: :"voice.recording", community_id: session.community_id}) do
-      true -> :ok
-      false -> {:error, :forbidden}
-    end
+    if can_record?(user, session.community_id), do: :ok, else: {:error, :forbidden}
   end
+
+  defp can_record?(user, community_id),
+    do: IAM.can?(user, :create, %{type: :"voice.recording", community_id: community_id})
 
   defp allowed(user, action, community_id) do
     case IAM.can?(user, action, %{type: :"voice.session", community_id: community_id}) do
       true -> :ok
       false -> {:error, :forbidden}
     end
-  end
-
-  defp can?(user, action, session) do
-    IAM.can?(user, action, %{type: :"voice.session", community_id: session.community_id})
   end
 
   defp broadcast(event), do: PubSub.broadcast(@topic, event)

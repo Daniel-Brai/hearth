@@ -217,7 +217,7 @@ export function BioPanel({
           shake={edit.shake === 'bio'}
           placeholder="What you work on, what you are happy to help with. Links and @mentions work."
           aria-label="Bio"
-          aria-invalid={BIO_MAX - form.bio.length < 0}
+          aria-invalid={form.bio.length > BIO_MAX}
         />
       )}
 

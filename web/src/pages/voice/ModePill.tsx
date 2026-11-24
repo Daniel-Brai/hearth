@@ -1,18 +1,18 @@
 import { useAppState } from '@/data/store';
 import { Icon } from '@/design-system';
 
-import { modeInfo } from './voice-session';
+import { modeInfo } from './voice-modes';
 
 type ModePillProps = {
   readonly cid: string;
   readonly rid: string;
 };
 
-// A room keeps the mode it started with, so this only says which one it is
 export function ModePill({ cid, rid }: ModePillProps) {
   const mode = useAppState(
     (state) => state.communities[cid]?.voice.find((v) => v.id === rid)?.mode ?? 'stage',
   );
+
   const info = modeInfo(mode);
 
   return (

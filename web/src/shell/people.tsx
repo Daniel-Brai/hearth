@@ -31,7 +31,6 @@ export function PersonAvatar({ id, size, online, unread, link, className }: Pers
       photo={view.photo}
       size={size}
       online={view.online}
-
       unread={unread}
       className={className}
     />
@@ -64,7 +63,6 @@ export function PersonLink({
   readonly id: string;
   readonly className?: string | undefined;
   readonly labelled?: boolean | undefined;
-  /** Shows You for the person signed in, for the author of something */
   readonly you?: boolean | undefined;
   readonly children?: ReactNode;
 }) {

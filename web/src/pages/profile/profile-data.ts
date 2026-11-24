@@ -2,7 +2,7 @@ import type { AppState } from '@/domain/app-state';
 import { commsVisOf, myRolesIn, rolesOf } from '@/domain/selectors';
 import type { Hue } from '@/domain/types';
 
-export type ProfileCommunity = {
+type ProfileCommunity = {
   cid: string;
   name: string;
   hue: Hue;
@@ -20,6 +20,7 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** Private communities you aren't in stay hidden so membership isn't revealed */
 export function profileCommunities(state: AppState, id: string): ProfileCommunity[] {
   const mine = id === state.me;
+  const vis = commsVisOf(state, id);
   const out: ProfileCommunity[] = [];
 
   for (const [cid, c] of Object.entries(state.communities)) {
@@ -33,8 +34,6 @@ export function profileCommunities(state: AppState, id: string): ProfileCommunit
     if (!held.length) continue;
 
     if (!mine && !c.joined && c.visibility === 'invite') continue;
-
-    const vis = commsVisOf(state, id);
 
     if (!mine && (vis === 'nobody' || (vis === 'common' && !c.joined))) continue;
 

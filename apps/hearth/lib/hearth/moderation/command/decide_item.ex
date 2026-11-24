@@ -20,7 +20,7 @@ defmodule Hearth.Moderation.Command.DecideItem do
     with {:ok, decided} <- Item.decide(item, status, get_in(moderator.id)),
          :ok <- change_content(subject, content_status(decided)),
          :ok <- outcome(decided),
-         :ok <- log(moderator, item, decided, subject, reason) do
+         :ok <- log(moderator, item, decided, reason) do
       {:ok, decided}
     end
   end
@@ -31,7 +31,7 @@ defmodule Hearth.Moderation.Command.DecideItem do
   defp content_status(%Item{status: :pending}), do: :published
   defp content_status(%Item{status: :dismissed}), do: nil
 
-  # A person's decision on a hold is what tells whether screening was right
+  # A person deciding a hold shows if screening was right
   defp outcome(%Item{held: true, status: status} = item) when status in [:kept, :removed] do
     Screening.record_outcome(item.subject_type, item.subject_id, status)
   end
@@ -42,25 +42,27 @@ defmodule Hearth.Moderation.Command.DecideItem do
   defp change_content(_subject, nil), do: :ok
   defp change_content(subject, status), do: SetContentStatus.execute(subject, status)
 
-  defp log(nil, _item, _decided, _subject, _reason), do: :ok
+  defp log(nil, _item, _decided, _reason), do: :ok
 
-  defp log(moderator, item, decided, _subject, reason) do
-    case action_for(item.status, decided.status) do
-      nil ->
-        :ok
+  defp log(moderator, item, decided, reason) do
+    item.status
+    |> action_for(decided.status)
+    |> record(moderator, item, reason)
+  end
 
-      action ->
-        attrs = %Action{
-          community_id: item.community_id,
-          actor_id: moderator.id,
-          target_id: item.author_id,
-          action: action,
-          subject_type: item.subject_type,
-          subject_id: item.subject_id
-        }
+  defp record(nil, _moderator, _item, _reason), do: :ok
 
-        with {:ok, _action} <- Action.insert(attrs, %{reason: reason}), do: :ok
-    end
+  defp record(action, moderator, item, reason) do
+    attrs = %Action{
+      community_id: item.community_id,
+      actor_id: moderator.id,
+      target_id: item.author_id,
+      action: action,
+      subject_type: item.subject_type,
+      subject_id: item.subject_id
+    }
+
+    with {:ok, _action} <- Action.insert(attrs, %{reason: reason}), do: :ok
   end
 
   defp action_for(:pending, :kept), do: :kept

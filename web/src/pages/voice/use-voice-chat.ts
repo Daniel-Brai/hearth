@@ -11,6 +11,7 @@ export function useVoiceChat(key: string, open: boolean): { readonly unread: boo
 
   const newest = useAppState((state) => {
     const list = state.chats[key];
+
     if (!list) return undefined;
 
     return list.findLast((m) => m.who !== state.me && !m.system)?.id ?? null;

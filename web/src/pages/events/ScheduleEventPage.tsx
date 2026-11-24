@@ -43,7 +43,6 @@ export function ScheduleEventPage() {
   if (!cid || !exists || (eventId && !event)) return <ErrorPage code={404} />;
   if (!allowed) return <ErrorPage code={403} forbidden="events" />;
 
-  // Keyed so opening another event starts a fresh form
   return <ScheduleEventForm key={event?.id ?? cid} cid={cid} event={event} />;
 }
 

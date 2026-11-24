@@ -13,10 +13,6 @@ defmodule HearthWeb.Endpoint do
     websocket: true,
     longpoll: false
 
-  socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
-
   plug Plug.Static,
     at: "/",
     from: :hearth_web,
@@ -24,16 +20,21 @@ defmodule HearthWeb.Endpoint do
     only: HearthWeb.static_paths(),
     raise_on_missing_only: code_reloading?
 
+  # The dashboard and its sockets exist only in development
   if code_reloading? do
+    socket "/live", Phoenix.LiveView.Socket,
+      websocket: [connect_info: [session: @session_options]],
+      longpoll: [connect_info: [session: @session_options]]
+
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: :hearth_web
-  end
 
-  plug Phoenix.LiveDashboard.RequestLogger,
-    param_key: "request_logger",
-    cookie_key: "request_logger"
+    plug Phoenix.LiveDashboard.RequestLogger,
+      param_key: "request_logger",
+      cookie_key: "request_logger"
+  end
 
   plug RemoteIp
 
@@ -60,7 +61,6 @@ defmodule HearthWeb.Endpoint do
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
 
-  plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
   plug HearthWeb.Router

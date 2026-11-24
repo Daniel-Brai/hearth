@@ -16,8 +16,7 @@ defmodule HearthWeb.CommunityRequestJSON do
     inserted_at
   ]a
 
-  def index(%{requests: requests, people: people}),
-    do: Enum.map(requests, &serialize(&1, people))
+  def index(%{requests: requests, people: people}), do: Enum.map(requests, &serialize(&1, people))
 
   def show(%{request: request, people: people}), do: serialize(request, people)
 

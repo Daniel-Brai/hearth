@@ -14,6 +14,7 @@ export const ACCEPT = ['image/*', 'video/*', ...DOCUMENT_EXTENSIONS.map((e) => '
 function attachmentKind(mime: string): Attachment['kind'] {
   if (mime.startsWith('image/')) return 'image';
   if (mime.startsWith('video/')) return 'video';
+
   return 'file';
 }
 
@@ -26,6 +27,7 @@ async function prepareVideo(file: File, id: string): Promise<Prepared> {
 
   if (info && Number.isFinite(info.duration) && info.duration > VIDEO_MAX_SECONDS) {
     URL.revokeObjectURL(url);
+
     return {
       ok: false,
       error: `${shortFileName(file.name)} is longer than ${VIDEO_MAX_SECONDS / 60} minutes. Trim it and try again.`,
@@ -50,6 +52,7 @@ async function prepareVideo(file: File, id: string): Promise<Prepared> {
 
 async function prepareImage(file: File, id: string): Promise<Prepared> {
   const r = await resizeImage(file, 1600, 1600);
+
   if (!r.ok) return { ok: false, error: resizeErrorText(r.error) };
 
   return {
@@ -76,6 +79,7 @@ export async function prepareAttachment(file: File): Promise<Prepared> {
 
   if (kind !== 'image' && file.size > UPLOAD_LIMITS[kind]) {
     const noun = kind === 'video' ? 'video' : 'file';
+
     return {
       ok: false,
       error: `${shortFileName(file.name)} is over ${fmtLimit(UPLOAD_LIMITS[kind])}, the most a ${noun} can be.`,
@@ -108,6 +112,8 @@ export function withinAttachmentCap(files: readonly File[], count: number, max: 
 
 export const paragraphGap = (text: string, edge: 'start' | 'end') => {
   if (!text) return '';
+
   const touching = edge === 'end' ? text.endsWith('\n') : text.startsWith('\n');
+
   return touching ? '' : '\n\n';
 };

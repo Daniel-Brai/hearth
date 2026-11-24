@@ -4,7 +4,7 @@ defmodule Hearth.Voice.Command.DeleteRecording do
   alias Hearth.Voice
   alias Hearth.Voice.Recording
 
-  # Its transcript goes with it, since a transcript belongs to one recording
+  # Its transcript goes with it since a transcript belongs to one recording
   @spec execute(Recording.t()) :: {:ok, Recording.t()} | {:error, :still_recording | term()}
   def execute(%Recording{status: :recording}), do: {:error, :still_recording}
 

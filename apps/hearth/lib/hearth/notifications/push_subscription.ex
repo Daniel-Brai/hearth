@@ -7,6 +7,10 @@ defmodule Hearth.Notifications.PushSubscription do
   alias Hearth.Common.T
 
   @fields ~w[user_id endpoint p256dh auth user_agent last_used_at]a
+
+  # Browsers only hand out endpoints on these push services
+  @push_hosts ~w[fcm.googleapis.com updates.push.services.mozilla.com web.push.apple.com]
+  @push_suffix ".notify.windows.com"
   @changeable [:last_used_at]
 
   schema "push_subscriptions" do
@@ -55,8 +59,11 @@ defmodule Hearth.Notifications.PushSubscription do
   end
 
   defp secure_url(:endpoint, endpoint) do
-    case URI.new(endpoint) do
-      {:ok, %URI{scheme: "https", host: host}} when host not in [nil, ""] -> []
+    with {:ok, %URI{scheme: "https", host: host}} when is_binary(host) <- URI.new(endpoint),
+         true <- host in @push_hosts or String.ends_with?(host, @push_suffix) do
+      []
+    else
+      false -> [endpoint: "must be a browser push service"]
       _other -> [endpoint: "must be an https address"]
     end
   end

@@ -18,7 +18,7 @@ defmodule Hearth.Transcripts.Command.StartTranscript do
 
     case Transcript.advance(transcript, :start) do
       {:ok, transcribing} -> {:ok, transcribing}
-      # Already past queued, such as a retry after a speaker failed
+      # Already past queued like a retry after a speaker failed
       {:error, _moved_on} -> {:ok, transcript}
     end
   end

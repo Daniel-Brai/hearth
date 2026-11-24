@@ -4,7 +4,7 @@ import type { AppState } from '@/domain/app-state';
 import { canDo, isOwner, myRolesIn } from '@/domain/selectors';
 import type { Room, VoiceRoom } from '@/domain/types';
 
-// Private rooms someone can't see wait here, as the server leaves them out of its answers
+// Private rooms someone can't see wait here since the server leaves them out of its answers
 export type Offstage = Map<string, { rooms: Room[]; voice: VoiceRoom[] }>;
 
 function canSeeRoom(state: AppState, cid: string, room: Room | VoiceRoom) {

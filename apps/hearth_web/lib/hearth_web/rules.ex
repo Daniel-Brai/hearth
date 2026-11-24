@@ -12,7 +12,8 @@ defmodule HearthWeb.Rules do
     end
   end
 
-  def template, do: Rules.allowed(Communities.template_ids())
+  def template,
+    do: [fields: [:id]] |> Communities.list_templates() |> Enum.map(& &1.id) |> Rules.allowed()
 
   def category, do: Rules.allowed(Communities.list_category_slugs())
 
@@ -29,7 +30,7 @@ defmodule HearthWeb.Rules do
     }
   end
 
-  # Query values arrive as text, so a number can come either way
+  # Query values arrive as text and body values as numbers
   def between(min, max) do
     fn attr, value ->
       case to_integer(value) do

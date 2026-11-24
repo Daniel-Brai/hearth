@@ -2,6 +2,7 @@ defmodule Hearth.Roles do
   use Boundary, deps: [], exports: []
 
   @type role :: :web | :rtc | :media | :ai
+  @type child :: Supervisor.child_spec() | module() | {module(), term()}
 
   @roles ~w[web rtc media ai]a
   @default ~w[web media ai]a
@@ -82,13 +83,9 @@ defmodule Hearth.Roles do
     end)
   end
 
-  @spec children([{Supervisor.child_spec() | module() | {module(), term()}, :all | [role()]}], [
-          role()
-        ]) :: [Supervisor.child_spec() | module() | {module(), term()}]
+  @spec children([{child(), :all | [role()]}], [role()]) :: [child()]
   def children(entries, roles) do
-    for {child, wanted} <- entries, wanted == :all or Enum.any?(wanted, &(&1 in roles)) do
-      child
-    end
+    for {child, wanted} <- entries, wanted == :all or Enum.any?(wanted, &(&1 in roles)), do: child
   end
 
   @spec cluster_children() :: [Supervisor.child_spec()]
@@ -104,10 +101,8 @@ defmodule Hearth.Roles do
   @spec start_announcer() :: Agent.on_start()
   def start_announcer do
     roles = list()
-
-    Agent.start_link(fn -> for role <- roles, do: :ok = :pg.join(@scope, role, self()) end,
-      name: @announcer
-    )
+    join = fn -> for role <- roles, do: :ok = :pg.join(@scope, role, self()) end
+    Agent.start_link(join, name: @announcer)
   end
 
   @spec in_cluster() :: [role()]

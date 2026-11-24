@@ -63,14 +63,16 @@ export function useProfileActivity(id: string) {
     (state) => {
       const activity = state.activity[id];
 
-      if (!activity)
+      if (!activity) {
         return { posts: NO_POSTS, postsMore: false, replies: NO_REPLIES, repliesMore: false };
+      }
 
       const byId = new Map(state.posts.map((p) => [p.id, p]));
 
       return {
         posts: activity.posts.flatMap((pid) => {
           const p = byId.get(pid);
+
           return p && !p.removed ? [{ ...p }] : [];
         }),
         postsMore: activity.postsAfter !== null,

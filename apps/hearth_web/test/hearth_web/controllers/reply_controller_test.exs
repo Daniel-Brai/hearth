@@ -19,10 +19,7 @@ defmodule HearthWeb.ReplyControllerTest do
   end
 
   describe "index" do
-    test "returns 404 if post is invite only", %{
-      conn: conn,
-      owner: owner
-    } do
+    test "returns 404 if post is invite only", %{conn: conn, owner: owner} do
       community = TestUtils.create_random_forum!(owner, visibility: :invite_only)
       post = TestUtils.create_random_post!(owner, community)
 
@@ -39,12 +36,7 @@ defmodule HearthWeb.ReplyControllerTest do
              |> valid_response(404)
     end
 
-    test "lists top level then branch", %{
-      conn: conn,
-      owner: owner,
-      member: member,
-      post: post
-    } do
+    test "lists top level then branch", %{conn: conn, owner: owner, member: member, post: post} do
       {:ok, top} = Forum.reply(owner, post, %{body: Lorem.sentence()})
 
       params = %{body: Lorem.sentence(), parent_reply_id: top.id}
@@ -117,10 +109,7 @@ defmodule HearthWeb.ReplyControllerTest do
     test "fails with more than 10 files", %{conn: conn, owner: owner, post: post} do
       {:ok, reply} = Forum.reply(owner, post, %{body: Lorem.sentence()})
 
-      body = %{
-        body: Lorem.sentence(),
-        attachment_ids: TestUtils.random_ids(11)
-      }
+      body = %{body: Lorem.sentence(), attachment_ids: TestUtils.random_ids(11)}
 
       assert %{"code" => "too_many_attachments"} =
                conn

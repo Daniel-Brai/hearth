@@ -53,6 +53,7 @@ export function Pill({
   readonly children?: ReactNode | undefined;
 }) {
   const style: CSSProperties | undefined = tint ? (tintStyle(tint) as CSSProperties) : undefined;
+
   return (
     <span
       className={cn(

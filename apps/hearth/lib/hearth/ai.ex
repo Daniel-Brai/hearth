@@ -11,10 +11,7 @@ defmodule Hearth.AI do
 
   @spec servings() :: [module()]
   def servings do
-    case TranscriptionPolicy.on?() and Transcriber.impl() == Whisper do
-      true -> [Whisper]
-      false -> []
-    end
+    if TranscriptionPolicy.on?() and Transcriber.impl() == Whisper, do: [Whisper], else: []
   end
 
   @spec transcribe(Path.t()) :: {:ok, [Transcriber.segment()]} | {:error, Transcriber.error()}

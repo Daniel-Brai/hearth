@@ -3,8 +3,6 @@ defmodule Hearth.Notifications.Worker.PruneRead do
 
   alias Hearth.Notifications
 
-  # Long enough to look back over a season, short enough that the table
-  # stays about the size of what people still read
   @keep_days 90
 
   @impl Oban.Worker

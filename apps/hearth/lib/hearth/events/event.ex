@@ -106,11 +106,7 @@ defmodule Hearth.Events.Event do
   def upcoming(community_ids, now) when is_list(community_ids) do
     __MODULE__
     |> where([e], e.community_id in ^community_ids)
-    |> where(
-      [e],
-      e.repeat != :none or
-        fragment("? + make_interval(mins => ?) > ?", e.starts_at, e.duration_min, ^now)
-    )
+    |> not_over_by(now)
     |> Repo.all()
     |> Enum.map(&%{&1 | next_starts_at: next_start(&1, now)})
     |> Enum.sort_by(&{&1.cancelled_at != nil, DateTime.to_unix(&1.next_starts_at, :microsecond)})
@@ -222,11 +218,7 @@ defmodule Hearth.Events.Event do
   def calendar(community_id, since, hidden_room_ids) do
     __MODULE__
     |> where([e], e.community_id == ^community_id)
-    |> where(
-      [e],
-      e.repeat != :none or
-        fragment("? + make_interval(mins => ?) > ?", e.starts_at, e.duration_min, ^since)
-    )
+    |> not_over_by(since)
     |> outside_rooms(hidden_room_ids)
     |> order_by(asc: :starts_at, asc: :id)
     |> Repo.all()
@@ -241,6 +233,15 @@ defmodule Hearth.Events.Event do
     |> select([e], {e.community_id, count(e.id)})
     |> Repo.all()
     |> Map.new()
+  end
+
+  defp not_over_by(query, at) do
+    where(
+      query,
+      [e],
+      e.repeat != :none or
+        fragment("? + make_interval(mins => ?) > ?", e.starts_at, e.duration_min, ^at)
+    )
   end
 
   defp outside_rooms(query, []), do: query

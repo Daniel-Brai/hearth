@@ -25,28 +25,6 @@ defmodule Hearth.Notifications.Listener.ChatTest do
     assert {:noreply, nil} = Listener.handle_info(:other, nil)
   end
 
-  test "tells others about direct message", %{
-    owner: owner,
-    member: member
-  } do
-    {:ok, conversation} = Chat.start_direct(member, owner)
-    {:ok, message} = Chat.send_message(member, conversation, %{body: Lorem.sentence()})
-
-    event = %MessageCreated{
-      message_id: message.id,
-      room_id: nil,
-      conversation_id: conversation.id,
-      author_id: member.id,
-      reply_to_id: nil,
-      reply_to_author_id: nil
-    }
-
-    assert {:noreply, nil} = Listener.handle_info(event, nil)
-
-    assert %Page{data: [%Notification{kind: :dm}]} = Notifications.list_notifications(owner)
-    assert %Page{data: []} = Notifications.list_notifications(member)
-  end
-
   test "tells nobody about a promoted note", %{owner: owner, member: member} do
     community = TestUtils.create_random_forum!(owner)
     {:ok, _membership} = Communities.join(member, community)
@@ -109,6 +87,25 @@ defmodule Hearth.Notifications.Listener.ChatTest do
     assert {:noreply, nil} = Listener.handle_info(event, nil)
 
     refute_enqueued(worker: TellRoom)
+  end
+
+  test "tells others about direct message", %{owner: owner, member: member} do
+    {:ok, conversation} = Chat.start_direct(member, owner)
+    {:ok, message} = Chat.send_message(member, conversation, %{body: Lorem.sentence()})
+
+    event = %MessageCreated{
+      message_id: message.id,
+      room_id: nil,
+      conversation_id: conversation.id,
+      author_id: member.id,
+      reply_to_id: nil,
+      reply_to_author_id: nil
+    }
+
+    assert {:noreply, nil} = Listener.handle_info(event, nil)
+
+    assert %Page{data: [%Notification{kind: :dm}]} = Notifications.list_notifications(owner)
+    assert %Page{data: []} = Notifications.list_notifications(member)
   end
 
   test "tells the room about @all from someone with mention.all", %{community: community} do

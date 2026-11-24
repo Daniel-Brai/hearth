@@ -9,9 +9,11 @@ defmodule Hearth.Media.Worker.DeleteMedia do
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"media_id" => media_id}}) do
-    case Asset.get(id: media_id) do
-      nil -> :ok
-      %Asset{} = media -> with {:ok, _media} <- DeleteMedia.execute(media), do: :ok
-    end
+    [id: media_id]
+    |> Asset.get()
+    |> delete()
   end
+
+  defp delete(nil), do: :ok
+  defp delete(%Asset{} = media), do: with({:ok, _media} <- DeleteMedia.execute(media), do: :ok)
 end

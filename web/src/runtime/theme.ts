@@ -2,7 +2,7 @@ import type { ThemePreference } from '@/domain/types';
 
 const THEME_KEY = 'hearth-theme';
 
-// index.html stamps data-theme before first paint so this only keeps it in step with storage
+// The theme script in root stamps data-theme before first paint so this only keeps it in step with storage
 export function applyTheme(theme: ThemePreference) {
   const root = document.documentElement;
 

@@ -26,7 +26,9 @@ export function orientPopup(el: HTMLElement) {
     for (const cls of tries) {
       el.classList.add(cls);
       r = el.getBoundingClientRect();
+
       if (r.right <= inner.right && r.left >= inner.left) break;
+
       el.classList.remove(cls);
     }
 
@@ -103,6 +105,7 @@ function placeAgainstWindow(el: HTMLElement) {
 
     el.style.maxBlockSize = '';
     Object.assign(el.style, { position: 'fixed', inset: 'auto' });
+
     if (el.classList.contains('select__menu')) el.style.minInlineSize = `${anchor.width}px`;
 
     const r = el.getBoundingClientRect();
@@ -154,7 +157,7 @@ function visibleBounds(el: HTMLElement) {
 
   for (let node = el.parentElement; node; node = node.parentElement) {
     const style = getComputedStyle(node);
-    /** A fenced column shows nothing past its edge even though it doesn't clip, since a sidebar sits over it */
+    /** A fenced column doesn't clip but the sidebar covers anything past its edge */
     const fenced = node.hasAttribute('data-popup-fence');
     const clipsX = fenced || style.overflowX !== 'visible';
     const clipsY = style.overflowY !== 'visible';

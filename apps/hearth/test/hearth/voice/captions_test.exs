@@ -8,7 +8,6 @@ defmodule Hearth.Voice.CaptionsTest do
   alias Hearth.Voice.VoiceCaption
 
   setup do
-    :ok = TestUtils.start_voice!()
     :ok = Voice.subscribe_to_pubsub()
 
     {:ok, session_id: Common.new_id(), user_id: Common.new_id()}
@@ -16,13 +15,16 @@ defmodule Hearth.Voice.CaptionsTest do
 
   describe "caption/3" do
     test "skips a stretch at the limit", %{session_id: s, user_id: u} do
-      TestUtils.put_voice(caption_limit: 0)
+      :ok = TestUtils.put_voice(caption_limit: 0)
+      :ok = TestUtils.start_voice!()
 
       assert :busy = Captions.caption(s, u, TestUtils.opus_packets(25))
       refute_receive %VoiceCaption{session_id: ^s}, 200
     end
 
     test "sends what was said to the room", %{session_id: s, user_id: u} do
+      :ok = TestUtils.start_voice!()
+
       assert :ok = Captions.caption(s, u, TestUtils.opus_packets(25))
 
       assert_receive %VoiceCaption{session_id: ^s, user_id: ^u, text: "Hello there"}

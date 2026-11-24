@@ -94,7 +94,7 @@ const sameKinds = (a: readonly PostKind[], b: readonly PostKind[]) =>
   JSON.stringify(a.map(toKindInput)) === JSON.stringify(b.map(toKindInput));
 
 export function createCommunitiesGateway(ctx: GatewayContext) {
-  // Only a changed list goes up, and its answer replaces the kinds shown
+  // Only a changed list goes up and its answer replaces the kinds shown
   const saveKinds = async (
     id: string,
     cid: string,
@@ -142,7 +142,7 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
 
         const keys = listed.data.map((community) => ctx.rememberCommunity(community, null));
 
-        // A list answer counts as joined, which only holds for the list of your own communities
+        // A list answer counts as joined but that only holds for the list of your own communities
         ctx.store.set((state) => {
           for (const key of keys) state.communities[key]!.joined = false;
         });
@@ -156,18 +156,10 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
 
       for (const community of answer.data) ctx.rememberCommunity(community, null);
 
-      // The list carries no post kinds, and feed rows show them so fetch each community's
-      // details once, alongside its posts
-      const unknown = answer.data.filter((c) => !ctx.knowsKindsOf(c.id));
-
+      // The list carries no post kinds so each community's details load with its posts
       const [pages] = await Promise.all([
         Promise.all(answer.data.map((c) => call(() => postIndex(c.id, { limit: CATCHUP_POOL })))),
-        Promise.all(
-          unknown.map(async (c) => {
-            const shown = await call(() => communityShow(c.id));
-            if (shown.status === 200) ctx.rememberCommunity(shown.data.community, shown.data);
-          }),
-        ),
+        ctx.learnCommunities(answer.data.map((c) => c.id)),
       ]);
 
       for (const page of pages) if (page.status === 200) ctx.rememberPosts(page.data.data);
@@ -200,9 +192,8 @@ export function createCommunitiesGateway(ctx: GatewayContext) {
       ctx.rememberCommunity(shown.data.community, shown.data);
 
       // An invite only community shows outsiders only its outline so there is nothing more to read
-      const open = ['public', 'public_indexed'].includes(shown.data.community.visibility);
-
-      if (!open && shown.data.membership === null) return ok(undefined);
+      if (!OPEN.has(shown.data.community.visibility) && shown.data.membership === null)
+        return ok(undefined);
 
       const [page, pinned] = await Promise.all([
         call(() => postIndex(id)),

@@ -42,18 +42,15 @@ defmodule Hearth.Notifications.Channel.Mail do
   def render(%MailMessage{} = mail, subject) do
     mail = in_order(mail)
 
-    assigns =
-      mail
-      |> Map.from_struct()
-      |> Map.merge(%{
-        subject: subject,
-        preview: mail.preview || first_line(mail.intro_lines),
-        brand: Notifications.brand(),
-        icon: Notifications.brand_icon(),
-        url: Notifications.url("/")
-      })
-
-    assigns
+    mail
+    |> Map.from_struct()
+    |> Map.merge(%{
+      subject: subject,
+      preview: mail.preview || first_line(mail.intro_lines),
+      brand: Notifications.brand(),
+      icon: Notifications.brand_icon(),
+      url: Notifications.url("/")
+    })
     |> View.email()
     |> Template.to_html()
   end

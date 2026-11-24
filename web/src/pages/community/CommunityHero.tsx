@@ -53,7 +53,6 @@ export function CommunityHero({ cid, view, onToggleJoin }: HeroProps) {
           <HeroActions cid={cid} view={view} onToggleJoin={onToggleJoin} />
         </div>
 
-        {/* The header above already names the community */}
         {view.tagline ? <p className="community-hero__title subtle">{view.tagline}</p> : null}
 
         <HeroMeta view={view} />
@@ -80,11 +79,12 @@ export function CommunityHero({ cid, view, onToggleJoin }: HeroProps) {
 }
 
 function HeroActions({ cid, view, onToggleJoin }: HeroProps) {
+  const manages = view.canEdit || view.mod;
+
   return (
     <div className="community-hero__actions">
-      {view.canEdit || view.mod ? (
-        <ManageMenu cid={cid} view={view} />
-      ) : view.canInvite ? (
+      {manages ? <ManageMenu cid={cid} view={view} /> : null}
+      {!manages && view.canInvite ? (
         <ButtonLink size="small" to={routes.invite(cid)}>
           <Icon name="invite" />
           Invite

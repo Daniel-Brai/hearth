@@ -44,7 +44,7 @@ export type ChatThread = {
 export function chatThreads(list: readonly Message[]): ChatThread[] {
   const byId = new Map(list.map((m) => [m.id, m]));
 
-  /** A reply whose thread hasn't loaded has no root yet, so it waits for that thread instead of showing alone */
+  /** A reply whose thread hasn't loaded waits for it instead of showing alone */
   const rootOf = (m: Message): string | null => {
     let current = m;
     const seen = new Set([m.id]);

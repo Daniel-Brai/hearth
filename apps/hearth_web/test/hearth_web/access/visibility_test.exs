@@ -309,7 +309,7 @@ defmodule HearthWeb.Access.VisibilityTest do
       {:ok, _room} = Communities.update_room(owner, hidden, %{topic: "Plans"})
       hidden_id = hidden.id
 
-      assert_push "RoomChanged", %{room_id: ^hidden_id}, 1_000
+      assert_push "RoomChanged", %{room_id: ^hidden_id}
     end
 
     test "closes the room once its role is gone", %{owner: owner, open: open, hidden: hidden} do
@@ -320,7 +320,7 @@ defmodule HearthWeb.Access.VisibilityTest do
       {:ok, _membership} = Communities.set_member_roles(owner, open, moderator, ["member"])
       hidden_id = hidden.id
 
-      assert_push "room_hidden", %{room_id: ^hidden_id}, 1_000
+      assert_push "room_hidden", %{room_id: ^hidden_id}
     end
 
     test "tells the community to refetch rooms", %{member: member, owner: owner, open: open} do
@@ -329,7 +329,61 @@ defmodule HearthWeb.Access.VisibilityTest do
       {:ok, _membership} = Communities.set_member_roles(owner, open, member, ["member"])
       open_id = open.id
 
-      assert_push "room_access_changed", %{community_id: ^open_id}, 1_000
+      assert_push "room_access_changed", %{community_id: ^open_id}
+    end
+  end
+
+  describe "a member who loses the community" do
+    setup %{owner: owner} do
+      open = TestUtils.create_random_forum!(owner, visibility: :public)
+      member = TestUtils.join_random_member!(open)
+      room = TestUtils.get_room!(open, type: :text)
+
+      {:ok, binding()}
+    end
+
+    # Joining and the check after the ban ask once each
+    @tag repeated_queries: false
+    test "is shut out of its rooms when banned", %{
+      owner: owner,
+      open: open,
+      member: member,
+      room: room
+    } do
+      socket = connected_socket(member)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "room:#{room.id}")
+      {:ok, _ban} = Communities.ban(owner, open, member, %{})
+      room_id = room.id
+
+      assert_push "room_hidden", %{room_id: ^room_id}
+    end
+
+    test "leaves other members in the room when one is banned", %{
+      owner: owner,
+      open: open,
+      member: member,
+      room: room
+    } do
+      other = TestUtils.join_random_member!(open)
+      socket = connected_socket(other)
+      {:ok, _reply, _socket} = subscribe_and_join(socket, "room:#{room.id}")
+      {:ok, _ban} = Communities.ban(owner, open, member, %{})
+
+      refute_push "room_hidden", %{}
+    end
+
+    test "is shut out of a private community after leaving", %{
+      owner: owner,
+      open: open,
+      member: member
+    } do
+      {:ok, private} = Communities.update_community(owner, open, %{visibility: :private})
+      socket = connected_socket(member)
+      {:ok, _reply, channel} = subscribe_and_join(socket, "community:#{private.id}")
+      ref = Process.monitor(channel.channel_pid)
+      :ok = Communities.leave(member, private)
+
+      assert_receive {:DOWN, ^ref, :process, _pid, _reason}
     end
   end
 end

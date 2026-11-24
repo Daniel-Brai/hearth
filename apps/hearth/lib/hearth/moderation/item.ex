@@ -105,9 +105,8 @@ defmodule Hearth.Moderation.Item do
   # Only writes if the item is still at the status it was read with so two moderators deciding at once can't both win
   @spec decide(t(), status(), nil | T.id()) :: {:ok, t()} | {:error, :stale}
   def decide(%__MODULE__{} = item, status, reviewed_by_id) do
-    reviewed_at = if status == :pending, do: nil, else: DateTime.utc_now()
-    reviewer = if status == :pending, do: nil, else: reviewed_by_id
     now = DateTime.utc_now()
+    {reviewer, reviewed_at} = if status == :pending, do: {nil, nil}, else: {reviewed_by_id, now}
 
     query = where(__MODULE__, id: ^item.id, status: ^item.status)
 

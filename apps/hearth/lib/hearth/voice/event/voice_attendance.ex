@@ -1,5 +1,5 @@
 defmodule Hearth.Voice.VoiceAttendance do
-  # Who is in a live room and how many, for people outside it
+  # Who is in a live room and how many for people outside it
   use Hearth.PubSub.WebsocketEvent
 
   alias Hearth.Common.T

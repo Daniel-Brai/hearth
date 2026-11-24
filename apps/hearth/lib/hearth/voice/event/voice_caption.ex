@@ -1,5 +1,5 @@
 defmodule Hearth.Voice.VoiceCaption do
-  # A line of what someone said, for the people in the room who turned captions on
+  # A line of what someone said for the people in the room who turned captions on
   use Hearth.PubSub.WebsocketEvent
 
   alias Hearth.Common.T

@@ -140,7 +140,7 @@ export class Realtime {
     };
   }
 
-  // Only goes out on a topic already joined, so typing never opens a channel of its own
+  // Only goes out on a topic already joined so typing never opens a channel of its own
   send(topic: Topic, event: string, payload: Record<string, unknown>) {
     this.joined.get(topic)?.channel.push(event, payload);
   }

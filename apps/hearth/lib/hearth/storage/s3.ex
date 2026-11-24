@@ -164,7 +164,7 @@ defmodule Hearth.Storage.S3 do
     |> ok()
   end
 
-  # S3 wants the checksum as base64 of the digest, and clients send it as hex
+  # S3 wants the checksum as base64 of the digest while clients send it as hex
   defp with_checksum(headers, sha256) when is_binary(sha256) do
     with true <- settings()[:checksums],
          {:ok, digest} <- Base.decode16(sha256, case: :mixed) do

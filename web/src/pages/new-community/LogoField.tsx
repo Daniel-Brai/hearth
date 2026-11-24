@@ -1,4 +1,4 @@
-import { Button, Icon, Img } from '@/design-system';
+import { Button, cn, Icon, Img } from '@/design-system';
 import { tintStyle } from '@/domain/format';
 
 import type { Form } from './form';
@@ -14,10 +14,7 @@ export function LogoField({
 }) {
   return (
     <div className="logo-field">
-      <label
-        className={form.logo ? 'logo-drop has-image' : 'logo-drop'}
-        style={tintStyle(form.hue)}
-      >
+      <label className={cn('logo-drop', form.logo && 'has-image')} style={tintStyle(form.hue)}>
         <input
           type="file"
           accept="image/*"

@@ -57,7 +57,11 @@ defmodule HearthWeb.UserController do
       |> Avatars.put_urls()
       |> Enum.map(&PublicProfile.apply(&1, auth))
 
-    render(conn, :index, people: people, shared: shared_with(auth, nil), online: online())
+    render(conn, :index,
+      people: people,
+      shared: shared_with(auth, nil),
+      online: MapSet.new(Presence.online_ids())
+    )
   end
 
   def index(%Conn{assigns: %{auth: %{}}} = conn, params) do
@@ -95,7 +99,7 @@ defmodule HearthWeb.UserController do
     with {:ok, user} <- Accounts.get_user(username: username, deleted_at: nil) do
       render(conn, :show,
         user: user |> Avatars.put_url() |> PublicProfile.apply(auth),
-        counts: Forum.author_counts(user.id, Communities.readable_ids(auth))
+        counts: Forum.author_counts(user.id, Communities.list_readable(auth))
       )
     end
   end
@@ -120,7 +124,7 @@ defmodule HearthWeb.UserController do
 
   def posts(%Conn{assigns: %{auth: auth}} = conn, %{"username" => username}) do
     with {:ok, user} <- Accounts.get_user(username: username, deleted_at: nil),
-         readable = Communities.readable_ids(auth),
+         readable = Communities.list_readable(auth),
          %{data: posts} = page <- Forum.list_author_posts(user.id, readable, Paging.opts(conn)) do
       render(conn, :posts,
         page: page,
@@ -154,7 +158,7 @@ defmodule HearthWeb.UserController do
 
   def replies(%Conn{assigns: %{auth: auth}} = conn, %{"username" => username}) do
     with {:ok, user} <- Accounts.get_user(username: username, deleted_at: nil),
-         readable = Communities.readable_ids(auth),
+         readable = Communities.list_readable(auth),
          %{data: replies} = page <-
            Forum.list_author_replies(user.id, readable, Paging.opts(conn)) do
       render(conn, :replies,
@@ -192,6 +196,4 @@ defmodule HearthWeb.UserController do
 
   defp shared_with(nil, _community_id), do: %{}
   defp shared_with(auth, community_id), do: IAM.co_members(auth, community_id)
-
-  defp online, do: MapSet.new(Presence.online_ids())
 end

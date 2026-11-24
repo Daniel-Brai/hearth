@@ -27,10 +27,7 @@ defmodule Hearth.Chat.ScreeningTest do
       refute_enqueued(worker: Screen, args: %{subject_id: message.id})
     end
 
-    test "skips direct message without image floor", %{
-      owner: owner,
-      author: author
-    } do
+    test "skips direct message without image floor", %{owner: owner, author: author} do
       {:ok, conversation} = Chat.start_direct(author, owner)
 
       {:ok, message} = Chat.send_message(author, conversation, %{body: Lorem.sentence()})

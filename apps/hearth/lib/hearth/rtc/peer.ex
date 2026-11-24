@@ -1,6 +1,6 @@
 defmodule Hearth.RTC.Peer do
   # The server makes every offer so there is never glare
-  # Packets are forwarded without decoding, straight to each subscriber's connection
+  # Packets are forwarded without decoding straight to each subscriber's connection
 
   use GenServer, restart: :temporary
 
@@ -163,16 +163,7 @@ defmodule Hearth.RTC.Peer do
     case PeerConnection.set_remote_description(state.pc, description) do
       :ok ->
         state = %{state | negotiating?: false, level_id: level_id(state.pc)}
-
-        # A watcher not connected yet gets the keyframe once it connects
-        state =
-          if state.new_watch? and state.connected?,
-            do: ask_sharer_for_keyframe(state),
-            else: state
-
-        state = if state.pending?, do: apply_route(%{state | pending?: false}), else: state
-
-        {:reply, :ok, state}
+        {:reply, :ok, state |> keyframe_for_new_watch() |> apply_pending()}
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
@@ -202,7 +193,7 @@ defmodule Hearth.RTC.Peer do
 
   @impl GenServer
   def terminate(_reason, state) do
-    for {_kind, segment} <- state.segments, segment != :failed, do: Recorder.close(segment)
+    for {_kind, segment} <- state.segments, do: close_file(segment)
     PeerConnection.close(state.pc)
   catch
     :exit, _reason -> :ok
@@ -316,15 +307,13 @@ defmodule Hearth.RTC.Peer do
 
     send(state.channel, {:hearth_rtc, :offer, %{sdp: offer.sdp, tracks: tracks(state)}})
 
-    # Someone with nothing to carry gets no offer so the wait for the
-    # connection starts at the first one
+    # Someone with nothing to carry gets no offer so the wait starts at the first one
     if not state.offered?, do: Process.send_after(self(), :ready_timeout, state.ready_ms)
 
     %{state | negotiating?: true, ice_restart?: false, offered?: true}
   end
 
-  # Which transceiver is which, by mid so the browser can attach its
-  # microphone or screen to the right one and label what it hears
+  # Which transceiver is which by mid so the browser attaches its microphone or screen to the right one
   defp tracks(state) do
     sending =
       Map.new(state.inbound, fn {kind, %{transceiver: id}} ->
@@ -338,12 +327,12 @@ defmodule Hearth.RTC.Peer do
 
     meaning = Map.merge(sending, receiving)
 
-    for tr <- PeerConnection.get_transceivers(state.pc),
-        tr.mid != nil,
-        not tr.stopping and not tr.stopped,
-        %{} = info <- [Map.get(meaning, tr.id)],
-        into: %{},
-        do: {tr.mid, info}
+    state.pc
+    |> PeerConnection.get_transceivers()
+    |> Enum.filter(
+      &(&1.mid != nil and not &1.stopping and not &1.stopped and Map.has_key?(meaning, &1.id))
+    )
+    |> Map.new(&{&1.mid, Map.fetch!(meaning, &1.id)})
   end
 
   defp forward(%{route: %{muted: true}} = state, _kind, _packet), do: state
@@ -372,24 +361,23 @@ defmodule Hearth.RTC.Peer do
         state
 
       :error ->
-        case Recorder.open(state.route.record, state.user_id, kind) do
-          {:ok, segment} ->
-            _written = Recorder.write(segment, packet)
-
-            starts_from_keyframe(
-              %{state | segments: Map.put(state.segments, kind, segment)},
-              kind
-            )
-
-          {:error, reason} ->
-            Logger.warning("Voice recording file not opened: #{inspect(reason)}")
-            %{state | segments: Map.put(state.segments, kind, :failed)}
-        end
+        open_segment(state, kind, packet)
     end
   end
 
-  # A share sends a keyframe only when asked, and a file that starts without one
-  # can't be decoded, so a recording that starts mid share asks for one
+  defp open_segment(state, kind, packet) do
+    case Recorder.open(state.route.record, state.user_id, kind) do
+      {:ok, segment} ->
+        _written = Recorder.write(segment, packet)
+        starts_from_keyframe(%{state | segments: Map.put(state.segments, kind, segment)}, kind)
+
+      {:error, reason} ->
+        Logger.warning("Voice recording file not opened: #{inspect(reason)}")
+        %{state | segments: Map.put(state.segments, kind, :failed)}
+    end
+  end
+
+  # A share sends a keyframe only when asked and a file without one can't be decoded
   defp starts_from_keyframe(state, :video), do: request_keyframe(state)
   defp starts_from_keyframe(state, _kind), do: state
 
@@ -400,16 +388,28 @@ defmodule Hearth.RTC.Peer do
     state.segments |> Map.keys() |> Enum.reduce(state, &close_segment(&2, &1))
   end
 
+  # A watcher not connected yet gets the keyframe once it connects
+  defp keyframe_for_new_watch(%{new_watch?: true, connected?: true} = state),
+    do: ask_sharer_for_keyframe(state)
+
+  defp keyframe_for_new_watch(state), do: state
+
+  defp apply_pending(%{pending?: true} = state), do: apply_route(%{state | pending?: false})
+  defp apply_pending(state), do: state
+
   defp close_segment(state, kind) do
     case Map.pop(state.segments, kind) do
       {nil, _segments} ->
         state
 
       {segment, segments} ->
-        if segment != :failed, do: Recorder.close(segment)
+        close_file(segment)
         %{state | segments: segments}
     end
   end
+
+  defp close_file(:failed), do: :ok
+  defp close_file(segment), do: Recorder.close(segment)
 
   defp phrase(state, kind, packet) do
     speak(state, Speech.keep(state.speech, state.route.caption, kind, packet, now()))
@@ -444,15 +444,18 @@ defmodule Hearth.RTC.Peer do
   defp now, do: System.monotonic_time(:millisecond)
 
   defp ask_sharer_for_keyframe(state) do
-    for {publisher, :video} <- Map.keys(state.outbound),
-        peer <- RTC.members({:peer, state.session_id, publisher}),
-        do: keyframe(peer)
+    state.outbound
+    |> Map.keys()
+    |> Enum.filter(&match?({_publisher, :video}, &1))
+    |> Enum.flat_map(fn {publisher, :video} ->
+      RTC.members({:peer, state.session_id, publisher})
+    end)
+    |> Enum.each(&keyframe/1)
 
     %{state | new_watch?: false}
   end
 
-  # A keyframe asked for before the first video packet waits for it, since
-  # the connection can't address the sharer's stream until then
+  # A keyframe asked for before the first video packet waits since the stream can't be addressed until then
   defp request_keyframe(state) do
     now = now()
 
@@ -504,8 +507,7 @@ defmodule Hearth.RTC.Peer do
       mime_type: "audio/opus",
       clock_rate: 48_000,
       channels: 2,
-      # Browsers answer with exactly this line, and ex_webrtc drops a codec whose
-      # fmtp differs from the answer's, which leaves the receiver without one
+      # Browsers answer with exactly this line and ex_webrtc drops a codec whose fmtp differs
       sdp_fmtp_line: %FMTP{pt: 111, minptime: 10, useinbandfec: true}
     }
 

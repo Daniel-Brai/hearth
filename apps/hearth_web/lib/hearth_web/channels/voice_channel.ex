@@ -53,7 +53,7 @@ defmodule HearthWeb.VoiceChannel do
   def handle_in("react", %{"emoji" => emoji}, socket) when is_binary(emoji) do
     %Socket{assigns: %{auth: auth, session: session}} = socket
 
-    # A burst past the limit is dropped quietly, since a reaction is only decoration.
+    # A burst past the limit is dropped quietly
     with {:allow, _count} <- FloodGuard.hit("voice-react:#{auth.id}", 1000, @reactions_per_second),
          {:error, reason} <- Voice.react(auth, session, emoji) do
       {:reply, error_reply(reason), socket}
@@ -75,20 +75,28 @@ defmodule HearthWeb.VoiceChannel do
 
   @impl Phoenix.Channel
   def handle_info({:hearth_rtc, :offer, offer}, socket) do
-    push(socket, "offer", offer)
+    :ok = push(socket, "offer", offer)
     {:noreply, socket}
   end
 
   def handle_info({:hearth_rtc, :candidate, candidate}, socket) do
-    push(socket, "candidate", %{candidate: candidate})
+    :ok = push(socket, "candidate", %{candidate: candidate})
     {:noreply, socket}
   end
 
   def handle_info({:hearth_rtc, :closed, reason}, socket), do: disconnected(socket, reason)
 
-  # The peer went away without saying why, so the browser should rejoin.
+  # The peer went away without saying why so the browser should rejoin
   def handle_info({:DOWN, _ref, :process, peer, _reason}, %{assigns: %{peer: peer}} = socket),
     do: disconnected(socket, :lost)
+
+  # A change about one other member leaves this socket as it is
+  def handle_info(
+        %Broadcast{event: "RoomAccessChanged", payload: %{user_id: user_id}},
+        %Socket{assigns: %{auth: %{id: me}}} = socket
+      )
+      when user_id not in [nil, me],
+      do: {:noreply, socket}
 
   def handle_info(%Broadcast{event: "RoomAccessChanged"}, socket) do
     %Socket{assigns: %{auth: auth, session: session}} = socket
@@ -105,8 +113,7 @@ defmodule HearthWeb.VoiceChannel do
 
   def handle_info(_message, socket), do: {:noreply, socket}
 
-  # Leaving on purpose takes the person out at once. A dropped socket keeps
-  # their place for the grace period, in case they come back.
+  # A dropped socket keeps its place for a grace period so only leaving on purpose ends the session
   @impl Phoenix.Channel
   def terminate({:shutdown, :left}, socket) do
     _left = Voice.leave(socket.assigns.auth, socket.assigns.session)
@@ -118,7 +125,7 @@ defmodule HearthWeb.VoiceChannel do
   defp error_reply(reason), do: {:error, %{reason: Atom.to_string(reason)}}
 
   defp disconnected(socket, reason) do
-    push(socket, "Disconnected", %{reason: reason})
+    :ok = push(socket, "Disconnected", %{reason: reason})
     {:stop, :normal, socket}
   end
 

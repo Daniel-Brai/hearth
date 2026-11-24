@@ -22,7 +22,6 @@ async function show(change: (state: AppState) => void) {
   const router = createMemoryRouter(
     [
       { path: '/c/:community/voice/:room', element: <VoicePage /> },
-      // Leaving the room goes back to Catch up
       { path: routes.home, element: <main id="catch-up" /> },
     ],
     {
@@ -178,7 +177,6 @@ describe('VoicePage', () => {
 
   it('shows a recording still being put together, and why one failed', async () => {
     await show((state) => {
-      // Neither has a video yet
       const { url: _url, download: _download, ...base } = state.recordings['rec1']!;
       state.recordings['busy'] = { ...base, id: 'busy', rid: 'office-hours', status: 'processing' };
       state.recordings['broken'] = {

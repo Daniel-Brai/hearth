@@ -1,5 +1,5 @@
 defmodule Hearth.Transcripts do
-  # Transcripts are for members of the community, like the recordings they come from
+  # Transcripts are for members of the community like the recordings they come from
 
   default = [AudioMark, Segment, Speaker, Transcript, TranscriptReady]
 
@@ -67,7 +67,7 @@ defmodule Hearth.Transcripts do
           room_name: String.t()
         }
 
-  # Only members see it, so the post doesn't point outsiders at a page they can't open
+  # Only members see it so the post never points outsiders at a transcript they can't open
   @spec for_post(nil | User.t(), post_ref()) :: nil | post_transcript()
   def for_post(%User{} = user, %{id: post_id, community_id: community_id}) do
     with :ok <- on(),
@@ -84,7 +84,7 @@ defmodule Hearth.Transcripts do
 
   def for_post(nil, _post), do: nil
 
-  # The person who said it fixes their own lines, and moderators fix anyone's
+  # The person who said it fixes their own lines and moderators fix anyone's
   @spec edit_segment(User.t(), T.id(), T.id(), map()) ::
           {:ok, Segment.t()} | {:error, :forbidden | :not_found | Changeset.t()}
   def edit_segment(%User{} = user, session_id, segment_id, %{} = params) do
@@ -93,16 +93,17 @@ defmodule Hearth.Transcripts do
          %Transcript{} = transcript <-
            Transcript.get(id: segment.transcript_id, session_id: session_id),
          {:ok, _recording} <- Voice.get_recording(user, transcript.recording_id),
-         :ok <- may_edit(user, segment, transcript) do
+         true <- may_edit?(user, Speaker.get(id: segment.speaker_id), transcript) do
       Segment.edit(segment, user.id, params)
     else
       nil -> {:error, :not_found}
+      false -> {:error, :forbidden}
       error -> error
     end
   end
 
-  @spec editable_speaker_ids(User.t(), Transcript.t()) :: MapSet.t(T.id())
-  def editable_speaker_ids(%User{} = user, %Transcript{speakers: speakers} = transcript)
+  @spec list_editable_speakers(User.t(), Transcript.t()) :: MapSet.t(T.id())
+  def list_editable_speakers(%User{} = user, %Transcript{speakers: speakers} = transcript)
       when is_list(speakers) do
     speakers
     |> Enum.filter(&may_edit?(user, &1, transcript))
@@ -114,13 +115,6 @@ defmodule Hearth.Transcripts do
 
   def may_edit?(%User{} = user, %Speaker{}, %Transcript{community_id: community_id}),
     do: IAM.can?(user, :remove, %{type: :content, community_id: community_id})
-
-  defp may_edit(user, segment, transcript) do
-    case may_edit?(user, Speaker.get(id: segment.speaker_id), transcript) do
-      true -> :ok
-      false -> {:error, :forbidden}
-    end
-  end
 
   # While transcription is off the transcripts are hidden rather than refused
   defp on do

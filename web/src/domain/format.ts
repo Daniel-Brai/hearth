@@ -120,3 +120,10 @@ export function typingLine(names: readonly string[]): string | null {
 
   return `${first}, ${second} and ${plural(names.length - 2, 'other')} are typing`;
 }
+
+export const escapeHtml = (s: string) =>
+  s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');

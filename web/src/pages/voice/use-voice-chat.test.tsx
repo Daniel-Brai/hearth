@@ -48,7 +48,7 @@ async function setup(open: boolean) {
   return { hook, store, write };
 }
 
-describe('useVoiceChat', async () => {
+describe('useVoiceChat', () => {
   it('counts what was there on arrival as seen', async () => {
     const { hook } = await setup(false);
 

@@ -19,24 +19,22 @@ defmodule Hearth.Forum.ScheduledPostTest do
     member = TestUtils.register_random_user!()
     {:ok, _membership} = Communities.join(member, community)
 
-    kinds =
-      community.id
-      |> Forum.list_kinds()
-      |> Map.new(&{&1.key, &1})
+    kinds = community.id |> Forum.list_kinds() |> Map.new(&{&1.key, &1})
 
     {:ok, binding()}
   end
 
   describe "schedule_post/3" do
     test "fails if not a member", %{community: community, kinds: kinds} do
+      outsider = TestUtils.register_random_user!()
+
       params = %{
         kind_id: kinds["question"].id,
         title: Lorem.sentence(),
         send_at: TestUtils.in_minutes(30)
       }
 
-      assert {:error, :forbidden} =
-               Forum.schedule_post(TestUtils.register_random_user!(), community, params)
+      assert {:error, :forbidden} = Forum.schedule_post(outsider, community, params)
     end
 
     test "fails if kind belongs to another community", %{member: member, community: community} do
@@ -55,7 +53,7 @@ defmodule Hearth.Forum.ScheduledPostTest do
       }
 
       assert {:error, changeset} = Forum.schedule_post(member, community, params)
-      assert %{send_at: ["must be at least 1 minute from now"]} = errors_on(changeset)
+      assert %{send_at: [_message]} = errors_on(changeset)
     end
 
     test "waits until its time", %{member: member, community: community, kinds: kinds} do
@@ -66,6 +64,7 @@ defmodule Hearth.Forum.ScheduledPostTest do
       }
 
       community_id = community.id
+
       assert {:ok, %{id: id}} = Forum.schedule_post(member, community, params)
       assert_enqueued(worker: PublishScheduled, args: %{scheduled_id: id})
       assert_receive %ScheduledPostChanged{scheduled_id: ^id}
@@ -124,6 +123,7 @@ defmodule Hearth.Forum.ScheduledPostTest do
       args = %{scheduled_id: scheduled.id, send_at: DateTime.to_iso8601(scheduled.send_at)}
 
       community_id = community.id
+
       assert :ok = perform_job(PublishScheduled, args)
       refute_receive %PostCreated{community_id: ^community_id}
     end

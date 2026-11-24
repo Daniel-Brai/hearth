@@ -1,10 +1,7 @@
 defmodule Hearth.Forum.PostWatch do
   use Hearth.Repo.Schema, prefix: "forum", primary_key: false
 
-  import Ecto.Query
-
   alias Hearth.Common.T
-  alias Hearth.Repo
 
   schema "post_watches" do
     field :user_id, Ecto.UUID, primary_key: true
@@ -25,22 +22,17 @@ defmodule Hearth.Forum.PostWatch do
   def put(user_id, post_id, watching, opts \\ []) do
     now = DateTime.utc_now()
 
-    conflict =
-      if opts[:keep],
-        do: :nothing,
-        else: [set: [watching: watching, updated_at: now]]
+    conflict = if opts[:keep], do: :nothing, else: [set: [watching: watching, updated_at: now]]
 
-    Repo.insert_all(
-      __MODULE__,
-      [
-        %{
-          user_id: user_id,
-          post_id: post_id,
-          watching: watching,
-          inserted_at: now,
-          updated_at: now
-        }
-      ],
+    row = %{
+      user_id: user_id,
+      post_id: post_id,
+      watching: watching,
+      inserted_at: now,
+      updated_at: now
+    }
+
+    Repo.insert_all(__MODULE__, [row],
       on_conflict: conflict,
       conflict_target: [:user_id, :post_id]
     )

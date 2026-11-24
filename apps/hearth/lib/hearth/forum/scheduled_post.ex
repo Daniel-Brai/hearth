@@ -2,12 +2,10 @@ defmodule Hearth.Forum.ScheduledPost do
   use Hearth.Repo.Schema, prefix: "forum"
 
   import Ecto.Changeset
-  import Ecto.Query
   import Hearth.Repo.Changeset, only: [validate_from_now: 3]
 
   alias Ecto.Changeset
   alias Hearth.Common.T
-  alias Hearth.Repo
 
   # Far enough ahead to be worth waiting for and no more than a month out
   @send_window [after: {1, :minute}, before: {30, :day}]
@@ -61,7 +59,7 @@ defmodule Hearth.Forum.ScheduledPost do
     |> validate_from_now(:send_at, @send_window)
   end
 
-  # The reason it couldn't go up, kept as a short code the app turns into words
+  # Keeps why it couldn't go up as a short code the app turns into words
   @spec fail(t(), atom() | Changeset.t()) :: {:ok, t()} | {:error, Changeset.t()}
   def fail(%__MODULE__{} = scheduled, %Changeset{}), do: fail(scheduled, :invalid)
 

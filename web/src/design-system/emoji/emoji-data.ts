@@ -44,7 +44,7 @@ let pickerKit: Promise<EmojiPickerKit> | null = null;
 let loadedKit: EmojiPickerKit | null = null;
 const listeners = new Set<() => void>();
 
-const isShortcode = (value: string) =>
+export const isEmojiKey = (value: string) =>
   value.length > 2 &&
   value.startsWith(':') &&
   value.endsWith(':') &&
@@ -54,6 +54,7 @@ function loadGlyphs(): Promise<Glyphs> {
   glyphsLoading ??= import('./glyphs.json').then((m) => {
     glyphs = m.default as Glyphs;
     listeners.forEach((l) => l());
+
     return glyphs;
   });
 
@@ -92,7 +93,7 @@ function subscribe(listener: () => void) {
 }
 
 export function useEmojiGlyph(value: string): string | null {
-  const id = isShortcode(value) ? value.slice(1, -1) : null;
+  const id = isEmojiKey(value) ? value.slice(1, -1) : null;
   const known = id ? (COMMON[id] ?? null) : null;
 
   const loadedGlyph = useSyncExternalStore(
@@ -107,5 +108,3 @@ export function useEmojiGlyph(value: string): string | null {
 }
 
 export const emojiKey = (id: string) => `:${id}:`;
-
-export const isEmojiKey = isShortcode;

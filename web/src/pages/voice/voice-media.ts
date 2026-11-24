@@ -1,6 +1,6 @@
-export type ShareBlock = 'insecure' | 'unsupported' | 'frame' | 'failed';
+type ShareBlock = 'insecure' | 'unsupported' | 'frame' | 'failed';
 
-export type ScreenResult =
+type ScreenResult =
   | { readonly status: 'started' }
   | { readonly status: 'cancelled' }
   | { readonly status: 'blocked'; readonly reason: ShareBlock };
@@ -23,8 +23,9 @@ export const SHARE_BLOCK_TEXT: Record<ShareBlock, string> = {
 function blockReason(): ShareBlock | null {
   if (!window.isSecureContext) return 'insecure';
 
-  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function')
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
     return 'unsupported';
+  }
 
   const policy = (document as DocumentWithPolicy).permissionsPolicy;
 

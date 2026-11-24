@@ -89,13 +89,11 @@ function useEventsData(cid: string | null, tab: EventsTab) {
     (state) =>
       joinedCids(state)
         .filter((id) => canDo(state, id, 'event.create'))
-        .map((id) => ({
-          id,
-          name: state.communities[id]!.name,
-          hue: state.communities[id]!.hue,
-          letter: state.communities[id]!.letter,
-          logo: state.communities[id]!.logo,
-        })),
+        .map((id) => {
+          const { name, hue, letter, logo } = state.communities[id]!;
+
+          return { id, name, hue, letter, logo };
+        }),
     alwaysChanged,
   );
 
@@ -109,6 +107,7 @@ function emptyCopy(tab: EventsTab, canSchedule: boolean) {
       text: 'Events show up here after they end, with links to any recordings.',
     };
   }
+
   return {
     title: 'Nothing scheduled',
     text: canSchedule
@@ -139,8 +138,10 @@ function EventsView({
 
   const closeEvent = () => {
     setOpened(null);
-    if (routeEvent)
+
+    if (routeEvent) {
       void navigate(cid ? routes.communityEvents(cid) : routes.events, { replace: true });
+    }
   };
 
   const edit = (e: CommunityEvent) => void navigate(routes.eventEdit(e.c, e.id, e.title));

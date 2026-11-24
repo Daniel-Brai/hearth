@@ -287,15 +287,13 @@ defmodule Hearth.MediaTest do
     end
 
     test "queues an image to be processed", %{user: user} do
-      assert %Asset{id: id, status: :processing} =
-               TestUtils.upload_random_file!(user)
+      assert %Asset{id: id, status: :processing} = TestUtils.upload_random_file!(user)
 
       assert_enqueued(worker: ProcessImage, args: %{media_id: id})
     end
 
     test "queues a video to be processed", %{user: user} do
-      assert %Asset{id: id, status: :processing} =
-               TestUtils.upload_random_file!(user, :video)
+      assert %Asset{id: id, status: :processing} = TestUtils.upload_random_file!(user, :video)
 
       assert_enqueued(worker: ProcessVideo, args: %{media_id: id})
     end
@@ -387,12 +385,9 @@ defmodule Hearth.MediaTest do
   end
 
   describe "avatar?/2" do
-    test "is false if not own avatar", %{
-      user: user
-    } do
+    test "is false if not own avatar", %{user: user} do
       other = TestUtils.register_random_user!()
       avatar = TestUtils.upload_random_file!(other, purpose: :avatar)
-
       image = TestUtils.upload_random_file!(user)
 
       refute Media.avatar?(user, avatar.id)
@@ -440,6 +435,8 @@ defmodule Hearth.MediaTest do
     test "fails for an address on the private network" do
       assert {:error, :not_found} = Media.link_preview("http://127.0.0.1:4000/admin")
       assert {:error, :not_found} = Media.link_preview("http://169.254.169.254/latest/meta-data")
+      assert {:error, :not_found} = Media.link_preview("http://[64:ff9b::a9fe:a9fe]/")
+      assert {:error, :not_found} = Media.link_preview("http://[2002:a00:1::]/")
     end
 
     test "fails for a redirect into the private network" do

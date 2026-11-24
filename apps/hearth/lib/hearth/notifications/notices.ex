@@ -1,4 +1,5 @@
 defmodule Hearth.Notifications.Notices do
+  alias Hearth.Accounts
   alias Hearth.Common
   alias Hearth.Common.T
   alias Hearth.Notifications
@@ -14,7 +15,7 @@ defmodule Hearth.Notifications.Notices do
       community: community,
       subject: {"reply", reply.id},
       data: %{post_id: post.id, post_title: post.title, reply_id: reply.id},
-      title: "#{name(actor)} replied in #{post.title}",
+      title: "#{Accounts.display_name(actor)} replied in #{post.title}",
       body: Common.excerpt(reply.body, @excerpt),
       url: reply_url(community, post, reply.id)
     })
@@ -27,7 +28,7 @@ defmodule Hearth.Notifications.Notices do
       community: community,
       subject: {"reply", reply_id},
       data: %{post_id: post.id, post_title: post.title, reply_id: reply_id},
-      title: "#{name(actor)} marked your reply as the answer",
+      title: "#{Accounts.display_name(actor)} marked your reply as the answer",
       body: post.title,
       url: reply_url(community, post, reply_id)
     })
@@ -43,7 +44,7 @@ defmodule Hearth.Notifications.Notices do
       subject: {type, id},
       data:
         Map.merge(%{excerpt: Common.excerpt(body, @excerpt), url: url}, mention[:data] || %{}),
-      title: "#{name(actor)} mentioned you in #{community.name}",
+      title: "#{Accounts.display_name(actor)} mentioned you in #{community.name}",
       body: Common.excerpt(body, @excerpt),
       url: url
     })
@@ -61,7 +62,7 @@ defmodule Hearth.Notifications.Notices do
         message_id: message.id,
         room_slug: room.slug
       },
-      title: "#{name(actor)} mentioned everyone in ##{room.name}",
+      title: "#{Accounts.display_name(actor)} mentioned everyone in ##{room.name}",
       body: Common.excerpt(message.body, @excerpt),
       url: url
     })
@@ -80,7 +81,7 @@ defmodule Hearth.Notifications.Notices do
           excerpt: Common.excerpt(message.body, @excerpt)
         }
       },
-      title: name(actor),
+      title: Accounts.display_name(actor),
       body: Common.excerpt(message.body, @excerpt),
       url: "/dm/#{actor.username}"
     }
@@ -93,7 +94,7 @@ defmodule Hearth.Notifications.Notices do
       community: community,
       subject: {"event", event.id},
       data: %{event_id: event.id, event_title: event.title, starts_at: event.starts_at},
-      title: "#{name(actor)} scheduled #{event.title}",
+      title: "#{Accounts.display_name(actor)} scheduled #{event.title}",
       body: community.name,
       url: event_url(community, event)
     })
@@ -108,7 +109,7 @@ defmodule Hearth.Notifications.Notices do
       community: community,
       subject: {"voice_session", session_id},
       data: %{room_slug: room.slug, room_name: room.name, topic: live[:topic]},
-      title: "#{name(actor)} is live in #{room.name}",
+      title: "#{Accounts.display_name(actor)} is live in #{room.name}",
       body: live[:topic] || community.name,
       url: "/c/#{community.slug}/voice/#{room.slug}"
     })
@@ -116,8 +117,6 @@ defmodule Hearth.Notifications.Notices do
 
   @spec event_reminder(map()) :: Notice.t()
   def event_reminder(%{community: community, event: event, minutes: minutes}) do
-    url = event_url(community, event)
-
     notice(:event_reminder, nil, %{
       actor: nil,
       community: community,
@@ -125,7 +124,7 @@ defmodule Hearth.Notifications.Notices do
       data: %{event_id: event.id, event_title: event.title, minutes: minutes},
       title: "#{event.title} starts in #{minutes} minutes",
       body: community.name,
-      url: url
+      url: event_url(community, event)
     })
   end
 
@@ -258,6 +257,4 @@ defmodule Hearth.Notifications.Notices do
 
   @spec reply_url(map(), map(), T.id()) :: String.t()
   def reply_url(community, post, reply_id), do: post_url(community, post) <> "/r/#{reply_id}"
-
-  defp name(user), do: user.display_name || user.username
 end

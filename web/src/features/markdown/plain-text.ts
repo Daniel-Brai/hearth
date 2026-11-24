@@ -1,6 +1,9 @@
 import { Lexer, type Token, type Tokens } from 'marked';
 
-const isWeb = (href: string) => href.startsWith('http://') || href.startsWith('https://');
+export const isWeb = (href: string) => href.startsWith('http://') || href.startsWith('https://');
+
+export const markdownSource = (text: string | readonly string[]) =>
+  Array.isArray(text) ? text.join('\n\n') : String(text);
 
 type Walk = { skipCode: boolean };
 
@@ -31,10 +34,12 @@ function textOf(tokens: readonly Token[], opts: Walk, out: string[]) {
           (t as Tokens.List).items.forEach((item) => textOf(item.tokens, opts, out));
         else if ('rows' in t) {
           const table = t as Tokens.Table;
+
           table.header.forEach((c) => textOf(c.tokens, opts, out));
           table.rows.forEach((r) => r.forEach((c) => textOf(c.tokens, opts, out)));
         } else if ('text' in t && typeof t.text === 'string') out.push(t.text);
     }
+
     out.push(' ');
   }
 }
@@ -42,17 +47,18 @@ function textOf(tokens: readonly Token[], opts: Walk, out: string[]) {
 const collapse = (parts: string[]) => parts.join('').split(/\s+/).join(' ').trim();
 
 export function plainText(markdown: string | readonly string[]): string {
-  const src = Array.isArray(markdown) ? markdown.join('\n\n') : String(markdown);
   const out: string[] = [];
 
-  textOf(Lexer.lex(src), { skipCode: false }, out);
+  textOf(Lexer.lex(markdownSource(markdown)), { skipCode: false }, out);
 
   return collapse(out);
 }
 
 export function plainTextWithoutCode(markdown: string): string {
   const out: string[] = [];
+
   textOf(Lexer.lex(markdown), { skipCode: true }, out);
+
   return collapse(out);
 }
 
@@ -63,16 +69,19 @@ function findLink(tokens: readonly Token[]): string | null {
 
     if ('tokens' in t && t.tokens) {
       const hit = findLink(t.tokens);
+
       if (hit) return hit;
     }
 
     if ('items' in t) {
       for (const item of (t as Tokens.List).items) {
         const hit = findLink(item.tokens);
+
         if (hit) return hit;
       }
     }
   }
+
   return null;
 }
 

@@ -38,6 +38,7 @@ export function useCreateCommunity() {
 
   const pickLogo = async (file: File | undefined) => {
     if (!file) return;
+
     const r = await resizeImage(file, 256, 256, true);
 
     if (r.ok) set('logo', r.dataUrl);

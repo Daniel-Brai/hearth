@@ -8,12 +8,12 @@ import { routes } from '@/runtime/routes';
 import { sfx } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 
-export type Step = 'email' | 'code' | 'profile';
-export type Via = 'email' | 'Google' | 'GitHub';
+type Step = 'email' | 'code' | 'profile';
+type Via = 'email' | 'Google' | 'GitHub';
 export type Privacy = 'public' | 'private';
-export type Shaking = 'email' | 'code' | 'name' | 'username';
+type Shaking = 'email' | 'code' | 'name' | 'username';
 
-export type NewProfile = {
+type NewProfile = {
   readonly name: string;
   readonly username: string;
   readonly privacy: Privacy;
@@ -63,16 +63,17 @@ export function useSignIn() {
 
   const [busy, setBusy] = useState(false);
 
-  // Going back from Google or GitHub can bring the page back from the browser's cache
-  // exactly as it was left, mid redirect, so the button would spin until a reload
+  // Going back from Google or GitHub can restore the page from the browser's cache with the button still spinning
   useEffect(() => {
     const restored = (event: PageTransitionEvent) => {
       if (event.persisted) setBusy(false);
     };
 
     window.addEventListener('pageshow', restored);
+
     return () => window.removeEventListener('pageshow', restored);
   }, []);
+
   const [leaving, setLeaving] = useState(false);
 
   const [error, setError] = useState<string | null>(
@@ -195,6 +196,7 @@ export function useSignIn() {
 
   const reject = (text: string, field: Shaking | null) => {
     setError(text);
+
     if (field) shake(field);
   };
 
@@ -229,8 +231,8 @@ export function useSignIn() {
     setError(null);
   };
 
-  const signedInTo =
-    returned?.kind === 'signed-in' ? (inviteCode ? routes.join(inviteCode) : next) : null;
+  const afterSignIn = inviteCode ? routes.join(inviteCode) : next;
+  const signedInTo = returned?.kind === 'signed-in' ? afterSignIn : null;
 
   return {
     signedInTo,

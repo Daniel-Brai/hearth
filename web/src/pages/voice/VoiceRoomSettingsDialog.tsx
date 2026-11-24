@@ -35,7 +35,9 @@ export function VoiceRoomSettingsDialog({ cid, rid, name, onClose }: VoiceRoomSe
   const [error, setError] = useState<string | null>(null);
 
   const save = async () => {
-    if (!next.trim() || next.trim() === name) {
+    const renamed = next.trim();
+
+    if (!renamed || renamed === name) {
       onClose();
       return;
     }
@@ -50,7 +52,8 @@ export function VoiceRoomSettingsDialog({ cid, rid, name, onClose }: VoiceRoomSe
     }
 
     onClose();
-    flash(`Renamed to ${next.trim()}`);
+    flash(`Renamed to ${renamed}`);
+
     if (r.value.id !== rid) void navigate(routes.voice(cid, r.value.id), { replace: true });
   };
 

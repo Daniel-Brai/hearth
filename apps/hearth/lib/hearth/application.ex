@@ -37,9 +37,7 @@ defmodule Hearth.Application do
     |> Supervisor.start_link(strategy: :one_for_one, name: Hearth.Supervisor)
   end
 
-  @spec children([Roles.role()]) :: [
-          Supervisor.child_spec() | module() | {module(), term()}
-        ]
+  @spec children([Roles.role()]) :: [Roles.child()]
   def children(roles) do
     oban = Application.fetch_env!(:hearth, Oban)
 

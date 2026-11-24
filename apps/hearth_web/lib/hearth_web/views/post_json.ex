@@ -103,11 +103,9 @@ defmodule HearthWeb.PostJSON do
     end
   end
 
-  # Views that don't load reactions, such as a new post, have none
-  defp reactions(assigns, post),
-    do: assigns |> Map.get(:reactions, %{}) |> Map.get(post.id, [])
+  defp reactions(assigns, post), do: assigns |> Map.get(:reactions, %{}) |> Map.get(post.id, [])
 
-  # Views that don't load reports leave the flags off, which reads as false
+  # Views that skip reports leave the flags off
   defp flagged?(assigns, key, post),
     do: assigns |> Map.get(key, MapSet.new()) |> MapSet.member?(post.id)
 
@@ -126,7 +124,7 @@ defmodule HearthWeb.PostJSON do
     |> Map.put(:kind, kind_label(draft.kind))
   end
 
-  # A saved draft answers without its kind loaded since the writer already knows it
+  # A saved draft has no kind loaded
   defp kind_label(%{label: label}), do: label
   defp kind_label(_none), do: nil
 end

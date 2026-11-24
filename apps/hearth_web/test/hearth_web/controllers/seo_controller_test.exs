@@ -64,11 +64,7 @@ defmodule HearthWeb.SeoControllerTest do
       assert conn |> get(~p"/sitemaps/#{indexed.slug <> ".2.xml"}") |> response(404)
     end
 
-    test "lists community events and posts", %{
-      conn: conn,
-      owner: owner,
-      indexed: indexed
-    } do
+    test "lists community events and posts", %{conn: conn, owner: owner, indexed: indexed} do
       post = TestUtils.create_random_post!(owner, indexed)
       removed = TestUtils.create_random_post!(owner, indexed)
       event = TestUtils.create_random_community_event!(owner, indexed)
@@ -98,11 +94,7 @@ defmodule HearthWeb.SeoControllerTest do
   end
 
   describe "og_post" do
-    test "fails if community not public", %{
-      conn: conn,
-      owner: owner,
-      hidden: hidden
-    } do
+    test "fails if community not public", %{conn: conn, owner: owner, hidden: hidden} do
       post = TestUtils.create_random_post!(owner, hidden)
 
       assert conn |> get(~p"/og/posts/#{post.id}") |> response(404)
@@ -124,6 +116,13 @@ defmodule HearthWeb.SeoControllerTest do
   end
 
   describe "og_event" do
+    test "fails for an event in a private room", %{conn: conn, owner: owner, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"], type: :voice)
+      event = TestUtils.create_random_community_event!(owner, community, room_id: room.id)
+
+      assert conn |> get(~p"/og/events/#{event.id}") |> response(404)
+    end
+
     test "redirects to the card", %{conn: conn, owner: owner, community: community} do
       event = TestUtils.create_random_community_event!(owner, community)
 

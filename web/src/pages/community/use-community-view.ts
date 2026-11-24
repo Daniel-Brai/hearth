@@ -18,6 +18,10 @@ export function useCommunityView(cid: string) {
 
   return useAppState((state) => {
     const c = community(state, cid)!;
+    const joined = c.joined && state.me !== null;
+    const kinds = kindsOf(state, cid);
+    const mod = isMod(state, cid);
+
     return {
       name: c.name,
       tagline: c.tagline,
@@ -32,24 +36,24 @@ export function useCommunityView(cid: string) {
       visibility: c.visibility,
       audience: audienceOf(c),
       viewer: viewerOf(state, hint),
-      joined: c.joined && state.me !== null,
-      locked: c.visibility === 'invite' && !(c.joined && state.me !== null),
+      joined,
+      locked: c.visibility === 'invite' && !joined,
       maintainer: c.maintainer,
       maintainerName: shortName(state, c.maintainer),
       maintainerUsername: person(state, c.maintainer).username,
       live: c.voice.filter((v) => v.live),
       notModerated: modLevel(state, cid) === 'none',
       canEdit: canDo(state, cid, 'community.update'),
-      mod: isMod(state, cid) || canDo(state, cid, 'member.ban'),
-      queue: isMod(state, cid) ? queueCountIn(state, cid) : 0,
+      mod: mod || canDo(state, cid, 'member.ban'),
+      queue: mod ? queueCountIn(state, cid) : 0,
       canInvite: canDo(state, cid, 'invite.create'),
       canPost: canDo(state, cid, 'post.create'),
       canEvents: canDo(state, cid, 'event.create'),
       compact: state.settings.compact,
       generalRoom: c.rooms[0]?.id ?? null,
-      kinds: kindsOf(state, cid).map((k) => k.name),
+      kinds: kinds.map((k) => k.name),
       kindCounts: Object.fromEntries(
-        kindsOf(state, cid).map((k) => [
+        kinds.map((k) => [
           k.name,
           state.posts.filter((p) => p.c === cid && p.kind === k.name).length,
         ]),

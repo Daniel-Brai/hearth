@@ -24,14 +24,13 @@ defmodule Hearth.Communities.Command.EmailInvite do
   defp insert(user, community, expires_at, entry, {:ok, sent}) do
     invite = %Invite{community_id: community.id, created_by_id: user.id}
     invite_params = %{"role_key" => entry.role_key, "max_uses" => 1, "expires_at" => expires_at}
+    email_params = %{email: entry.email, sent_at: DateTime.utc_now()}
 
     with {:ok, invite} <- Invite.insert(invite, invite_params),
-         {:ok, row} <- InviteEmail.insert(%InviteEmail{invite_id: invite.id}, email_params(entry)) do
+         {:ok, row} <- InviteEmail.insert(%InviteEmail{invite_id: invite.id}, email_params) do
       {:cont, {:ok, [%{row | invite: invite} | sent]}}
     else
       {:error, changeset} -> {:halt, {:error, changeset}}
     end
   end
-
-  defp email_params(entry), do: %{email: entry.email, sent_at: DateTime.utc_now()}
 end

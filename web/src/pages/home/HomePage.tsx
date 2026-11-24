@@ -51,7 +51,9 @@ function timeOfDayGreeting(hour: number) {
 
 function greeting(first: string | null, hour: number, short = false) {
   if (short) return first ? 'Hi, ' + first : 'Hi';
+
   const time = timeOfDayGreeting(hour);
+
   return first ? `${time}, ${first}` : time;
 }
 
@@ -412,7 +414,7 @@ function CatchUpCards() {
 function SeenPosts() {
   const posts = useAppState((state) => seenPosts(state));
 
-  if (!posts.length)
+  if (!posts.length) {
     return (
       <EmptyState
         art="posts"
@@ -420,6 +422,7 @@ function SeenPosts() {
         text="Posts you have read will collect here."
       />
     );
+  }
 
   return (
     <div className="feed">

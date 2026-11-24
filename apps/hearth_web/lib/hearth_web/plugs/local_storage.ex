@@ -43,44 +43,32 @@ defmodule HearthWeb.Plugs.LocalStorage do
 
   # sobelow_skip ["Traversal.FileModule", "Traversal.SendFile", "XSS.ContentType"]
   defp put_file(conn, key, params) do
+    size = String.to_integer(params["len"])
+
     with :ok <- same_type(conn, params["ct"]),
-         {:ok, conn, temp} <- receive_body(conn) do
-      expected = %{
-        content_type: params["ct"],
-        size: String.to_integer(params["len"]),
-        sha256: params["sha"]
-      }
+         {:ok, conn, temp} <- receive_body(conn, size) do
+      expected = %{content_type: params["ct"], size: size, sha256: params["sha"]}
 
       result = Storage.write_local(key, File.stream!(temp, 65_536), expected)
       File.rm(temp)
-
-      case result do
-        {:ok, etag} -> conn |> put_resp_header("etag", ~s("#{etag}")) |> send_resp(200, "")
-        {:error, :size_mismatch} -> refuse(conn, "size_mismatch")
-        {:error, :checksum_mismatch} -> refuse(conn, "checksum_mismatch")
-      end
+      stored(conn, result)
     else
       {:error, :type_mismatch} -> refuse(conn, "type_mismatch")
+      {:error, :size_mismatch} -> refuse(conn, "size_mismatch")
     end
   end
 
   # sobelow_skip ["Traversal.FileModule", "Traversal.SendFile", "XSS.ContentType"]
   defp put_part(conn, key, %{"upload" => upload_id, "n" => number}) do
-    {:ok, conn, temp} = receive_body(conn)
+    case receive_body(conn, Storage.part_size()) do
+      {:ok, conn, temp} ->
+        stream = File.stream!(temp, 65_536)
+        result = Storage.write_local_part(key, upload_id, String.to_integer(number), stream)
+        File.rm(temp)
+        stored(conn, result)
 
-    result =
-      Storage.write_local_part(
-        key,
-        upload_id,
-        String.to_integer(number),
-        File.stream!(temp, 65_536)
-      )
-
-    File.rm(temp)
-
-    case result do
-      {:ok, etag} -> conn |> put_resp_header("etag", ~s("#{etag}")) |> send_resp(200, "")
-      {:error, :not_found} -> send_resp(conn, 404, "")
+      {:error, :size_mismatch} ->
+        refuse(conn, "size_mismatch")
     end
   end
 
@@ -172,6 +160,14 @@ defmodule HearthWeb.Plugs.LocalStorage do
     kind in ~w[image video audio]
   end
 
+  defp stored(conn, {:ok, etag}),
+    do: conn |> put_resp_header("etag", ~s("#{etag}")) |> send_resp(200, "")
+
+  defp stored(conn, {:error, :not_found}), do: send_resp(conn, 404, "")
+
+  defp stored(conn, {:error, reason}) when reason in [:size_mismatch, :checksum_mismatch],
+    do: refuse(conn, Atom.to_string(reason))
+
   defp same_type(conn, type) do
     case get_req_header(conn, "content-type") do
       [^type | _rest] -> :ok
@@ -180,24 +176,39 @@ defmodule HearthWeb.Plugs.LocalStorage do
   end
 
   # sobelow_skip ["Traversal.FileModule", "Traversal.SendFile", "XSS.ContentType"]
-  defp receive_body(conn) do
+  # Reading stops past the signed size and a refused body leaves no file
+  defp receive_body(conn, max_bytes) do
     temp = Path.join(System.tmp_dir!(), "hearth-upload-#{System.unique_integer([:positive])}")
 
-    conn = File.open!(temp, [:write, :binary], &read_into(conn, &1))
+    case File.open!(temp, [:write, :binary], &read_into(conn, &1, max_bytes)) do
+      {:ok, conn} ->
+        {:ok, conn, temp}
 
-    {:ok, conn, temp}
+      {:error, _reason} ->
+        File.rm(temp)
+        {:error, :size_mismatch}
+    end
   end
 
-  defp read_into(conn, file) do
+  defp read_into(conn, file, room) do
     case read_body(conn, length: @read_length) do
+      {_more, data, _conn} when byte_size(data) > room ->
+        {:error, :too_large}
+
       {:ok, data, conn} ->
-        IO.binwrite(file, data)
-        conn
+        {:ok, write_chunk(conn, file, data)}
 
       {:more, data, conn} ->
-        IO.binwrite(file, data)
-        read_into(conn, file)
+        conn |> write_chunk(file, data) |> read_into(file, room - byte_size(data))
+
+      {:error, reason} ->
+        {:error, reason}
     end
+  end
+
+  defp write_chunk(conn, file, data) do
+    IO.binwrite(file, data)
+    conn
   end
 
   defp cors(conn) do

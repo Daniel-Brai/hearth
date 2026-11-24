@@ -4,7 +4,7 @@ import type { CueName } from './sounds';
 
 export const TAP: HapticInput = [{ duration: 25, intensity: 0.6 }];
 
-// Only cues that answer something you did, or that change the room for you, are felt
+// Only cues that answer something you did or change the room for you are felt
 const FELT: Partial<Record<CueName, HapticInput>> = {
   join: 'success',
   live: 'success',
@@ -23,7 +23,7 @@ const FELT: Partial<Record<CueName, HapticInput>> = {
 let haptics: WebHaptics | null = null;
 let enabled = true;
 
-// A phone or tablet, where a buzz means something, rather than a desktop with a touchscreen
+// A phone or tablet rather than a desktop with a touchscreen
 const touchDevice = () =>
   typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 

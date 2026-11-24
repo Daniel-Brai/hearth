@@ -3,7 +3,7 @@ import { decode, isBlurhashValid } from 'blurhash';
 const WIDTH = 12;
 const cache = new Map<string, string | null>();
 
-/** A few pixels packed as a BMP so server and browser make the same string with no canvas and the browser smooths them into a blur */
+/** A few pixels packed as a BMP so the server and browser make the same string without a canvas */
 export function blurUrl(hash: string, width?: number, height?: number): string | null {
   const ratio = width && height ? height / width : 1;
   const rows = Math.min(24, Math.max(4, Math.round(WIDTH * ratio)));
@@ -45,6 +45,7 @@ function bmp(rgba: Uint8ClampedArray, width: number, height: number): string {
     }
 
   let binary = '';
+
   for (const byte of bytes) binary += String.fromCharCode(byte);
 
   return 'data:image/bmp;base64,' + btoa(binary);

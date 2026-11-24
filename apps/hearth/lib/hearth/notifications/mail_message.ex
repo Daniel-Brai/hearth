@@ -1,5 +1,5 @@
 defmodule Hearth.Notifications.MailMessage do
-  # Lines added before action/3 or code/2 go above it, lines added after go below
+  # Lines added before action/3 or code/2 go above it and lines added after go below
 
   defstruct [
     :subject,
@@ -49,7 +49,6 @@ defmodule Hearth.Notifications.MailMessage do
   @spec greeting(t(), String.t()) :: t()
   def greeting(%__MODULE__{} = message, greeting), do: %{message | greeting: greeting}
 
-  # Defaults to the first line
   @spec preview(t(), String.t()) :: t()
   def preview(%__MODULE__{} = message, preview), do: %{message | preview: preview}
 
@@ -72,12 +71,12 @@ defmodule Hearth.Notifications.MailMessage do
   @spec line(t(), String.t() | link_line()) :: t()
   def line(%__MODULE__{} = message, content)
       when is_binary(content) or elem(content, 0) == :link do
-    case below?(message) do
-      true -> %{message | outro_lines: [content | message.outro_lines]}
-      false -> %{message | intro_lines: [content | message.intro_lines]}
+    case message do
+      %__MODULE__{action_text: nil, code: nil} ->
+        %{message | intro_lines: [content | message.intro_lines]}
+
+      %__MODULE__{} ->
+        %{message | outro_lines: [content | message.outro_lines]}
     end
   end
-
-  defp below?(%__MODULE__{action_text: nil, code: nil}), do: false
-  defp below?(%__MODULE__{}), do: true
 end

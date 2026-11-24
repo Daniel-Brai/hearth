@@ -18,8 +18,8 @@ export function usePostEffects(id: string) {
   const prompt = viewer === 'guest' ? signIn : noop;
 
   useEffect(() => {
-    if (viewer === 'member') void gateway.posts.markSeen(id);
-  }, [gateway, id, viewer]);
+    if (member) void gateway.posts.markSeen(id);
+  }, [gateway, id, member]);
 
   useEffect(() => {
     if (search.get('reply')) document.getElementById('reply-box')?.focus();

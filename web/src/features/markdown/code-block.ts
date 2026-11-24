@@ -1,4 +1,14 @@
+import { useEffect } from 'react';
+
 /** Blocks are HTML strings with no handlers so one listener sits on the document */
+export function useCodeBlocks() {
+  useEffect(() => {
+    document.addEventListener('click', codeBlockClick);
+
+    return () => document.removeEventListener('click', codeBlockClick);
+  }, []);
+}
+
 export function codeBlockClick(e: MouseEvent) {
   const target = e.target as Element | null;
   const copy = target?.closest?.('[data-copy-code]');

@@ -78,19 +78,6 @@ defmodule HearthWeb.RoomControllerTest do
                |> valid_response(404)
     end
 
-    test "opens a private room to everyone", %{conn: conn, owner: owner, community: community} do
-      room = TestUtils.create_random_private_room!(community, ["moderator"])
-      body = %{access: "everyone"}
-
-      assert response =
-               conn
-               |> auth_conn(owner)
-               |> patch(~p"/api/rooms/#{room.id}", body)
-               |> valid_response(200)
-
-      assert response["access"] == "everyone"
-    end
-
     test "fails with an unknown sound mode", %{conn: conn, owner: owner, community: community} do
       room = TestUtils.get_room!(community, type: :text)
       body = %{settings: %{sounds_mode: "nobody"}}
@@ -102,6 +89,19 @@ defmodule HearthWeb.RoomControllerTest do
                |> valid_response(422)
 
       assert [_error] = errors["settings.sounds_mode"]
+    end
+
+    test "opens a private room to everyone", %{conn: conn, owner: owner, community: community} do
+      room = TestUtils.create_random_private_room!(community, ["moderator"])
+      body = %{access: "everyone"}
+
+      assert response =
+               conn
+               |> auth_conn(owner)
+               |> patch(~p"/api/rooms/#{room.id}", body)
+               |> valid_response(200)
+
+      assert response["access"] == "everyone"
     end
 
     test "changes the settings", %{conn: conn, owner: owner, community: community} do

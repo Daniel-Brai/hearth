@@ -192,31 +192,43 @@ defmodule Hearth.Auth.Token do
     expected = hash_code(token.context, token.sent_to, code)
 
     cond do
-      expired?(token) ->
-        Repo.delete(token)
-        {:error, :expired}
-
-      :crypto.hash_equals(token.token_hash, expected) ->
-        Repo.delete(token)
-        {:ok, token}
-
-      true ->
-        count_attempt(token)
+      expired?(token) -> expire(token)
+      :crypto.hash_equals(token.token_hash, expected) -> claim(token)
+      true -> count_attempt(token)
     end
   end
 
-  defp count_attempt(%__MODULE__{attempts: attempts} = token)
-       when attempts + 1 >= @max_attempts do
-    Repo.delete(token)
+  defp expire(token) do
+    _removed = remove(token)
+    {:error, :expired}
+  end
+
+  # Whoever deletes the row gets the token so a code works once
+  defp claim(token) do
+    case remove(token) do
+      1 -> {:ok, token}
+      0 -> {:error, :invalid}
+    end
+  end
+
+  # Counted in the database so guesses sent together all count
+  defp count_attempt(%__MODULE__{id: id} = token) do
+    {_count, attempts} =
+      __MODULE__
+      |> where(id: ^id)
+      |> select([t], t.attempts)
+      |> Repo.update_all(inc: [attempts: 1])
+
+    used_up(attempts, token)
     {:error, :invalid}
   end
 
-  defp count_attempt(%__MODULE__{id: id}) do
-    __MODULE__
-    |> where(id: ^id)
-    |> Repo.update_all(inc: [attempts: 1])
+  defp used_up([attempts], token) when attempts >= @max_attempts, do: remove(token)
+  defp used_up(_attempts, _token), do: 0
 
-    {:error, :invalid}
+  defp remove(%__MODULE__{id: id}) do
+    {count, _tokens} = __MODULE__ |> where(id: ^id) |> Repo.delete_all()
+    count
   end
 
   defp expires_at(context) do
@@ -232,8 +244,7 @@ defmodule Hearth.Auth.Token do
     |> String.pad_leading(6, "0")
   end
 
-  # Keyed with the server secret so a leaked table cannot be searched for
-  # the million possible codes
+  # Keyed with the server secret so a leaked table can't be searched for all the possible codes
   defp hash_code(context, sent_to, code) do
     key = Application.fetch_env!(:hearth, :secret_key_base)
 

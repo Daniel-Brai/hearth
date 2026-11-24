@@ -1,4 +1,4 @@
-/** Carousels in rendered text are HTML strings with no handlers, so the text's root listens for them */
+/** Carousels in rendered text are HTML strings with no handlers so the text's root listens for them */
 export function wireCarousels(root: HTMLElement, open: (src: string, alt: string) => void) {
   const onClick = (e: MouseEvent) => {
     const image = (e.target as Element | null)
@@ -7,6 +7,7 @@ export function wireCarousels(root: HTMLElement, open: (src: string, alt: string
 
     if (image) {
       open(image.src, image.alt);
+
       return;
     }
 

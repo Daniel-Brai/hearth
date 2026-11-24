@@ -1,6 +1,7 @@
 defmodule Hearth.Notifications.CatchUp do
   use Hearth.Notifications.Message
 
+  alias Hearth.Accounts
   alias Hearth.Accounts.User
   alias Hearth.Notifications
   alias Hearth.Notifications.MailMessage
@@ -25,17 +26,17 @@ defmodule Hearth.Notifications.CatchUp do
   def to_mail(%__MODULE__{} = catch_up, _notifiable) do
     total = Enum.sum_by(catch_up.communities, &(length(&1.posts) + &1.more))
 
-    catch_up.communities
-    |> Enum.reduce(
+    mail =
       %MailMessage{}
       |> MailMessage.subject(subject(total, catch_up.communities))
       |> MailMessage.greeting(greeting(catch_up.period))
       |> MailMessage.preview(preview(catch_up.communities))
       |> MailMessage.line(
         "New posts in the communities you joined. The ones people found most useful come first."
-      ),
-      &MailMessage.section(&2, section(&1))
-    )
+      )
+
+    catch_up.communities
+    |> Enum.reduce(mail, &MailMessage.section(&2, section(&1)))
     |> MailMessage.action("Open Catch up", Notifications.url("/"))
     |> MailMessage.link_line(
       "You get this #{schedule(catch_up.period)}. Change it or turn it off in ",
@@ -89,7 +90,7 @@ defmodule Hearth.Notifications.CatchUp do
   defp meta(post, author) do
     [
       if(post.pinned_at, do: "Pinned"),
-      if(author, do: author.display_name || author.username),
+      if(author, do: Accounts.display_name(author)),
       count(post.reply_count, "reply", "replies"),
       count(post.helpful_count, "helpful", "helpful")
     ]

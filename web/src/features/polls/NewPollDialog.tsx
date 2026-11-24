@@ -111,6 +111,7 @@ function NewPollForm({
 
   const addOption = () => {
     const id = nextId.current++;
+
     setOptions((all) => [...all, { id, label: '' }]);
   };
 
@@ -122,6 +123,7 @@ function NewPollForm({
 
     if (problem) {
       setError(problem);
+
       return;
     }
 
@@ -137,6 +139,7 @@ function NewPollForm({
 
     if (!r.ok) {
       setError(r.error);
+
       return;
     }
 

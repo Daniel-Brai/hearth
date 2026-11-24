@@ -22,12 +22,11 @@ defmodule Hearth.Moderation.Command.HoldContent do
         Item.hold(item)
 
       nil ->
-        # The instance queue is found by having no community
-        community_id = if source == :automatic, do: subject.community_id
+        {community_id, room_id} = queue_place(source, subject)
 
         item = %Item{
           community_id: community_id,
-          room_id: if(source == :automatic, do: subject.room_id),
+          room_id: room_id,
           source: source,
           held: true,
           subject_type: subject.type,
@@ -38,4 +37,8 @@ defmodule Hearth.Moderation.Command.HoldContent do
         Item.insert(item, params)
     end
   end
+
+  # Only automatic holds go to the community's queue and the rest to the instance's
+  defp queue_place(:automatic, subject), do: {subject.community_id, subject.room_id}
+  defp queue_place(_source, _subject), do: {nil, nil}
 end

@@ -14,18 +14,14 @@ defmodule Hearth.Forum.Command.SchedulePost do
     scheduled = %ScheduledPost{author_id: author.id, community_id: community.id}
 
     Repo.transact(fn ->
-      with :ok <- room_for(author),
+      with true <- ScheduledPost.count_for(author.id) < @most,
            {:ok, scheduled} <- ScheduledPost.insert(scheduled, params),
            {:ok, _job} <- PublishScheduled.enqueue(scheduled) do
         {:ok, scheduled}
+      else
+        false -> {:error, :too_many}
+        error -> error
       end
     end)
-  end
-
-  defp room_for(author) do
-    case ScheduledPost.count_for(author.id) < @most do
-      true -> :ok
-      false -> {:error, :too_many}
-    end
   end
 end

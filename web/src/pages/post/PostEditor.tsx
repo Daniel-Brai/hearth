@@ -4,6 +4,7 @@ import { useGateway } from '@/app/gateway-context';
 import type { PostPatch } from '@/data/gateway';
 import { useAppState } from '@/data/store';
 import { Button, Icon, Textarea } from '@/design-system';
+import { TITLE_MAX } from '@/domain/catalog';
 import { kindInfo, postableKinds } from '@/domain/selectors';
 import type { Attachment, Post } from '@/domain/types';
 import { Composer } from '@/features/composer/Composer';
@@ -14,8 +15,6 @@ import { useLeaveGuard } from '@/pages/compose/use-leave-guard';
 import { useUi } from '@/runtime/ui-store';
 
 import '@/pages/compose/ComposePage.css';
-
-import { TITLE_MAX } from '@/domain/catalog';
 
 const sameFiles = (a: readonly Attachment[], b: readonly Attachment[]) =>
   a.length === b.length && a.every((f, i) => f.id === b[i]?.id);
@@ -39,6 +38,7 @@ export function PostEditor({ post, onDone }: { readonly post: Post; readonly onD
   // A kind they can no longer post stays on offer so the post keeps it
   const kinds = useAppState((state) => {
     const postable = postableKinds(state, post.c);
+
     return postable.some((k) => k.name === original.kind)
       ? postable
       : [kindInfo(state, post.c, original.kind), ...postable];
@@ -58,6 +58,7 @@ export function PostEditor({ post, onDone }: { readonly post: Post; readonly onD
     if (busy) return;
     if (!dirty) return onDone();
     if (!fields.title.trim()) return setError('A post needs a title.');
+
     setBusy(true);
 
     let r;
@@ -69,6 +70,7 @@ export function PostEditor({ post, onDone }: { readonly post: Post; readonly onD
     }
 
     if (!r.ok) return setError(r.error);
+
     guard.allowLeave();
     flash('Saved');
     onDone();

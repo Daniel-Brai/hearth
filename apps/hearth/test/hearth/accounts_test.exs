@@ -190,8 +190,9 @@ defmodule Hearth.AccountsTest do
     end
 
     test "ignores username", %{user: user} do
-      assert {:ok, updated} =
-               Accounts.update_profile(user, %{username: TestUtils.random_username()})
+      params = %{username: TestUtils.random_username()}
+
+      assert {:ok, updated} = Accounts.update_profile(user, params)
 
       assert updated.username == user.username
     end

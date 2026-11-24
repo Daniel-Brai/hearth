@@ -6,35 +6,35 @@ defmodule HearthWeb.Plugs.ContentSecurityPolicyTest do
 
   alias HearthWeb.Plugs.ContentSecurityPolicy
 
-  test "sends policy with matching nonce" do
-    conn = conn(:get, "/")
+  describe "call/2" do
+    test "sends policy with matching nonce" do
+      conn = :get |> conn("/") |> ContentSecurityPolicy.call(ContentSecurityPolicy.init([]))
 
-    assert conn = ContentSecurityPolicy.call(conn, ContentSecurityPolicy.init([]))
+      [policy] = get_resp_header(conn, "content-security-policy")
+      nonce = conn.assigns.csp_nonce
 
-    [policy] = get_resp_header(conn, "content-security-policy")
-    nonce = conn.assigns.csp_nonce
+      assert policy =~ "script-src 'self' 'nonce-#{nonce}'"
+      assert policy =~ "style-src 'self' 'nonce-#{nonce}'"
+      assert policy =~ "object-src 'none'"
+      assert policy =~ "frame-ancestors 'none'"
+    end
 
-    assert policy =~ "script-src 'self' 'nonce-#{nonce}'"
-    assert policy =~ "style-src 'self' 'nonce-#{nonce}'"
-    assert policy =~ "object-src 'none'"
-    assert policy =~ "frame-ancestors 'none'"
-  end
+    test "lets pages show images from the web app" do
+      conn = :get |> conn("/") |> ContentSecurityPolicy.call(ContentSecurityPolicy.init([]))
 
-  test "lets pages show images from the web app" do
-    conn = :get |> conn("/") |> ContentSecurityPolicy.call(ContentSecurityPolicy.init([]))
+      [policy] = get_resp_header(conn, "content-security-policy")
 
-    [policy] = get_resp_header(conn, "content-security-policy")
+      assert policy =~ "img-src 'self' http://localhost:5173 data: blob:"
+    end
 
-    assert policy =~ "img-src 'self' http://localhost:5173 data: blob:"
-  end
+    test "makes a new nonce for every request" do
+      conn = conn(:get, "/")
+      opts = ContentSecurityPolicy.init([])
 
-  test "makes a new nonce for every request" do
-    conn = conn(:get, "/")
-    opts = ContentSecurityPolicy.init([])
+      earlier = ContentSecurityPolicy.call(conn, opts)
+      later = ContentSecurityPolicy.call(conn, opts)
 
-    assert earlier = ContentSecurityPolicy.call(conn, opts)
-    assert later = ContentSecurityPolicy.call(conn, opts)
-
-    refute earlier.assigns.csp_nonce == later.assigns.csp_nonce
+      refute earlier.assigns.csp_nonce == later.assigns.csp_nonce
+    end
   end
 end

@@ -36,8 +36,7 @@ defmodule Hearth.Communities.RoomGroupTest do
     end
 
     test "tells open apps", %{owner: owner, community: community} do
-      Communities.subscribe_to_pubsub()
-
+      :ok = Communities.subscribe_to_pubsub()
       {:ok, _group} = Communities.create_room_group(owner, community, %{name: Lorem.word()})
 
       assert_receive %RoomLayoutChanged{}
@@ -92,10 +91,8 @@ defmodule Hearth.Communities.RoomGroupTest do
 
   describe "arrange_rooms/3" do
     test "fails if not allowed", %{member: member, community: community} do
-      layout = %{
-        groups: [],
-        room_ids: community |> Communities.list_rooms() |> TestUtils.pluck(:id)
-      }
+      room_ids = community |> Communities.list_rooms() |> TestUtils.pluck(:id)
+      layout = %{groups: [], room_ids: room_ids}
 
       assert {:error, :forbidden} = Communities.arrange_rooms(member, community, layout)
     end

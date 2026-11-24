@@ -1,6 +1,6 @@
 defmodule Hearth.Transcripts.Worker.Transcribe do
   # TranscriptionPolicy names this worker so Voice can queue it without depending on Transcripts
-  # Each speaker is saved as it finishes, so a retry only redoes the ones left
+  # Each speaker is saved as it finishes so a retry only redoes the ones left
 
   use Oban.Worker,
     queue: :transcribe,
@@ -75,7 +75,7 @@ defmodule Hearth.Transcripts.Worker.Transcribe do
     end
   end
 
-  # dir comes from TempFile.run/1, made from a new id
+  # dir comes from TempFile.run/1 which makes it from a new id
   # sobelow_skip ["Traversal.FileModule"]
   defp read_speaker(speaker, key, dir) do
     File.mkdir_p!(dir)
@@ -90,7 +90,7 @@ defmodule Hearth.Transcripts.Worker.Transcribe do
   defp settle(:done, _transcript, _job), do: :ok
   defp settle({:ok, _ready}, _transcript, _job), do: :ok
   defp settle({:error, :not_ready}, _transcript, _job), do: {:snooze, @not_ready_seconds}
-  # Moved on while this ran, such as a duplicate run that finished first
+  # Moved on while this ran like a duplicate run that finished first
   defp settle({:error, :stale}, _transcript, _job), do: :ok
 
   defp settle({:error, :not_found}, transcript, _job),

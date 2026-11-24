@@ -1,8 +1,9 @@
 import { ChoiceTiles, Field, Icon, Input, Segmented, Select } from '@/design-system';
 import { DatePicker } from '@/features/date-time/DatePicker';
 import { TimePicker } from '@/features/date-time/TimePicker';
+import { modeInfo, VOICE_MODES } from '@/pages/voice/voice-modes';
 
-import { DURATIONS, REPEATS, VOICE_MODES, voiceModeInfo } from './event-utils';
+import { DURATIONS, REPEATS } from './event-utils';
 import type { ScheduleForm } from './use-schedule-form';
 
 export function WhenFields({ form }: { readonly form: ScheduleForm }) {
@@ -141,7 +142,7 @@ export function TalkField({ form }: { readonly form: ScheduleForm }) {
             ),
           }))}
         />
-        <span className="field__hint m-0">{voiceModeInfo(values.talk).text}</span>
+        <span className="field__hint m-0">{modeInfo(values.talk).text}</span>
       </div>
     </Field>
   );

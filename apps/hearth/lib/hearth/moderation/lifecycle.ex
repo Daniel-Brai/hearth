@@ -4,8 +4,7 @@ defmodule Hearth.Moderation.Lifecycle do
   alias Hearth.Moderation.Item
   alias XFsm.Machine
 
-  # A routing state so :undo back to pending doesn't bounce
-  # straight to the status the item was read with
+  # A routing state so :undo back to pending doesn't bounce straight to the status the item was read with
   initial :start
 
   context %{input: %{item: item}}, do: %{item: item}

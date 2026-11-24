@@ -32,10 +32,10 @@ defmodule Hearth.Forum.Command.PromoteMessages do
       promoted_by_id: promoter.id
     }
 
-    params = params |> Map.take([:title, :kind_id]) |> Map.put(:body, first.body)
+    post_params = params |> Map.take([:title, :kind_id]) |> Map.put(:body, first.body)
 
     Repo.transact(fn ->
-      with {:ok, post} <- Post.insert(post, params),
+      with {:ok, post} <- Post.insert(post, post_params),
            :ok <- Media.link_attachments(:post, post.id, media_ids(files, first)),
            {:ok, post} <- CreatePost.tag(post, community),
            :ok <- QueueScreening.post(post, community),
@@ -49,13 +49,7 @@ defmodule Hearth.Forum.Command.PromoteMessages do
   defp reply_all(_post, [], _files), do: :ok
 
   defp reply_all(post, messages, files) do
-    result =
-      Enum.reduce_while(messages, :ok, fn message, :ok ->
-        case reply(post, message, media_ids(files, message)) do
-          {:ok, _reply} -> {:cont, :ok}
-          error -> {:halt, error}
-        end
-      end)
+    result = Enum.reduce_while(messages, :ok, &add_reply(post, files, &1, &2))
 
     with :ok <- result do
       Post
@@ -63,6 +57,13 @@ defmodule Hearth.Forum.Command.PromoteMessages do
       |> Repo.update_all(inc: [reply_count: length(messages)])
 
       :ok
+    end
+  end
+
+  defp add_reply(post, files, message, :ok) do
+    case reply(post, message, media_ids(files, message)) do
+      {:ok, _reply} -> {:cont, :ok}
+      error -> {:halt, error}
     end
   end
 

@@ -65,12 +65,12 @@ defmodule HearthWeb.CommunityRequestControllerTest do
     end
 
     test "returns 404 if missing", %{conn: conn, admin: admin} do
+      body = %{decision: "declined"}
+
       assert %{"message" => "Not Found"} =
                conn
                |> auth_conn(admin)
-               |> post(~p"/api/community-requests/#{Common.new_id()}/decision", %{
-                 decision: "declined"
-               })
+               |> post(~p"/api/community-requests/#{Common.new_id()}/decision", body)
                |> valid_response(404)
     end
 

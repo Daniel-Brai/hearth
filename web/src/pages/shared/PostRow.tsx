@@ -24,11 +24,10 @@ import { useFlashFailure } from '@/runtime/use-flash-failure';
 import { PersonAvatar } from '@/shell/people';
 import { useViewer } from '@/shell/use-guest';
 
-export type PostRowProps = {
+type PostRowProps = {
   readonly post: Post;
   readonly selected?: boolean | undefined;
   readonly showCommunity?: boolean | undefined;
-  /** Shown in place of the start of the body like the part a search found */
   readonly excerpt?: ReactNode;
 };
 
@@ -223,9 +222,10 @@ function PostRowActions({
   const member = useViewer() === 'member';
 
   const pin = async () => {
-    const pinned = post.pinned;
+    const done = post.pinned ? 'Unpinned' : 'Pinned';
     const r = await gateway.posts.togglePin(post.id);
-    flash(r.ok ? (pinned ? 'Unpinned' : 'Pinned') : r.error);
+
+    flash(r.ok ? done : r.error);
   };
 
   return (

@@ -93,7 +93,6 @@ defmodule Hearth.IAM.Membership do
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
   end
 
-  @spec community_ids(T.id()) :: [T.id()]
   @spec role_keys(T.id()) :: %{T.id() => [String.t()]}
   def role_keys(community_id) do
     query =
@@ -175,6 +174,7 @@ defmodule Hearth.IAM.Membership do
     Repo.all(query)
   end
 
+  @spec community_ids(T.id()) :: [T.id()]
   def community_ids(user_id) do
     query = from(m in __MODULE__, where: m.user_id == ^user_id, select: m.community_id)
 

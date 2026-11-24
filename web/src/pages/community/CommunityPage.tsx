@@ -17,6 +17,7 @@ import {
   type FeedSort,
 } from '@/domain/selectors';
 import type { Post } from '@/domain/types';
+import { ScheduledPosts } from '@/features/schedule/ScheduledPosts';
 import { ShareButton } from '@/features/share/ShareButton';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes } from '@/runtime/routes';
@@ -33,8 +34,6 @@ import { useCommunityView, type CommunityViewData } from './use-community-view';
 import { useJoinToggle } from './use-join-toggle';
 
 import './CommunityPage.css';
-
-import { ScheduledPosts } from '@/features/schedule/ScheduledPosts';
 
 export function CommunityPage() {
   const { community: cid, tag } = useParams();

@@ -17,8 +17,7 @@ defmodule Hearth.RTC.Recorder do
   @spec dir(T.id()) :: Path.t()
   def dir(recording_id), do: Path.join([System.tmp_dir!(), "hearth-recordings", recording_id])
 
-  # The folder comes from a recording id and the name from a user id, both
-  # set by the server
+  # The folder comes from a recording id and the name from a user id the server set
   # sobelow_skip ["Traversal.FileModule"]
   @spec open(recording(), T.id(), :audio | :video) :: {:ok, segment()} | {:error, term()}
   def open(%{id: id, t0: t0}, user_id, kind) when kind in [:audio, :video] do
@@ -76,8 +75,7 @@ defmodule Hearth.RTC.Recorder do
   defp kind("video"), do: {:ok, :video}
   defp kind(_other), do: :error
 
-  # The times of the first and last packet, skipping over the packets
-  # themselves
+  # The times of the first and last packet without reading the packets
   defp span(path) do
     reduce_headers(path, nil, fn
       at, nil -> {at, at}
@@ -119,15 +117,12 @@ defmodule Hearth.RTC.Recorder do
   defp read_packets(file, acc, fun) do
     with {:ok, <<at::32, size::32>>} <- :file.read(file, 8),
          {:ok, <<data::binary-size(^size)>>} <- :file.read(file, size) do
-      acc =
-        case Packet.decode(data) do
-          {:ok, packet} -> fun.(at, packet, acc)
-          {:error, _reason} -> acc
-        end
-
-      read_packets(file, acc, fun)
+      read_packets(file, add_packet(Packet.decode(data), at, acc, fun), fun)
     else
       _end -> acc
     end
   end
+
+  defp add_packet({:ok, packet}, at, acc, fun), do: fun.(at, packet, acc)
+  defp add_packet({:error, _reason}, _at, acc, _fun), do: acc
 end

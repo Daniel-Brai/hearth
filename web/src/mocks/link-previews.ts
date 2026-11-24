@@ -38,7 +38,7 @@ function hexdocs(url: string, path: string): LinkPreview {
   };
 }
 
-// What the server would read from each page's Open Graph tags, for the mock data only
+// What the server would read from each page's Open Graph tags
 export function mockLinkPreview(url: string): LinkPreview | null {
   const parsed = parseLink(url);
 

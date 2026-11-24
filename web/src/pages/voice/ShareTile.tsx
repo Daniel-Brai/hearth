@@ -43,7 +43,8 @@ export function ShareTile({
   const box = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const remote = useVoiceStream('remoteScreen');
-  // Your own share shows what you're capturing, as the others see it arrive
+
+  // Your own share shows what you're capturing as the others see it arrive
   const stream = mine ? screenStream() : remote;
   const screen = useFullscreen(box, video);
 
@@ -55,6 +56,7 @@ export function ShareTile({
 
   useEffect(() => {
     setShareFull(screen.on);
+
     return () => setShareFull(false);
   }, [screen.on, setShareFull]);
 
@@ -62,7 +64,7 @@ export function ShareTile({
 
   usePageKeys(keys);
 
-  // Real full screen leaves on Esc by itself, the window-filling fallback doesn't
+  // Real full screen leaves on Esc by itself but the window-filling fallback doesn't
   const { expanded, leave } = screen;
 
   useEffect(() => {
@@ -133,7 +135,6 @@ export function ShareTile({
   );
 }
 
-// Whoever is talking comes first, and past a few the rest are a count like elsewhere
 const TALKERS_SHOWN = 4;
 
 function TalkerRow({ talkers }: { readonly talkers: ShareTileProps['talkers'] }) {

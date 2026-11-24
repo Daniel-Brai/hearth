@@ -17,6 +17,7 @@ import {
   Segmented,
   type IconName,
 } from '@/design-system';
+import { ageText } from '@/domain/format';
 import {
   creationMode,
   displayName,
@@ -41,8 +42,6 @@ const MODE_NOTES = {
   anyone:
     'Anyone can start a community right now, so nobody needs to ask. Anything already waiting is below.',
 } as const;
-
-const age = (when: string) => (when === 'now' ? 'just now' : when + ' ago');
 
 export function RequestsPage() {
   const gateway = useGateway();
@@ -103,6 +102,7 @@ function RequestsView() {
       action: 'Decline',
       onConfirm: async () => {
         const result = await gateway.communities.decideRequest(r.id, 'declined');
+
         flash(result.ok ? 'Declined' : result.error);
       },
     });
@@ -230,8 +230,8 @@ function RequestCard({ request: r, onApprove, onDecline }: RequestCardProps) {
             <span className="truncate">
               <strong>{asker.name}</strong>{' '}
               <span className="subtle">
-                asked {age(r.age)}
-                {r.decided ? ` · ${verdict.label.toLowerCase()} ${age(r.decided)}` : null}
+                asked {ageText(r.age)}
+                {r.decided ? ` · ${verdict.label.toLowerCase()} ${ageText(r.decided)}` : null}
               </span>
             </span>
           </Link>

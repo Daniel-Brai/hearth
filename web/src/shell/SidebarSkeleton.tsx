@@ -10,7 +10,6 @@ const COMMUNITY_ROWS = [
   { name: '70%', rooms: [] },
 ] as const;
 
-/** Holds the sidebar's place while the session and its first loads finish so no half filled data shows */
 export function SidebarSkeleton() {
   const brand = useAppState((state) => brandFor(state.instance));
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);

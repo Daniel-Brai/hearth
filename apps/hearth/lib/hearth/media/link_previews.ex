@@ -4,7 +4,7 @@ defmodule Hearth.Media.LinkPreviews do
   alias Hearth.Media.Command.BuildLinkPreview
   alias Hearth.Media.LinkPreview
 
-  # Each node keeps good previews a while so a busy chat fetches a link once, and never keeps failures
+  # Each node keeps good previews a while so a busy chat fetches a link once. Failures aren't kept
   @found_ms :timer.hours(6)
   @sweep_ms :timer.minutes(10)
   @max_entries 10_000
@@ -34,7 +34,7 @@ defmodule Hearth.Media.LinkPreviews do
     now = System.monotonic_time(:millisecond)
     :ets.select_delete(__MODULE__, [{{:_, :_, :"$1"}, [{:"=<", :"$1", now}], [true]}])
 
-    # Past the cap everything goes, which costs a refetch and never unbounded memory
+    # Past the cap everything goes since a refetch costs less than unbounded memory
     if :ets.info(__MODULE__, :size) > @max_entries, do: :ets.delete_all_objects(__MODULE__)
 
     Process.send_after(self(), :sweep, @sweep_ms)

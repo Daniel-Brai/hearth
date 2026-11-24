@@ -5,7 +5,11 @@ defmodule Hearth.Notifications.WebPush do
   alias JOSE.JWT
   alias Req.Response
 
-  @req_options Application.compile_env(:hearth, [__MODULE__, :req_options], [])
+  # Push services answer at once and never redirect
+  @req_options Keyword.merge(
+                 [redirect: false, retry: false, receive_timeout: 10_000],
+                 Application.compile_env(:hearth, [__MODULE__, :req_options], [])
+               )
 
   @type keys :: %{public: String.t(), private: String.t()}
 
@@ -95,7 +99,7 @@ defmodule Hearth.Notifications.WebPush do
         @req_options
       )
 
-    # Only the push service's host, since the endpoint itself identifies the device
+    # The endpoint path identifies the device so only the host is traced
     Common.span("web_push.send", %{host: URI.parse(endpoint).host}, fn ->
       request |> Req.request() |> handle_response()
     end)
@@ -119,7 +123,7 @@ defmodule Hearth.Notifications.WebPush do
     content_encryption_key = hkdf_expand(prk, "Content-Encoding: aes128gcm" <> <<0>>, 16)
     nonce = hkdf_expand(prk, "Content-Encoding: nonce" <> <<0>>, 12)
 
-    # A 0x02 byte marks the last record
+    # 0x02 marks the last record
     {cipher_text, cipher_tag} =
       :crypto.crypto_one_time_aead(
         :aes_128_gcm,
@@ -139,7 +143,7 @@ defmodule Hearth.Notifications.WebPush do
     do: {:error, :expired}
 
   defp handle_response({:ok, %Response{status: 413}}), do: {:error, :payload_too_large}
-  defp handle_response({:ok, %Response{} = response}), do: {:error, response}
+  defp handle_response({:ok, %Response{status: status}}), do: {:error, {:status, status}}
   defp handle_response({:error, _reason} = error), do: error
 
   # key_info = "WebPush: info" || 0x00 || ua_public || as_public
@@ -159,7 +163,7 @@ defmodule Hearth.Notifications.WebPush do
     |> :binary.part(0, length)
   end
 
-  # 86 byte header of salt 16 record size 4 key id length 1 and key id 65
+  # Header is salt (16), record size (4), key id length (1) and key id (65)
   defp build_encrypted_body(salt, as_public_key, cipher_text, cipher_tag) do
     record_size = max(byte_size(cipher_text) + byte_size(cipher_tag) + 1, 4096)
 

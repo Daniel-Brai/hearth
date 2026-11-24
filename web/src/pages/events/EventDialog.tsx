@@ -35,7 +35,7 @@ import { EventManageItems } from './EventManageItems';
 import { JoinButton, PlaceIcon } from './Place';
 import { useEventActions } from './use-event-actions';
 
-export type EventDialogProps = {
+type EventDialogProps = {
   readonly id: string;
   readonly onClose: () => void;
   readonly onEdit: (e: CommunityEvent) => void;

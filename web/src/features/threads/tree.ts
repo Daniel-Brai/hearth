@@ -47,6 +47,7 @@ export function buildForest<T extends Nestable>(
     const current = stack.pop()!;
 
     if (seen.has(current.node.item.id)) continue;
+
     seen.add(current.node.item.id);
     placed.push(current);
     current.node.direct = childrenOf.get(current.node.item.id)?.length ?? 0;
@@ -54,11 +55,11 @@ export function buildForest<T extends Nestable>(
     const nests = current.depth < maxDepth || !current.container;
     const container = nests ? current : current.container!;
     const depth = nests ? current.depth + 1 : current.depth;
-
     const answers = nests ? null : current.node.item;
 
     for (const child of childrenOf.get(current.node.item.id) ?? []) {
       const entry: Placed<T> = { node: newNode(child, answers), depth, container };
+
       container.node.children.push(entry.node);
       stack.push(entry);
     }
@@ -89,11 +90,9 @@ export function buildTree<T extends Nestable>(
   maxDepth: number,
   authorOf: (item: T) => string,
 ): TreeNode<T> {
-  const tree = buildForest([{ ...root, parent: null }, ...replies], maxDepth, authorOf).get(
-    root.id,
-  );
+  const forest = buildForest([{ ...root, parent: null }, ...replies], maxDepth, authorOf);
 
-  return tree ?? newNode(root);
+  return forest.get(root.id) ?? newNode(root);
 }
 
 function newNode<T>(item: T, answers: T | null = null): TreeNode<T> {

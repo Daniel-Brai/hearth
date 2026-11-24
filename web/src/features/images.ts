@@ -61,6 +61,7 @@ export async function resizeImage(
 
   if (!g) {
     bitmap.close();
+
     return { ok: false, error: { kind: 'unreadable' } };
   }
 

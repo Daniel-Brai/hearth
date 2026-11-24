@@ -94,7 +94,6 @@ function MemberActions({ post, view }: { readonly post: Post; readonly view: Pos
         </Button>
       ) : null}
 
-      {/* With none, the replies below already say there are none yet */}
       {post.replies.length ? (
         <span className="x-small subtle ms-auto">
           {plural(post.replies.length, 'reply', 'replies')}

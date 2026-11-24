@@ -42,6 +42,7 @@ export function TimePicker({ value, onChange, label }: TimePickerProps) {
 
   const toggle = () => {
     if (!open) setTyped('');
+
     setOpen(!open);
   };
 
@@ -52,6 +53,7 @@ export function TimePicker({ value, onChange, label }: TimePickerProps) {
 
   const onType = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
+
     e.preventDefault();
 
     if (parsed) pick(parsed);
@@ -60,6 +62,7 @@ export function TimePicker({ value, onChange, label }: TimePickerProps) {
 
   const onKey = (e: KeyboardEvent) => {
     if (e.key !== 'Escape') return;
+
     e.stopPropagation();
     e.preventDefault();
     close();

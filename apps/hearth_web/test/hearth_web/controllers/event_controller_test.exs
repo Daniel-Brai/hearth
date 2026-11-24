@@ -24,10 +24,7 @@ defmodule HearthWeb.EventControllerTest do
       assert conn |> get(~p"/api/events?community_id=#{private.id}") |> valid_response(404)
     end
 
-    test "returns 404 if invite only", %{
-      conn: conn,
-      owner: owner
-    } do
+    test "returns 404 if invite only", %{conn: conn, owner: owner} do
       community = TestUtils.create_random_community!(owner, visibility: :invite_only)
 
       assert conn
@@ -139,11 +136,7 @@ defmodule HearthWeb.EventControllerTest do
              |> valid_response(404)
     end
 
-    test "fails if not host or allowed", %{
-      conn: conn,
-      member: member,
-      event: event
-    } do
+    test "fails if not host or allowed", %{conn: conn, member: member, event: event} do
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(member)

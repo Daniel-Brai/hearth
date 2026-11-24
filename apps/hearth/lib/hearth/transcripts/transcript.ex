@@ -68,14 +68,15 @@ defmodule Hearth.Transcripts.Transcript do
   # Only writes if the row is still at the status it was read with
   @spec advance(t(), atom(), keyword()) :: {:ok, t()} | {:error, :invalid_transition | :stale}
   def advance(%__MODULE__{id: id, status: status} = transcript, event, changes \\ []) do
-    with {:ok, next} <- TranscriptLifecycle.next(transcript, event) do
-      query = from(t in __MODULE__, where: t.id == ^id and t.status == ^status, select: t)
-      changes = [status: next, updated_at: DateTime.utc_now()] ++ changes
+    query = from(t in __MODULE__, where: t.id == ^id and t.status == ^status, select: t)
 
-      case Repo.update_all(query, set: changes) do
-        {1, [transcript]} -> {:ok, transcript}
-        {0, []} -> {:error, :stale}
-      end
+    with {:ok, next} <- TranscriptLifecycle.next(transcript, event),
+         changes = [status: next, updated_at: DateTime.utc_now()] ++ changes,
+         {1, [transcript]} <- Repo.update_all(query, set: changes) do
+      {:ok, transcript}
+    else
+      {0, []} -> {:error, :stale}
+      error -> error
     end
   end
 end

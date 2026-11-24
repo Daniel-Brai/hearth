@@ -1,13 +1,14 @@
 defmodule Hearth.Media.Command.PutAttachments do
   alias Hearth.Accounts.User
   alias Hearth.Common
+  alias Hearth.Common.T
   alias Hearth.Media.Asset
   alias Hearth.Media.Attachment
   alias Hearth.Media.FileType
 
   @usable [:processing, :ready]
 
-  @spec execute(User.t(), Attachment.owner(), Common.T.id(), [Common.T.id()]) ::
+  @spec execute(User.t(), Attachment.owner(), T.id(), [T.id()]) ::
           :ok | {:error, :too_many_attachments | :invalid_attachment}
   def execute(%User{} = user, owner, id, media_ids) when is_list(media_ids) do
     media_ids = Enum.uniq(media_ids)

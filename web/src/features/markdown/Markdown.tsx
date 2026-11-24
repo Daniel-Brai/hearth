@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useRef } from 'react';
 
 import { useAppState, useStore } from '@/data/store';
-import { cn } from '@/design-system/index';
+import { cn } from '@/design-system';
 import type { Attachment } from '@/domain/types';
 import { useUi } from '@/runtime/ui-store';
 
 import { wireCarousels } from './carousel-block';
 import { lexMarkdown, markdownKey, renderInline, renderMarkdown } from './markdown';
-
-const joined = (text: string | readonly string[]) =>
-  Array.isArray(text) ? text.join('\n\n') : String(text);
+import { markdownSource } from './plain-text';
 
 function useMarkdownKey(text: string | readonly string[], community: string | null) {
   const refs = useMemo(() => {
-    const { mentions, refs: rooms } = lexMarkdown(joined(text));
+    const { mentions, refs: rooms } = lexMarkdown(markdownSource(text));
+
     return { mentions, refs: rooms };
   }, [text]);
 
@@ -40,6 +39,7 @@ export function Markdown({
 
   const html = useMemo(() => {
     const state = store.get();
+
     return renderMarkdown(
       text,
       files ? { state, community, files, everyone } : { state, community, everyone },
@@ -50,6 +50,7 @@ export function Markdown({
 
   useEffect(() => {
     const el = root.current;
+
     if (!el?.querySelector('code[data-code]:not(.hljs)')) return;
 
     void import('./highlight').then(({ highlightIn }) => highlightIn(el));
@@ -57,6 +58,7 @@ export function Markdown({
 
   useEffect(() => {
     const el = root.current;
+
     if (!el?.querySelector('[data-carousel]')) return;
 
     return wireCarousels(el, openImage);

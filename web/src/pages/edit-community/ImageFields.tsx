@@ -1,4 +1,4 @@
-import { Button, Icon, Img } from '@/design-system';
+import { Button, cn, Icon, Img } from '@/design-system';
 import { tintStyle } from '@/domain/format';
 import { resizeErrorText, resizeImage } from '@/features/images';
 import { useUi } from '@/runtime/ui-store';
@@ -28,7 +28,7 @@ export function ImageFields({ draft }: { readonly draft: CommunityDraft }) {
     <>
       <div className="banner-field">
         <div
-          className={banner ? 'banner-preview' : 'banner-preview is-default'}
+          className={cn('banner-preview', !banner && 'is-default')}
           style={banner ? { backgroundImage: `url(${banner})` } : tintStyle(hue)}
         />
 
@@ -52,9 +52,7 @@ export function ImageFields({ draft }: { readonly draft: CommunityDraft }) {
         </div>
 
         <label
-          className={
-            logo ? 'logo-drop logo-drop--overlap has-image' : 'logo-drop logo-drop--overlap'
-          }
+          className={cn('logo-drop logo-drop--overlap', logo && 'has-image')}
           style={tintStyle(hue)}
           data-tip="Square works best"
         >

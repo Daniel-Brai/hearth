@@ -4,7 +4,7 @@ import { useLocation, useNavigationType } from 'react-router';
 import { useHydrated } from '@/app/request-context';
 import { peekVisit, recordVisit, type TrailEntry } from '@/runtime/trail';
 
-/** The trail lives in session storage, which the server cannot read */
+// Session storage is out of the server's reach
 export function useTrail(label: string): TrailEntry | null {
   const hydrated = useHydrated();
   const { pathname, search } = useLocation();

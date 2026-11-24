@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { CommunityMark, Icon, Link } from '@/design-system';
+import { cn, CommunityMark, Icon, Link } from '@/design-system';
 import { fmt, noun, plural } from '@/domain/format';
 import { routes } from '@/runtime/routes';
 
@@ -69,7 +69,7 @@ export function ProfileCommunities({
 
 function CommunityCard({ membership: m }: { readonly membership: Membership }) {
   return (
-    <Link className={m.shared ? 'comm-card is-shared' : 'comm-card'} to={routes.community(m.cid)}>
+    <Link className={cn('comm-card', m.shared && 'is-shared')} to={routes.community(m.cid)}>
       <CommunityMark hue={m.hue} letter={m.letter} logo={m.logo} size="2.5rem" />
       <span className="comm-card__body">
         <strong className="truncate">{m.name}</strong>

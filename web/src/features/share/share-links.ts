@@ -19,7 +19,9 @@ export function shareUrl(path: string, origin: string): string {
 
 const withQuery = (base: string, params: Record<string, string>) => {
   const url = new URL(base);
+
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+
   return url.href;
 };
 

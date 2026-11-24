@@ -18,6 +18,7 @@ const nameOf = (id: string) => shortName(getStore().get(), id);
 function joinMessage(open: boolean, asSpeaker: boolean): string {
   if (open) return "You're in, muted. Unmute to talk.";
   if (asSpeaker) return "You're on stage, muted";
+
   return 'You joined as a listener';
 }
 
@@ -140,6 +141,7 @@ export function useVoiceActions(cid: string, rid: string) {
     const raising = !getRoomSession(key).handUp;
 
     feel(TAP);
+
     const r = await gateway.voice.raiseHand(raising);
 
     if (!r.ok) flash(r.error);
@@ -148,7 +150,9 @@ export function useVoiceActions(cid: string, rid: string) {
 
   const moveToListeners = async () => {
     await stopSharing(true);
+
     const r = await gateway.voice.setRole('listener');
+
     flash(r.ok ? 'You moved back to listening' : r.error);
   };
 
@@ -159,6 +163,7 @@ export function useVoiceActions(cid: string, rid: string) {
 
   const invite = async (id: string) => {
     const r = await gateway.voice.invite(id);
+
     flash(r.ok ? nameOf(id) + ' is now speaking' : r.error);
   };
 
@@ -173,11 +178,13 @@ export function useVoiceActions(cid: string, rid: string) {
 
   const demote = async (id: string) => {
     const r = await gateway.voice.demote(id);
+
     flash(r.ok ? nameOf(id) + ' moved to listeners' : r.error);
   };
 
   const disconnect = async (id: string) => {
     const r = await gateway.voice.disconnect(id);
+
     flash(r.ok ? nameOf(id) + ' was disconnected' : r.error);
   };
 
@@ -254,29 +261,29 @@ export function useVoiceActions(cid: string, rid: string) {
     });
   };
 
+  const end = async () => {
+    const postId = view.postId;
+
+    await stopSharing(true);
+
+    const r = await gateway.voice.end(cid, rid);
+
+    if (!r.ok) {
+      flash(r.error);
+      return;
+    }
+
+    sfx('end');
+    flash('Room ended');
+    void navigate(postId ? routes.post(cid, postId) : routes.community(cid));
+  };
+
   const endRoom = () =>
     ask({
       title: 'End the room for everyone?',
       body: `Listeners will be disconnected. ${keptForLater(view.transcribed, view.recorded, 'to the post')}`.trim(),
       action: 'End room',
-      onConfirm: () => {
-        void (async () => {
-          const postId = view.postId;
-
-          await stopSharing(true);
-
-          const r = await gateway.voice.end(cid, rid);
-
-          if (!r.ok) {
-            flash(r.error);
-            return;
-          }
-
-          sfx('end');
-          flash('Room ended');
-          void navigate(postId ? routes.post(cid, postId) : routes.community(cid));
-        })();
-      },
+      onConfirm: () => void end(),
     });
 
   const toggleCaptions = () => {

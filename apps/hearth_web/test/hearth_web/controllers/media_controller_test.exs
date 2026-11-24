@@ -15,8 +15,7 @@ defmodule HearthWeb.MediaControllerTest do
   setup do
     user = TestUtils.register_random_user!()
 
-    media =
-      TestUtils.upload_random_file!(user, :pdf)
+    media = TestUtils.upload_random_file!(user, :pdf)
 
     {:ok, binding()}
   end
@@ -66,12 +65,6 @@ defmodule HearthWeb.MediaControllerTest do
   end
 
   describe "unfurl" do
-    setup {Req.Test, :set_req_test_from_context}
-
-    setup do
-      {:ok, user: TestUtils.register_random_user!()}
-    end
-
     test "returns 401 without signing in", %{conn: conn} do
       assert conn |> get(~p"/api/unfurls?url=https://example.com") |> valid_response(401)
     end
@@ -105,13 +98,6 @@ defmodule HearthWeb.MediaControllerTest do
   end
 
   describe "upload" do
-    setup do
-      user = TestUtils.register_random_user!()
-      png = TestUtils.random_file!()
-
-      {:ok, binding()}
-    end
-
     test "fails without signing in", %{conn: conn} do
       body = :png |> TestUtils.random_upload_params() |> Map.delete(:idempotency_key)
 
@@ -200,13 +186,6 @@ defmodule HearthWeb.MediaControllerTest do
   end
 
   describe "sign_upload_parts" do
-    setup do
-      user = TestUtils.register_random_user!()
-      png = TestUtils.random_file!()
-
-      {:ok, binding()}
-    end
-
     test "returns 404 for someone else's upload", %{conn: conn, user: user} do
       owner = TestUtils.register_random_user!()
       params = TestUtils.random_upload_params()
@@ -250,10 +229,7 @@ defmodule HearthWeb.MediaControllerTest do
 
   describe "complete_upload" do
     setup do
-      user = TestUtils.register_random_user!()
-      png = TestUtils.random_file!()
-
-      {:ok, binding()}
+      {:ok, png: TestUtils.random_file!()}
     end
 
     test "returns 404 if missing", %{conn: conn, user: user} do

@@ -38,7 +38,7 @@ defmodule HearthWeb.MessageJSON do
   @spec serialize(map(), map()) :: map()
   def serialize(message, %{authors: authors, attachments: attachments} = assigns) do
     deleted = message.deleted_at != nil
-    # Removed by a moderator reads as a marker, like a deleted one
+    # Removed reads like deleted
     hidden = deleted or message.status == :removed
 
     message
@@ -64,7 +64,6 @@ defmodule HearthWeb.MessageJSON do
     end
   end
 
-  # Views that don't load reactions, such as a new message, have none
   defp reactions(assigns, message),
     do: assigns |> Map.get(:reactions, %{}) |> Map.get(message.id, [])
 

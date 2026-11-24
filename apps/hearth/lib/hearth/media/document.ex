@@ -17,16 +17,13 @@ defmodule Hearth.Media.Document do
 
   def check(path, type) when is_map_key(@office, type) do
     main = Map.fetch!(@office, type)
+    main? = &match?({:zip_file, ^main, _info, _comment, _at, _size}, &1)
 
-    archive = String.to_charlist(path)
-
-    case :zip.list_dir(archive) do
-      {:ok, entries} ->
-        found? = Enum.any?(entries, &match?({:zip_file, ^main, _info, _comment, _at, _size}, &1))
-        if found?, do: :ok, else: {:error, :content_mismatch}
-
-      {:error, _reason} ->
-        {:error, :content_mismatch}
+    with {:ok, entries} <- path |> String.to_charlist() |> :zip.list_dir(),
+         true <- Enum.any?(entries, main?) do
+      :ok
+    else
+      _missing -> {:error, :content_mismatch}
     end
   end
 

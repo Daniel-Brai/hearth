@@ -162,7 +162,7 @@ function reduceSession(s: RoomSession, a: SessionAction): RoomSession {
     case 'self-talking':
       return { ...s, selfTalking: a.talking };
 
-    // Only the latest lines are kept, so a long room never grows the list without end
+    // Only the latest lines are kept so a long room never grows the list without end
     case 'caption':
       return { ...s, captions: [...s.captions, a.caption].slice(-CAPTIONS_KEPT) };
 

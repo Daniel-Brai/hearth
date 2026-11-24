@@ -17,7 +17,7 @@ defmodule Hearth.Media.Listener.Accounts do
     {:ok, nil}
   end
 
-  # Every node hears the event, and the job's uniqueness keeps it to one delete
+  # Every node hears the event and the job's uniqueness keeps it to one delete
   @impl GenServer
   def handle_info(%AvatarChanged{previous_avatar_id: media_id}, state) when is_binary(media_id) do
     {:ok, _job} = %{media_id: media_id} |> DeleteMedia.new() |> Oban.insert()

@@ -511,7 +511,7 @@ describe('load.post', () => {
     const { gateway: g, store } = gateway();
 
     await g.session.verifyCode('ada@example.com', '123456');
-    // The events screen learns communities from the list, which carries no kinds
+    // The events screen learns communities from the list that carries no kinds
     await g.load.events(null);
     expect(store.get().communities['gardeners']?.kinds).toEqual([]);
 

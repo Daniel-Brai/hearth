@@ -54,10 +54,6 @@ defmodule HearthWeb.NotificationControllerTest do
   end
 
   describe "subscribe_push" do
-    setup do
-      {:ok, user: TestUtils.register_random_user!()}
-    end
-
     test "fails for an address that isn't https", %{conn: conn, user: user} do
       body = TestUtils.random_push_sub_params("http://push.example.com/1")
 
@@ -68,6 +64,18 @@ defmodule HearthWeb.NotificationControllerTest do
                |> valid_response(422)
 
       assert ["must be an https address"] = errors["endpoint"]
+    end
+
+    test "fails for an address outside the push services", %{conn: conn, user: user} do
+      body = TestUtils.random_push_sub_params("https://10.0.0.5/admin")
+
+      assert %{"errors" => errors} =
+               conn
+               |> auth_conn(user)
+               |> post(~p"/api/notifications/push-subscriptions", body)
+               |> valid_response(422)
+
+      assert ["must be a browser push service"] = errors["endpoint"]
     end
 
     test "saves the device", %{conn: conn, user: user} do
@@ -81,10 +89,6 @@ defmodule HearthWeb.NotificationControllerTest do
   end
 
   describe "unsubscribe_push" do
-    setup do
-      {:ok, user: TestUtils.register_random_user!()}
-    end
-
     test "forgets the device", %{conn: conn, user: user} do
       %{endpoint: endpoint} = TestUtils.link_random_push_sub!(user)
 

@@ -1,5 +1,5 @@
 defmodule Hearth.Voice.Drain do
-  # Sessions still live after the drain limit end as lost, and their people rejoin on another node
+  # Sessions still live after the drain limit end as lost and their people rejoin on another node
 
   use GenServer
 
@@ -40,17 +40,12 @@ defmodule Hearth.Voice.Drain do
   defp wait(deadline) do
     lives = DynamicSupervisor.which_children(Hearth.Voice.LiveSupervisor)
 
-    cond do
-      lives == [] ->
-        :ok
-
-      System.monotonic_time(:millisecond) >= deadline ->
-        for {_id, pid, _type, _modules} <- lives, is_pid(pid), do: Live.lose(pid)
-        :ok
-
-      true ->
-        Process.sleep(@check_every)
-        wait(deadline)
+    if lives == [] or System.monotonic_time(:millisecond) >= deadline do
+      for {_id, pid, _type, _modules} <- lives, is_pid(pid), do: Live.lose(pid)
+      :ok
+    else
+      Process.sleep(@check_every)
+      wait(deadline)
     end
   end
 

@@ -90,7 +90,6 @@ export function RoomSettingsPage() {
   if (!cid || !room || !exists) return <ErrorPage code={404} />;
   if (!allowed) return <ErrorPage code={403} forbidden="rooms" />;
 
-  // Keyed by room so opening another starts a fresh form
   return <RoomSettingsForm key={`${cid}/${room}`} cid={cid} room={room} />;
 }
 
@@ -102,19 +101,20 @@ function RoomSettingsForm({ cid, room }: { readonly cid: string; readonly room: 
   const key = `${cid}/${room}`;
 
   const view = useAppState((state) => {
+    const c = community(state, cid);
     const s = roomSettings(state, key);
     const access = soundAccess(state, key);
 
     return {
-      communityName: community(state, cid)?.name ?? null,
+      communityName: c?.name ?? null,
       communityLevel: modLevel(state, cid),
       level: modLevel(state, cid, room),
       topic: s.topic,
       previews: s.previews,
       sounds: s.sounds,
       accessText: access.ok ? null : access.reason + '.',
-      roomCount: community(state, cid)?.rooms.length ?? 0,
-      group: community(state, cid)?.rooms.find((r) => r.id === room)?.group ?? null,
+      roomCount: c?.rooms.length ?? 0,
+      group: c?.rooms.find((r) => r.id === room)?.group ?? null,
     };
   });
 
@@ -145,6 +145,7 @@ function RoomSettingsForm({ cid, room }: { readonly cid: string; readonly room: 
 
   const changeName = (value: string) => {
     const base = slugify(value.replaceAll('#', ''));
+
     setName(base && (value.endsWith('-') || value.endsWith(' ')) ? base + '-' : base);
   };
 

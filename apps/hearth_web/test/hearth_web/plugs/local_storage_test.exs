@@ -35,6 +35,23 @@ defmodule HearthWeb.Plugs.LocalStorageTest do
       assert {:error, :not_found} = Storage.head(key)
     end
 
+    test "fails for more bytes than were signed", %{conn: conn, key: key} do
+      {:ok, %{url: url}} = Storage.put_url(key, %{content_type: "video/mp4", size: 2})
+
+      conn = conn |> put_req_header("content-type", "video/mp4") |> put(url, "hello")
+
+      assert response(conn, 400) == "size_mismatch"
+    end
+
+    test "fails for a signature sent as a list", %{conn: conn, key: key} do
+      {:ok, %{url: url}} = Storage.put_url(key, %{content_type: "video/mp4", size: 5})
+      listed = String.replace(url, "sig=", "sig[]=")
+
+      conn = conn |> put_req_header("content-type", "video/mp4") |> put(listed, "hello")
+
+      assert response(conn, 403) =~ "isn't valid"
+    end
+
     test "upload", %{conn: conn, key: key} do
       {:ok, %{url: url}} = Storage.put_url(key, %{content_type: "video/mp4", size: 5})
 

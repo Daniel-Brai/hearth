@@ -6,10 +6,10 @@ import { ok, type Result } from '@/data/gateway';
 import { useAppState } from '@/data/store';
 import { cn, EmptyState, Icon, Measure, Select, Skeleton } from '@/design-system';
 import { markMatches, searchWords } from '@/domain/search';
-import { joinedCids } from '@/domain/selectors';
 import type { SearchHit } from '@/domain/types';
 import { ScrollMore } from '@/features/paging/ScrollMore';
 import { PostRow } from '@/pages/shared/PostRow';
+import { useCommunityFilter } from '@/pages/shared/use-community-filter';
 import { PageHeader } from '@/shell/PageHeader';
 
 import './SearchPage.css';
@@ -54,6 +54,7 @@ function SearchScreen() {
 
     void gateway.posts.search(terms, cid).then((r) => {
       if (!current) return;
+
       setFound(
         r.ok ? { key: asking, ok: true, ...r.value } : { key: asking, ok: false, error: r.error },
       );
@@ -136,16 +137,7 @@ function SearchBar({
   readonly onText: (value: string) => void;
   readonly onCommunity: (cid: string) => void;
 }) {
-  const cids = useAppState(joinedCids);
-
-  const names = useAppState((state) =>
-    joinedCids(state).map((c) => state.communities[c]?.name ?? c),
-  );
-
-  const options = [
-    { value: 'all', label: 'All communities' },
-    ...cids.map((c, i) => ({ value: c, label: names[i] ?? c })),
-  ];
+  const options = useCommunityFilter();
 
   return (
     <div className="search-bar">
@@ -190,7 +182,7 @@ function SearchResults({
   readonly stale: boolean;
   readonly more: () => Promise<Result>;
 }) {
-  if (!words.length)
+  if (!words.length) {
     return (
       <EmptyState
         art="search"
@@ -198,13 +190,14 @@ function SearchResults({
         text="Find posts and replies in your communities."
       />
     );
+  }
 
   // Earlier results stay while the next search runs so only the very first one shows shapes
   if (!found) return <Skeleton kind="feed" />;
 
   if (!found.ok) return <EmptyState art="broken" title="Search isn't working" text={found.error} />;
 
-  if (!found.hits.length)
+  if (!found.hits.length) {
     return (
       <EmptyState
         art="search"
@@ -212,6 +205,7 @@ function SearchResults({
         text="Try fewer words, or the start of a word you remember."
       />
     );
+  }
 
   return (
     <section

@@ -71,10 +71,9 @@ defmodule Hearth.NotificationsTest do
     end
 
     test "fails if keys are missing" do
-      assert {:error, changeset} =
-               Notifications.link_push_sub(TestUtils.register_random_user!(), %{
-                 endpoint: Internet.url()
-               })
+      user = TestUtils.register_random_user!()
+
+      assert {:error, changeset} = Notifications.link_push_sub(user, %{endpoint: Internet.url()})
 
       assert %{p256dh: ["can't be blank"], auth: ["can't be blank"]} = errors_on(changeset)
     end

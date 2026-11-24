@@ -69,6 +69,7 @@ defmodule Hearth.Chat do
   alias Hearth.Repo.Page
 
   @topic "chat"
+  @pinnable ~w[text action poll]a
 
   @type place :: Room.t() | Conversation.t()
 
@@ -78,6 +79,19 @@ defmodule Hearth.Chat do
           voters: non_neg_integer(),
           mine: [T.id()]
         }
+
+  @type room_unread :: %{
+          room_id: T.id(),
+          community_id: T.id(),
+          count: pos_integer()
+        }
+
+  @type unread_counts :: %{
+          rooms: [room_unread()],
+          conversations: %{T.id() => pos_integer()}
+        }
+
+  @type promoted_post :: %{:id => T.id(), :title => String.t(), optional(atom()) => any()}
 
   @spec subscribe_to_pubsub() :: :ok
   def subscribe_to_pubsub, do: PubSub.subscribe(@topic)
@@ -153,7 +167,7 @@ defmodule Hearth.Chat do
          :ok <- may_vote(user, poll),
          :ok <- valid_choice(poll, option_ids),
          {:ok, _picked} <- PollVote.replace(poll.id, user.id, option_ids) do
-      updated(poll)
+      poll_updated(poll)
       {:ok, poll_view(user, poll)}
     end
   end
@@ -171,7 +185,7 @@ defmodule Hearth.Chat do
   @spec expire_poll(Poll.t()) :: {:ok, Poll.t()} | {:error, Changeset.t()}
   def expire_poll(%Poll{} = poll) do
     with {:ok, poll} <- Poll.close(poll) do
-      updated(poll)
+      poll_updated(poll)
       {:ok, poll}
     end
   end
@@ -214,7 +228,7 @@ defmodule Hearth.Chat do
     scheduled_changed(scheduled)
   end
 
-  # Sent as its author and checked again, since they may have lost access while it waited
+  # Sent as its author and checked again since they may have lost access while it waited
   @spec send_scheduled(ScheduledMessage.t()) ::
           {:ok, Message.t()} | {:error, atom() | Changeset.t()}
   def send_scheduled(%ScheduledMessage{} = scheduled) do
@@ -239,16 +253,12 @@ defmodule Hearth.Chat do
   def list_messages(%User{} = user, place, opts \\ []) when is_list(opts) do
     {parent, paging} = Keyword.pop(opts, :parent)
 
-    case may_read(user, place) do
-      :ok ->
-        paging
-        |> Keyword.merge(where_in(place))
-        |> Keyword.put(:reply_to_id, get_in(parent.id))
-        |> Keyword.put(:visible_to, viewing(user, place))
-        |> Message.paginate()
-
-      error ->
-        error
+    with :ok <- may_read(user, place) do
+      paging
+      |> Keyword.merge(where_in(place))
+      |> Keyword.put(:reply_to_id, get_in(parent.id))
+      |> Keyword.put(:visible_to, viewing(user, place))
+      |> Message.paginate()
     end
   end
 
@@ -279,13 +289,7 @@ defmodule Hearth.Chat do
   @spec delete_message(User.t(), Message.t()) ::
           {:ok, Message.t()} | {:error, :forbidden | Changeset.t()}
   def delete_message(%User{id: id}, %Message{author_id: id} = message) do
-    result =
-      case message.child_count do
-        0 -> DeleteMessage.execute(message)
-        _answered -> Message.delete(message)
-      end
-
-    with {:ok, message} <- result do
+    with {:ok, message} <- remove(message) do
       unpinned(message)
 
       broadcast(%MessageRemoved{
@@ -341,32 +345,13 @@ defmodule Hearth.Chat do
     end
   end
 
-  @type room_unread :: %{
-          room_id: T.id(),
-          community_id: T.id(),
-          count: pos_integer()
-        }
-
-  @type unread_counts :: %{
-          rooms: [room_unread()],
-          conversations: %{T.id() => pos_integer()}
-        }
-
   @spec unread_counts(User.t()) :: unread_counts()
   def unread_counts(%User{} = user) do
     joined = IAM.joined_at(user)
     rooms = joined |> Map.keys() |> Communities.list_visible_rooms(:text, user)
     counts = Message.unread_in_rooms(user.id, Map.new(rooms, &{&1.id, joined[&1.community_id]}))
 
-    %{
-      rooms:
-        for(
-          room <- rooms,
-          count = counts[room.id],
-          do: %{room_id: room.id, community_id: room.community_id, count: count}
-        ),
-      conversations: Message.unread_in_conversations(user.id)
-    }
+    %{rooms: unread_rooms(rooms, counts), conversations: Message.unread_in_conversations(user.id)}
   end
 
   @spec list_reactions(User.t(), [Message.t()]) :: %{T.id() => [Reaction.summary()]}
@@ -380,11 +365,12 @@ defmodule Hearth.Chat do
   def start_direct(%User{} = user, %User{} = other) do
     key = [user.id, other.id] |> Enum.sort() |> Enum.join(":")
 
-    with :ok <- share_community(user, [other]) do
-      case Conversation.direct(key) do
-        nil -> StartConversation.execute(user, [other], kind: :direct, direct_key: key)
-        %Conversation{} = conversation -> {:ok, conversation}
-      end
+    with :ok <- share_community(user, [other]),
+         nil <- Conversation.direct(key) do
+      StartConversation.execute(user, [other], kind: :direct, direct_key: key)
+    else
+      %Conversation{} = conversation -> {:ok, conversation}
+      error -> error
     end
   end
 
@@ -415,8 +401,6 @@ defmodule Hearth.Chat do
     end
   end
 
-  @pinnable ~w[text action poll]a
-
   @spec list_pins(User.t(), Room.t()) :: {:ok, [Message.t()]} | {:error, :forbidden | :not_found}
   def list_pins(%User{} = user, %Room{} = room) do
     with :ok <- may_read(user, room) do
@@ -438,7 +422,8 @@ defmodule Hearth.Chat do
          :ok <- pinnable(message),
          {:ok, notice} <- PinMessage.execute(user, room, message) do
       broadcast(%MessagePinsChanged{room_id: room.id})
-      announce_pin(notice, room)
+      if notice, do: announce(notice, room, nil)
+      :ok
     end
   end
 
@@ -466,11 +451,7 @@ defmodule Hearth.Chat do
   end
 
   # The room's note pointing at the post its messages became
-  @spec note_promoted(
-          User.t(),
-          Room.t(),
-          %{:id => T.id(), :title => String.t(), optional(atom()) => any()}
-        ) ::
+  @spec note_promoted(User.t(), Room.t(), promoted_post()) ::
           {:ok, Message.t()} | {:error, Changeset.t()}
   def note_promoted(%User{} = user, %Room{} = room, %{id: post_id, title: title}) do
     message = %Message{room_id: room.id, author_id: user.id, kind: :promoted, post_id: post_id}
@@ -506,14 +487,14 @@ defmodule Hearth.Chat do
   @spec can_write?(User.t(), place()) :: boolean()
   def can_write?(%User{} = user, place), do: may_write(user, place) == :ok
 
-  # @all reaches everyone only from someone who holds mention.all there, otherwise it is plain text
+  # @all reaches everyone only from someone who holds mention.all there
   @spec mentions_all?(User.t(), Room.t(), String.t()) :: boolean()
   def mentions_all?(%User{} = author, %Room{} = room, body) when is_binary(body) do
     "all" in Common.mentions(body) and
       IAM.can?(author, :all, %{type: :mention, community_id: room.community_id})
   end
 
-  # Authors load in one query and each room once, so a page of messages never asks per message
+  # Authors load in one query and each room once rather than once per message
   @spec mentions_all([Message.t()]) :: MapSet.t(T.id())
   def mentions_all(messages) when is_list(messages) do
     said = Enum.filter(messages, &said_all?/1)
@@ -526,25 +507,30 @@ defmodule Hearth.Chat do
   end
 
   @spec list_conversations(User.t()) :: [Conversation.t()]
-  def list_conversations(%User{id: id}) do
-    Conversation.for_member(id)
-  end
+  def list_conversations(%User{id: id}), do: Conversation.for_member(id)
 
   @spec mark_read(User.t(), Message.t()) :: :ok | {:error, :forbidden}
   def mark_read(%User{} = user, %Message{} = message) do
     with {:ok, place} <- place_of(message),
          :ok <- may_read(user, place) do
-      key =
-        case place do
-          %Room{id: id} -> {:room, user.id, id}
-          %Conversation{id: id} -> {:conversation, user.id, id}
-        end
-
-      Buffer.put_newer(ReadMarkers, key, message.id, ReadMarkers.version(message.id))
+      Buffer.put_newer(
+        ReadMarkers,
+        marker_key(user, place),
+        message.id,
+        ReadMarkers.version(message.id)
+      )
     end
   end
 
-  # Held messages show to their author, and in a room to whoever can remove content
+  defp unread_rooms(rooms, counts) do
+    rooms
+    |> Enum.filter(&counts[&1.id])
+    |> Enum.map(&%{room_id: &1.id, community_id: &1.community_id, count: counts[&1.id]})
+  end
+
+  defp marker_key(user, %Room{id: id}), do: {:room, user.id, id}
+  defp marker_key(user, %Conversation{id: id}), do: {:conversation, user.id, id}
+
   defp said_all?(%Message{room_id: room_id, body: body})
        when is_binary(room_id) and is_binary(body),
        do: "all" in Common.mentions(body)
@@ -563,6 +549,7 @@ defmodule Hearth.Chat do
 
   defp allowed_all?(%Message{}, _author, _room), do: false
 
+  # Held messages show to their author and in a room to whoever can remove content
   defp viewing(user, %Room{community_id: community_id}) do
     case IAM.can?(user, :remove, %{type: :content, community_id: community_id}) do
       true -> :all
@@ -594,10 +581,10 @@ defmodule Hearth.Chat do
   defp may_write(user, %Conversation{} = conversation), do: may_read(user, conversation)
 
   defp may_read(user, %Room{} = room) do
-    if Communities.room_visible?(user, room) do
-      :ok
-    else
-      refuse_room(user, room.community_id)
+    cond do
+      Communities.room_visible?(user, room) -> :ok
+      IAM.member?(user, room.community_id) -> {:error, :not_found}
+      true -> Communities.refusal(user, room.community_id)
     end
   end
 
@@ -605,14 +592,6 @@ defmodule Hearth.Chat do
     case ConversationMember.member?(id, user_id) do
       true -> :ok
       false -> {:error, :forbidden}
-    end
-  end
-
-  defp refuse_room(user, community_id) do
-    if IAM.member?(user, community_id) do
-      {:error, :not_found}
-    else
-      Communities.refusal(user, community_id)
     end
   end
 
@@ -738,11 +717,12 @@ defmodule Hearth.Chat do
 
   defp may_vote(user, %Poll{room_id: room_id}) do
     with {:ok, room} <- Communities.get_room(id: room_id),
-         :ok <- may_read(user, room) do
-      case IAM.member?(user, room.community_id) do
-        true -> :ok
-        false -> {:error, :forbidden}
-      end
+         :ok <- may_read(user, room),
+         true <- IAM.member?(user, room.community_id) do
+      :ok
+    else
+      false -> {:error, :forbidden}
+      error -> error
     end
   end
 
@@ -766,16 +746,17 @@ defmodule Hearth.Chat do
   end
 
   defp moderates(user, room_id) do
-    with {:ok, room} <- Communities.get_room(id: room_id) do
-      case IAM.can?(user, :remove, %{type: :content, community_id: room.community_id}) do
-        true -> :ok
-        false -> {:error, :forbidden}
-      end
+    with {:ok, room} <- Communities.get_room(id: room_id),
+         true <- IAM.can?(user, :remove, %{type: :content, community_id: room.community_id}) do
+      :ok
+    else
+      false -> {:error, :forbidden}
+      error -> error
     end
   end
 
-  # Totals only, so a room sees the count move without learning who voted
-  defp updated(%Poll{} = poll) do
+  # Totals only so a room sees the count move without learning who voted
+  defp poll_updated(%Poll{} = poll) do
     counts = PollVote.counts([poll.id])
 
     broadcast(%PollUpdated{
@@ -788,12 +769,8 @@ defmodule Hearth.Chat do
     })
   end
 
-  defp announce_pin(nil, _room), do: :ok
-
-  defp announce_pin(%Message{} = notice, room) do
-    announce(notice, room, nil)
-    :ok
-  end
+  defp remove(%Message{child_count: 0} = message), do: DeleteMessage.execute(message)
+  defp remove(%Message{} = message), do: Message.delete(message)
 
   defp unpinned(%Message{room_id: nil}), do: :ok
 

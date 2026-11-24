@@ -15,7 +15,9 @@ export function useIdle(ms: number) {
 
   const wake = () => {
     setIdle(false);
+
     if (timer.current !== null) window.clearTimeout(timer.current);
+
     timer.current = window.setTimeout(() => setIdle(true), ms);
   };
 
@@ -34,7 +36,7 @@ function bufferedEnd(video: HTMLVideoElement): number {
   return 0;
 }
 
-/** MediaRecorder files report an infinite duration until read to the end so one seek past the end fixes it and attach reads a cached file's metadata on mount */
+/** MediaRecorder files report an infinite duration until read to the end so one seek past the end fixes it */
 export function useMediaState(onTime: ((seconds: number) => void) | undefined) {
   const measuring = useRef(false);
 

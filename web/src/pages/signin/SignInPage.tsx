@@ -3,9 +3,9 @@ import { Navigate } from 'react-router';
 import { useAppState } from '@/data/store';
 import { CommunityMark } from '@/design-system';
 import { community } from '@/domain/selectors';
-import { AuthLogo } from '@/pages/signin/AuthLogo';
 import { PageMeta } from '@/shell/PageMeta';
 
+import { AuthLogo } from './AuthLogo';
 import { ProfileStep } from './ProfileStep';
 import { CodeStep, EmailStep } from './SignInSteps';
 import { useSignIn } from './use-sign-in';
@@ -18,6 +18,7 @@ export function SignInPage() {
 
   const inviteCommunity = useAppState((state) => {
     const c = invite ? community(state, invite.c) : null;
+
     return c ? { name: c.name, hue: c.hue, letter: c.letter, logo: c.logo } : null;
   });
 

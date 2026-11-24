@@ -17,14 +17,17 @@ const SEPARATORS = new Set(['Enter', ',', ' ', 'Tab', ';']);
 const problem = (bad: string[], unreachable: string[]) => {
   if (bad.length === 1) return `${bad[0]} doesn't look like an email. Remove it or fix the typo.`;
 
-  if (bad.length > 1)
+  if (bad.length > 1) {
     return `${bad.length} addresses don't look right. Remove them or fix the typos.`;
+  }
 
-  if (unreachable.length === 1)
+  if (unreachable.length === 1) {
     return `${unreachable[0]} can't receive email. Check the spelling after the @.`;
+  }
 
-  if (unreachable.length > 1)
+  if (unreachable.length > 1) {
     return `${unreachable.length} addresses can't receive email. Check the spelling after the @.`;
+  }
 
   return null;
 };

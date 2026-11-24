@@ -272,3 +272,129 @@ export function TemplatesShape() {
     </div>
   );
 }
+
+export function FeedShape() {
+  return (
+    <div className="grid gap-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="skel-card">
+          <div className="flex gap-2">
+            <span className="skel skel--pill" />
+            <span className="skel skel--pill" style={{ inlineSize: '5rem' }} />
+          </div>
+          <span className="skel skel--title" style={{ inlineSize: `${90 - i * 12}%` }} />
+          <span className="skel skel--line" />
+          <span className="skel skel--line" style={{ inlineSize: '70%' }} />
+          <div className="flex gap-2 items-center">
+            <span className="skel skel--avatar" />
+            <span className="skel skel--line" style={{ inlineSize: '9rem' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PostShape() {
+  return (
+    <div className="grid gap-3 justify-items-center" style={{ paddingBlock: '1rem' }}>
+      <span className="skel skel--pill" />
+      <span className="skel skel--title" style={{ inlineSize: '80%', blockSize: '2.2rem' }} />
+      <span className="skel skel--title" style={{ inlineSize: '55%', blockSize: '2.2rem' }} />
+      <div className="flex gap-2 items-center">
+        <span className="skel skel--avatar" />
+        <span className="skel skel--line" style={{ inlineSize: '8rem' }} />
+      </div>
+      <div className="grid gap-2" style={{ inlineSize: '100%', marginBlockStart: '1.5rem' }}>
+        <span className="skel skel--line" />
+        <span className="skel skel--line" />
+        <span className="skel skel--line" style={{ inlineSize: '85%' }} />
+        <span className="skel skel--block" />
+        <span className="skel skel--line" style={{ inlineSize: '60%' }} />
+      </div>
+    </div>
+  );
+}
+
+export function ComposeShape() {
+  return (
+    <div className="grid gap-4 justify-items-center" style={{ paddingBlock: '1rem' }}>
+      <span className="skel skel--pill" style={{ inlineSize: '12rem', blockSize: '2.2rem' }} />
+      <div className="flex flex-wrap gap-2 justify-center">
+        {[6, 5.5, 4.5, 5.5, 7.5, 4.5].map((w, i) => (
+          <span key={i} className="skel skel--pill" style={{ inlineSize: `${w}rem` }} />
+        ))}
+      </div>
+      <span className="skel skel--title" style={{ inlineSize: '70%', blockSize: '2.2rem' }} />
+      <span className="skel skel--pill" style={{ inlineSize: '11rem', blockSize: '2.4rem' }} />
+      <span className="skel skel--block" style={{ blockSize: '15rem' }} />
+      <span
+        className="skel skel--pill"
+        style={{ inlineSize: '12rem', blockSize: '2.6rem', justifySelf: 'end' }}
+      />
+    </div>
+  );
+}
+
+export function ChatShape() {
+  return (
+    <div
+      className="grid gap-4"
+      style={{
+        padding: '1rem var(--gutter-right) 1rem var(--gutter-left)',
+        alignContent: 'end',
+        blockSize: '100%',
+      }}
+    >
+      {[62, 40, 75, 30, 55].map((w, i) => (
+        <div key={i} className="flex gap-3">
+          <span className="skel skel--avatar" />
+          <div className="grid gap-2" style={{ flex: 1 }}>
+            <span className="skel skel--line" style={{ inlineSize: '7rem' }} />
+            <span className="skel skel--bubble" style={{ inlineSize: `${w}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function QueueShape() {
+  return (
+    <div className="grid gap-3">
+      {[1, 2].map((i) => (
+        <div key={i} className="skel-card">
+          <div className="flex gap-2 items-center">
+            <span className="skel skel--avatar" style={{ borderRadius: '28%' }} />
+            <span className="skel skel--line" style={{ inlineSize: '12rem' }} />
+          </div>
+          <span className="skel skel--block" style={{ blockSize: '3.5rem' }} />
+          <span className="skel skel--line" style={{ inlineSize: '60%' }} />
+          <div className="flex gap-2">
+            <span className="skel skel--btn" />
+            <span className="skel skel--btn" />
+            <span className="skel skel--btn" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ProfileShape() {
+  return (
+    <div className="grid gap-3 justify-items-center" style={{ paddingBlock: '1.5rem' }}>
+      <span
+        className="skel"
+        style={{ inlineSize: '6rem', blockSize: '6rem', borderRadius: '50%' }}
+      />
+      <span className="skel skel--title" style={{ inlineSize: '14rem', blockSize: '2rem' }} />
+      <span className="skel skel--line" style={{ inlineSize: '20rem', maxInlineSize: '80%' }} />
+      <div className="flex gap-4" style={{ marginBlockStart: '1rem' }}>
+        <span className="skel skel--btn" />
+        <span className="skel skel--btn" />
+        <span className="skel skel--btn" />
+      </div>
+    </div>
+  );
+}

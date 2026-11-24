@@ -20,7 +20,6 @@ export function ScheduledMessages({
 }) {
   const gateway = useGateway();
   const items = useAppState((state) => state.scheduled.filter((s) => s.key === chatKey));
-  const find = (id: string) => items.find((s) => s.id === id);
 
   return (
     <ScheduledNote
@@ -38,7 +37,7 @@ export function ScheduledMessages({
         sendNow: gateway.chat.sendNow,
         reschedule: (id, at) => gateway.chat.reschedule(id, at.toISOString()),
         edit: (id) => {
-          const item = find(id);
+          const item = items.find((s) => s.id === id);
           if (item) onEdit(item);
         },
         remove: gateway.chat.unschedule,

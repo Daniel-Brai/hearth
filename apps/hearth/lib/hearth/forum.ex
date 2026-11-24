@@ -69,6 +69,7 @@ defmodule Hearth.Forum do
   alias Hearth.Repo.Page
 
   @topic "forum"
+  @excerpt_length 160
 
   @spec subscribe_to_pubsub() :: :ok
   def subscribe_to_pubsub, do: PubSub.subscribe(@topic)
@@ -107,10 +108,8 @@ defmodule Hearth.Forum do
              | :invalid_attachment
              | Changeset.t()}
   def create_post(%User{} = user, %Community{} = community, %{} = params) do
-    kind_id = params[:kind_id]
-
     with :ok <- authorize(user, :create, :post, community.id),
-         {:ok, kind} <- fetch_kind(community.id, kind_id),
+         {:ok, kind} <- fetch_kind(community.id, params[:kind_id]),
          :ok <- may_use_kind(user, community.id, kind),
          {:ok, post} <- CreatePost.execute(user, community, params) do
       broadcast(%PostCreated{post_id: post.id, community_id: community.id, author_id: user.id})
@@ -157,7 +156,7 @@ defmodule Hearth.Forum do
     scheduled_changed(scheduled)
   end
 
-  # Posted as its author and checked again, since they may have lost access while it waited
+  # Posted as its author and checked again as they may have lost access while it waited
   @spec publish_scheduled(ScheduledPost.t()) :: {:ok, Post.t()} | {:error, atom() | Changeset.t()}
   def publish_scheduled(%ScheduledPost{} = scheduled) do
     params = Map.take(scheduled, ~w[kind_id title body attachment_ids]a)
@@ -176,20 +175,18 @@ defmodule Hearth.Forum do
     end
   end
 
-  # The first message becomes the post and the rest its replies, each under the person who wrote it.
-  # A private room's messages stay in it, since a post shows to everyone
+  # The first message becomes the post and the rest its replies under their own authors
+  # A private room's messages stay in it as a post shows to everyone
   @spec promote(User.t(), Room.t(), [T.id()], map()) ::
           {:ok, Post.t()}
           | {:error,
              :forbidden | :private_room | :unknown_kind | :invalid_messages | Changeset.t()}
   def promote(%User{} = user, %Room{} = room, message_ids, %{} = params) do
-    kind_id = params[:kind_id]
-
     with :ok <- authorize(user, :promote, :chat, room.community_id),
          :ok <- open_room(room),
          {:ok, messages} <- Chat.get_promotable(room, message_ids),
          {:ok, community} <- Communities.get_community(id: room.community_id),
-         {:ok, kind} <- fetch_kind(community.id, kind_id),
+         {:ok, kind} <- fetch_kind(community.id, params[:kind_id]),
          :ok <- may_use_kind(user, community.id, kind),
          {:ok, post} <- PromoteMessages.execute(user, community, room, messages, params) do
       broadcast(%PostCreated{
@@ -303,7 +300,7 @@ defmodule Hearth.Forum do
           {:ok, Post.t()}
           | {:error, :forbidden | :too_many_attachments | :invalid_attachment | Changeset.t()}
   def update_post(%User{id: id} = user, %Post{author_id: id} = post, %{} = params) do
-    UpdatePost.execute(user, post, params)
+    with :ok <- may_move(user, post, params[:kind_id]), do: UpdatePost.execute(user, post, params)
   end
 
   def update_post(%User{}, %Post{}, %{}), do: {:error, :forbidden}
@@ -334,11 +331,9 @@ defmodule Hearth.Forum do
              | :invalid_attachment
              | Changeset.t()}
   def reply(%User{} = user, %Post{} = post, %{} = params) do
-    parent_id = params[:parent_reply_id]
-
     with :ok <- authorize(user, :create, :reply, post.community_id),
-         :ok <- open?(post),
-         {:ok, parent} <- fetch_parent(post, parent_id),
+         :ok <- open_post(post),
+         {:ok, parent} <- fetch_parent(post, params[:parent_reply_id]),
          {:ok, reply} <- CreateReply.execute(user, post, parent, params) do
       broadcast(%ReplyCreated{
         reply_id: reply.id,
@@ -354,31 +349,28 @@ defmodule Hearth.Forum do
     end
   end
 
-  # Replies inside a branch are oldest first so they read as a conversation
   @spec list_replies(Post.t(), keyword()) :: Page.t() | {:error, Flop.Meta.t()}
   def list_replies(%Post{id: post_id} = post, opts \\ []) when is_list(opts) do
     {viewer, opts} = Keyword.pop(opts, :viewer)
     {parent, rest} = Keyword.pop(opts, :parent)
     {sort, paging} = Keyword.pop(rest, :sort, :helpful)
 
-    order =
-      case {parent, sort} do
-        {nil, :helpful} ->
-          [order_by: ~w[helpful_count inserted_at id]a, order_directions: ~w[desc asc asc]a]
-
-        {nil, :newest} ->
-          [order_by: [:inserted_at, :id], order_directions: [:desc, :desc]]
-
-        {_parent, _sort} ->
-          [order_by: [:inserted_at, :id], order_directions: [:asc, :asc]]
-      end
-
     paging
-    |> Keyword.merge(order)
+    |> Keyword.merge(reply_order(parent, sort))
     |> Keyword.merge(post_id: post_id, parent_reply_id: get_in(parent.id))
     |> Keyword.put(:visible_to, viewing(viewer, post.community_id))
     |> Reply.paginate()
   end
+
+  defp reply_order(nil, :helpful),
+    do: [order_by: ~w[helpful_count inserted_at id]a, order_directions: ~w[desc asc asc]a]
+
+  defp reply_order(nil, :newest),
+    do: [order_by: [:inserted_at, :id], order_directions: [:desc, :desc]]
+
+  # Replies inside a branch are oldest first so they read as a conversation
+  defp reply_order(_parent, _sort),
+    do: [order_by: [:inserted_at, :id], order_directions: [:asc, :asc]]
 
   @spec update_reply(User.t(), Reply.t(), map()) ::
           {:ok, Reply.t()}
@@ -408,14 +400,7 @@ defmodule Hearth.Forum do
          %Kind{answers: true} <- Kind.get(id: post.kind_id),
          :ok <- same_post(post, reply),
          {:ok, post} <- Post.set_answer(post, get_in(reply.id)) do
-      if reply do
-        broadcast(%AnswerMarked{
-          post_id: post.id,
-          reply_id: reply.id,
-          reply_author_id: reply.author_id
-        })
-      end
-
+      announce_answer(post, reply)
       {:ok, post}
     else
       false -> {:error, :forbidden}
@@ -423,6 +408,16 @@ defmodule Hearth.Forum do
       %Kind{} -> {:error, :no_answers}
       {:error, _reason} = error -> error
     end
+  end
+
+  defp announce_answer(_post, nil), do: :ok
+
+  defp announce_answer(post, reply) do
+    broadcast(%AnswerMarked{
+      post_id: post.id,
+      reply_id: reply.id,
+      reply_author_id: reply.author_id
+    })
   end
 
   @spec toggle_helpful(User.t(), Post.t() | Reply.t()) ::
@@ -478,7 +473,7 @@ defmodule Hearth.Forum do
   @spec list_bookmarks(User.t(), keyword()) :: Page.t() | {:error, Flop.Meta.t()}
   def list_bookmarks(%User{} = user, opts \\ []) when is_list(opts) do
     opts
-    |> Keyword.merge(bookmarked_by: user.id, community_id: Communities.readable_ids(user))
+    |> Keyword.merge(bookmarked_by: user.id, community_id: Communities.list_readable(user))
     |> Keyword.merge(status: :published, deleted_at: nil)
     |> Keyword.merge(order_by: [:bookmarked_at, :id], order_directions: [:desc, :desc])
     |> Post.paginate()
@@ -488,7 +483,7 @@ defmodule Hearth.Forum do
           Page.t() | {:error, :invalid_cursor}
   def search_posts(viewer, text, opts \\ []) when is_binary(text) and is_list(opts) do
     words = Common.search_words(text)
-    readable = Communities.readable_ids(viewer)
+    readable = Communities.list_readable(viewer)
 
     community_ids =
       case opts[:community_id] do
@@ -507,8 +502,8 @@ defmodule Hearth.Forum do
   def list_unread_since(%User{} = user, community_ids, %DateTime{} = since, limit),
     do: Post.unread_since(user.id, community_ids, since, limit)
 
-  @spec watcher_ids(T.id()) :: [T.id()]
-  def watcher_ids(post_id), do: PostWatch.watcher_ids(post_id)
+  @spec list_watchers(T.id()) :: [T.id()]
+  def list_watchers(post_id), do: PostWatch.watcher_ids(post_id)
 
   @spec seen(nil | User.t(), [Post.t()]) :: MapSet.t(T.id())
   def seen(nil, _posts), do: MapSet.new()
@@ -516,7 +511,8 @@ defmodule Hearth.Forum do
 
   # Catch up's mark all as seen covers every community the person joined
   @spec mark_all_seen(User.t(), nil | Community.t()) :: :ok | {:error, :forbidden | :not_found}
-  def mark_all_seen(%User{} = user, nil), do: PostRead.mark_all(user.id, IAM.community_ids(user))
+  def mark_all_seen(%User{} = user, nil),
+    do: PostRead.mark_all(user.id, IAM.list_communities(user))
 
   def mark_all_seen(%User{} = user, %Community{} = community) do
     case Communities.readable?(community, user) do
@@ -543,11 +539,12 @@ defmodule Hearth.Forum do
   @spec save_draft(User.t(), Community.t(), map()) ::
           {:ok, Draft.t()} | {:error, :forbidden | Changeset.t()}
   def save_draft(%User{} = user, %Community{} = community, %{} = params) do
-    with :ok <- authorize(user, :create, :post, community.id) do
-      case get_draft(user, community) do
-        nil -> Draft.insert(%Draft{user_id: user.id, community_id: community.id}, params)
-        %Draft{} = draft -> Draft.update(draft, params)
-      end
+    with :ok <- authorize(user, :create, :post, community.id),
+         %Draft{} = draft <- get_draft(user, community) do
+      Draft.update(draft, params)
+    else
+      nil -> Draft.insert(%Draft{user_id: user.id, community_id: community.id}, params)
+      error -> error
     end
   end
 
@@ -557,8 +554,6 @@ defmodule Hearth.Forum do
 
     :ok
   end
-
-  @excerpt_length 160
 
   # A post found only through a reply shows that reply so the match is visible
   defp search_hit(%{tier: 0} = match, words) do
@@ -582,12 +577,20 @@ defmodule Hearth.Forum do
 
   defp fetch_kind(_community_id, _kind_id), do: {:error, :unknown_kind}
 
+  defp may_move(_user, _post, nil), do: :ok
+  defp may_move(_user, %Post{kind_id: kind_id}, kind_id), do: :ok
+
+  defp may_move(user, post, kind_id) do
+    with {:ok, kind} <- fetch_kind(post.community_id, kind_id),
+         do: may_use_kind(user, post.community_id, kind)
+  end
+
   defp may_use_kind(_user, _community_id, %Kind{postable: true}), do: :ok
   defp may_use_kind(user, community_id, %Kind{}), do: authorize(user, :pin, :post, community_id)
 
-  defp open?(%Post{deleted_at: nil, locked_at: nil}), do: :ok
-  defp open?(%Post{deleted_at: nil}), do: {:error, :locked}
-  defp open?(%Post{}), do: {:error, :not_found}
+  defp open_post(%Post{deleted_at: nil, locked_at: nil}), do: :ok
+  defp open_post(%Post{deleted_at: nil}), do: {:error, :locked}
+  defp open_post(%Post{}), do: {:error, :not_found}
 
   defp fetch_parent(_post, nil), do: {:ok, nil}
 

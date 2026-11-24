@@ -7,14 +7,14 @@ defmodule Hearth.Instance.Releases do
 
   @spec latest() :: {:ok, nil | Release.t()} | {:error, GitHubError.t() | Exception.t()}
   def latest do
-    request = build(url: "/releases/latest")
-
-    with {:ok, response} <- Req.get(request) do
-      parse_result(response)
-    end
+    with {:ok, response} <- [url: "/releases/latest"] |> build() |> Req.get(),
+         do: parse_result(response)
   end
 
-  def build(opts) do
+  @spec enabled?() :: boolean()
+  def enabled?, do: config(:enabled) != false
+
+  defp build(opts) do
     version = @app |> Application.spec(:vsn) |> to_string()
 
     headers = [
@@ -30,16 +30,9 @@ defmodule Hearth.Instance.Releases do
     |> Req.new()
   end
 
-  def parse_result(response) do
-    case response do
-      %Req.Response{status: 200, body: body} -> {:ok, Release.from!(body)}
-      %Req.Response{status: 404} -> {:ok, nil}
-      %Req.Response{status: status, body: body} -> {:error, error(status, body)}
-    end
-  end
-
-  @spec enabled?() :: boolean()
-  def enabled?, do: config(:enabled) != false
+  defp parse_result(%Req.Response{status: 200, body: body}), do: {:ok, Release.from!(body)}
+  defp parse_result(%Req.Response{status: 404}), do: {:ok, nil}
+  defp parse_result(%Req.Response{status: status, body: body}), do: {:error, error(status, body)}
 
   # A proxy or outage may send no error body so the status always comes from the response
   defp error(status, %{} = body), do: body |> Map.put("status", status) |> GitHubError.from!()

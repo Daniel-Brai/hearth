@@ -20,7 +20,7 @@ defmodule Hearth.Forum.Command.QueueScreening do
     end)
   end
 
-  # Sent with files, or kept the ones it had
+  # Sent with files or kept the ones it had
   defp files?(_owner, %{attachment_ids: [_ | _]}), do: true
   defp files?(_owner, %{attachment_ids: []}), do: false
 

@@ -1,10 +1,9 @@
-import { Icon, ICONS, type IconName } from '@/design-system';
+import { Icon } from '@/design-system';
 import { tintStyle } from '@/domain/format';
 import type { PostKind } from '@/domain/types';
+import { asIconName } from '@/pages/edit-community/colors';
 
-const kindIcon = (name: string): IconName => (name in ICONS ? (name as IconName) : 'shapes');
-
-export type KindPickerProps = {
+type KindPickerProps = {
   readonly kinds: readonly PostKind[];
   readonly value: string;
   readonly onChange: (next: string) => void;
@@ -23,7 +22,7 @@ export function KindPicker({ kinds, value, onChange }: KindPickerProps) {
             onChange={() => onChange(k.name)}
           />
           <span className="kind-option__icon">
-            <Icon name={kindIcon(k.icon)} />
+            <Icon name={asIconName(k.icon) ?? 'shapes'} />
           </span>
           <span>{k.name}</span>
           {k.mods ? (

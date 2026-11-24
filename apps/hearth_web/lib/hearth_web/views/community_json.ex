@@ -108,8 +108,8 @@ defmodule HearthWeb.CommunityJSON do
     |> Map.merge(%{kinds: Forum.template_kinds(template.id), event: event(template.id)})
   end
 
-  defp event(template) do
-    case Events.template_event(template) do
+  defp event(template_id) do
+    case Events.template_event(template_id) do
       nil -> nil
       event -> Map.take(event, ~w[title days mins repeat]a)
     end

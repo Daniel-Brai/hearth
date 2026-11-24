@@ -24,7 +24,7 @@ export const comingUp = (state: AppState, cid: string) =>
 
 export function homeEvents(state: AppState) {
   const list = upcomingEvents(state, null).filter((e) => !e.cancelled && evState(e) !== 'live');
-  const mine = list.filter((e) => state.me && e.interested.includes(state.me));
+  const mine = list.filter((e) => isInterested(state, e));
   const picked = new Set(mine);
 
   return mine

@@ -10,7 +10,7 @@ defmodule Hearth.Communities.Command.TransferOwnership do
   def execute(%User{} = owner, %Community{} = community, %User{} = to) do
     keys =
       community.id
-      |> IAM.list_roles()
+      |> IAM.list_roles(fields: [:key])
       |> Enum.map(& &1.key)
 
     step_down = if "maintainer" in keys, do: "maintainer", else: "moderator"

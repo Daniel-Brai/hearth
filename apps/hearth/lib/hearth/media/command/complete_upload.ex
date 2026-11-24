@@ -37,16 +37,9 @@ defmodule Hearth.Media.Command.CompleteUpload do
   defp stored(%Asset{multipart_upload_id: nil} = media, _parts), do: head(media)
 
   defp stored(%Asset{} = media, parts) do
-    case head(media) do
-      {:ok, object} -> {:ok, object}
-      {:error, :not_uploaded} -> complete_multipart(media, parts)
-    end
-  end
-
-  defp complete_multipart(media, parts) do
-    case Storage.complete_multipart(media.bucket_key, media.multipart_upload_id, parts) do
-      :ok -> head(media)
-      error -> error
+    with {:error, :not_uploaded} <- head(media),
+         :ok <- Storage.complete_multipart(media.bucket_key, media.multipart_upload_id, parts) do
+      head(media)
     end
   end
 
@@ -86,7 +79,7 @@ defmodule Hearth.Media.Command.CompleteUpload do
           queue_processing()
       end)
 
-    # Someone else moved it first, such as a second confirm at the same time
+    # Someone else moved it first like a second confirm at the same time
     case result do
       {:error, :stale} -> execute(Asset.get(id: media.id), parts)
       result -> result

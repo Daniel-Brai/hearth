@@ -18,13 +18,13 @@ import {
 } from '@/design-system';
 import { handle, isInstanceAdmin, pendingRequests, person } from '@/domain/selectors';
 import type { DigestChoice, ThemePreference } from '@/domain/types';
-import { CreationSelect } from '@/pages/settings/CreationSelect';
 import { feel, setHapticsEnabled } from '@/runtime/haptics';
 import { routes } from '@/runtime/routes';
 import { CUES, playTune, setSoundsEnabled, sfx, type CueName } from '@/runtime/sounds';
 import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
 
+import { CreationSelect } from './CreationSelect';
 import { EmailDialog } from './EmailDialog';
 import { PushRow } from './PushRow';
 
@@ -262,7 +262,7 @@ export function SettingsPage() {
             </SettingsRow>
           </Panel>
 
-          <Panel className="grid" id="settings-account">
+          <Panel className="grid" id="settings-session">
             <h2 className="section-title" style={{ marginBlockEnd: '0.4rem' }}>
               Account
             </h2>

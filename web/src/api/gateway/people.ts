@@ -36,7 +36,7 @@ export function createPeopleGateway(
   ctx: GatewayContext,
   loadRoles: (cid: string) => Promise<Result>,
 ) {
-  // Someone's posts can sit in communities this browser hasn't seen, whose slugs and kinds come from their detail
+  // Someone's posts can sit in communities whose slugs and kinds this browser hasn't learned yet
   const toAuthored = ({ reply, post, answer }: AuthoredReply) => ({
     id: reply.id,
     postId: post.id,
@@ -102,7 +102,7 @@ export function createPeopleGateway(
   };
 
   const load = {
-    // A name with no account answers ok and leaves the store without them, which the screen shows as not found
+    // A name with no account answers ok and leaves the store without them so the screen shows not found
     profile: async (handle: string) => {
       await ctx.sessionLoaded;
 
@@ -114,7 +114,7 @@ export function createPeopleGateway(
       ctx.store.set((state) => {
         const known = state.people[answer.data.id];
 
-        // Keeps what only your own answer carries, such as your email and privacy
+        // Keeps what only your own answer carries like your email and privacy
         state.people[answer.data.id] = {
           ...known,
           ...fromProfile(answer.data),

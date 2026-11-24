@@ -6,9 +6,9 @@ import { useUi } from '@/runtime/ui-store';
 import { PageHeader } from '@/shell/PageHeader';
 import { PageMeta } from '@/shell/PageMeta';
 
-export type ErrorCode = 403 | 404 | 410 | 500 | 'offline';
+type ErrorCode = 403 | 404 | 410 | 500 | 'offline';
 
-export type Forbidden =
+type Forbidden =
   | 'private'
   | 'moderators'
   | 'editors'
@@ -111,7 +111,7 @@ export function ErrorPage({
       <main className={signedIn ? 'error-in-app' : 'signin'} id="main">
         {signedIn ? null : <PageMeta title={[copy.title]} noindex />}
         <div className={signedIn ? 'error-page' : 'signin__card error-page'}>
-          <span className="error-page__code">{typeof code === 'number' ? code : ''}</span>
+          <span className="error-page__code">{typeof code === 'number' ? code : null}</span>
 
           <EmptyState art={copy.art} title={copy.title} text={copy.text} />
 

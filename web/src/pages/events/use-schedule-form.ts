@@ -54,7 +54,6 @@ export function useScheduleForm(cid: string, event: CommunityEvent | null) {
     return false;
   };
 
-  /** @returns whether the event was saved */
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setProblem(null);

@@ -50,12 +50,12 @@ type UiState = {
   dialogData: Record<string, unknown>;
   confirm: Confirm | null;
   toasts: Toast[];
-  // `download` saves the file instead of opening it, and falls back to `src`
+  // `download` saves the file instead of opening it and falls back to `src`
   lightbox: { src: string; name: string; download: string } | null;
   tourStep: number | null;
-  // A screen share in full screen shows the room's chat inside it, so the page's own steps aside
+  // A full screen share shows the room's chat inside it so the screen's own chat steps aside
   shareFull: boolean;
-  // The room someone was just shut out of, as `community/room`, so its screen can step back
+  // The `community/room` someone was just shut out of so its screen can step back
   hiddenRoom: string | null;
   setHiddenRoom: (key: string | null) => void;
   setShareFull: (on: boolean) => void;

@@ -49,7 +49,7 @@ defmodule HearthWeb.PostController do
   }
 
   def index(%Conn{assigns: %{auth: auth}} = conn, %{"community_id" => community_id} = params) do
-    filters = for kind_id <- [params["kind_id"]], kind_id != nil, do: {:kind_id, kind_id}
+    filters = if params["kind_id"], do: [kind_id: params["kind_id"]], else: []
 
     with {:ok, community} <- find_community(community_id, auth),
          %{data: posts} = page <- Forum.list_posts(community, filters ++ Paging.opts(conn)) do
@@ -824,8 +824,6 @@ defmodule HearthWeb.PostController do
     end
   end
 
-  @community [in: :path, schema: %{type: :string, format: :uuid}]
-
   operation :drafts,
     summary: "List my unfinished posts",
     description: "One per community",
@@ -844,7 +842,7 @@ defmodule HearthWeb.PostController do
   operation :save_draft,
     summary: "Save my unfinished post in a community",
     security: [%{"bearer" => []}],
-    parameters: [community_id: @community],
+    parameters: [community_id: @id],
     request_body: Schema.DraftBody,
     responses: [
       ok: {Schema.Draft, description: "OK"},
@@ -875,7 +873,7 @@ defmodule HearthWeb.PostController do
   operation :discard_draft,
     summary: "Throw away my unfinished post in a community",
     security: [%{"bearer" => []}],
-    parameters: [community_id: @community],
+    parameters: [community_id: @id],
     responses: [
       no_content: %Reference{"$ref": "#/components/responses/no_content"},
       not_found: %Reference{"$ref": "#/components/responses/not_found"},

@@ -17,7 +17,7 @@ type Rule = {
 /** Instance rules go to instance admins, never to a community's roles */
 const rules = (parse(source) as Rule[]).filter((r) => r.scope !== 'instance');
 
-/** The same naming the server uses, where dots inside the resource become dashes */
+/** Dots inside the resource become dashes as on the server */
 const permissionOf = (rule: Rule) => `${rule.resource.replaceAll('.', '-')}.${rule.operation}`;
 
 const grantedTo = (role: string) =>

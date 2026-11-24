@@ -100,13 +100,8 @@ defmodule HearthWeb.VoiceController do
 
     attrs = params |> Map.take(~w[mode topic]) |> Common.atomize_string_keys()
 
-    with {:ok, room} <- find_room(id, auth) do
-      case Voice.start_session(auth, room, attrs) do
-        {:ok, session} -> conn |> put_status(:created) |> render(:session, session: session)
-        {:error, :already_live, session} -> render(conn, :session, session: session)
-        {:error, _reason} = error -> error
-      end
-    end
+    with {:ok, room} <- find_room(id, auth),
+         do: started(conn, Voice.start_session(auth, room, attrs))
   end
 
   operation :discuss,
@@ -129,13 +124,7 @@ defmodule HearthWeb.VoiceController do
   def discuss(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    with {:ok, post} <- Forum.get_post(id: id) do
-      case Voice.discuss_live(auth, post) do
-        {:ok, session} -> conn |> put_status(:created) |> render(:session, session: session)
-        {:error, :already_live, session} -> render(conn, :session, session: session)
-        {:error, _reason} = error -> error
-      end
-    end
+    with {:ok, post} <- Forum.get_post(id: id), do: started(conn, Voice.discuss_live(auth, post))
   end
 
   operation :show,
@@ -170,7 +159,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid]}
 
   def end_session(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
-    act(conn, id, &Voice.end_session(conn.assigns.auth, &1))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.end_session(auth, &1))
   end
 
   operation :hand,
@@ -183,7 +174,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid], "raised" => ~V[required|boolean]}
 
   def hand(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "raised" => raised}) do
-    act(conn, id, &Voice.raise_hand(conn.assigns.auth, &1, raised))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.raise_hand(auth, &1, raised))
   end
 
   operation :mute,
@@ -196,7 +189,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid], "muted" => ~V[required|boolean]}
 
   def mute(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "muted" => muted}) do
-    act(conn, id, &Voice.self_mute(conn.assigns.auth, &1, muted))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.self_mute(auth, &1, muted))
   end
 
   operation :invite,
@@ -209,7 +204,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid], "user_id" => ~V[required|uuid]}
 
   def invite(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "user_id" => user_id}) do
-    act(conn, id, &Voice.invite(conn.assigns.auth, &1, user_id))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.invite(auth, &1, user_id))
   end
 
   operation :demote,
@@ -222,7 +219,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid], "user_id" => ~V[required|uuid]}
 
   def demote(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "user_id" => user_id}) do
-    act(conn, id, &Voice.demote(conn.assigns.auth, &1, user_id))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.demote(auth, &1, user_id))
   end
 
   operation :server_mute,
@@ -239,12 +238,11 @@ defmodule HearthWeb.VoiceController do
     "muted" => ~V[required|boolean]
   }
 
-  def server_mute(%Conn{assigns: %{auth: %{}}} = conn, %{
-        "id" => id,
-        "user_id" => user_id,
-        "muted" => muted
-      }) do
-    act(conn, id, &Voice.server_mute(conn.assigns.auth, &1, user_id, muted))
+  def server_mute(%Conn{assigns: %{auth: %{}}} = conn, params) do
+    %Conn{assigns: %{auth: auth}} = conn
+    %{"id" => id, "user_id" => user_id, "muted" => muted} = params
+
+    act(conn, id, &Voice.server_mute(auth, &1, user_id, muted))
   end
 
   operation :disconnect,
@@ -257,7 +255,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid], "user_id" => ~V[required|uuid]}
 
   def disconnect(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id, "user_id" => user_id}) do
-    act(conn, id, &Voice.disconnect(conn.assigns.auth, &1, user_id))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.disconnect(auth, &1, user_id))
   end
 
   operation :start_share,
@@ -270,7 +270,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid]}
 
   def start_share(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
-    act(conn, id, &Voice.start_share(conn.assigns.auth, &1))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.start_share(auth, &1))
   end
 
   operation :stop_share,
@@ -283,7 +285,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid]}
 
   def stop_share(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
-    act(conn, id, &Voice.stop_share(conn.assigns.auth, &1))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.stop_share(auth, &1))
   end
 
   operation :start_recording,
@@ -296,7 +300,9 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid]}
 
   def start_recording(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
-    act(conn, id, &Voice.start_recording(conn.assigns.auth, &1))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.start_recording(auth, &1))
   end
 
   operation :stop_recording,
@@ -309,11 +315,13 @@ defmodule HearthWeb.VoiceController do
   @validate %{"id" => ~V[required|uuid]}
 
   def stop_recording(%Conn{assigns: %{auth: %{}}} = conn, %{"id" => id}) do
-    act(conn, id, &Voice.stop_recording(conn.assigns.auth, &1))
+    %Conn{assigns: %{auth: auth}} = conn
+
+    act(conn, id, &Voice.stop_recording(auth, &1))
   end
 
-  defp act(conn, id, fun) do
-    with {:ok, session} <- find_session(id, conn.assigns.auth),
+  defp act(%Conn{assigns: %{auth: auth}} = conn, id, fun) do
+    with {:ok, session} <- find_session(id, auth),
          :ok <- fun.(session) do
       send_resp(conn, :no_content, "")
     end
@@ -335,4 +343,12 @@ defmodule HearthWeb.VoiceController do
       {:ok, session}
     end
   end
+
+  defp started(conn, {:ok, session}),
+    do: conn |> put_status(:created) |> render(:session, session: session)
+
+  defp started(conn, {:error, :already_live, session}),
+    do: render(conn, :session, session: session)
+
+  defp started(_conn, {:error, _reason} = error), do: error
 end

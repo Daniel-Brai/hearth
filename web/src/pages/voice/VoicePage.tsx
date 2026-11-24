@@ -97,7 +97,7 @@ function VoiceView({ cid, rid }: { readonly cid: string; readonly rid: string })
   const { unread } = useVoiceChat(key, chatOpen && !view.inRoom);
   const outsideChat = { open: chatOpen, unread, toggle: () => setChatOpen((o) => !o) };
 
-  // Going back from inside a room asks first, and leaving takes you out of it at once
+  // Going back from inside a room asks first and leaving takes you out at once
   const confirmLeave = (go: () => void) =>
     ask({
       title: `Leave ${view.name}?`,
@@ -119,7 +119,6 @@ function VoiceView({ cid, rid }: { readonly cid: string; readonly rid: string })
         }
         endActions={
           <>
-            {/* Inside the room the tray already says it's on air */}
             {view.live && !view.inRoom ? (
               <Pill live id="voice-live-pill">
                 <LiveDot />
@@ -216,6 +215,7 @@ function InRoom({
 }) {
   const [chatOpen, setChatOpen] = useState(false);
   const { unread } = useVoiceChat(cid + '/' + rid, chatOpen);
+
   // A share in full screen shows the chat inside it instead
   const shareFull = useUi((s) => s.shareFull);
   const pageChat = chatOpen && !shareFull;

@@ -19,7 +19,6 @@ type Screen = {
   readonly signedIn: boolean;
 };
 
-/** Renders one screen as a reload would see it, with or without the signed in hint */
 export async function showScreen({ path, url, element, hint, session, signedIn }: Screen) {
   const store = new Store(createSeedState());
 

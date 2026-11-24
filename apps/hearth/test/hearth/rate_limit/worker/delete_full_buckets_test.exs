@@ -10,7 +10,7 @@ defmodule Hearth.RateLimit.Worker.DeleteFullBucketsTest do
   describe "perform/1" do
     test "keeps a bucket still refilling" do
       key = Common.new_id()
-      RateLimit.hit(key, :timer.minutes(1), 3)
+      {:allow, _count} = RateLimit.hit(key, :timer.minutes(1), 3)
 
       assert :ok = perform_job(DeleteFullBuckets, %{})
       assert Bucket.exists?(key: key)
@@ -18,7 +18,7 @@ defmodule Hearth.RateLimit.Worker.DeleteFullBucketsTest do
 
     test "deletes a bucket that has refilled" do
       key = Common.new_id()
-      RateLimit.hit(key, :timer.minutes(1), 3)
+      {:allow, _count} = RateLimit.hit(key, :timer.minutes(1), 3)
       :ok = TestUtils.update_rows!(Bucket, [key: key], expires_at: TestUtils.minutes_ago(2))
 
       assert :ok = perform_job(DeleteFullBuckets, %{})

@@ -19,7 +19,7 @@ defmodule Hearth.Notifications.Worker.TellTranscript do
         Notices.transcript_ready(%{community: community, event: event, session_id: session_id})
 
       [event]
-      |> Events.interested_ids()
+      |> Events.list_interested()
       |> Map.get(event.id, [])
       |> Accounts.list_users()
       |> Enum.filter(&Events.visible?(&1, event))

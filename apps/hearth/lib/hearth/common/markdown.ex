@@ -59,13 +59,11 @@ defmodule Hearth.Common.Markdown do
   """
   @spec excerpt(T.markdown(), pos_integer()) :: String.t()
   def excerpt(markdown, max_length) do
-    readable =
-      markdown
-      |> lines()
-      |> Enum.map(&readable(&1, :drop_code))
-      |> collapse()
-
-    Text.truncate(readable, max_length)
+    markdown
+    |> lines()
+    |> Enum.map(&readable(&1, :drop_code))
+    |> collapse()
+    |> Text.truncate(max_length)
   end
 
   @lead_words 4
@@ -119,21 +117,14 @@ defmodule Hearth.Common.Markdown do
   defp classify(line, nil) do
     case fence(line) do
       {char, size, _info} -> {[], {char, size}}
-      nil -> {[{:prose, segments(line)}], nil}
+      nil -> {[{:prose, split_spans(line, "", [])}], nil}
     end
   end
 
   defp classify(line, {char, size} = open) do
     case fence(line) do
-      {^char, closing, rest} when closing >= size -> close_or_keep(line, rest, open)
+      {^char, closing, ""} when closing >= size -> {[], nil}
       _other -> {[{:code, line}], open}
-    end
-  end
-
-  defp close_or_keep(line, rest, open) do
-    case String.trim(rest) do
-      "" -> {[], nil}
-      _info -> {[{:code, line}], open}
     end
   end
 
@@ -147,13 +138,11 @@ defmodule Hearth.Common.Markdown do
 
   defp fence_run(text, char) do
     {size, rest} = count_run(text, char, 0)
-    {char, size, rest}
+    {char, size, String.trim(rest)}
   end
 
   defp count_run(<<char, rest::binary>>, char, count), do: count_run(rest, char, count + 1)
   defp count_run(rest, _char, count), do: {count, rest}
-
-  defp segments(line), do: split_spans(line, "", [])
 
   defp split_spans(<<>>, text, acc) do
     acc
@@ -257,19 +246,12 @@ defmodule Hearth.Common.Markdown do
   end
 
   defp trim_unbalanced(url, open, close) do
-    opened = count(url, open)
-    closed = count(url, close)
-
-    case closed > opened do
-      true -> trim_url(String.slice(url, 0..-2//1))
-      false -> url
-    end
+    if count(url, close) > count(url, open),
+      do: trim_url(String.slice(url, 0..-2//1)),
+      else: url
   end
 
-  defp count(text, part) do
-    parts = String.split(text, part)
-    length(parts) - 1
-  end
+  defp count(text, part), do: length(String.split(text, part)) - 1
 
   defp drop_images(text) do
     case :binary.split(text, "![") do
@@ -324,11 +306,7 @@ defmodule Hearth.Common.Markdown do
 
   defp drop_block_marker(line) do
     trimmed = String.trim(line)
-
-    case rule?(trimmed) do
-      true -> ""
-      false -> drop_list_marker(trimmed)
-    end
+    if rule?(trimmed), do: "", else: drop_list_marker(trimmed)
   end
 
   defp rule?(line) do

@@ -11,11 +11,13 @@ export type Hydration = {
 export const HYDRATION_KEY = '__HEARTH__';
 
 // < and the line separators are escaped so post text can't close the script
-export function hydrationScript(data: Hydration): string {
-  const json = JSON.stringify(data)
+export function scriptJson(value: unknown): string {
+  return JSON.stringify(value)
     .replaceAll('<', '\\u003c')
-    .replaceAll(' ', '\\u2028')
-    .replaceAll(' ', '\\u2029');
+    .replaceAll('\u2028', '\\u2028')
+    .replaceAll('\u2029', '\\u2029');
+}
 
-  return `<script>window.${HYDRATION_KEY}=${json}</script>`;
+export function hydrationScript(data: Hydration): string {
+  return `<script>window.${HYDRATION_KEY}=${scriptJson(data)}</script>`;
 }

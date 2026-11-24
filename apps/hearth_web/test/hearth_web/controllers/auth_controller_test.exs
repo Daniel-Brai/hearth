@@ -44,8 +44,7 @@ defmodule HearthWeb.AuthControllerTest do
     test "sends a code", %{conn: conn} do
       email = Internet.email()
 
-      conn |> post(~p"/api/auth/codes", %{email: email}) |> response(204)
-
+      assert conn |> post(~p"/api/auth/codes", %{email: email}) |> response(204)
       assert_receive %SignInCodeRequested{email: ^email}
     end
   end
@@ -309,11 +308,7 @@ defmodule HearthWeb.AuthControllerTest do
 
     test "saves links and privacy", %{conn: conn, user: user} do
       link = %{url: Internet.url(), label: Lorem.word()}
-
-      body = %{
-        links: [link],
-        privacy: %{show_name: false}
-      }
+      body = %{links: [link], privacy: %{show_name: false}}
 
       assert response =
                conn
@@ -353,7 +348,6 @@ defmodule HearthWeb.AuthControllerTest do
     end
 
     test "sends a code to the new address", %{conn: conn} do
-      :ok = Auth.subscribe_to_pubsub()
       %{id: id} = user = TestUtils.register_random_user!()
       {:ok, session} = Auth.create_session(user)
       email = Internet.email()
@@ -378,7 +372,6 @@ defmodule HearthWeb.AuthControllerTest do
     end
 
     test "moves the account to the new address", %{conn: conn} do
-      :ok = Auth.subscribe_to_pubsub()
       %{id: id} = user = TestUtils.register_random_user!()
       email = Internet.email()
       :ok = Auth.request_email_change(user, email)
@@ -401,7 +394,6 @@ defmodule HearthWeb.AuthControllerTest do
     end
 
     test "moves the account back", %{conn: conn} do
-      :ok = Auth.subscribe_to_pubsub()
       %{id: id} = user = TestUtils.register_random_user!()
       :ok = Auth.request_email_change(user, Internet.email())
       assert_receive %EmailChangeCodeRequested{user_id: ^id, code: code}

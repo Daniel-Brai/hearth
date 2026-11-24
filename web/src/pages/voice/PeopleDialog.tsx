@@ -15,7 +15,6 @@ import { PersonAvatar } from '@/shell/people';
 import type { RoomSession } from './voice-session';
 
 type Entry = {
-  readonly key: string;
   readonly id: string;
   readonly role: 'speaker' | 'listener';
   readonly muted: boolean;
@@ -45,7 +44,6 @@ function entriesOf(p: PeopleDialogProps): Entry[] {
 
   if (me) {
     out.push({
-      key: me,
       id: me,
       role: p.myRole === 'listener' ? 'listener' : 'speaker',
       muted: p.myRole === 'listener' || p.myMuted,
@@ -56,7 +54,6 @@ function entriesOf(p: PeopleDialogProps): Entry[] {
 
   session.speakers.forEach((id) =>
     out.push({
-      key: id,
       id,
       role: 'speaker',
       muted: mutedIds.has(id),
@@ -67,7 +64,6 @@ function entriesOf(p: PeopleDialogProps): Entry[] {
 
   session.listeners.forEach((id) =>
     out.push({
-      key: id,
       id,
       role: 'listener',
       muted: true,
@@ -110,10 +106,10 @@ export function PeopleDialog(props: PeopleDialogProps) {
               <div className="people-list">
                 {g.people.map((e) => (
                   <PeopleRow
-                    key={e.key}
+                    key={e.id}
                     entry={e}
                     me={props.me}
-                    canInvite={asHost && e.hand && e.id !== null && e.id !== props.me}
+                    canInvite={asHost && e.hand && e.id !== props.me}
                     onInvite={(id) => {
                       onInvite(id);
                       onClose();
@@ -139,6 +135,7 @@ export function PeopleDialog(props: PeopleDialogProps) {
 
 function micLabel(entry: Entry): string | null {
   if (entry.role !== 'speaker') return null;
+
   return entry.muted ? 'Muted' : 'Mic on';
 }
 
@@ -177,13 +174,13 @@ function PeopleRow({
         <small className="subtle truncate">{sub.join(' · ')}</small>
       </span>
 
-      {canInvite && id ? (
+      {canInvite ? (
         <Button size="tiny" onClick={() => onInvite(id)}>
           Invite to speak
         </Button>
       ) : null}
 
-      {id && view.username && id !== me ? (
+      {view.username && id !== me ? (
         <>
           <ButtonLink
             circle

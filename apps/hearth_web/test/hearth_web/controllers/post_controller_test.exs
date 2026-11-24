@@ -32,10 +32,7 @@ defmodule HearthWeb.PostControllerTest do
              |> valid_response(404)
     end
 
-    test "returns 404 if invite only", %{
-      conn: conn,
-      owner: owner
-    } do
+    test "returns 404 if invite only", %{conn: conn, owner: owner} do
       community = TestUtils.create_random_forum!(owner, visibility: :invite_only)
 
       assert conn
@@ -236,11 +233,7 @@ defmodule HearthWeb.PostControllerTest do
   end
 
   describe "delete" do
-    test "fails if not author or moderator", %{
-      conn: conn,
-      owner: owner,
-      community: community
-    } do
+    test "fails if not author or moderator", %{conn: conn, owner: owner, community: community} do
       post = TestUtils.create_random_post!(owner, community)
       member = TestUtils.register_random_user!()
       {:ok, _membership} = Communities.join(member, community)
@@ -252,11 +245,7 @@ defmodule HearthWeb.PostControllerTest do
                |> valid_response(403)
     end
 
-    test "fails if user can moderate", %{
-      conn: conn,
-      owner: owner,
-      post: post
-    } do
+    test "fails if user can moderate", %{conn: conn, owner: owner, post: post} do
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(owner)
@@ -360,7 +349,7 @@ defmodule HearthWeb.PostControllerTest do
 
   describe "all_seen" do
     test "fails signed out", %{conn: conn} do
-      conn |> post(~p"/api/posts/seen") |> valid_response(401)
+      assert conn |> post(~p"/api/posts/seen") |> valid_response(401)
     end
 
     test "marks every joined community's posts read", %{conn: conn, owner: owner, post: post} do
@@ -373,10 +362,10 @@ defmodule HearthWeb.PostControllerTest do
 
   describe "community_seen" do
     test "fails for a missing community", %{conn: conn, owner: owner} do
-      conn
-      |> auth_conn(owner)
-      |> post(~p"/api/communities/#{Common.new_id()}/posts/seen")
-      |> valid_response(404)
+      assert conn
+             |> auth_conn(owner)
+             |> post(~p"/api/communities/#{Common.new_id()}/posts/seen")
+             |> valid_response(404)
     end
 
     test "marks the community's posts read", %{
@@ -800,11 +789,11 @@ defmodule HearthWeb.PostControllerTest do
     end
 
     test "returns 404 if missing", %{conn: conn, owner: owner} do
+      body = %{title: Lorem.sentence()}
+
       assert conn
              |> auth_conn(owner)
-             |> put(~p"/api/communities/#{Common.new_id()}/posts/draft", %{
-               title: Lorem.sentence()
-             })
+             |> put(~p"/api/communities/#{Common.new_id()}/posts/draft", body)
              |> valid_response(404)
     end
 

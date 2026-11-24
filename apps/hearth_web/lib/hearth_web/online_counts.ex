@@ -12,8 +12,7 @@ defmodule HearthWeb.OnlineCounts do
   @every_ms Application.compile_env(@app, [__MODULE__, :every_ms], 3_000)
   @start Application.compile_env(@app, [__MODULE__, :start], true)
 
-  # Each node pushes to its own sockets from its copy of presence, so no count is sent twice.
-  # Tests start it themselves since it reads the database outside any test
+  # Each node pushes to its own sockets so no count is sent twice
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     case Keyword.get(opts, :start, @start) do
@@ -65,7 +64,7 @@ defmodule HearthWeb.OnlineCounts do
   end
 
   defp push_counts(user_ids) do
-    community_ids = IAM.shared_community_ids(user_ids)
+    community_ids = IAM.list_shared_communities(user_ids)
     counts = count(community_ids)
 
     for id <- community_ids do

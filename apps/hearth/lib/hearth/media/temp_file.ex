@@ -1,5 +1,6 @@
 defmodule Hearth.Media.TempFile do
   alias Hearth.Common
+
   # The path is made from a new id, never from anything a person sent
   # sobelow_skip ["Traversal.FileModule"]
   @spec run((Path.t() -> result)) :: result when result: term()

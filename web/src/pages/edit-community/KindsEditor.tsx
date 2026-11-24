@@ -10,7 +10,6 @@ import { MAX_KINDS, toKindDraft, type KindDraft } from './drafts';
 
 const LIBRARY: PostKind[] = Object.values(KIND_LIB);
 
-// Posts of a removed kind move to Discussion, so the server keeps it
 function removeTip(kind: KindDraft, last: boolean): string {
   if (kind.key === 'discussion') return 'Discussion stays, since posts of removed kinds move there';
   if (last) return 'A community needs at least one kind';
@@ -151,7 +150,9 @@ function KindPicker({
   const picked = useMemo(() => hexFor(kind.hue), [kind.hue]);
 
   const commitHex = (value: string) => {
-    const digits = value.trim().startsWith('#') ? value.trim().slice(1) : value.trim();
+    const typed = value.trim();
+    const digits = typed.startsWith('#') ? typed.slice(1) : typed;
+
     if (digits.length === 6 && isHex('#' + digits)) onChange({ hue: '#' + digits });
   };
 

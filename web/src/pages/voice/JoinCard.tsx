@@ -17,14 +17,15 @@ type JoinCardProps = {
   readonly postTitle: string | null;
 };
 
-// Past a few faces the rest of the room is a count
 const FACES_SHOWN = 4;
 
 export function JoinCard({ cid, rid, communityName, member, postId, postTitle }: JoinCardProps) {
   const session = useRoomSession(cid + '/' + rid);
+
   const present = useAppState(
     (state) => state.communities[cid]?.voice.find((v) => v.id === rid)?.present,
   );
+
   const faces = present ?? session.speakers;
   const shown = faces.slice(0, FACES_SHOWN);
   const extra = faces.length - shown.length;

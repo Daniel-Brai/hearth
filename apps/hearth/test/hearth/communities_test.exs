@@ -329,8 +329,9 @@ defmodule Hearth.CommunitiesTest do
     test "fails if the community needs an invite", %{owner: owner} do
       community = TestUtils.create_random_community!(owner, visibility: :invite_only)
 
-      assert {:error, :invite_required} =
-               Communities.join(TestUtils.register_random_user!(), community)
+      outsider = TestUtils.register_random_user!()
+
+      assert {:error, :invite_required} = Communities.join(outsider, community)
     end
 
     test "fails if banned", %{owner: owner, community: community} do
@@ -372,24 +373,24 @@ defmodule Hearth.CommunitiesTest do
     end
 
     test "fails for a permission that doesn't exist", %{owner: owner, community: community} do
-      assert {:error, changeset} =
-               Communities.create_role(owner, community, %{
-                 key: "helpers",
-                 name: "Helpers",
-                 permissions: ["everything.ever"]
-               })
+      params = %{key: "helpers", name: "Helpers", permissions: ["everything.ever"]}
+
+      assert {:error, changeset} = Communities.create_role(owner, community, params)
 
       assert %{permissions: [_message]} = errors_on(changeset)
     end
 
-    test "fails for built in role", %{owner: owner, community: community} do
-      assert {:ok, role} =
-               Communities.create_role(owner, community, %{
-                 key: "helpers",
-                 name: "Helpers",
-                 permissions: ["post.pin"],
-                 is_system: true
-               })
+    test "fails to give permissions they lack", %{community: community} do
+      manager = TestUtils.join_with_permissions!(community, ["role.update"])
+      params = %{key: "helpers", name: "Helpers", permissions: ["role.update", "member.ban"]}
+
+      assert {:error, :forbidden} = Communities.create_role(manager, community, params)
+    end
+
+    test "never makes a built in role", %{owner: owner, community: community} do
+      params = %{key: "helpers", name: "Helpers", permissions: ["post.pin"], is_system: true}
+
+      assert {:ok, role} = Communities.create_role(owner, community, params)
 
       assert %{key: "helpers", permissions: ["post.pin"], is_system: false} = role
     end
@@ -402,7 +403,18 @@ defmodule Hearth.CommunitiesTest do
       assert {:error, :forbidden} = Communities.update_role(owner, role, %{name: "Boss"})
     end
 
-    test "fails to change role key", %{owner: owner, community: community} do
+    test "fails to raise their own role", %{owner: owner, community: community} do
+      manager = TestUtils.join_random_member!(community)
+      attrs = %{key: "managers", name: "Managers", permissions: ["role.update"]}
+      {:ok, role} = Communities.create_role(owner, community, attrs)
+      {:ok, _membership} = Communities.set_member_roles(owner, community, manager, ["managers"])
+
+      params = %{permissions: ["role.update", "member.ban"]}
+
+      assert {:error, :forbidden} = Communities.update_role(manager, role, params)
+    end
+
+    test "keeps the role key", %{owner: owner, community: community} do
       role = Role.get(community_id: community.id, key: "moderator")
 
       assert {:ok, %{name: "Stewards", key: "moderator"}} =
@@ -434,19 +446,24 @@ defmodule Hearth.CommunitiesTest do
                Communities.set_member_roles(owner, community, member, ["owner"])
     end
 
+    test "fails to hand out a stronger role", %{community: community} do
+      manager = TestUtils.join_with_permissions!(community, ["role.update"])
+      member = TestUtils.join_random_member!(community)
+
+      assert {:error, :forbidden} =
+               Communities.set_member_roles(manager, community, member, ["moderator"])
+    end
+
     test "fails to change the Owner's roles", %{owner: owner, community: community} do
       assert {:error, :forbidden} =
                Communities.set_member_roles(owner, community, owner, ["member"])
     end
 
     test "fails for someone who isn't a member", %{owner: owner, community: community} do
+      outsider = TestUtils.register_random_user!()
+
       assert {:error, :not_found} =
-               Communities.set_member_roles(
-                 owner,
-                 community,
-                 TestUtils.register_random_user!(),
-                 ["moderator"]
-               )
+               Communities.set_member_roles(owner, community, outsider, ["moderator"])
     end
 
     test "gives a member exactly the roles named", %{owner: owner, community: community} do
@@ -568,6 +585,15 @@ defmodule Hearth.CommunitiesTest do
       assert {:error, :forbidden} = Communities.update_room(member, room, %{access: :everyone})
     end
 
+    test "fails with an unknown sound mode", %{owner: owner, community: community} do
+      [room | _rooms] = Communities.list_rooms(community)
+
+      assert {:error, changeset} =
+               Communities.update_room(owner, room, %{settings: %{sounds_mode: "nobody"}})
+
+      assert %{settings: %{sounds_mode: ["is invalid"]}} = errors_on(changeset)
+    end
+
     test "opens a private room to everyone", %{owner: owner, community: community} do
       member = TestUtils.join_random_member!(community)
       room = TestUtils.create_random_private_room!(community, ["moderator"])
@@ -576,15 +602,6 @@ defmodule Hearth.CommunitiesTest do
       assert {:ok, opened} = Communities.update_room(owner, room, %{access: :everyone})
       assert Communities.room_visible?(member, opened)
       assert_receive %RoomAccessChanged{room_id: ^room_id}
-    end
-
-    test "fails with an unknown sound mode", %{owner: owner, community: community} do
-      [room | _rooms] = Communities.list_rooms(community)
-
-      assert {:error, changeset} =
-               Communities.update_room(owner, room, %{settings: %{sounds_mode: "nobody"}})
-
-      assert %{settings: %{sounds_mode: ["is invalid"]}} = errors_on(changeset)
     end
 
     test "changes only the settings sent", %{owner: owner, community: community} do
@@ -828,6 +845,15 @@ defmodule Hearth.CommunitiesTest do
     end
   end
 
+  describe "list_rooms/2" do
+    test "loads only the fields asked for", %{community: community} do
+      assert [%Room{id: id, name: nil} | _rooms] =
+               Communities.list_rooms(community, fields: [:id])
+
+      assert id
+    end
+  end
+
   describe "delete_room/2" do
     test "fails for a moderator", %{community: community} do
       moderator = TestUtils.register_random_user!()
@@ -839,9 +865,9 @@ defmodule Hearth.CommunitiesTest do
 
     test "delete room with its events", %{owner: owner, community: community} do
       event = TestUtils.create_random_community_event!(owner, community)
+      room = TestUtils.get_room!(community, type: :voice)
 
-      assert {:ok, %Room{id: id}} =
-               Communities.delete_room(owner, TestUtils.get_room!(community, type: :voice))
+      assert {:ok, %Room{id: id}} = Communities.delete_room(owner, room)
 
       assert {:error, :not_found} = Communities.get_room(id: id)
       refute Event.exists?(id: event.id)
@@ -855,6 +881,18 @@ defmodule Hearth.CommunitiesTest do
 
       assert {:error, :forbidden} =
                Communities.create_invite(user, community, %{role_key: "moderator"})
+    end
+
+    test "fails for the Owner role", %{owner: owner, community: community} do
+      assert {:error, :forbidden} =
+               Communities.create_invite(owner, community, %{role_key: "owner"})
+    end
+
+    test "fails for a role stronger than theirs", %{community: community} do
+      manager = TestUtils.join_with_permissions!(community, ~w[role.update invite.create])
+
+      assert {:error, :forbidden} =
+               Communities.create_invite(manager, community, %{role_key: "moderator"})
     end
 
     test "create invite", %{owner: owner, community: community} do
@@ -874,32 +912,32 @@ defmodule Hearth.CommunitiesTest do
     end
 
     test "fails if code is unknown" do
-      assert {:error, :not_found} =
-               Communities.accept_invite(TestUtils.register_random_user!(), "nope")
+      user = TestUtils.register_random_user!()
+
+      assert {:error, :not_found} = Communities.accept_invite(user, "nope")
     end
 
     test "fails if revoked", %{owner: owner, invite: invite} do
       {:ok, _invite} = Communities.revoke_invite(owner, invite)
+      user = TestUtils.register_random_user!()
 
-      assert {:error, :revoked} =
-               Communities.accept_invite(TestUtils.register_random_user!(), invite.code)
+      assert {:error, :revoked} = Communities.accept_invite(user, invite.code)
     end
 
     test "fails if used up", %{invite: invite} do
-      user = TestUtils.register_random_user!()
-      {:ok, _membership} = Communities.accept_invite(user, invite.code)
+      first = TestUtils.register_random_user!()
+      {:ok, _membership} = Communities.accept_invite(first, invite.code)
+      late = TestUtils.register_random_user!()
 
-      assert {:error, :used_up} =
-               Communities.accept_invite(TestUtils.register_random_user!(), invite.code)
+      assert {:error, :used_up} = Communities.accept_invite(late, invite.code)
     end
 
     test "fails if expired", %{owner: owner, private: community} do
       {:ok, invite} = Communities.create_invite(owner, community, %{})
-
       :ok = TestUtils.update_rows!(Invite, [id: invite.id], expires_at: TestUtils.minutes_ago(1))
+      user = TestUtils.register_random_user!()
 
-      assert {:error, :expired} =
-               Communities.accept_invite(TestUtils.register_random_user!(), invite.code)
+      assert {:error, :expired} = Communities.accept_invite(user, invite.code)
     end
 
     test "keeps membership without using invite", %{owner: owner, invite: invite} do
@@ -968,8 +1006,9 @@ defmodule Hearth.CommunitiesTest do
 
   describe "list_invites/2" do
     test "fails if not allowed to invite", %{community: community} do
-      assert {:error, :forbidden} =
-               Communities.list_invites(TestUtils.register_random_user!(), community)
+      outsider = TestUtils.register_random_user!()
+
+      assert {:error, :forbidden} = Communities.list_invites(outsider, community)
     end
 
     test "hides emailed people from members", %{owner: owner, community: community} do
@@ -1001,15 +1040,10 @@ defmodule Hearth.CommunitiesTest do
   end
 
   describe "update_invite/3" do
-    test "fails if new role above default", %{
-      owner: owner,
-      community: community
-    } do
+    test "fails if new role above default", %{owner: owner, community: community} do
       {:ok, invite} = Communities.create_invite(owner, community, %{})
-
-      {:ok, _membership} =
-        Communities.accept_invite(TestUtils.register_random_user!(), invite.code)
-
+      invited = TestUtils.register_random_user!()
+      {:ok, _membership} = Communities.accept_invite(invited, invite.code)
       user = TestUtils.register_random_user!()
       {:ok, _membership} = Communities.join(user, community)
 
@@ -1047,10 +1081,7 @@ defmodule Hearth.CommunitiesTest do
       assert id == sent.id
     end
 
-    test "finds invite with different email case", %{
-      owner: owner,
-      community: community
-    } do
+    test "finds invite with different email case", %{owner: owner, community: community} do
       user = TestUtils.register_random_user!()
       entries = [%{email: String.upcase(user.email), role_key: "member"}]
       {:ok, [sent]} = Communities.email_invites(owner, community, entries)
@@ -1065,9 +1096,9 @@ defmodule Hearth.CommunitiesTest do
     test "fails for an invite sent to someone else", %{owner: owner, community: community} do
       entries = [%{email: Internet.email(), role_key: "member"}]
       {:ok, [sent]} = Communities.email_invites(owner, community, entries)
+      outsider = TestUtils.register_random_user!()
 
-      assert {:error, :not_found} =
-               Communities.decline_email_invite(TestUtils.register_random_user!(), sent)
+      assert {:error, :not_found} = Communities.decline_email_invite(outsider, sent)
     end
 
     test "turns the invite down and stops its code", %{owner: owner, community: community} do
@@ -1085,9 +1116,9 @@ defmodule Hearth.CommunitiesTest do
     test "fails if not allowed to invite", %{owner: owner, community: community} do
       entries = [%{email: Internet.email(), role_key: "member"}]
       {:ok, [sent]} = Communities.email_invites(owner, community, entries)
+      outsider = TestUtils.register_random_user!()
 
-      assert {:error, :forbidden} =
-               Communities.revoke_email_invite(TestUtils.register_random_user!(), sent)
+      assert {:error, :forbidden} = Communities.revoke_email_invite(outsider, sent)
     end
 
     test "stops only that person's code", %{owner: owner, community: community} do
@@ -1097,14 +1128,11 @@ defmodule Hearth.CommunitiesTest do
       ]
 
       {:ok, [revoked, kept]} = Communities.email_invites(owner, community, entries)
+      user = TestUtils.register_random_user!()
 
       assert {:ok, %{status: :revoked}} = Communities.revoke_email_invite(owner, revoked)
-
-      assert {:error, :revoked} =
-               Communities.accept_invite(TestUtils.register_random_user!(), revoked.invite.code)
-
-      assert {:ok, _membership} =
-               Communities.accept_invite(TestUtils.register_random_user!(), kept.invite.code)
+      assert {:error, :revoked} = Communities.accept_invite(user, revoked.invite.code)
+      assert {:ok, _membership} = Communities.accept_invite(user, kept.invite.code)
     end
   end
 
@@ -1112,9 +1140,9 @@ defmodule Hearth.CommunitiesTest do
     test "fails if not allowed", %{community: community} do
       user = TestUtils.register_random_user!()
       {:ok, _membership} = Communities.join(user, community)
+      target = TestUtils.register_random_user!()
 
-      assert {:error, :forbidden} =
-               Communities.ban(user, community, TestUtils.register_random_user!(), %{})
+      assert {:error, :forbidden} = Communities.ban(user, community, target, %{})
     end
 
     test "fails if banning the owner or oneself", %{owner: owner, community: community} do

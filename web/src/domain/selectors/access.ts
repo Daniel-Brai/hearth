@@ -10,9 +10,11 @@ export const roleRef = (role: Role) => role.uid ?? role.id;
 
 export function myRolesIn(state: AppState, cid: string) {
   if (!state.me || !state.communities[cid]?.joined) return [];
+
   const mine = rolesOf(state, cid)
     .filter((r) => r.members.includes(state.me!))
     .map((r) => r.id);
+
   return mine.length ? mine : ['member'];
 }
 
@@ -24,15 +26,13 @@ export function canDo(state: AppState, cid: string | null | undefined, perm: Per
   return state.communities[cid]?.permissions.includes(perm) ?? false;
 }
 
-/** The person who asked can close their poll, and so can a moderator */
 export const mayClosePoll = (state: AppState, cid: string | null, author: string) =>
   author === state.me || canDo(state, cid, 'content.remove');
 
 export const isMod = (state: AppState, cid: string | null | undefined) =>
   canDo(state, cid, 'content.remove');
 
-export const modCids = (state: AppState) =>
-  joinedCids(state).filter((k) => canDo(state, k, 'content.remove'));
+export const modCids = (state: AppState) => joinedCids(state).filter((k) => isMod(state, k));
 
 export const canAny = (state: AppState, perm: Permission) =>
   joinedCids(state).some((k) => canDo(state, k, perm));
@@ -44,12 +44,9 @@ export const isInstanceAdmin = (state: AppState) => !!state.me && state.instance
 
 export const roleOptions = (state: AppState, cid: string, withOwner = false) => {
   const all = rolesOf(state, cid).filter((r) => withOwner || !r.locked);
-  return (canDo(state, cid, 'role.update') ? all : all.filter((r) => r.id === 'member')).map(
-    (r) => ({
-      value: r.id,
-      label: r.name,
-    }),
-  );
+  const offered = canDo(state, cid, 'role.update') ? all : all.filter((r) => r.id === 'member');
+
+  return offered.map((r) => ({ value: r.id, label: r.name }));
 };
 
 export const creationMode = (state: AppState) => state.instance.communityCreation;

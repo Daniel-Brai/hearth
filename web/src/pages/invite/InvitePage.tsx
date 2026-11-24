@@ -4,7 +4,7 @@ import { useParams } from 'react-router';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { useLoad } from '@/data/use-load';
-import { Button, ButtonLink, Field, Icon, Measure, Panel, Select } from '@/design-system';
+import { Button, ButtonLink, cn, Field, Icon, Measure, Panel, Select } from '@/design-system';
 import { canDo, community, roleName, roleOptions } from '@/domain/selectors';
 import { ErrorPage } from '@/pages/errors/ErrorPage';
 import { routes } from '@/runtime/routes';
@@ -86,6 +86,7 @@ function LinkPanel({ cid, manage }: { readonly cid: string; readonly manage: boo
   const url = joinUrl(link.code);
   const uses = linkUses(link.uses, link.max);
   const limited = link.max !== 'none';
+  const full = uses.pct >= 100;
   const until = expiryDate(link.expires);
 
   const copy = () =>
@@ -136,7 +137,7 @@ function LinkPanel({ cid, manage }: { readonly cid: string; readonly manage: boo
 
         {limited ? (
           <span
-            className={uses.pct >= 100 ? 'link-count is-full' : 'link-count'}
+            className={cn('link-count', full && 'is-full')}
             tabIndex={0}
             aria-label={`${uses.main} people joined, ${uses.sub}`}
           >
@@ -159,7 +160,7 @@ function LinkPanel({ cid, manage }: { readonly cid: string; readonly manage: boo
                 <span style={{ inlineSize: `${uses.pct}%` }} />
               </span>
               <span>
-                {uses.pct >= 100
+                {full
                   ? 'The link is full. Raise the limit or reset it.'
                   : `${uses.sub}. The link stops working when they run out.`}
               </span>

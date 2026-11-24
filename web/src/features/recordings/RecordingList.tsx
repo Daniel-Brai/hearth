@@ -191,15 +191,18 @@ function RenameForm({
   const gateway = useGateway();
   const flash = useUi((s) => s.flash);
   const field = useRef<HTMLInputElement>(null);
-  // Escape unmounts the field, which blurs it, and that blur must not save
+  // Escape unmounts the field and the blur that follows must not save
   const cancelled = useRef(false);
 
   const save = async () => {
     const next = field.current?.value.trim() ?? '';
+
     if (cancelled.current || !next || next === title) return onDone();
 
     const r = await gateway.voice.renameRecording(id, next);
+
     if (!r.ok) flash(r.error);
+
     onDone();
   };
 
@@ -222,6 +225,7 @@ function RenameForm({
         onBlur={() => void save()}
         onKeyDown={(e) => {
           if (e.key !== 'Escape') return;
+
           cancelled.current = true;
           onDone();
         }}

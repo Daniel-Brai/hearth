@@ -42,7 +42,7 @@ export class ApiGateway implements HearthGateway {
     const notifications = createNotificationsGateway(ctx);
     const communities = createCommunitiesGateway(ctx);
 
-    // The hooks run after sign in, once every part below exists
+    // The hooks run after sign in when every part below exists
     const session = createSessionGateway(ctx, {
       onSignIn: () =>
         Promise.all([

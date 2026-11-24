@@ -125,6 +125,7 @@ function ScheduledRow({
 
   const sendNow = async () => {
     const r = await actions.sendNow(entry.id);
+
     flash(r.ok ? words.sentNow : r.error);
   };
 
@@ -132,6 +133,7 @@ function ScheduledRow({
     const r = await actions.reschedule(entry.id, at);
 
     flash(r.ok ? 'Rescheduled for ' + sendAtLabel(at, new Date()) : r.error);
+
     if (r.ok) setRescheduling(false);
   };
 

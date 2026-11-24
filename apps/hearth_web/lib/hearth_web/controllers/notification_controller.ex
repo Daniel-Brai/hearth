@@ -6,9 +6,9 @@ defmodule HearthWeb.NotificationController do
   import Request.Validator.Rules
   import HearthWeb.Rules
 
-  alias Hearth.Accounts
+  alias Hearth.Common
   alias Hearth.Notifications
-  alias HearthWeb.Avatars
+  alias HearthWeb.Authors
   alias HearthWeb.Paging
   alias Plug.Conn
 
@@ -33,13 +33,7 @@ defmodule HearthWeb.NotificationController do
 
     with %{data: notifications} = page <-
            Notifications.list_notifications(auth, Paging.opts(conn)) do
-      actors =
-        notifications
-        |> Enum.map(& &1.actor_id)
-        |> Enum.reject(&is_nil/1)
-        |> Accounts.list_users()
-        |> Avatars.put_urls()
-        |> Map.new(&{&1.id, &1})
+      actors = notifications |> Enum.map(& &1.actor_id) |> Authors.people()
 
       render(conn, :index, page: page, actors: actors, unread: Notifications.unread_count(auth))
     end
@@ -102,12 +96,13 @@ defmodule HearthWeb.NotificationController do
   def subscribe_push(%Conn{assigns: %{auth: %{}}} = conn, params) do
     %Conn{assigns: %{auth: auth}} = conn
 
-    attrs = %{
-      endpoint: params["endpoint"],
-      p256dh: params["p256dh"],
-      auth: params["auth"],
-      user_agent: conn |> get_req_header("user-agent") |> List.first()
-    }
+    user_agent = conn |> get_req_header("user-agent") |> List.first()
+
+    attrs =
+      params
+      |> Map.take(~w[endpoint p256dh auth])
+      |> Common.atomize_string_keys()
+      |> Map.put(:user_agent, user_agent)
 
     with true <- Notifications.push_enabled?(),
          {:ok, _subscription} <- Notifications.link_push_sub(auth, attrs) do

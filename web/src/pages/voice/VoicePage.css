@@ -32,7 +32,7 @@
   position: absolute; inset: auto 0.6rem 0.6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem;
   transition: opacity 150ms ease;
 }
-/* Everything laid over the shared screen sits on the same dark glass, so it reads on any content */
+/* Everything laid over the shared screen sits on the same dark glass so it reads on any content */
 .share-tile__reactions, .share-tile__tools, .share-tile__label, .share-tile__talkers {
   background: oklch(14% 0.01 260 / 0.82); border: 1px solid oklch(100% 0 0 / 0.16); box-shadow: 0 4px 18px oklch(0% 0 0 / 0.45);
   backdrop-filter: blur(10px) saturate(1.2); color: oklch(100% 0 0);
@@ -46,7 +46,7 @@
 .share-tile__more { font-size: var(--text-x-small); font-weight: 700; padding-inline: 0.35rem 0.5rem; font-variant-numeric: tabular-nums; }
 .speaker--mini .avatar { --size: 2.2rem; }
 .speaker--mini.is-speaking .avatar { box-shadow: 0 0 0 2px var(--color-canvas), 0 0 0 4px var(--hue-green); animation: none; }
-/* The shared screen takes the middle, and the people sit in a row under it */
+/* The shared screen takes the middle and the people sit in a row under it */
 .voice-focus { display: grid; gap: 0.75rem; justify-items: center; }
 .voice-focus > .share-tile { inline-size: 100%; }
 .share-strip { display: flex; align-items: center; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
@@ -79,8 +79,7 @@
 .people-list__name { display: grid; flex: 1; min-inline-size: 0; line-height: 1.25; }
 .people-list__name small { font-size: var(--text-x-small); }
 .voice-layout { display: grid; gap: 1.25rem; align-items: start; }
-/* On a narrow screen the chat comes up from the bottom as a sheet. It sits in the main column
-   rather than the window, so an open sidebar never covers it */
+/* On a narrow screen the chat is a sheet in the main column so an open sidebar never covers it */
 .voice-chat {
   background: var(--color-canvas); border-block-start: 1px solid var(--color-ink-lighter); border-radius: 1rem 1rem 0 0; display: flex; flex-direction: column; overflow: hidden;
   position: absolute; inset: auto 0 0; block-size: min(78dvh, 40rem); z-index: 30; box-shadow: var(--shadow-float);
@@ -94,7 +93,7 @@
 .voice-chat .chat__messages { padding-inline: 0.75rem; }
 .voice-chat .chat__composer { padding: 0.5rem 0.75rem 0.75rem; }
 .voice-chat .return-latest { inset-block-end: 5.5rem; }
-/* Messages read as plain rows rather than bubbles, and a row lights up under the pointer */
+/* Messages read as plain rows rather than bubbles and a row lights up under the pointer */
 .voice-chat .message { border-radius: 0.5em; padding-inline: 0.35rem; transition: background-color 120ms ease; }
 .voice-chat .message:hover { background: color-mix(in oklab, var(--color-ink-lightest) 55%, transparent); }
 .voice-chat .message__bubble, .voice-chat .message.is-me .message__bubble { animation: none; background: none; border-radius: 0; padding: 0; }
@@ -104,8 +103,7 @@
   background: var(--color-canvas); border-radius: 0.6em; box-shadow: var(--shadow-float); inset: -1.2rem 0 auto auto; padding: 0.1rem; position: absolute; z-index: 2;
 }
 .voice-chat-dot { min-block-size: 0.7rem; min-inline-size: 0.7rem; padding: 0; inset: -0.15rem -0.15rem auto auto; animation: pop-in 220ms var(--ease-out-expo); }
-/* On a wide screen the chat docks along the right edge at full height, like a side column,
-   and the room scrolls on its own beside it */
+/* On a wide screen the chat docks along the right edge and the room scrolls beside it */
 @media (min-width: 72rem) {
   #main:has(.voice-layout.has-chat) { display: grid; overflow: hidden; padding: 0; }
   .voice-layout.has-chat { block-size: 100%; gap: 0; grid-template-columns: minmax(0, 1fr) clamp(20rem, 28vw, 26rem); min-block-size: 0; }
@@ -118,7 +116,7 @@
     border-radius: 0; box-shadow: none; position: static; z-index: auto;
   }
 }
-/* In a full screen share the chat floats on the right of the screen, under the people and above the controls */
+/* In a full screen share the chat floats on the right of the screen under the people and above the controls */
 .share-tile .voice-chat {
   animation: voice-chat-side 220ms var(--ease-out-expo); block-size: auto; border: 1px solid oklch(100% 0 0 / 0.16); border-radius: 0.9rem;
   box-shadow: 0 8px 30px oklch(0% 0 0 / 0.5); inline-size: min(24rem, 42%); inset: 3.6rem 0.7rem 4.2rem auto; position: absolute; z-index: 4;
@@ -143,7 +141,7 @@
 }
 .idle-room__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-inline-start: auto; }
 .idle-room__mode-icon { display: inline-grid; }
-/* On a phone the start row stays one line, with Schedule as an icon */
+/* On a phone the start row stays one line with Schedule as an icon */
 @container main (max-width: 40rem) {
   .idle-room__start, .idle-room__actions { flex-wrap: nowrap; gap: 0.5rem; }
   .idle-room__wide, .idle-room__mode-icon { display: none; }

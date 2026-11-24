@@ -10,6 +10,7 @@ defmodule HearthWeb.InviteController do
   alias Hearth.Common
   alias Hearth.Communities
   alias Hearth.IAM
+  alias HearthWeb.Authors
   alias HearthWeb.Avatars
   alias HearthWeb.CommunityExtras
   alias Plug.Conn
@@ -196,9 +197,13 @@ defmodule HearthWeb.InviteController do
       created: {%{type: :array, items: Schema.InviteEmail}, description: "Sent"},
       forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
       not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      too_many_requests: %Reference{"$ref": "#/components/responses/too_many_requests"},
       unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
       unprocessable_content: %Reference{"$ref": "#/components/responses/unprocessable_content"}
     ]
+
+  # The limit keeps the instance address from sending mail at scale
+  rate_limit :send_invitation, limit: 10, scale: :timer.hours(1), by: :user
 
   @validate %{
     "community_id" => ~V[required|uuid],
@@ -262,13 +267,7 @@ defmodule HearthWeb.InviteController do
   def mine(%Conn{assigns: %{auth: %{}}} = conn, _params) do
     %Conn{assigns: %{auth: auth}} = conn
     invites = Communities.list_my_invites(auth)
-
-    inviters =
-      invites
-      |> Enum.map(& &1.invite.created_by_id)
-      |> Accounts.list_users()
-      |> Avatars.put_urls()
-      |> Map.new(&{&1.id, &1})
+    inviters = invites |> Enum.map(& &1.invite.created_by_id) |> Authors.people()
 
     render(conn, :mine, invites: invites, inviters: inviters)
   end

@@ -68,17 +68,14 @@ defmodule Hearth.Voice.Recording do
           speakers: [Speaker.t()]
         }
 
-  @type scope ::
-          {:room_id | :event_id | :post_id, T.id(), T.id()}
+  @type scope :: {:room_id | :event_id | :post_id, T.id(), T.id()}
 
   @spec start(struct()) :: {:ok, t()} | {:error, :already_recording}
   def start(%__MODULE__{} = recording) do
     changeset =
       recording
       |> Changeset.change(status: :recording, started_at: DateTime.utc_now())
-      |> Changeset.unique_constraint(:session_id,
-        name: :recordings_one_running_per_session
-      )
+      |> Changeset.unique_constraint(:session_id, name: :recordings_one_running_per_session)
 
     case Repo.insert(changeset) do
       {:ok, recording} -> {:ok, recording}
@@ -99,7 +96,7 @@ defmodule Hearth.Voice.Recording do
   @spec running(T.id()) :: nil | t()
   def running(session_id), do: get(session_id: session_id, status: :recording)
 
-  # Failed recordings show only to people who may record, who can try again
+  # Failed recordings show only to people who may record since they can try again
   @spec shown(boolean()) :: [status()]
   def shown(true), do: @statuses
   def shown(false), do: @statuses -- [:failed]
@@ -125,14 +122,15 @@ defmodule Hearth.Voice.Recording do
   @spec advance(t(), atom(), keyword()) ::
           {:ok, t()} | {:error, :invalid_transition | :stale}
   def advance(%__MODULE__{id: id, status: status} = recording, event, changes \\ []) do
-    with {:ok, next} <- RecordingLifecycle.next(recording, event) do
-      query = from(r in __MODULE__, where: r.id == ^id and r.status == ^status, select: r)
-      changes = [status: next, updated_at: DateTime.utc_now()] ++ changes
+    query = from(r in __MODULE__, where: r.id == ^id and r.status == ^status, select: r)
 
-      case Repo.update_all(query, set: changes) do
-        {1, [recording]} -> {:ok, recording}
-        {0, []} -> {:error, :stale}
-      end
+    with {:ok, next} <- RecordingLifecycle.next(recording, event),
+         changes = [status: next, updated_at: DateTime.utc_now()] ++ changes,
+         {1, [recording]} <- Repo.update_all(query, set: changes) do
+      {:ok, recording}
+    else
+      {0, []} -> {:error, :stale}
+      error -> error
     end
   end
 

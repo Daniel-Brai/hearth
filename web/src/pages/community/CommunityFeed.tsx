@@ -24,7 +24,6 @@ const SORT_LABEL: Record<FeedSort, string> = {
   unanswered: 'Questions without an answer',
 };
 
-// The Join button sits in the hero above, so the note only explains
 export function GuestNote({ guest }: { readonly guest: boolean }) {
   return (
     <OriginNote id="community-guest-note">

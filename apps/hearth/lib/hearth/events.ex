@@ -94,13 +94,7 @@ defmodule Hearth.Events do
   def cancel_event(%User{} = user, %Event{} = event) do
     with :ok <- authorize(user, event.community_id, event.host_id),
          {:ok, event} <- Event.cancel(event) do
-      broadcast_to_pubsub(%EventCancelled{
-        event_id: event.id,
-        community_id: event.community_id,
-        room_id: event.room_id,
-        cancelled_by_id: user.id
-      })
-
+      broadcast_cancelled(event, user)
       {:ok, event}
     end
   end
@@ -120,17 +114,19 @@ defmodule Hearth.Events do
           {:ok, Event.t()} | {:error, :forbidden | Changeset.t()}
   def delete_event(%User{} = user, %Event{} = event) do
     with :ok <- authorize(user, event.community_id, event.host_id) do
-      if is_nil(event.cancelled_at) do
-        broadcast_to_pubsub(%EventCancelled{
-          event_id: event.id,
-          community_id: event.community_id,
-          room_id: event.room_id,
-          cancelled_by_id: user.id
-        })
-      end
-
+      # An event already cancelled told everyone then
+      if event.cancelled_at == nil, do: broadcast_cancelled(event, user)
       Event.delete(event)
     end
+  end
+
+  defp broadcast_cancelled(event, user) do
+    broadcast_to_pubsub(%EventCancelled{
+      event_id: event.id,
+      community_id: event.community_id,
+      room_id: event.room_id,
+      cancelled_by_id: user.id
+    })
   end
 
   @spec toggle_interest(User.t(), Event.t()) ::
@@ -157,7 +153,7 @@ defmodule Hearth.Events do
   @spec list_visible_upcoming(nil | User.t(), [T.id()], DateTime.t()) :: [Event.t()]
   def list_visible_upcoming(user, community_ids, now \\ DateTime.utc_now())
       when is_list(community_ids) do
-    hidden = Communities.hidden_room_ids(user, community_ids)
+    hidden = Communities.list_hidden_rooms(user, community_ids)
 
     community_ids
     |> list_upcoming(now)
@@ -190,28 +186,28 @@ defmodule Hearth.Events do
     )
   end
 
-  @spec interested_ids([Event.t()]) :: %{T.id() => [T.id()]}
-  def interested_ids(events) when is_list(events),
+  @spec list_interested([Event.t()]) :: %{T.id() => [T.id()]}
+  def list_interested(events) when is_list(events),
     do: events |> Enum.map(& &1.id) |> Interest.user_ids_by_event()
 
   @spec sitemap_events(T.id()) :: [%{id: T.id(), title: String.t(), updated_at: DateTime.t()}]
   def sitemap_events(community_id) do
-    Event.sitemap_entries(community_id, Communities.hidden_room_ids(nil, [community_id]))
+    Event.sitemap_entries(community_id, Communities.list_hidden_rooms(nil, [community_id]))
   end
 
-  # Calendar apps drop an event that leaves the feed, so past ones stay for a month
+  # Calendar apps drop an event that leaves the feed so past ones stay for a month
   @spec list_calendar_events(T.id(), DateTime.t()) :: [Event.t()]
   def list_calendar_events(community_id, now \\ DateTime.utc_now()) do
     Event.calendar(
       community_id,
       DateTime.add(now, -30, :day),
-      Communities.hidden_room_ids(nil, [community_id])
+      Communities.list_hidden_rooms(nil, [community_id])
     )
   end
 
   @spec count_sitemap_events([T.id()]) :: %{T.id() => non_neg_integer()}
   def count_sitemap_events(community_ids) when is_list(community_ids) do
-    Event.sitemap_counts(community_ids, Communities.hidden_room_ids(nil, community_ids))
+    Event.sitemap_counts(community_ids, Communities.list_hidden_rooms(nil, community_ids))
   end
 
   @spec create_template_event(T.id(), String.t()) :: {:ok, nil | Event.t()} | {:error, term()}
@@ -257,25 +253,21 @@ defmodule Hearth.Events do
     end
   end
 
-  # Voice rooms default to Stage, and chat rooms have no talk mode
-  defp with_room(user, community_id, params) do
-    room_id = params[:room_id]
-
-    room = if room_id, do: Communities.get_room(id: room_id, community_id: community_id)
-
-    case room do
-      nil -> {:ok, params}
-      {:ok, room} -> with_room_type(Communities.room_visible?(user, room), room, params)
-      {:error, :not_found} -> {:error, :not_found}
+  defp with_room(user, community_id, %{room_id: room_id} = params) when room_id != nil do
+    with {:ok, room} <- Communities.get_room(id: room_id, community_id: community_id),
+         true <- Communities.room_visible?(user, room) do
+      {:ok, put_talk_mode(params, room)}
+    else
+      false -> {:error, :not_found}
+      error -> error
     end
   end
 
-  defp with_room_type(false, _room, _params), do: {:error, :not_found}
+  defp with_room(_user, _community_id, params), do: {:ok, params}
 
-  defp with_room_type(true, %Room{type: :voice}, params),
-    do: {:ok, Map.put_new(params, :talk_mode, :open)}
-
-  defp with_room_type(true, %Room{}, params), do: {:ok, Map.put(params, :talk_mode, nil)}
+  # Voice rooms default to open talk and chat rooms have no talk mode
+  defp put_talk_mode(params, %Room{type: :voice}), do: Map.put_new(params, :talk_mode, :open)
+  defp put_talk_mode(params, %Room{}), do: Map.put(params, :talk_mode, nil)
 
   defp authorize(user, community_id, host_id) do
     object = %{type: :event, community_id: community_id, author_id: host_id}

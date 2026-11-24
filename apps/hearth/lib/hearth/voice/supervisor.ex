@@ -10,7 +10,7 @@ defmodule Hearth.Voice.Supervisor do
   def init(_opts) do
     children = [
       {Task.Supervisor, name: Hearth.Voice.TaskSupervisor},
-      {Task.Supervisor, name: Hearth.Voice.CaptionTasks},
+      Hearth.Voice.Captions,
       {DynamicSupervisor, name: Hearth.Voice.LiveSupervisor, strategy: :one_for_one},
       Hearth.Voice.Drain
     ]

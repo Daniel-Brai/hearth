@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 
 import { useGateway } from '@/app/gateway-context';
-import { Avatar, Button, ButtonLink, Icon, Link, Pill, type IconName } from '@/design-system';
+import { Avatar, Button, ButtonLink, cn, Icon, Link, Pill, type IconName } from '@/design-system';
 import { Markdown } from '@/features/markdown/Markdown';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
@@ -83,13 +83,7 @@ function ProfileFacts({ view }: { readonly view: ProfileViewData }) {
     <div className="profile-facts small subtle">
       {view.presenceLabel ? (
         <span className="icon-text">
-          <span
-            className={
-              view.online
-                ? 'presence-dot presence-dot--inline'
-                : 'presence-dot presence-dot--inline is-away'
-            }
-          />
+          <span className={cn('presence-dot presence-dot--inline', !view.online && 'is-away')} />
           <span>{view.presenceLabel}</span>
           {view.presenceNote ? <span className="subtle">({view.presenceNote})</span> : null}
         </span>
@@ -146,13 +140,14 @@ function ProfileActions({ id, view }: { readonly id: string; readonly view: Prof
     );
   };
 
-  if (viewer === 'unknown')
+  if (viewer === 'unknown') {
     return (
       <div className="flex items-center gap-2 flex-wrap justify-center" aria-hidden="true">
         <span className="skel skel--btn" />
         <span className="skel skel--btn" />
       </div>
     );
+  }
 
   return (
     <div className="flex items-center gap-2 flex-wrap justify-center">

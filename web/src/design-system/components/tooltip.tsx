@@ -20,8 +20,9 @@ export function TooltipLayer() {
     const place = (t: Element) => {
       const text = t.getAttribute('data-tip');
 
-      // A button with its menu open has nothing to explain, and the tip would cover the menu
+      // A button with its menu open needs no tip and the tip would cover the menu
       if (!text || t.getAttribute('aria-expanded') === 'true') return hide();
+
       el.textContent = text;
 
       const r = t.getBoundingClientRect();
@@ -56,10 +57,12 @@ export function TooltipLayer() {
 
       if (!t) {
         if (target.current) hide();
+
         return;
       }
 
       if (t === target.current) return;
+
       hide();
       target.current = t;
       timer.current = window.setTimeout(() => place(t), e.type === 'focusin' ? 0 : 450);

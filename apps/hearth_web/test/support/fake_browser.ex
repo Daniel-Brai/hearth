@@ -150,8 +150,7 @@ defmodule HearthWeb.FakeBrowser do
 
   def handle_info(_message, state), do: {:noreply, state}
 
-  # Nothing is sent before the server asks for this kind, as with a screen
-  # picked before the offer that carries it.
+  # Nothing goes out before the server asks for this kind like a screen picked before its offer
   defp send_packet(state, kind, _payload) when not is_map_key(state.sending, kind), do: state
 
   defp send_packet(state, kind, payload) do
@@ -166,8 +165,7 @@ defmodule HearthWeb.FakeBrowser do
     %{state | sequence: state.sequence + 1}
   end
 
-  # Puts a microphone or screen on each transceiver the server wants to
-  # receive on, as the web app does before answering.
+  # The web app puts a microphone or screen on each transceiver the server receives on
   defp attach_tracks(state, tracks) do
     transceivers = PeerConnection.get_transceivers(state.pc)
 

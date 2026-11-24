@@ -81,6 +81,7 @@ export function Select<T extends string>({
 
   useLayoutEffect(() => {
     if (!open || !list.current) return;
+
     orientPopup(list.current);
 
     if (search.current) return search.current.focus();
@@ -114,10 +115,12 @@ export function Select<T extends string>({
     }
 
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+
     e.preventDefault();
 
     if (!open) {
       toggle();
+
       return;
     }
 
@@ -177,6 +180,7 @@ export function Select<T extends string>({
                   e.preventDefault();
 
                   const first = shown.find((o) => !o.disabled);
+
                   if (first) pick(first.value);
                 }}
               />

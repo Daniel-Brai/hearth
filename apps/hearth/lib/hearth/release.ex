@@ -7,8 +7,7 @@ defmodule Hearth.Release do
     load_app()
 
     for repo <- repos() do
-      {:ok, _result, _apps} =
-        Migrator.with_repo(repo, &Migrator.run(&1, :up, all: true))
+      {:ok, _result, _apps} = Migrator.with_repo(repo, &Migrator.run(&1, :up, all: true))
     end
 
     :ok
@@ -33,8 +32,7 @@ defmodule Hearth.Release do
   def rollback(repo, version) do
     load_app()
 
-    {:ok, _result, _apps} =
-      Migrator.with_repo(repo, &Migrator.run(&1, :down, to: version))
+    {:ok, _result, _apps} = Migrator.with_repo(repo, &Migrator.run(&1, :down, to: version))
 
     :ok
   end

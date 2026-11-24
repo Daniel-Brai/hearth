@@ -524,6 +524,21 @@ defmodule HearthWeb.MessageController do
     end
   end
 
+  operation :unread,
+    summary: "Count my unread messages",
+    description: "Per room in my communities and per conversation",
+    security: [%{"bearer" => []}],
+    responses: [
+      ok: {Schema.Unread, description: "OK"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"}
+    ]
+
+  def unread(%Conn{assigns: %{auth: %{}}} = conn, _params) do
+    %Conn{assigns: %{auth: auth}} = conn
+
+    render(conn, :unread, unread: Chat.unread_counts(auth))
+  end
+
   defp schedule_message(conn, params, auth, place) do
     changes = params |> Map.take(~w[body attachment_ids send_at]) |> Common.atomize_string_keys()
 
@@ -536,8 +551,8 @@ defmodule HearthWeb.MessageController do
 
   defp list(conn, params, auth, place) do
     with {:ok, parent} <- find_parent(params["parent_id"]),
-         %{data: messages} = page <-
-           Chat.list_messages(auth, place, [parent: parent] ++ Paging.opts(conn)) do
+         opts = [parent: parent] ++ Paging.opts(conn),
+         %{data: messages} = page <- Chat.list_messages(auth, place, opts) do
       render(conn, :index,
         page: page,
         authors: Authors.load(messages),
@@ -572,19 +587,4 @@ defmodule HearthWeb.MessageController do
 
   defp find_parent(nil), do: {:ok, nil}
   defp find_parent(id), do: Chat.get_message(id)
-
-  operation :unread,
-    summary: "Count my unread messages",
-    description: "Per room in my communities and per conversation",
-    security: [%{"bearer" => []}],
-    responses: [
-      ok: {Schema.Unread, description: "OK"},
-      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"}
-    ]
-
-  def unread(%Conn{assigns: %{auth: %{}}} = conn, _params) do
-    %Conn{assigns: %{auth: auth}} = conn
-
-    render(conn, :unread, unread: Chat.unread_counts(auth))
-  end
 end

@@ -75,6 +75,7 @@ export function Menu({
     if (e.key === 'Escape') {
       e.stopPropagation();
       close();
+
       return;
     }
 
@@ -85,6 +86,7 @@ export function Menu({
     ).filter((el) => el.checkVisibility?.() ?? true);
 
     if (!items.length) return;
+
     e.preventDefault();
 
     const i = items.indexOf(document.activeElement as HTMLElement);
@@ -132,6 +134,7 @@ export function MenuItem({
   readonly children: ReactNode;
 }) {
   const ctx = useMenu();
+
   return (
     <button
       type="button"

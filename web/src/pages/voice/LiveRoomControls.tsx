@@ -47,7 +47,8 @@ export function LiveRoomControls({
 }) {
   const onStage = view.onStage;
   const sharingMine = session.share !== null && session.share.by === view.me;
-  // A room has one share at a time, so someone else's keeps the button off until it stops
+
+  // A room has one share at a time so someone else's keeps the button off
   const sharer = useAppState((state) =>
     session.share && !sharingMine ? displayName(state, session.share.by) : null,
   );

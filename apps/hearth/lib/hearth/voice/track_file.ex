@@ -9,7 +9,7 @@ defmodule Hearth.Voice.TrackFile do
   @wrap 4_294_967_296
   @half 2_147_483_648
 
-  # One 20 ms frame of silence, as the Opus spec defines it
+  # One 20 ms frame of silence as the Opus spec defines it
   @silence <<0xF8, 0xFF, 0xFE>>
   @silence_samples 960
 
@@ -33,7 +33,7 @@ defmodule Hearth.Voice.TrackFile do
     end
   end
 
-  # A stretch of speech held in memory, for a live caption
+  # A stretch of speech held in memory for a live caption
   @spec write_ogg([ExRTP.Packet.t()], Path.t()) :: :ok | {:error, :empty}
   def write_ogg(packets, path) when is_list(packets) do
     {:ok, writer} = Ogg.Writer.open(path, sample_rate: 48_000, channel_count: 2)

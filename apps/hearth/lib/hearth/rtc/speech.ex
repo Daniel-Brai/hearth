@@ -1,5 +1,5 @@
 defmodule Hearth.RTC.Speech do
-  # Whether someone is speaking and the stretch of speech kept for captions
+  # Who is speaking and the stretch of speech kept for captions
   # Each function takes the time and returns what the peer should do
 
   alias ExRTP.Packet
@@ -9,7 +9,7 @@ defmodule Hearth.RTC.Speech do
   @loud_level 50
   @speaking_ms 400
 
-  # With captions on a stretch of speech goes for captioning when the speaker pauses or hits the longest
+  # A stretch of speech goes for captioning when the speaker pauses or hits the longest
   # A stretch shorter than the least is a cough or a click
   @phrase_max_ms 6_000
   @phrase_min_ms 600

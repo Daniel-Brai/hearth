@@ -1,10 +1,10 @@
-import {
-  forwardRef,
-  type ChangeEvent,
-  type CSSProperties,
-  type InputHTMLAttributes,
-  type ReactNode,
-  type TextareaHTMLAttributes,
+import type {
+  ChangeEvent,
+  CSSProperties,
+  InputHTMLAttributes,
+  ReactNode,
+  Ref,
+  TextareaHTMLAttributes,
 } from 'react';
 
 import { Icon, type IconName } from '@/design-system/icons/Icon';
@@ -42,25 +42,20 @@ export function Field({
 }
 
 type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'className'> & {
+  readonly ref?: Ref<HTMLInputElement> | undefined;
   readonly className?: string | undefined;
   readonly bare?: boolean | undefined;
   readonly shake?: boolean | undefined;
 };
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className, bare, shake, ...rest },
-  ref,
-) {
+export function Input({ className, bare, shake, ...rest }: InputProps) {
   return (
-    <input
-      ref={ref}
-      className={cn('input', bare && 'input--bare', shake && 'shake', className)}
-      {...rest}
-    />
+    <input className={cn('input', bare && 'input--bare', shake && 'shake', className)} {...rest} />
   );
-});
+}
 
 type TextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'className' | 'value'> & {
+  readonly ref?: Ref<HTMLTextAreaElement> | undefined;
   readonly className?: string | undefined;
   readonly value: string;
   readonly bare?: boolean | undefined;
@@ -68,13 +63,17 @@ type TextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'classNam
   readonly countFrom?: number | undefined;
 };
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { className, bare, shake, maxLength, countFrom, value, ...rest },
-  ref,
-) {
+export function Textarea({
+  className,
+  bare,
+  shake,
+  maxLength,
+  countFrom,
+  value,
+  ...rest
+}: TextareaProps) {
   const field = (
     <textarea
-      ref={ref}
       className={cn('input', bare && 'input--bare', shake && 'shake', className)}
       maxLength={maxLength}
       value={value}
@@ -102,7 +101,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
       ) : null}
     </span>
   );
-});
+}
 
 export function InputWithPrefix({
   prefix,

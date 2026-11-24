@@ -50,7 +50,7 @@ export function StageSpeaker({
         {speaking ? <span className="sr-only">, speaking</span> : null}
       </span>
 
-      {/* Stays up the whole time you're muted, so it never flickers */}
+      {/* Stays up the whole time you're muted so it never flickers */}
       {you && muted ? (
         <span id="voice-muted-hint" className="speaker__hint" role="status">
           You're muted

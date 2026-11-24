@@ -11,9 +11,10 @@ import { eventLink } from './event-utils';
 
 const names = new Intl.ListFormat('en');
 
-function interestMessage(e: CommunityEvent, interested: boolean): string {
+export function interestMessage(e: CommunityEvent, interested: boolean): string {
   if (interested) return 'Removed from your events';
   if (evState(e) === 'live') return 'Marked as interested';
+
   return "Interested. We'll remind you an hour before it starts, and again 10 minutes before.";
 }
 
@@ -29,6 +30,7 @@ function cancelWarning(others: string[]): string {
 function cancelledMessage(others: string[]): string {
   if (!others.length) return 'Event cancelled';
   if (others.length === 1) return `Event cancelled. ${others[0]} has been told.`;
+
   return `Event cancelled. The ${others.length} people interested have been told.`;
 }
 

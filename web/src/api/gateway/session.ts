@@ -28,7 +28,7 @@ import { useUi } from '@/runtime/ui-store';
 
 import { apiBaseUrl, refreshSession } from '../custom-fetch';
 import { toPerson, toTemplate } from '../mappers';
-import { parseProviderReturn } from '../provider-return';
+import { markProviderStart, takeProviderReturn } from '../provider-return';
 import { accessToken, onAccessToken, setAccessToken } from '../session-token';
 import { toSettings } from '../settings';
 import { dataUrlToBlob, uploadFile } from '../upload';
@@ -37,7 +37,7 @@ import { call, errorCode, failed, UNREACHABLE, type GatewayContext } from './con
 const WRONG_CODE = "That code didn't work. Try again or send a new one.";
 
 export type SignInHooks = {
-  /** Settles once everything the sidebar reads has loaded, whether or not each load worked */
+  /** Settles once everything the sidebar reads has loaded even when a load fails */
   onSignIn: () => Promise<unknown>;
   onNotice: (kind: string) => void;
   /** Another tab or the server changed something this person scheduled */
@@ -48,9 +48,8 @@ export type SignInHooks = {
 export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
   let signUpToken: string | null = null;
 
-  // Read once and cleared from the address bar so a reload or a shared link
-  // doesn't replay it
-  let returned = typeof window === 'undefined' ? null : parseProviderReturn(window.location.hash);
+  // Read once and cleared from the address bar so a reload never replays it
+  let returned = typeof window === 'undefined' ? null : takeProviderReturn(window.location.hash);
 
   if (returned) {
     window.history.replaceState(
@@ -89,37 +88,24 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
       state.settings = toSettings(me.settings);
     });
 
-    // A new photo is ready a moment after it's set, once its sizes are made
     ctx.watch(`user:${me.id}`, (realtime, topic) => {
-      const stopMedia = realtime.onPush(topic, 'MediaReady', () => void reloadMe());
-      // A file that couldn't be processed says why, since it was sent and then dropped
-      const stopFailed = realtime.onPush(topic, 'MediaFailed', ({ failure }) =>
-        useUi.getState().flash(failure),
-      );
-      const stopNotices = realtime.onPush(topic, 'NotificationCreated', ({ kind }) =>
-        hooks.onNotice(kind),
-      );
-      const stopMessages = realtime.onPush(topic, 'ScheduledMessageChanged', () =>
-        hooks.onScheduled('messages'),
-      );
-      const stopPosts = realtime.onPush(topic, 'ScheduledPostChanged', () =>
-        hooks.onScheduled('posts'),
-      );
-      const stopPresence = realtime.onPush(topic, 'presence_changed', ({ online, offline }) =>
-        ctx.store.set((state) => {
-          for (const id of online) state.online[id] = true;
-          for (const id of offline) state.online[id] = false;
-        }),
-      );
+      const stops = [
+        // A new photo is ready a moment after it's set once its sizes are made
+        realtime.onPush(topic, 'MediaReady', () => void reloadMe()),
+        // A file that couldn't be processed says why since it was sent and then dropped
+        realtime.onPush(topic, 'MediaFailed', ({ failure }) => useUi.getState().flash(failure)),
+        realtime.onPush(topic, 'NotificationCreated', ({ kind }) => hooks.onNotice(kind)),
+        realtime.onPush(topic, 'ScheduledMessageChanged', () => hooks.onScheduled('messages')),
+        realtime.onPush(topic, 'ScheduledPostChanged', () => hooks.onScheduled('posts')),
+        realtime.onPush(topic, 'presence_changed', ({ online, offline }) =>
+          ctx.store.set((state) => {
+            for (const id of online) state.online[id] = true;
+            for (const id of offline) state.online[id] = false;
+          }),
+        ),
+      ];
 
-      return () => {
-        stopMedia();
-        stopFailed();
-        stopNotices();
-        stopMessages();
-        stopPosts();
-        stopPresence();
-      };
+      return () => stops.forEach((stop) => stop());
     });
 
     rememberSignedIn(true);
@@ -156,7 +142,9 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
     signedIn(session.user);
   };
 
-  // The server render has no session, and a listener per request would never be let go
+  let loaded: Promise<Result> | null = null;
+
+  // The server render has no session and a listener per request would never be let go
   if (!onServer)
     onAccessToken((token) => {
       if (token) return;
@@ -194,11 +182,8 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
     const refreshed = accessToken() || onServer ? null : await refreshSession();
 
     if (refreshed === 'unreachable') return fail(UNREACHABLE);
-    if (!accessToken()) {
-      if (!onServer) rememberSignedIn(false);
-
-      return ok(undefined);
-    }
+    if (!accessToken() && !onServer) rememberSignedIn(false);
+    if (!accessToken()) return ok(undefined);
 
     const me = await call(() => authMe());
 
@@ -208,8 +193,6 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
 
     return ok(undefined);
   };
-
-  let loaded: Promise<Result> | null = null;
 
   // A restore that ends with nobody signed in leaves nothing to wait for
   const settle = () => {
@@ -260,6 +243,7 @@ export function createSessionGateway(ctx: GatewayContext, hooks: SignInHooks) {
 
     oauth: (provider, returnTo) => {
       const query = new URLSearchParams({ return_to: returnTo });
+      markProviderStart();
       window.location.assign(
         `${apiBaseUrl()}/api/auth/oauth/${provider.toLowerCase()}?${query.toString()}`,
       );

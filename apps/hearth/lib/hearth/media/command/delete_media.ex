@@ -8,8 +8,6 @@ defmodule Hearth.Media.Command.DeleteMedia do
       Storage.abort_multipart(media.bucket_key, media.multipart_upload_id)
     end
 
-    prefix = Asset.prefix(media)
-
-    with :ok <- Storage.delete_prefix(prefix), do: Asset.delete(media)
+    with :ok <- media |> Asset.prefix() |> Storage.delete_prefix(), do: Asset.delete(media)
   end
 end

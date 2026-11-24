@@ -68,19 +68,22 @@ export function PostHeaderBar({
 }
 
 async function toggleWatch(gateway: HearthGateway, flash: (text: string) => void, post: Post) {
-  const watching = post.watching;
+  const done = post.watching ? 'Stopped watching' : 'Watching. You will get new replies.';
   const r = await gateway.posts.toggleWatch(post.id);
-  flash(r.ok ? (watching ? 'Stopped watching' : 'Watching. You will get new replies.') : r.error);
+
+  flash(r.ok ? done : r.error);
 }
 
 async function toggleSave(gateway: HearthGateway, flash: (text: string) => void, post: Post) {
-  const saved = post.bookmarked;
+  const done = post.bookmarked ? 'Removed from Saved' : 'Saved. Find it under Saved.';
   const r = await gateway.posts.toggleSave(post.id);
-  flash(r.ok ? (saved ? 'Removed from Saved' : 'Saved. Find it under Saved.') : r.error);
+
+  flash(r.ok ? done : r.error);
 }
 
 function sharePost(post: Post, flash: (text: string) => void) {
   const url = shareUrl(postHref(post), window.location.origin);
+
   const copy = () =>
     void navigator.clipboard.writeText(url).then(
       () => flash('Link copied'),
@@ -133,11 +136,7 @@ function SaveButton({ post }: { readonly post: Post }) {
 function useMenuItems(post: Post, view: PostViewData) {
   const { viewer } = useGuest();
   const shareable = useShareable(post.c);
-
-  return menuItems(post, view, viewer === 'member', shareable);
-}
-
-function menuItems(post: Post, view: PostViewData, member: boolean, shareable: boolean) {
+  const member = viewer === 'member';
   const mine = post.author === view.me;
 
   const items = {

@@ -19,15 +19,17 @@ export function usePostActions(post: Post, view: PostViewData) {
   const mine = post.author === view.me;
 
   const togglePin = async () => {
-    const pinned = post.pinned;
+    const done = post.pinned ? 'Unpinned' : 'Pinned';
     const r = await gateway.posts.togglePin(id);
-    flash(r.ok ? (pinned ? 'Unpinned' : 'Pinned') : r.error);
+
+    flash(r.ok ? done : r.error);
   };
 
   const toggleLock = async () => {
-    const locked = post.locked;
+    const done = post.locked ? 'Replies are open again' : 'Locked. Nobody can reply now.';
     const r = await gateway.posts.toggleLock(id);
-    flash(r.ok ? (locked ? 'Replies are open again' : 'Locked. Nobody can reply now.') : r.error);
+
+    flash(r.ok ? done : r.error);
   };
 
   const moderation = useModerationActions();
@@ -44,19 +46,23 @@ export function usePostActions(post: Post, view: PostViewData) {
       text: post.title,
     });
 
-  const remove = () =>
-    mine
-      ? ask({
-          title: 'Delete this post?',
-          body: 'The post and all of its replies will be removed for everyone.',
-          action: 'Delete post',
-          onConfirm: () => {
-            // The post goes at once so leave first and flash if it fails
-            void navigate(routes.community(post.c));
-            void gateway.posts.remove(id).then((r) => flash(r.ok ? 'Post deleted' : r.error));
-          },
-        })
-      : moderation.remove(ref);
+  const remove = () => {
+    if (!mine) {
+      moderation.remove(ref);
+      return;
+    }
+
+    ask({
+      title: 'Delete this post?',
+      body: 'The post and all of its replies will be removed for everyone.',
+      action: 'Delete post',
+      onConfirm: () => {
+        // The post goes at once so leave first and flash if it fails
+        void navigate(routes.community(post.c));
+        void gateway.posts.remove(id).then((r) => flash(r.ok ? 'Post deleted' : r.error));
+      },
+    });
+  };
 
   const restore = () => moderation.restore(ref);
 
@@ -78,6 +84,7 @@ export function usePostActions(post: Post, view: PostViewData) {
     const r = await gateway.posts.startLive(id);
 
     if (!r.ok) return flash(r.error);
+
     flash("You're live. People reading the post were asked to join.");
     void navigate(routes.voice(post.c, r.value.room));
   };

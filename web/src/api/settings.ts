@@ -1,9 +1,8 @@
-import type { DigestChoice, InstanceUpdate, UserSettings } from '@/domain/types';
+import type { InstanceUpdate, UserSettings } from '@/domain/types';
 import type {
   InstanceUpdate as ApiInstanceUpdate,
   Settings,
   UpdateSettingsBody,
-  UpdateSettingsBodyDigest,
 } from '@/generated/schemas';
 
 const DIGEST_TO_API = { daily: 'daily', weekly: 'weekly', never: 'off' } as const;
@@ -25,8 +24,6 @@ export const toSettings = (settings: Settings): UserSettings => ({
   tourDone: settings.tour_done,
 });
 
-const digestOf = (digest: DigestChoice): UpdateSettingsBodyDigest => DIGEST_TO_API[digest];
-
 // The server replaces notification choices together so unchanged ones come from current
 export function toSettingsBody(
   patch: Partial<UserSettings>,
@@ -39,7 +36,7 @@ export function toSettingsBody(
   if ('sounds' in patch) body.play_sounds = next.sounds;
   if ('uiSounds' in patch) body.ui_sounds = next.uiSounds;
   if ('haptics' in patch) body.haptics = next.haptics;
-  if ('digest' in patch) body.digest = digestOf(next.digest);
+  if ('digest' in patch) body.digest = DIGEST_TO_API[next.digest];
   if ('compact' in patch) body.compact_feeds = next.compact;
   if ('sidebarCollapsed' in patch) body.sidebar_collapsed = next.sidebarCollapsed;
   if ('captions' in patch) body.captions_on = next.captions;

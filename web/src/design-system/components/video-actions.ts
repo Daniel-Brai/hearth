@@ -13,6 +13,7 @@ type Actions = Record<string, (() => void) | undefined>;
 
 function moveTo(v: HTMLVideoElement, seconds: number) {
   v.currentTime = Math.max(0, seconds);
+
   return v.currentTime;
 }
 
@@ -27,6 +28,7 @@ function setVolume(v: HTMLVideoElement, next: number) {
 
 function flipMute(v: HTMLVideoElement) {
   v.muted = !v.muted;
+
   if (!v.muted && v.volume === 0) v.volume = 0.5;
 }
 
@@ -40,6 +42,7 @@ export function useVideoActions(
 
   const seekTo = (seconds: number) => {
     const v = video.current;
+
     if (!v) return;
 
     report(moveTo(v, total ? Math.min(seconds, total) : seconds));
@@ -47,6 +50,7 @@ export function useVideoActions(
 
   const toggle = () => {
     const v = video.current;
+
     if (!v) return;
 
     if (v.paused || v.ended) {
@@ -58,6 +62,7 @@ export function useVideoActions(
 
   const changeVolume = (next: number) => {
     const v = video.current;
+
     if (!v) return;
 
     setVolume(v, next);
@@ -65,6 +70,7 @@ export function useVideoActions(
 
   const toggleMute = () => {
     const v = video.current;
+
     if (!v) return;
 
     flipMute(v);
@@ -72,12 +78,15 @@ export function useVideoActions(
 
   const cycleRate = () => {
     const next = (rate + 1) % RATES.length;
+
     if (video.current) setPlaybackRate(video.current, RATES[next]!);
+
     setRate(next);
   };
 
   const togglePip = () => {
     const v = video.current;
+
     if (!v) return;
 
     if (document.pictureInPictureElement) {

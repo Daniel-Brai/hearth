@@ -24,7 +24,6 @@ export function ConfirmDialog() {
 
   return (
     <Dialog open={open && !!confirm} onClose={close} width="30rem" labelledBy="confirm-title">
-      {/* Keyed so each question starts fresh */}
       {confirm ? <ConfirmBody key={confirm.title + confirm.action} onClose={close} /> : null}
     </Dialog>
   );
@@ -104,6 +103,7 @@ function NoteField({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key !== 'Enter') return;
+
             e.preventDefault();
             onEnter();
           }}

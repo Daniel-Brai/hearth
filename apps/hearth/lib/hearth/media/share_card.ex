@@ -89,10 +89,7 @@ defmodule Hearth.Media.ShareCard do
         logo_layer ++
           text(card.heading, 34, :bold, @white, [], x: text_x, y: 74) ++
           text(card.subheading, 24, :normal, @muted, [], x: text_x, y: 118) ++
-          text(eyebrow, 24, :bold, @accent, [],
-            x: @margin,
-            y: 222
-          ) ++
+          text(eyebrow, 24, :bold, @accent, [], x: @margin, y: 222) ++
           text(shorten(card.title), 64, :ultrabold, @white, [width: @width - 2 * @margin],
             x: @margin,
             y: 262

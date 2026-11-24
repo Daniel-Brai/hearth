@@ -11,12 +11,17 @@ defmodule HearthWeb.Calendar do
     monthly: "FREQ=MONTHLY"
   }
 
+  # A line break in a title could start a new property in a subscriber's calendar
+  @controls 0..31 |> Enum.reject(&(&1 == ?\t)) |> Enum.map(&<<&1>>)
+
   # Lines longer than this many bytes continue on the next line, as iCalendar asks
   @line_bytes 75
 
   @spec community(map()) :: iodata()
   def community(%{} = community) do
-    rooms = community |> Communities.list_rooms() |> Map.new(&{&1.id, &1.name})
+    rooms =
+      community |> Communities.list_rooms(fields: [:id, :name]) |> Map.new(&{&1.id, &1.name})
+
     events = Events.list_calendar_events(community.id)
 
     [
@@ -100,7 +105,8 @@ defmodule HearthWeb.Calendar do
     |> String.replace("\\", "\\\\")
     |> String.replace(";", "\\;")
     |> String.replace(",", "\\,")
-    |> String.replace(["\r\n", "\n"], "\\n")
+    |> String.replace(["\r\n", "\r", "\n"], "\\n")
+    |> String.replace(@controls, "")
   end
 
   # Continuation lines start with a space, which counts toward their length

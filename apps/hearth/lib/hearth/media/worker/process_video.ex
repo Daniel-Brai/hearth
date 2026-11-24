@@ -8,8 +8,8 @@ defmodule Hearth.Media.Worker.ProcessVideo do
 
   alias Hearth.Media
   alias Hearth.Media.Asset
-  alias Hearth.Media.Command.FailMedia
   alias Hearth.Media.FileType
+  alias Hearth.Media.Processing
   alias Hearth.Media.TempFile
   alias Hearth.Media.Variant
   alias Hearth.Media.Video
@@ -38,7 +38,7 @@ defmodule Hearth.Media.Worker.ProcessVideo do
     end
   end
 
-  # dir comes from TempFile.run/1, made from a new id
+  # dir comes from TempFile.run/1 and is made from a new id
   # sobelow_skip ["Traversal.FileModule"]
   defp process(media, dir) do
     File.mkdir_p!(dir)
@@ -53,19 +53,11 @@ defmodule Hearth.Media.Worker.ProcessVideo do
         store() >>>
         finish()
 
-    case result do
-      {:ok, _media} -> :ok
-      {:error, {:cancel, failure, reason}} -> cancel(media, failure, reason)
-      {:error, reason} -> {:error, reason}
-    end
+    Processing.outcome(media, result)
   end
 
   defp download(state) do
-    case Storage.download(state.media.bucket_key, state.original) do
-      :ok -> {:ok, state}
-      {:error, :not_found} -> cancel_with("The file was lost before it was processed.", :missing)
-      error -> error
-    end
+    with :ok <- Processing.download(state.media, state.original), do: {:ok, state}
   end
 
   defp probe(state) do
@@ -74,7 +66,7 @@ defmodule Hearth.Media.Worker.ProcessVideo do
         {:ok, Map.put(state, :info, info)}
 
       {:error, :not_a_video} ->
-        cancel_with("The file isn't a video that can be played.", :unreadable)
+        Processing.cancel_with("The file isn't a video that can be played.", :unreadable)
     end
   end
 
@@ -85,18 +77,17 @@ defmodule Hearth.Media.Worker.ProcessVideo do
 
     cond do
       info.duration_ms > FileType.max_video_ms() ->
-        cancel_with("The video is longer than #{minutes} minutes.", :too_long)
+        Processing.cancel_with("The video is longer than #{minutes} minutes.", :too_long)
 
       long > @max_long_side or short > @max_short_side ->
-        cancel_with("The video is bigger than 4K.", :too_big)
+        Processing.cancel_with("The video is bigger than 4K.", :too_big)
 
       true ->
         {:ok, state}
     end
   end
 
-  # The stored original is replaced by the same video without its metadata, so a download
-  # never says where or on what it was filmed. It fails closed rather than keep it
+  # Replaces the original with a copy without metadata and fails rather than keep it
   defp clean_original(%{media: media} = state) do
     clean = Path.join(state.dir, "clean")
 
@@ -104,8 +95,11 @@ defmodule Hearth.Media.Worker.ProcessVideo do
          :ok <- Storage.upload_file(media.bucket_key, clean, media.content_type) do
       {:ok, Map.merge(state, %{original: clean, cleaned: file_facts(clean)})}
     else
-      {:error, :not_converted} -> cancel_with("The video couldn't be converted.", :not_converted)
-      error -> error
+      {:error, :not_converted} ->
+        Processing.cancel_with("The video couldn't be converted.", :not_converted)
+
+      error ->
+        error
     end
   end
 
@@ -128,7 +122,7 @@ defmodule Hearth.Media.Worker.ProcessVideo do
          {:ok, converted} <- Video.probe(output) do
       {:ok, Map.merge(state, %{output: output, converted: converted})}
     else
-      _failed -> cancel_with("The video couldn't be converted.", :not_converted)
+      _failed -> Processing.cancel_with("The video couldn't be converted.", :not_converted)
     end
   end
 
@@ -144,7 +138,7 @@ defmodule Hearth.Media.Worker.ProcessVideo do
 
       {:ok, Map.merge(state, %{poster: poster, blurhash: blurhash})}
     else
-      _failed -> cancel_with("The video's first frame couldn't be read.", :no_poster)
+      _failed -> Processing.cancel_with("The video's first frame couldn't be read.", :no_poster)
     end
   end
 
@@ -182,12 +176,5 @@ defmodule Hearth.Media.Worker.ProcessVideo do
       {:error, _moved_on} ->
         {:ok, media}
     end
-  end
-
-  defp cancel_with(failure, reason), do: {:error, {:cancel, failure, reason}}
-
-  defp cancel(media, failure, reason) do
-    _failed = FailMedia.execute(media, failure)
-    {:cancel, reason}
   end
 end

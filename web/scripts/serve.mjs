@@ -20,6 +20,9 @@ const root = fileURLToPath(new URL('../build/client', import.meta.url));
 const build = await import(new URL('../build/server/index.js', import.meta.url).href);
 const api = (process.env.API_INTERNAL_URL ?? 'http://localhost:4000').replace(/\/$/, '');
 
+// No framing, no posting forms elsewhere and no plugins even without Caddy
+const CSP = "frame-ancestors 'none'; form-action 'self'; base-uri 'none'; object-src 'none'";
+
 const TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -60,7 +63,7 @@ async function send(res, body, encoding) {
 }
 
 function toRequest(req) {
-  const url = new URL(req.url ?? '/', process.env.PUBLIC_URL ?? `http://${req.headers.host}`);
+  const url = new URL(req.url ?? '/', origin);
   const headers = new Headers();
 
   for (const [name, value] of Object.entries(req.headers)) {
@@ -90,6 +93,7 @@ async function renderPage(req, res) {
   if (cookies.length) headers['set-cookie'] = cookies;
   if (encoding) headers['content-encoding'] = encoding;
   headers.vary = 'Accept-Encoding';
+  headers['content-security-policy'] ??= CSP;
 
   res.writeHead(response.status, headers);
   if (!response.body || req.method === 'HEAD') return res.end();
@@ -114,7 +118,7 @@ const fromApi = (pathname) =>
   pathname.startsWith('/og/');
 
 async function proxy(req, res) {
-  // Share cards answer with a redirect to the stored image, which goes back to the browser as is
+  // Share cards answer with a redirect to the stored image that the browser follows itself
   const answer = await fetch(api + req.url, {
     headers: { accept: req.headers.accept ?? '*/*' },
     redirect: 'manual',
@@ -161,6 +165,9 @@ const server = createServer(async (req, res) => {
 });
 
 const port = Number(process.env.PORT ?? 3000);
+
+// The Host header is the client's to choose so links never come from it
+const origin = process.env.PUBLIC_URL ?? `http://localhost:${port}`;
 const host = process.env.HOST ?? '0.0.0.0';
 
 server.listen(port, host, () => console.log(`Hearth web on http://${host}:${port}`));

@@ -1,7 +1,8 @@
-import { ButtonLink, ExternalButtonLink, Icon, Link } from '@/design-system';
+import { ButtonLink, ExternalButtonLink, Icon, Link, type IconName } from '@/design-system';
 import type { EventPlace } from '@/domain/events';
+import { asIconName } from '@/pages/edit-community/colors';
 
-import { placeIcon } from './place-icon';
+const placeIcon = (name: string): IconName => asIconName(name) ?? 'link';
 
 export function PlaceLink({ place }: { readonly place: EventPlace }) {
   const body = (

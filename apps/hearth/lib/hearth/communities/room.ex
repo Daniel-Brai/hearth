@@ -84,11 +84,12 @@ defmodule Hearth.Communities.Room do
 
   defp put_slug(changeset), do: changeset
 
-  @spec for_community(T.id()) :: [t()]
-  def for_community(community_id) do
+  @spec for_community(T.id(), keyword()) :: [t()]
+  def for_community(community_id, opts \\ []) do
     __MODULE__
     |> where([r], r.community_id == ^community_id and is_nil(r.archived_at))
     |> order_by([:position, :inserted_at])
+    |> only_fields(Keyword.get(opts, :fields, []))
     |> Repo.all()
   end
 
@@ -163,8 +164,8 @@ defmodule Hearth.Communities.Room do
     )
   end
 
-  @spec for_community(T.id(), sight()) :: [t()]
-  def for_community(community_id, sight) do
+  @spec visible_in(T.id(), sight()) :: [t()]
+  def visible_in(community_id, sight) do
     __MODULE__
     |> where([r], r.community_id == ^community_id and is_nil(r.archived_at))
     |> visible_to(sight)
@@ -181,6 +182,18 @@ defmodule Hearth.Communities.Room do
     filters
     |> query_from()
     |> visible_to(sight)
+    |> Repo.all()
+  end
+
+  # The private rooms among these that the sight can't reach, worked out in one query
+  @spec hidden(keyword(), sight()) :: [T.id()]
+  def hidden(filters, sight) do
+    seen = filters |> query_from() |> visible_to(sight) |> select([r], r.id)
+
+    filters
+    |> query_from()
+    |> where([r], r.id not in subquery(seen))
+    |> select([r], r.id)
     |> Repo.all()
   end
 
@@ -220,8 +233,7 @@ defmodule Hearth.Communities.Room do
   defp with_roles({:ok, room}), do: {:ok, Repo.preload(room, :room_roles)}
   defp with_roles({:error, _changeset} = error), do: error
 
-  @spec put_moderation(t(), nil | Community.level()) ::
-          {:ok, t()} | {:error, Changeset.t()}
+  @spec put_moderation(t(), nil | Community.level()) :: {:ok, t()} | {:error, Changeset.t()}
   def put_moderation(%__MODULE__{} = room, level) do
     room
     |> change(moderation: level)

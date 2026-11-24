@@ -39,7 +39,7 @@ defmodule HearthWeb.TranscriptController do
         view: view,
         room: room,
         people: people,
-        editable: Transcripts.editable_speaker_ids(auth, view.transcript)
+        editable: Transcripts.list_editable_speakers(auth, view.transcript)
       )
     end
   end

@@ -69,34 +69,12 @@ defmodule Hearth.ChatTest do
       assert %{body: ["can't be blank"]} = errors_on(changeset)
     end
 
-    test "fails with other user's file", %{
-      owner: owner,
-      member: member,
-      room: room
-    } do
+    test "fails with other user's file", %{owner: owner, member: member, room: room} do
       [theirs] = TestUtils.upload_random_attachments!(owner, 1)
       body = %{body: Lorem.sentence(), attachment_ids: [theirs.id]}
 
       assert {:error, :invalid_attachment} = Chat.send_message(member, room, body)
       assert %Page{data: []} = Chat.list_messages(member, room)
-    end
-
-    test "sends to the chat beside a voice room", %{member: member, community: community} do
-      voice = TestUtils.get_room!(community, type: :voice)
-
-      assert {:ok, %Message{room_id: room_id}} =
-               Chat.send_message(member, voice, %{body: Lorem.sentence()})
-
-      assert room_id == voice.id
-    end
-
-    test "sends files with no text", %{member: member, room: room} do
-      [file] = TestUtils.upload_random_attachments!(member, 1)
-      params = %{body: "", attachment_ids: [file.id]}
-
-      assert {:ok, %Message{body: ""} = message} = Chat.send_message(member, room, params)
-      assert [attachment] = Media.list_attachments(:message, [message.id])[message.id]
-      assert attachment.media_id == file.id
     end
 
     test "fails to play a sound in a direct message", %{owner: owner, member: member} do
@@ -129,6 +107,24 @@ defmodule Hearth.ChatTest do
 
       assert {:error, changeset} = Chat.send_message(member, room, params)
       assert %{attachment_ids: [_error]} = errors_on(changeset)
+    end
+
+    test "sends to the chat beside a voice room", %{member: member, community: community} do
+      voice = TestUtils.get_room!(community, type: :voice)
+
+      assert {:ok, %Message{room_id: room_id}} =
+               Chat.send_message(member, voice, %{body: Lorem.sentence()})
+
+      assert room_id == voice.id
+    end
+
+    test "sends files with no text", %{member: member, room: room} do
+      [file] = TestUtils.upload_random_attachments!(member, 1)
+      params = %{body: "", attachment_ids: [file.id]}
+
+      assert {:ok, %Message{body: ""} = message} = Chat.send_message(member, room, params)
+      assert [attachment] = Media.list_attachments(:message, [message.id])[message.id]
+      assert attachment.media_id == file.id
     end
 
     test "sends an action", %{member: member, room: room} do
@@ -517,6 +513,7 @@ defmodule Hearth.ChatTest do
   describe "mark_read/2" do
     test "fails if not a member", %{member: member, room: room} do
       {:ok, message} = Chat.send_message(member, room, %{body: Lorem.sentence()})
+
       assert {:error, :forbidden} = Chat.mark_read(TestUtils.register_random_user!(), message)
     end
 

@@ -50,7 +50,7 @@ function ShareImage({
   // A blob URL cannot be fetched by whoever opens the link
   const shareable = image && !image.startsWith('data:') ? image : DEFAULT_IMAGE;
   const picture = origin ? new URL(shareable, origin).href : shareable;
-  // Cards and the default picture have one size, but a banner or photo can be any
+  // Cards and the default picture have one size while a banner or photo can be any
   const sized = shareable === DEFAULT_IMAGE || shareable.startsWith('/og/');
 
   return (
@@ -77,6 +77,7 @@ function Description({ text }: { readonly text: string | null | undefined }) {
 
 function StructuredData({ text }: { readonly text: string | null | undefined }) {
   const hydrated = useHydrated();
+
   if (!text || hydrated) return null;
 
   return (

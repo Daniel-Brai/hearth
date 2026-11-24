@@ -144,11 +144,8 @@ export function feedEmpty(
 export const seenPosts = (state: AppState) =>
   state.posts.filter((p) => p.seen && !p.removed && state.communities[p.c]?.joined).slice(0, 6);
 
-export function allTags(state: AppState, cid?: string | null) {
-  const set = new Set<string>();
-  state.posts.filter((p) => !cid || p.c === cid).forEach((p) => p.tags.forEach((t) => set.add(t)));
-  return Array.from(set).sort();
-}
+export const allTags = (state: AppState, cid?: string | null) =>
+  [...new Set(state.posts.filter((p) => !cid || p.c === cid).flatMap((p) => p.tags))].sort();
 
 export const liveOnPost = (state: AppState, p: Post | null | undefined) =>
   p ? (state.communities[p.c]?.voice.find((v) => v.live && v.postId === p.id) ?? null) : null;

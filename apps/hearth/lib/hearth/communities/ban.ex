@@ -81,15 +81,12 @@ defmodule Hearth.Communities.Ban do
   def close_expired(community_id, user_id) do
     now = DateTime.utc_now()
 
-    query =
-      where(
-        __MODULE__,
-        [b],
-        b.community_id == ^community_id and b.user_id == ^user_id and is_nil(b.lifted_at) and
-          b.expires_at <= ^now
-      )
+    {_count, _rows} =
+      __MODULE__
+      |> where([b], b.community_id == ^community_id and b.user_id == ^user_id)
+      |> where([b], is_nil(b.lifted_at) and b.expires_at <= ^now)
+      |> Repo.update_all(set: [lifted_at: now])
 
-    {_count, _rows} = Repo.update_all(query, set: [lifted_at: now])
     :ok
   end
 

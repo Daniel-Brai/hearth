@@ -109,6 +109,7 @@ export function LinkPreview({
       </div>
     );
   }
+
   return (
     <a className="og" href={preview.url} target="_blank" rel="noopener nofollow">
       <PreviewImage preview={preview} />
@@ -138,7 +139,7 @@ export function LinkPreview({
   );
 }
 
-// A site's image can be gone or blocked, so a letter tile stands in
+// A site's image can be gone or blocked so a letter tile stands in
 function PreviewImage({ preview }: { readonly preview: LinkPreviewData }) {
   const [failed, setFailed] = useState(false);
 

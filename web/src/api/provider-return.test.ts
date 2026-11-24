@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseProviderReturn } from './provider-return';
+import { markProviderStart, parseProviderReturn, takeProviderReturn } from './provider-return';
 
 describe('parseProviderReturn', () => {
   it('ignores a fragment from anywhere else', () => {
@@ -43,5 +43,22 @@ describe('parseProviderReturn', () => {
       name: null,
       username: null,
     });
+  });
+});
+
+describe('takeProviderReturn', () => {
+  const hash = '#oauth=sign_up&sign_up_token=st&via=google';
+
+  it('ignores a return this tab never started', () => {
+    window.sessionStorage.clear();
+
+    expect(takeProviderReturn(hash)).toBeNull();
+  });
+
+  it('reads the return once after this tab started it', () => {
+    markProviderStart();
+
+    expect(takeProviderReturn(hash)).toMatchObject({ kind: 'sign-up', token: 'st' });
+    expect(takeProviderReturn(hash)).toBeNull();
   });
 });

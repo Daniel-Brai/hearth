@@ -50,19 +50,11 @@ import { accessToken } from '../session-token';
 import { setCount, setMine } from './boosts';
 import { answered, call, errorCode, failed, type GatewayContext } from './context';
 
-const setPinned = (state: AppState, id: string, pinned: boolean) => {
-  const post = state.posts.find((p) => p.id === id);
-  if (post) post.pinned = pinned;
-};
+type Flag = 'pinned' | 'locked' | 'watching';
 
-const setLocked = (state: AppState, id: string, locked: boolean) => {
+const setFlag = (state: AppState, id: string, flag: Flag, on: boolean) => {
   const post = state.posts.find((p) => p.id === id);
-  if (post) post.locked = locked;
-};
-
-const setWatching = (state: AppState, id: string, watching: boolean) => {
-  const post = state.posts.find((p) => p.id === id);
-  if (post) post.watching = watching;
+  if (post) post[flag] = on;
 };
 
 // Unsaving takes the post off the Saved list at once and saving puts it back at the top
@@ -209,7 +201,7 @@ export function createPostsGateway(ctx: GatewayContext) {
     });
   };
 
-  // Takes what changed from the server, such as an answer someone marked or a new transcript
+  // Takes what changed on the server like an answer someone marked or a new transcript
   const refreshPost = async (id: string) => {
     const shown = await call(() => postShow(id));
 
@@ -217,6 +209,27 @@ export function createPostsGateway(ctx: GatewayContext) {
 
     ctx.rememberPosts([shown.data]);
     putTranscript(shown.data);
+  };
+
+  // Shows the change at once and puts it back if the server refuses
+  const toggleFlag = async (
+    id: string,
+    flag: Flag,
+    send: (on: boolean) => Promise<{ status: number; data: unknown }>,
+  ): Promise<Result> => {
+    const post = ctx.store.get().posts.find((p) => p.id === id);
+
+    if (!post) return fail('That post is not loaded.');
+
+    const on = !post[flag];
+
+    ctx.store.set((state) => setFlag(state, id, flag, on));
+
+    const answer = await call(() => send(on));
+
+    if (answer.status !== 200) ctx.store.set((state) => setFlag(state, id, flag, !on));
+
+    return answered(answer);
   };
 
   const load = {
@@ -227,7 +240,7 @@ export function createPostsGateway(ctx: GatewayContext) {
 
       if (shown.status !== 200) return failed(shown);
 
-      // A list answer carries no kinds, and one fetched for someone else no permissions
+      // A list answer carries no kinds and one fetched for someone else no permissions
       if (!ctx.hasDetailFor(shown.data.community_id)) {
         const community = await call(() => communityShow(shown.data.community_id));
         if (community.status === 200)
@@ -308,7 +321,7 @@ export function createPostsGateway(ctx: GatewayContext) {
           ),
           realtime.onPush(topic, 'TranscriptReady', () => void refreshPost(id)),
           realtime.onPush(topic, 'AnswerMarked', () => void refreshPost(id)),
-          // The reactor's own screen changed when they tapped, so only others take the count
+          // The reactor's own screen changed when they tapped so only others take the count
           realtime.onPush(topic, 'PostReacted', (e) => {
             if (e.user_id === ctx.store.get().me) return;
 
@@ -401,8 +414,7 @@ export function createPostsGateway(ctx: GatewayContext) {
     },
 
     toggleReplyHelpful: async (postId, replyId) => {
-      const find = (state: AppState) =>
-        state.posts.find((p) => p.id === postId)?.replies.find((r) => r.id === replyId);
+      const find = (state: AppState) => findReply(state, postId, replyId);
       flipHelpful(find);
 
       const answer = await call(() => replyHelpful(replyId));
@@ -412,53 +424,9 @@ export function createPostsGateway(ctx: GatewayContext) {
       return answered(answer);
     },
 
-    togglePin: async (id) => {
-      const post = ctx.store.get().posts.find((p) => p.id === id);
-
-      if (!post) return fail('That post is not loaded.');
-
-      const pinned = !post.pinned;
-
-      ctx.store.set((state) => setPinned(state, id, pinned));
-
-      const answer = await call(() => postPin(id, { pinned }));
-
-      if (answer.status !== 200) ctx.store.set((state) => setPinned(state, id, !pinned));
-
-      return answered(answer);
-    },
-
-    toggleLock: async (id) => {
-      const post = ctx.store.get().posts.find((p) => p.id === id);
-
-      if (!post) return fail('That post is not loaded.');
-
-      const locked = !post.locked;
-
-      ctx.store.set((state) => setLocked(state, id, locked));
-
-      const answer = await call(() => postLock(id, { locked }));
-
-      if (answer.status !== 200) ctx.store.set((state) => setLocked(state, id, !locked));
-
-      return answered(answer);
-    },
-
-    toggleWatch: async (id) => {
-      const post = ctx.store.get().posts.find((p) => p.id === id);
-
-      if (!post) return fail('That post is not loaded.');
-
-      const watching = !post.watching;
-
-      ctx.store.set((state) => setWatching(state, id, watching));
-
-      const answer = await call(() => postWatch(id, { watching }));
-
-      if (answer.status !== 200) ctx.store.set((state) => setWatching(state, id, !watching));
-
-      return answered(answer);
-    },
+    togglePin: (id) => toggleFlag(id, 'pinned', (pinned) => postPin(id, { pinned })),
+    toggleLock: (id) => toggleFlag(id, 'locked', (locked) => postLock(id, { locked })),
+    toggleWatch: (id) => toggleFlag(id, 'watching', (watching) => postWatch(id, { watching })),
 
     toggleSave: async (id) => {
       const post = ctx.store.get().posts.find((p) => p.id === id);
@@ -834,18 +802,18 @@ export function createPostsGateway(ctx: GatewayContext) {
       // One with replies under it stays as a marker so the thread keeps its shape
       ctx.store.set((draft) => {
         const post = draft.posts.find((p) => p.id === postId);
-        if (!post) return;
+        const reply = findReply(draft, postId, replyId);
 
-        if (post.replies.some((r) => r.parent === replyId)) {
-          const reply = post.replies.find((r) => r.id === replyId);
+        if (!post || !reply) return;
 
-          if (!reply) return;
-          reply.removed = true;
-          reply.body = [];
-          reply.files = [];
-        } else {
+        if (!post.replies.some((r) => r.parent === replyId)) {
           post.replies = post.replies.filter((r) => r.id !== replyId);
+          return;
         }
+
+        reply.removed = true;
+        reply.body = [];
+        reply.files = [];
       });
 
       const answer = await call(() => replyDelete(replyId));
@@ -965,7 +933,7 @@ export function createPostsGateway(ctx: GatewayContext) {
       state.scheduledPosts = state.scheduledPosts.filter((x) => x.id !== id);
     });
 
-  // Read after the joined communities load, since each one is filed under its community
+  // Read after the joined communities load since each one is filed under its community
   const loadScheduled = async () => {
     const answer = await call(() => postListScheduled());
 

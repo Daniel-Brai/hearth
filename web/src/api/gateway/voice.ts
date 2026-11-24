@@ -156,6 +156,8 @@ type Joined = {
   recording: RunningRecording | null;
 };
 
+type VoiceRoomDraft = AppState['communities'][string]['voice'][number];
+
 export function createVoiceGateway(
   ctx: GatewayContext,
   loadCommunity: (cid: string) => Promise<Result>,
@@ -163,7 +165,7 @@ export function createVoiceGateway(
 ) {
   const sessions = new Map<string, string>();
   let joined: Joined | null = null;
-  // The room this tab is ending itself, so its own ended event says nothing
+  // The room this tab is ending itself so its own ended event says nothing
   let ending: string | null = null;
   let losses: number[] = [];
   let rejoining: ReturnType<typeof setTimeout> | null = null;
@@ -214,7 +216,7 @@ export function createVoiceGateway(
     ctx.store.set((state) => {
       const name = state.communities[cid]?.voice.find((v) => v.id === rid)?.name ?? '';
 
-      // A recording keeps the post or event it was for, which a room's list doesn't say
+      // A recording keeps the post or event it was for since a room's list doesn't say
       const links = new Map(
         Object.values(state.recordings).map((r) => [
           r.id,
@@ -291,11 +293,10 @@ export function createVoiceGateway(
     const mine = me ? j.participants.get(me) : undefined;
 
     ctx.store.set((state) => {
-      if (state.live.key !== j.key) return;
-      if (mine) {
-        state.live.role = mine.role;
-        state.live.muted = mine.self_muted || mine.server_muted;
-      }
+      if (state.live.key !== j.key || !mine) return;
+
+      state.live.role = mine.role;
+      state.live.muted = mine.self_muted || mine.server_muted;
     });
 
     setRoom(j.cid, j.rid, (room) => {
@@ -481,31 +482,29 @@ export function createVoiceGateway(
           if (state.live.key === key) state.live.micBlocked = blocked;
         }),
       onDisconnected: (reason) => {
-        if (reason === 'lost' && joined === j) {
-          const stage = ctx.store.get().live.role !== 'listener';
-          const now = Date.now();
+        if (joined !== j) return;
+        if (reason !== 'lost') return teardown(reason);
 
-          losses = [...losses.filter((at) => now - at < REJOIN_WINDOW_MS), now];
+        const stage = ctx.store.get().live.role !== 'listener';
+        const now = Date.now();
 
-          const delay = REJOIN_DELAYS_MS[losses.length - 1];
+        losses = [...losses.filter((at) => now - at < REJOIN_WINDOW_MS), now];
 
-          teardown('lost');
+        const delay = REJOIN_DELAYS_MS[losses.length - 1];
 
-          if (delay === undefined) {
-            losses = [];
-            useUi.getState().flash(GAVE_UP);
-            return;
-          }
+        teardown('lost');
 
-          // The server lost the peer so join again to build a new one
-          rejoining = setTimeout(() => {
-            rejoining = null;
-            void join(cid, rid, stage);
-          }, delay);
-
+        if (delay === undefined) {
+          losses = [];
+          useUi.getState().flash(GAVE_UP);
           return;
         }
-        if (joined === j) teardown(reason);
+
+        // The server lost the peer so join again to build a new one
+        rejoining = setTimeout(() => {
+          rejoining = null;
+          void join(cid, rid, stage);
+        }, delay);
       },
       onRejoined: (reply) => {
         applyReply(j, reply);
@@ -605,7 +604,7 @@ export function createVoiceGateway(
     return done(await call(() => request(session, me)));
   };
 
-  // Which voice rooms are on air, so the sidebar and the bar show it without opening the room
+  // Which voice rooms are on air so the sidebar and the bar show it without opening the room
   const follow = (communityId: string) =>
     ctx.watch(
       `community:${communityId}`,
@@ -616,80 +615,66 @@ export function createVoiceGateway(
           return cid && rid ? { cid, rid } : null;
         };
 
-        const started = realtime.onPush(topic, 'VoiceSessionStarted', (e) => {
-          const at = slugs(e.room_id);
-          if (!at) return;
-          markLive(
-            at.cid,
-            at.rid,
-            {
-              id: e.session_id,
-              community_id: e.community_id,
-              room_id: e.room_id,
-              mode: e.mode,
-              topic: e.topic,
-              host_id: e.host_id,
-              started_at: new Date().toISOString(),
-              ended_at: null,
-              event_id: null,
-              post_id: e.post_id,
-              recording: false,
-            },
-            // Nobody is in it until someone joins, which VoiceAttendance then says
-            0,
-          );
-        });
+        const stops = [
+          realtime.onPush(topic, 'VoiceSessionStarted', (e) => {
+            const at = slugs(e.room_id);
+            if (!at) return;
+            markLive(
+              at.cid,
+              at.rid,
+              {
+                id: e.session_id,
+                community_id: e.community_id,
+                room_id: e.room_id,
+                mode: e.mode,
+                topic: e.topic,
+                host_id: e.host_id,
+                started_at: new Date().toISOString(),
+                ended_at: null,
+                event_id: null,
+                post_id: e.post_id,
+                recording: false,
+              },
+              // Nobody is in it until VoiceAttendance says someone joined
+              0,
+            );
+          }),
+          // Being in the room when it ends takes you out too so the bar never says you're on air
+          realtime.onPush(topic, 'VoiceSessionEnded', (e) => {
+            const at = slugs(e.room_id);
+            if (!at) return;
+            if (joined?.key === `${at.cid}/${at.rid}`) teardown('ended');
+            else markEnded(at.cid, at.rid);
+          }),
+          realtime.onPush(topic, 'VoiceAttendance', (e) => {
+            const at = slugs(e.room_id);
+            if (!at) return;
 
-        // Being in the room when it ends takes you out too, so the bar never says you're on air
-        const ended = realtime.onPush(topic, 'VoiceSessionEnded', (e) => {
-          const at = slugs(e.room_id);
-          if (!at) return;
-          if (joined?.key === `${at.cid}/${at.rid}`) teardown('ended');
-          else markEnded(at.cid, at.rid);
-        });
+            setRoom(at.cid, at.rid, (room) => {
+              room.listeners = e.people;
+              room.present = [...e.user_ids];
+            });
+          }),
+          realtime.onPush(topic, 'VoiceRecordingChanged', (e) => {
+            const at = slugs(e.room_id);
+            if (!at) return;
 
-        const counted = realtime.onPush(topic, 'VoiceAttendance', (e) => {
-          const at = slugs(e.room_id);
-          if (!at) return;
+            setRoom(at.cid, at.rid, (room) => {
+              room.recording = e.status === 'recording';
+            });
 
-          setRoom(at.cid, at.rid, (room) => {
-            room.listeners = e.people;
-            room.present = [...e.user_ids];
-          });
-        });
+            void loadRecordings(at.cid, at.rid, e.room_id);
+          }),
+          realtime.onPush(topic, 'VoiceRecordingDeleted', (e) => dropRecording(e.recording_id)),
+          realtime.onPush(topic, 'VoiceRecordingRenamed', (e) => retitle(e.recording_id, e.title)),
+        ];
 
-        const recorded = realtime.onPush(topic, 'VoiceRecordingChanged', (e) => {
-          const at = slugs(e.room_id);
-          if (!at) return;
-
-          setRoom(at.cid, at.rid, (room) => {
-            room.recording = e.status === 'recording';
-          });
-
-          void loadRecordings(at.cid, at.rid, e.room_id);
-        });
-
-        const deleted = realtime.onPush(topic, 'VoiceRecordingDeleted', (e) =>
-          dropRecording(e.recording_id),
-        );
-
-        const renamed = realtime.onPush(topic, 'VoiceRecordingRenamed', (e) =>
-          retitle(e.recording_id, e.title),
-        );
-
-        return () => {
-          started();
-          ended();
-          counted();
-          recorded();
-          deleted();
-          renamed();
-        };
+        return () => stops.forEach((stop) => stop());
       },
       'voice',
     );
 
-  // After sign in, every live session in the communities joined, and their rooms followed from then on
+  // Loads every live session in the joined communities after sign in and follows their rooms from then on
   const loadLive = async (): Promise<Result> => {
     const answer = await call(() => voiceIndex());
 
@@ -784,7 +769,7 @@ export function createVoiceGateway(
 
       if (!session) return fail(REFUSALS['not_live']!);
 
-      // The ended event can come back before the answer, and the one ending it already knows
+      // The ended event can come back before the answer and the one ending it already knows
       ending = `${cid}/${rid}`;
       const result = done(await call(() => voiceEndSession(session)));
       ending = null;
@@ -866,5 +851,3 @@ export function createVoiceGateway(
 
   return { load, voice, loadLive };
 }
-
-type VoiceRoomDraft = AppState['communities'][string]['voice'][number];

@@ -14,10 +14,11 @@ const contents = (t: Template) =>
 export function TemplatePicker({ onPick }: { readonly onPick: (t: Template) => void }) {
   const templates = useAppState((state) => state.templates);
 
-  if (!templates.length)
+  if (!templates.length) {
     return (
       <p className="subtle text-center">The starting points didn't load. Go back and try again.</p>
     );
+  }
 
   const blank = templates.find((t) => t.id === BLANK);
   const rest = templates.filter((t) => t.id !== BLANK);

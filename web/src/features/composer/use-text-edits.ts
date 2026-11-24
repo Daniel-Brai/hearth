@@ -44,7 +44,7 @@ export function useTextEdits(
     selectAfterRender(el, s + before.length, s + before.length + selected.length);
   };
 
-  /** Prefixes every line the selection touches, or the cursor's line, for quotes and lists */
+  /** Prefixes every line the selection touches or else the cursor's line */
   const prefixLines = (prefix: (line: number) => string, fallback: string) => {
     const el = textarea.current;
 
@@ -61,7 +61,7 @@ export function useTextEdits(
     selectAfterRender(el, start, start + text.length);
   };
 
-  /** Wraps the selection in lines of its own, apart from the text around it */
+  /** Puts the selection on lines of its own apart from the text around it */
   const block = (before: string, after: string, fallback: string) => {
     const el = textarea.current;
 
@@ -95,16 +95,19 @@ export function useTextEdits(
 
   const moveImage = (f: Attachment, where: Where) => {
     const el = textarea.current;
+
     onChange(moveImageIn(value, f.id, where === 'cursor' && el ? el.selectionStart : 'end'));
   };
 
   const alignImage = (f: Attachment, align: ImageAlign) => {
     if (placed(f)) {
       onChange(alignImageIn(value, f.id, align));
+
       return;
     }
 
     const snippet = `![${f.name}](${attachmentHref(f.id, align)})`;
+
     onChange(value + paragraphGap(value, 'end') + snippet);
   };
 
@@ -112,6 +115,7 @@ export function useTextEdits(
 
   const carousel = (images: readonly Attachment[]) => {
     const el = textarea.current;
+
     onChange(carouselIn(value, images, el ? el.selectionStart : 'end'));
   };
 

@@ -35,6 +35,7 @@ defmodule Hearth.Auth do
   alias Hearth.Auth.Token
   alias Hearth.Auth.TransferCodeRequested
   alias Hearth.Common
+  alias Hearth.Common.T
   alias Hearth.PubSub
 
   @topic "auth"
@@ -64,11 +65,12 @@ defmodule Hearth.Auth do
   def verify_sign_in_code(email, code) when is_binary(email) and is_binary(code) do
     email = Common.normalize(email)
 
-    with {:ok, _token} <- Token.use_code(:sign_in_code, [sent_to: email], code) do
-      case Accounts.get_user(email: email) do
-        {:ok, user} -> signed_in(user, :code)
-        {:error, :not_found} -> sign_up(email, %{})
-      end
+    with {:ok, _token} <- Token.use_code(:sign_in_code, [sent_to: email], code),
+         {:ok, user} <- Accounts.get_user(email: email) do
+      signed_in(user, :code)
+    else
+      {:error, :not_found} -> sign_up(email, %{})
+      {:error, _reason} = error -> error
     end
   end
 
@@ -77,12 +79,12 @@ defmodule Hearth.Auth do
   def sign_in_with_identity(provider, %{"sub" => uid} = claims) do
     uid = to_string(uid)
 
-    case Identity.get(provider: provider, provider_uid: uid) do
-      %Identity{user_id: id} ->
-        with {:ok, user} <- Accounts.get_user(id: id), do: signed_in(user, provider)
-
-      nil ->
-        sign_in_with_email(provider, uid, claims)
+    with %Identity{user_id: id} <- Identity.get(provider: provider, provider_uid: uid),
+         {:ok, user} <- Accounts.get_user(id: id) do
+      signed_in(user, provider)
+    else
+      nil -> sign_in_with_email(provider, uid, claims)
+      {:error, :not_found} = error -> error
     end
   end
 
@@ -116,20 +118,16 @@ defmodule Hearth.Auth do
           {:ok, User.t()} | {:error, :invalid | :expired | Changeset.t()}
   def register_user(sign_up_token, username, display_name \\ nil)
       when is_binary(sign_up_token) and is_binary(username) do
-    with {:ok, token} <- Token.find_random(:sign_up, sign_up_token) do
-      params = %{
-        email: token.sent_to,
-        username: username,
-        display_name: display_name || token.data["name"]
-      }
-
-      with {:ok, user} <- Accounts.register_user(params),
-           {:ok, _identity} <- link_identity(user, token.data) do
-        Token.delete(token)
-
-        signed_in(user, method(token.data))
-      end
+    with {:ok, token} <- Token.find_random(:sign_up, sign_up_token),
+         {:ok, user} <- token |> registration(username, display_name) |> Accounts.register_user(),
+         {:ok, _identity} <- link_identity(user, token.data) do
+      Token.delete(token)
+      signed_in(user, method(token.data))
     end
+  end
+
+  defp registration(token, username, display_name) do
+    %{email: token.sent_to, username: username, display_name: display_name || token.data["name"]}
   end
 
   @spec create_session(User.t(), map()) :: {:ok, String.t()} | {:error, Changeset.t()}
@@ -174,12 +172,8 @@ defmodule Hearth.Auth do
   # An address already in use gets a note instead so the answer never reveals it
   @spec request_email_change(User.t(), String.t()) :: :ok | {:error, Changeset.t()}
   def request_email_change(%User{} = user, email) when is_binary(email) do
-    with {:ok, email} <- EmailInput.cast_new(email, user.email) do
-      case Accounts.email_registered?(email) do
-        true -> broadcast(%EmailChangeBlocked{user_id: user.id, email: email})
-        false -> send_email_change_code(user, email)
-      end
-    end
+    with {:ok, email} <- EmailInput.cast_new(email, user.email),
+         do: start_email_change(user, email, Accounts.email_registered?(email))
   end
 
   @spec confirm_email_change(User.t(), String.t()) ::
@@ -217,12 +211,9 @@ defmodule Hearth.Auth do
     end
   end
 
-  @spec request_transfer_code(User.t(), %{
-          :id => Common.T.id(),
-          :name => String.t(),
-          optional(atom()) => any()
-        }) ::
-          :ok | {:error, Changeset.t()}
+  @type community :: %{:id => T.id(), :name => String.t(), optional(atom()) => any()}
+
+  @spec request_transfer_code(User.t(), community()) :: :ok | {:error, Changeset.t()}
   def request_transfer_code(%User{} = owner, %{id: id, name: name}) do
     params = %{user_id: owner.id, data: %{"community_id" => id}}
 
@@ -240,7 +231,7 @@ defmodule Hearth.Auth do
   end
 
   # A code works only for the community it was sent for
-  @spec use_transfer_code(User.t(), Common.T.id(), String.t()) ::
+  @spec use_transfer_code(User.t(), T.id(), String.t()) ::
           :ok | {:error, :invalid | :expired}
   def use_transfer_code(%User{id: id}, community_id, code) when is_binary(code) do
     case Token.use_code(:transfer_ownership, [user_id: id], code) do
@@ -260,15 +251,14 @@ defmodule Hearth.Auth do
       "username" => claims["preferred_username"]
     }
 
-    case {claims["email_verified"] == true, Accounts.get_user(email: email)} do
-      {false, _found} ->
-        {:error, :email_not_verified}
-
-      {true, {:ok, user}} ->
-        with {:ok, _identity} <- link_identity(user, data), do: signed_in(user, provider)
-
-      {true, {:error, :not_found}} ->
-        sign_up(email, data)
+    with true <- claims["email_verified"] == true,
+         {:ok, user} <- Accounts.get_user(email: email),
+         {:ok, _identity} <- link_identity(user, data) do
+      signed_in(user, provider)
+    else
+      false -> {:error, :email_not_verified}
+      {:error, :not_found} -> sign_up(email, data)
+      {:error, %Changeset{}} = error -> error
     end
   end
 
@@ -296,7 +286,10 @@ defmodule Hearth.Auth do
   defp method(%{"provider" => "google"}), do: :google
   defp method(_data), do: :code
 
-  defp send_email_change_code(user, email) do
+  defp start_email_change(user, email, true),
+    do: broadcast(%EmailChangeBlocked{user_id: user.id, email: email})
+
+  defp start_email_change(user, email, false) do
     with {:ok, code} <- Token.create_code(:change_email, email, %{user_id: user.id}) do
       ttl = Token.ttl(:change_email)
 

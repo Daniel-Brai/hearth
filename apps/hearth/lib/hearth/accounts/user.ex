@@ -90,9 +90,8 @@ defmodule Hearth.Accounts.User do
     end
   end
 
-  # Only a sign up that finds no account takes the lock, so two on a fresh install
-  # take turns and the second sees the first. It is a session lock released after
-  # the commit, since a transaction lock would last until a test's sandbox ends
+  # Two sign ups on a fresh install take turns so the second sees the first
+  # A session lock since a transaction lock would last until a test's sandbox ends
   defp register_first(params) do
     Repo.checkout(fn ->
       Repo.query!("SELECT pg_advisory_lock($1)", [@first_account_lock])
@@ -128,16 +127,12 @@ defmodule Hearth.Accounts.User do
     |> Repo.update()
   end
 
-  # How alike a typed word and a name must be to count from 0 to 1
+  # A typed word matches a name at least this alike, from 0 to 1
   @fuzzy 0.3
 
   @spec search(String.t(), [T.id()], pos_integer()) :: [t()]
   def search(query, ids, limit) do
-    base =
-      from(u in __MODULE__,
-        where: u.id in ^ids and is_nil(u.deleted_at),
-        limit: ^limit
-      )
+    base = from(u in __MODULE__, where: u.id in ^ids and is_nil(u.deleted_at), limit: ^limit)
 
     query
     |> String.downcase()

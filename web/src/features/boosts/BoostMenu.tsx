@@ -53,6 +53,7 @@ function BoostPicker({ onPick }: { readonly onPick: (key: string) => void }) {
           const w = words.trim().slice(0, 16);
 
           if (!w) return;
+
           setWords('');
           pick(w);
         }}

@@ -67,7 +67,7 @@ defmodule Hearth.Notifications.Listener.Chat do
 
   def handle_info(_event, state), do: {:noreply, state}
 
-  # A voice room keeps its chat beside the call, so a mention there opens the room
+  # A voice room keeps its chat beside the call so a mention there opens the room
   defp place(%{type: :voice}), do: "voice"
   defp place(_room), do: "chat"
 end

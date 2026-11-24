@@ -22,10 +22,9 @@ defmodule Hearth.Storage.Local do
   def get_url(key, signed_at, expires_in, download) do
     expires = DateTime.to_unix(signed_at) + expires_in
 
-    %{"op" => "get", "exp" => Integer.to_string(expires)}
-    |> put_download(download)
-    |> then(&signed_params(key, &1))
-    |> then(&url(key, &1))
+    params = put_download(%{"op" => "get", "exp" => Integer.to_string(expires)}, download)
+
+    url(key, signed_params(key, params))
   end
 
   defp put_download(params, nil), do: params
@@ -85,9 +84,7 @@ defmodule Hearth.Storage.Local do
   # sobelow_skip ["Traversal.FileModule"]
   @impl Hearth.Storage.Adapter
   def download(key, path) do
-    source = object_path(key)
-
-    case File.cp(source, path) do
+    case key |> object_path() |> File.cp(path) do
       :ok -> :ok
       {:error, :enoent} -> {:error, :not_found}
       {:error, reason} -> {:error, reason}
@@ -139,21 +136,21 @@ defmodule Hearth.Storage.Local do
   def complete_multipart(key, upload_id, parts) do
     with {:ok, info} <- upload_info(key, upload_id),
          {:ok, stored} <- list_parts(key, upload_id),
-         :ok <- same_parts(parts, stored) do
-      dir = multipart_dir(upload_id)
-
-      chunks =
-        Stream.flat_map(parts, fn {number, _etag} ->
-          File.stream!(Path.join(dir, "#{number}"), 65_536)
-        end)
-
-      etag = multipart_etag(stored)
-
-      with {:ok, _md5} <- write(key, chunks, %{content_type: info["content_type"], etag: etag}) do
-        File.rm_rf!(dir)
-        :ok
-      end
+         :ok <- same_parts(parts, stored),
+         meta = %{content_type: info["content_type"], etag: multipart_etag(stored)},
+         {:ok, _md5} <- write(key, part_chunks(upload_id, parts), meta) do
+      upload_id |> multipart_dir() |> File.rm_rf!()
+      :ok
     end
+  end
+
+  # sobelow_skip ["Traversal.FileModule"]
+  defp part_chunks(upload_id, parts) do
+    dir = multipart_dir(upload_id)
+
+    Stream.flat_map(parts, fn {number, _etag} ->
+      File.stream!(Path.join(dir, "#{number}"), 65_536)
+    end)
   end
 
   # sobelow_skip ["Traversal.FileModule"]
@@ -166,11 +163,12 @@ defmodule Hearth.Storage.Local do
     :ok
   end
 
+  # A param sent as sig[]=x arrives as a list
   @spec verify(String.t(), String.t(), map()) :: {:ok, map()} | {:error, :invalid | :expired}
   def verify(method, key, %{"sig" => sig, "exp" => exp, "op" => op} = params) do
-    expected = sign(key, Map.delete(params, "sig"))
-
-    with true <- Storage.valid_key?(key) and allowed?(method, op),
+    with true <- Enum.all?(params, fn {_name, value} -> is_binary(value) end),
+         true <- Storage.valid_key?(key) and allowed?(method, op),
+         expected = sign(key, Map.delete(params, "sig")),
          true <- byte_size(sig) == byte_size(expected) and :crypto.hash_equals(sig, expected),
          {expires, ""} <- Integer.parse(exp),
          :ok <- unexpired(expires) do

@@ -8,7 +8,7 @@ defmodule Hearth.Notifications.Worker.DeliverMail do
   alias Hearth.Notifications.SealedArgs
   alias Swoosh.Email
 
-  # Only user_id and template stay readable in the job, the rest is sealed
+  # Only user_id and template stay readable in the job and the rest is sealed
   @spec enqueue(map(), keyword()) :: {:ok, Oban.Job.t()} | {:error, term()}
   def enqueue(%{to: [_name, _email]} = mail, opts \\ []) do
     {readable, secret} = Map.split(mail, [:user_id, :template])

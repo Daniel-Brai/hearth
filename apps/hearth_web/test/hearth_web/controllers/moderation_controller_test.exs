@@ -27,12 +27,7 @@ defmodule HearthWeb.ModerationControllerTest do
              |> valid_response(403)
     end
 
-    test "lists waiting items", %{
-      conn: conn,
-      community: community,
-      item: item,
-      post: post
-    } do
+    test "lists waiting items", %{conn: conn, community: community, item: item, post: post} do
       helper = TestUtils.join_with_permissions!(community, ["content.remove"])
 
       assert %{"data" => [response]} =
@@ -287,10 +282,7 @@ defmodule HearthWeb.ModerationControllerTest do
       assert conn |> get(~p"/api/communities/#{private.id}/moderation/log") |> valid_response(404)
     end
 
-    test "returns 404 if invite only", %{
-      conn: conn,
-      owner: owner
-    } do
+    test "returns 404 if invite only", %{conn: conn, owner: owner} do
       community = TestUtils.create_random_forum!(owner, visibility: :invite_only)
 
       assert conn
@@ -385,12 +377,7 @@ defmodule HearthWeb.ModerationControllerTest do
     end
 
     test "queues the report", %{conn: conn, reporter: reporter, post: post} do
-      body = %{
-        subject_type: "post",
-        subject_id: post.id,
-        reason: "spam",
-        note: Lorem.sentence()
-      }
+      body = %{subject_type: "post", subject_id: post.id, reason: "spam", note: Lorem.sentence()}
 
       assert %{"queued" => true} =
                conn

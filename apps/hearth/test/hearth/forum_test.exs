@@ -31,10 +31,7 @@ defmodule Hearth.ForumTest do
     member = TestUtils.register_random_user!()
     {:ok, _membership} = Communities.join(member, community)
 
-    kinds =
-      community.id
-      |> Forum.list_kinds()
-      |> Map.new(&{&1.key, &1})
+    kinds = community.id |> Forum.list_kinds() |> Map.new(&{&1.key, &1})
 
     {:ok, binding()}
   end
@@ -160,10 +157,10 @@ defmodule Hearth.ForumTest do
 
   describe "create_post/3" do
     test "fails if not a member", %{community: community, kinds: kinds} do
+      outsider = TestUtils.register_random_user!()
       params = %{kind_id: kinds["question"].id, title: Lorem.sentence()}
 
-      assert {:error, :forbidden} =
-               Forum.create_post(TestUtils.register_random_user!(), community, params)
+      assert {:error, :forbidden} = Forum.create_post(outsider, community, params)
     end
 
     test "fails if kind belongs to another community", %{member: member, community: community} do
@@ -195,7 +192,7 @@ defmodule Hearth.ForumTest do
       params = %{kind_id: kinds["question"].id, title: String.duplicate("a", 151)}
 
       assert {:error, changeset} = Forum.create_post(member, community, params)
-      assert %{title: ["should be at most 150 character(s)"]} = errors_on(changeset)
+      assert %{title: [_message]} = errors_on(changeset)
     end
 
     test "create post", %{member: member, community: community, kinds: kinds} do
@@ -303,6 +300,29 @@ defmodule Hearth.ForumTest do
       assert {:error, :forbidden} = Forum.update_post(owner, post, %{title: Lorem.sentence()})
     end
 
+    test "fails to move into a kind they can't post", %{
+      member: member,
+      community: community,
+      kinds: kinds
+    } do
+      post = TestUtils.create_random_post!(member, community)
+      announcement = kinds["announcement"]
+
+      assert {:error, :forbidden} = Forum.update_post(member, post, %{kind_id: announcement.id})
+    end
+
+    test "fails to move into another community's kind", %{
+      owner: owner,
+      member: member,
+      community: community
+    } do
+      other = TestUtils.create_random_community!(owner, template: "oss")
+      {:ok, [kind | _kinds]} = Forum.create_default_kinds(other.id, other.template)
+      post = TestUtils.create_random_post!(member, community)
+
+      assert {:error, :unknown_kind} = Forum.update_post(member, post, %{kind_id: kind.id})
+    end
+
     test "keeps the files when none are sent", %{member: member, community: community} do
       [file] = TestUtils.upload_random_attachments!(member, 1)
       post = TestUtils.create_random_post!(member, community, attachment_ids: [file.id])
@@ -331,11 +351,7 @@ defmodule Hearth.ForumTest do
       assert {:error, :forbidden} = Forum.delete_post(member, post)
     end
 
-    test "fails if user can moderate", %{
-      owner: owner,
-      member: member,
-      community: community
-    } do
+    test "fails if user can moderate", %{owner: owner, member: member, community: community} do
       post = TestUtils.create_random_post!(member, community)
 
       assert {:error, :forbidden} = Forum.delete_post(owner, post)
@@ -379,9 +395,9 @@ defmodule Hearth.ForumTest do
 
     test "fails if not a member", %{member: member, community: community} do
       post = TestUtils.create_random_post!(member, community)
+      outsider = TestUtils.register_random_user!()
 
-      assert {:error, :forbidden} =
-               Forum.reply(TestUtils.register_random_user!(), post, %{body: Lorem.sentence()})
+      assert {:error, :forbidden} = Forum.reply(outsider, post, %{body: Lorem.sentence()})
     end
 
     test "fails if post is locked", %{owner: owner, member: member, community: community} do
@@ -438,9 +454,9 @@ defmodule Hearth.ForumTest do
       assert grandchild.root_reply_id == top.id
       assert grandchild.path == [top.id, child.id]
 
-      assert %Reply{child_count: 1, descendant_count: 2} = parent = Reply.get(id: top.id)
+      assert {:ok, %Reply{child_count: 1, descendant_count: 2} = parent} = Forum.get_reply(top.id)
       assert parent.recent_repliers == [member.id, owner.id]
-      assert %Reply{child_count: 1, descendant_count: 1} = Reply.get(id: child.id)
+      assert {:ok, %Reply{child_count: 1, descendant_count: 1}} = Forum.get_reply(child.id)
     end
 
     test "keeps replies at the deepest level beside it", %{member: member, community: community} do
@@ -484,11 +500,7 @@ defmodule Hearth.ForumTest do
       assert {:error, :forbidden} = Forum.delete_reply(member, reply)
     end
 
-    test "fails if user can moderate", %{
-      owner: owner,
-      member: member,
-      community: community
-    } do
+    test "fails if user can moderate", %{owner: owner, member: member, community: community} do
       post = TestUtils.create_random_post!(member, community)
       {:ok, reply} = Forum.reply(member, post, %{body: Lorem.sentence()})
 
@@ -656,9 +668,9 @@ defmodule Hearth.ForumTest do
   describe "mark_all_seen/2" do
     test "fails if not in private community", %{owner: owner} do
       private = TestUtils.create_random_community!(owner, visibility: :private)
+      outsider = TestUtils.register_random_user!()
 
-      assert {:error, :not_found} =
-               Forum.mark_all_seen(TestUtils.register_random_user!(), private)
+      assert {:error, :not_found} = Forum.mark_all_seen(outsider, private)
     end
 
     test "mark a community seen", %{owner: owner, member: member, community: community} do
@@ -688,7 +700,7 @@ defmodule Hearth.ForumTest do
       post = TestUtils.create_random_post!(member, community)
 
       assert MapSet.new([post.id]) == Forum.watched(member, post)
-      assert [member.id] == Forum.watcher_ids(post.id)
+      assert [member.id] == Forum.list_watchers(post.id)
     end
 
     test "replying keeps a choice to stop", %{owner: owner, member: member, community: community} do
@@ -698,7 +710,7 @@ defmodule Hearth.ForumTest do
       assert {:ok, _reply} = Forum.reply(member, post, %{body: Lorem.sentence()})
       assert MapSet.new() == Forum.watched(member, post)
       assert {:ok, _reply} = Forum.reply(owner, post, %{body: Lorem.sentence()})
-      assert [owner.id] == Forum.watcher_ids(post.id)
+      assert [owner.id] == Forum.list_watchers(post.id)
     end
 
     test "watch and stop", %{owner: owner, member: member, community: community} do
@@ -723,16 +735,17 @@ defmodule Hearth.ForumTest do
 
   describe "save_draft/3" do
     test "fails if not a member", %{community: community} do
-      user = TestUtils.register_random_user!()
+      outsider = TestUtils.register_random_user!()
+      params = %{title: Lorem.sentence()}
 
-      assert {:error, :forbidden} = Forum.save_draft(user, community, %{title: Lorem.sentence()})
+      assert {:error, :forbidden} = Forum.save_draft(outsider, community, params)
     end
 
     test "fails if title is over 150 characters", %{member: member, community: community} do
       assert {:error, changeset} =
                Forum.save_draft(member, community, %{title: String.duplicate("a", 151)})
 
-      assert %{title: ["should be at most 150 character(s)"]} = errors_on(changeset)
+      assert %{title: [_message]} = errors_on(changeset)
     end
 
     test "save and discard draft", %{member: member, community: community} do

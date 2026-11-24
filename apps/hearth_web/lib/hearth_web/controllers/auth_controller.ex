@@ -35,7 +35,6 @@ defmodule HearthWeb.AuthController do
     digest
   ]
 
-  # The web app's shortcut actions, each of which a person may rebind
   @key_actions ~w[
     jump
     jump_quick
@@ -58,6 +57,7 @@ defmodule HearthWeb.AuthController do
     voice_share
     voice_share_fullscreen
   ]
+
   tags ["Auth"]
 
   operation :request_code,
@@ -71,7 +71,7 @@ defmodule HearthWeb.AuthController do
     ]
 
   rate_limit :request_code, limit: 10, scale: 15 * @minute
-  rate_limit :request_code, limit: 3, scale: 15 * @minute, by: {:body, :email}
+  rate_limit :request_code, limit: 3, scale: 15 * @minute, by: {:body, "email"}
 
   @validate %{"email" => ~V[required|string|min:3|max:254]}
 
@@ -152,18 +152,14 @@ defmodule HearthWeb.AuthController do
   rate_limit :refresh, limit: 30, scale: 15 * @minute
 
   def refresh(conn, _params) do
-    case RefreshCookie.fetch(conn) do
-      {:ok, session} -> rotate(conn, session)
-      {:error, :missing_refresh} -> send_resp(conn, :no_content, "")
-    end
-  end
-
-  defp rotate(conn, session) do
-    case Auth.rotate_session(session, RefreshCookie.meta(conn)) do
-      {:ok, user, new_session} ->
-        conn
-        |> RefreshCookie.put(new_session)
-        |> issue(:ok, user)
+    with {:ok, session} <- RefreshCookie.fetch(conn),
+         {:ok, user, new_session} <- Auth.rotate_session(session, RefreshCookie.meta(conn)) do
+      conn
+      |> RefreshCookie.put(new_session)
+      |> issue(:ok, user)
+    else
+      {:error, :missing_refresh} ->
+        send_resp(conn, :no_content, "")
 
       {:error, _invalid} ->
         conn

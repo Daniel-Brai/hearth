@@ -26,10 +26,7 @@ defmodule HearthWeb.ChannelsTest do
                outsider |> connected_socket() |> subscribe_and_join("user:#{owner.id}")
     end
 
-    test "skips outsiders", %{
-      owner: owner,
-      outsider: outsider
-    } do
+    test "skips outsiders", %{owner: owner, outsider: outsider} do
       start_supervised!({OnlineCounts, start: true})
 
       {:ok, _reply, socket} =
@@ -74,10 +71,7 @@ defmodule HearthWeb.ChannelsTest do
       :ok = close(socket)
     end
 
-    test "pushes who comes online", %{
-      owner: owner,
-      community: community
-    } do
+    test "pushes who comes online", %{owner: owner, community: community} do
       start_supervised!({OnlineCounts, start: true})
       %{id: member_id} = TestUtils.join_random_member!(community)
 
@@ -86,7 +80,7 @@ defmodule HearthWeb.ChannelsTest do
 
       {:ok, _ref} = Presence.track_user(self(), member_id)
 
-      assert_push "presence_changed", %{online: [^member_id], offline: []}, 2_000
+      assert_push "presence_changed", %{online: [^member_id], offline: []}
 
       :ok = stop_online_counts()
       true = Process.unlink(socket.channel_pid)
@@ -101,17 +95,14 @@ defmodule HearthWeb.ChannelsTest do
 
       assert owner.id in Presence.online_ids()
 
-      # Closing writes last seen, so the channel goes before the test's database does
+      # Closing writes last seen so the channel must go before the test's database
       true = Process.unlink(socket.channel_pid)
       :ok = close(socket)
     end
   end
 
   describe "community:<id>" do
-    test "fails if private", %{
-      owner: owner,
-      outsider: outsider
-    } do
+    test "fails if private", %{owner: owner, outsider: outsider} do
       private = TestUtils.create_random_community!(owner, visibility: :private)
 
       assert {:error, %{reason: "unauthorized"}} =
@@ -146,10 +137,10 @@ defmodule HearthWeb.ChannelsTest do
       {:ok, _reply, socket} =
         member |> connected_socket() |> subscribe_and_join("user:#{member.id}")
 
-      assert_push "online_count", %{community_id: ^community_id, count: 1}, 2_000
+      assert_push "online_count", %{community_id: ^community_id, count: 1}
 
       :ok = stop_online_counts()
-      # Closing writes last seen, so the channel goes before the test's database does
+      # Closing writes last seen so the channel must go before the test's database
       true = Process.unlink(socket.channel_pid)
       :ok = close(socket)
     end

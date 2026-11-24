@@ -45,10 +45,8 @@ defmodule HearthWeb.Guardian.Keys do
   end
 
   defp from_pem!(pem, kind) when is_binary(pem) do
-    jwk = JWK.from_pem(pem)
-
-    case jwk do
-      %JWK{} -> check!(jwk, kind)
+    case JWK.from_pem(pem) do
+      %JWK{} = jwk -> check!(jwk, kind)
       _invalid -> raise ArgumentError, "a JWT key is not a valid PEM key"
     end
   end

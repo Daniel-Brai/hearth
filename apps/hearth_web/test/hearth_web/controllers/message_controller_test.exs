@@ -211,11 +211,7 @@ defmodule HearthWeb.MessageControllerTest do
   end
 
   describe "list_conversation" do
-    test "returns 404 outside conversation", %{
-      conn: conn,
-      owner: owner,
-      member: member
-    } do
+    test "returns 404 outside conversation", %{conn: conn, owner: owner, member: member} do
       {:ok, conversation} = Chat.start_direct(owner, member)
 
       assert conn
@@ -295,10 +291,10 @@ defmodule HearthWeb.MessageControllerTest do
     } do
       {:ok, message} = Chat.send_message(owner, room, %{body: Lorem.sentence()})
 
-      conn
-      |> auth_conn(member)
-      |> put(~p"/api/messages/#{message.id}/preview", %{hidden: true})
-      |> valid_response(403)
+      assert conn
+             |> auth_conn(member)
+             |> put(~p"/api/messages/#{message.id}/preview", %{hidden: true})
+             |> valid_response(403)
     end
 
     test "takes the link card off", %{conn: conn, member: member, room: room} do
@@ -457,21 +453,18 @@ defmodule HearthWeb.MessageControllerTest do
 
   describe "room_schedule" do
     test "fails outside the community", %{conn: conn, room: room, send_at: send_at} do
+      body = %{body: Lorem.sentence(), send_at: send_at}
+
       assert %{"code" => "forbidden"} =
                conn
                |> auth_conn(TestUtils.register_random_user!())
-               |> post(~p"/api/rooms/#{room.id}/messages/scheduled", %{
-                 body: Lorem.sentence(),
-                 send_at: send_at
-               })
+               |> post(~p"/api/rooms/#{room.id}/messages/scheduled", body)
                |> valid_response(403)
     end
 
     test "fails for a time already past", %{conn: conn, owner: owner, room: room} do
-      body = %{
-        body: Lorem.sentence(),
-        send_at: -5 |> TestUtils.in_minutes() |> DateTime.to_iso8601()
-      }
+      past = -5 |> TestUtils.in_minutes() |> DateTime.to_iso8601()
+      body = %{body: Lorem.sentence(), send_at: past}
 
       assert conn
              |> auth_conn(owner)
@@ -499,12 +492,11 @@ defmodule HearthWeb.MessageControllerTest do
       owner: owner,
       send_at: send_at
     } do
+      body = %{body: Lorem.sentence(), send_at: send_at}
+
       assert conn
              |> auth_conn(owner)
-             |> post(~p"/api/conversations/#{Common.new_id()}/messages/scheduled", %{
-               body: Lorem.sentence(),
-               send_at: send_at
-             })
+             |> post(~p"/api/conversations/#{Common.new_id()}/messages/scheduled", body)
              |> valid_response(404)
     end
 
@@ -516,14 +508,12 @@ defmodule HearthWeb.MessageControllerTest do
     } do
       member = TestUtils.join_random_member!(community)
       {:ok, conversation} = Chat.start_direct(owner, member)
+      body = %{body: Lorem.sentence(), send_at: send_at}
 
       assert %{"conversation_id" => conversation_id} =
                conn
                |> auth_conn(owner)
-               |> post(~p"/api/conversations/#{conversation.id}/messages/scheduled", %{
-                 body: Lorem.sentence(),
-                 send_at: send_at
-               })
+               |> post(~p"/api/conversations/#{conversation.id}/messages/scheduled", body)
                |> valid_response(201)
 
       assert conversation_id == conversation.id
@@ -615,7 +605,7 @@ defmodule HearthWeb.MessageControllerTest do
     end
 
     test "fails signed out", %{conn: conn} do
-      conn |> get(~p"/api/messages/unread") |> valid_response(401)
+      assert conn |> get(~p"/api/messages/unread") |> valid_response(401)
     end
 
     test "counts unread rooms and conversations", %{

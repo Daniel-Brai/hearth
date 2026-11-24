@@ -10,12 +10,23 @@ defmodule HearthWeb.CommunityExtras do
 
   @spec put([map()], nil | map()) :: [map()]
   def put(communities, viewer) when is_list(communities) do
-    logos = communities |> Enum.map(& &1.logo_id) |> Media.image_urls(@logo_width)
-    banners = communities |> Enum.map(& &1.banner_id) |> Media.image_urls(@banner_width)
-    counts = communities |> Enum.map(& &1.id) |> IAM.member_counts()
-    online = communities |> Enum.map(& &1.id) |> OnlineCounts.count()
+    ids = Enum.map(communities, & &1.id)
+    images = communities |> Enum.flat_map(&[&1.logo_id, &1.banner_id]) |> Media.get_images()
+
+    logos =
+      images
+      |> Map.take(Enum.map(communities, & &1.logo_id))
+      |> Media.image_urls_from(@logo_width)
+
+    banners =
+      images
+      |> Map.take(Enum.map(communities, & &1.banner_id))
+      |> Media.image_urls_from(@banner_width)
+
+    counts = IAM.member_counts(ids)
+    online = OnlineCounts.count(ids)
     owners = communities |> Enum.map(& &1.owner_id) |> Authors.people()
-    categories = communities |> Enum.map(& &1.id) |> Communities.category_slugs()
+    categories = Communities.category_slugs(ids)
 
     communities = Enum.map(communities, &put_rooms(&1, viewer))
 

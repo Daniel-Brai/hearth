@@ -10,6 +10,7 @@ import { Boosts } from '@/features/boosts/BoostMenu';
 import { Markdown } from '@/features/markdown/Markdown';
 import { toRow } from '@/features/recordings/recording-row';
 import { RecordingList } from '@/features/recordings/RecordingList';
+import { looseFiles } from '@/pages/shared/loose-files';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 import { useFlashFailure } from '@/runtime/use-flash-failure';
@@ -176,9 +177,7 @@ export function PostBody({ post }: { readonly post: Post }) {
   const openImage = useUi((s) => s.openImage);
   const { viewer, signIn } = useGuest();
 
-  const looseFiles = (post.files ?? []).filter(
-    (f) => !post.body.join('\n').includes(`attachment:${f.id}`),
-  );
+  const loose = looseFiles(post.files, post.body.join('\n'));
 
   return (
     <>
@@ -189,10 +188,10 @@ export function PostBody({ post }: { readonly post: Post }) {
         files={post.files ?? []}
       />
 
-      {looseFiles.length ? (
+      {loose.length ? (
         <div className="post-files mt-3">
           <FileList
-            files={looseFiles}
+            files={loose}
             onOpenImage={(f) => openImage(attachmentSrc(f), f.name, f.download)}
           />
         </div>

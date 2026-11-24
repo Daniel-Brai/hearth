@@ -1,7 +1,7 @@
 defmodule Hearth.AI.Whisper do
   # Until the model is up a call answers {:error, :not_ready} and the job waits
-  # Each stretch of speech is read on its own and becomes one segment with its own times,
-  # since Bumblebee's timestamp step doesn't compile on Nx 1.0 and a speaker's track is mostly silence
+  # Each stretch of speech is read on its own and becomes one segment with its own times
+  # Bumblebee's timestamp step doesn't compile on Nx 1.0 and a speaker's track is mostly silence
 
   @behaviour Hearth.AI.Transcriber
 
@@ -16,7 +16,7 @@ defmodule Hearth.AI.Whisper do
 
   @rate 16_000
   @bytes_per_ms div(@rate * 4, 1_000)
-  # Whisper reads 30 second windows, so longer stretches are cut a little under that
+  # Whisper reads 30 second windows so longer stretches are cut a little under that
   @longest_ms 28_000
   @shortest_ms 300
 
@@ -24,7 +24,7 @@ defmodule Hearth.AI.Whisper do
   def model, do: config(:model)
 
   @impl Hearth.AI.Transcriber
-  # path is a temp file the caller made, never a name from a request
+  # path is a temp file the caller made and never a name from a request
   # sobelow_skip ["Traversal.FileModule"]
   def transcribe(path) do
     Common.span("whisper.transcribe", %{model: model()}, fn -> run(path) end)
@@ -38,7 +38,7 @@ defmodule Hearth.AI.Whisper do
          {:ok, silences} <- Video.silences(path) do
       %{size: size} = File.stat!(pcm)
 
-      # The serving batches calls that arrive together, so stretches go in side by side
+      # The serving batches calls that arrive together so stretches go in side by side
       silences
       |> speech(div(size, @bytes_per_ms))
       |> Task.async_stream(&read_stretch(pcm, &1),
@@ -89,7 +89,7 @@ defmodule Hearth.AI.Whisper do
 
     {:ok, %{start_ms: from, end_ms: to, text: text}}
   catch
-    # No serving is up yet on any node, which a retry outlives
+    # No serving is up yet on any node and a retry outlives that
     :exit, {:noproc, _call} -> {:error, :not_ready}
   end
 
@@ -144,20 +144,8 @@ defmodule Hearth.AI.Whisper do
   end
 
   defp decode(input, output) do
-    Video.run_ffmpeg([
-      "-v",
-      "error",
-      "-y",
-      "-i",
-      input,
-      "-ac",
-      "1",
-      "-ar",
-      "16000",
-      "-f",
-      "f32le",
-      output
-    ])
+    args = ["-v", "error", "-y", "-i", input, "-ac", "1", "-ar", "16000", "-f", "f32le", output]
+    Video.run_ffmpeg(args)
   end
 
   defp config(key), do: :hearth |> Application.fetch_env!(__MODULE__) |> Keyword.fetch!(key)

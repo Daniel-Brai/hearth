@@ -33,6 +33,11 @@ defmodule Hearth.Accounts do
     end
   end
 
+  # The name shown for someone, which is their username until they set a display name
+  @spec display_name(User.t()) :: String.t()
+  def display_name(%User{display_name: nil, username: username}), do: username
+  def display_name(%User{display_name: name}), do: name
+
   @spec get_user(keyword()) :: {:ok, User.t()} | {:error, :not_found}
   def get_user(opts) when is_list(opts) do
     case User.get(opts) do
@@ -46,8 +51,8 @@ defmodule Hearth.Accounts do
     User.all(id: Enum.uniq(ids), deleted_at: nil)
   end
 
-  @spec digest_due_ids(DateTime.t(), 0..23) :: [T.id()]
-  def digest_due_ids(%DateTime{} = at, hour), do: User.digest_due_ids(at, hour)
+  @spec list_digest_readers(DateTime.t(), 0..23) :: [T.id()]
+  def list_digest_readers(%DateTime{} = at, hour), do: User.digest_due_ids(at, hour)
 
   @spec list_instance_admins() :: [User.t()]
   def list_instance_admins, do: User.all(is_instance_admin: true, deleted_at: nil)
@@ -84,16 +89,19 @@ defmodule Hearth.Accounts do
   @spec update_profile(User.t(), map()) :: {:ok, User.t()} | {:error, Changeset.t()}
   def update_profile(%User{} = user, %{} = params) do
     with {:ok, updated} <- User.update_profile(user, params) do
-      if updated.avatar_id != user.avatar_id do
-        broadcast(%AvatarChanged{
-          user_id: user.id,
-          previous_avatar_id: user.avatar_id,
-          avatar_id: updated.avatar_id
-        })
-      end
-
+      avatar_changed(user, updated)
       {:ok, updated}
     end
+  end
+
+  defp avatar_changed(%User{avatar_id: same}, %User{avatar_id: same}), do: :ok
+
+  defp avatar_changed(before, updated) do
+    broadcast(%AvatarChanged{
+      user_id: before.id,
+      previous_avatar_id: before.avatar_id,
+      avatar_id: updated.avatar_id
+    })
   end
 
   @spec change_email(User.t(), String.t()) :: {:ok, User.t()} | {:error, Changeset.t()}
@@ -128,7 +136,7 @@ defmodule Hearth.Accounts do
       (not Taken.member?(:username, key) or not User.exists?(username: key))
   end
 
-  # Never expose this in a response, it would reveal who has signed up
+  # Never expose this in a response since it reveals who has signed up
   @spec email_registered?(String.t()) :: boolean()
   def email_registered?(email) when is_binary(email) do
     key = Common.normalize(email)

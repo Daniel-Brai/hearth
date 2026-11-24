@@ -1,7 +1,6 @@
 let installed = false;
 
-// One document listener marks Markdown images once they load and starts after hydration
-// since React compares that HTML and an attribute added sooner reads as a mismatch
+// Starts after hydration since React reads an attribute added sooner as a mismatch
 // Images React renders use fadeIn instead
 export function installImageFade() {
   if (installed) return;

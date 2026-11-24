@@ -12,8 +12,9 @@ defmodule Hearth.Media.LinkPage do
   # Only pages that describe themselves for previews get a card. A bare <title> isn't enough
   @spec parse(binary(), String.t()) :: {:ok, found()} | {:error, :no_preview | :unreadable}
   def parse(html, url) when is_binary(html) and is_binary(url) do
-    with {:ok, document} <- read(html) do
-      document |> meta() |> found(url) |> shown()
+    case Floki.parse_document(html) do
+      {:ok, document} -> document |> meta() |> found(url) |> shown()
+      {:error, _reason} -> {:error, :unreadable}
     end
   end
 
@@ -31,13 +32,6 @@ defmodule Hearth.Media.LinkPage do
   defp shown(%{title: nil}), do: {:error, :no_preview}
   defp shown(%{description: nil, image_url: nil}), do: {:error, :no_preview}
   defp shown(found), do: {:ok, found}
-
-  defp read(html) do
-    case Floki.parse_document(html) do
-      {:ok, document} -> {:ok, document}
-      {:error, _reason} -> {:error, :unreadable}
-    end
-  end
 
   defp meta(document) do
     document
@@ -59,9 +53,12 @@ defmodule Hearth.Media.LinkPage do
   defp image(tags, url) do
     case tags["og:image:secure_url"] || tags["og:image"] || tags["twitter:image"] do
       nil -> nil
-      image -> url |> URI.merge(String.trim(image)) |> URI.to_string()
+      image -> url |> URI.merge(String.trim(image)) |> web_image()
     end
   end
+
+  defp web_image(%URI{scheme: scheme} = uri) when scheme in ~w[http https], do: URI.to_string(uri)
+  defp web_image(%URI{}), do: nil
 
   defp host(url), do: url |> URI.parse() |> Map.fetch!(:host) |> String.replace_prefix("www.", "")
 

@@ -152,9 +152,10 @@ function TranscriptView({ id }: { readonly id: string }) {
 
   const starts = view.lines.map((l) => ({ t: l.t, at: secondsOf(l.t) }));
 
-  /* Runs every frame while playing so state only changes with the line */
+  // Runs every frame while playing so state only changes with the line
   const follow = (seconds: number) => {
     const line = starts.findLast((s) => s.at <= seconds)?.t ?? null;
+
     setCurrent((was) => (was === line ? was : line));
   };
 
@@ -378,7 +379,7 @@ function SpeakerChip({
 }
 
 function NotReady({ status }: { readonly status: TranscriptStatus }) {
-  if (status === 'failed')
+  if (status === 'failed') {
     return (
       <EmptyState
         art="broken"
@@ -386,6 +387,7 @@ function NotReady({ status }: { readonly status: TranscriptStatus }) {
         text="The recording is still here to watch. Whoever runs this instance can look into why."
       />
     );
+  }
 
   return (
     <EmptyState
@@ -396,7 +398,6 @@ function NotReady({ status }: { readonly status: TranscriptStatus }) {
   );
 }
 
-// The box takes the cursor when it opens so the fix can start right away
 const focusOnOpen = (box: HTMLTextAreaElement | null) => box?.focus();
 
 function EditableLine({
@@ -430,7 +431,7 @@ function EditableLine({
     }
   };
 
-  if (draft === null)
+  if (draft === null) {
     return (
       <div className="transcript__editable">
         <p>{highlight(text, filter)}</p>
@@ -446,6 +447,7 @@ function EditableLine({
         </IconButton>
       </div>
     );
+  }
 
   return (
     <form

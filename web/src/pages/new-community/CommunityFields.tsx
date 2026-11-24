@@ -24,7 +24,7 @@ export function CommunityFields({
   readonly set: <K extends keyof Form>(key: K, value: Form[K]) => void;
 }) {
   const origin = useOrigin();
-  const host = origin ? new URL(origin).host : '';
+  const host = origin ? new URL(origin).host : null;
   const slug = useAddress(form.name);
 
   return (
@@ -95,7 +95,7 @@ export function CommunityFields({
   );
 }
 
-// Asks the server once typing pauses since a taken name gets a number, and guesses until then
+// A taken name gets a number so the server's answer replaces the local guess once typing pauses
 function useAddress(name: string) {
   const gateway = useGateway();
   const [answer, setAnswer] = useState<{ name: string; slug: string } | null>(null);

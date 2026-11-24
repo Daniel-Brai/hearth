@@ -17,7 +17,7 @@ const LABELS: Record<(typeof COUNTS)[number], string> = {
 
 const SHOWN_DAYS = 14;
 
-// Every day shown is within the last month, so the year adds nothing but width
+// Every day shown is within the last month so the year only adds width
 const dayFormat = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -29,13 +29,17 @@ const total = (days: readonly ScreeningDay[]) =>
     COUNTS.map((key) => [key, days.reduce((sum, day) => sum + day[key], 0)]),
   ) as Record<(typeof COUNTS)[number], number>;
 
-// Kept holds are screening's mistakes, so the advice follows how many of them there were
+// Kept holds are screening's mistakes so the advice follows how many there were
 function advice(held: number, kept: number): string {
   if (held === 0) return 'Nothing was held.';
-  if (kept * 2 > held)
+
+  if (kept * 2 > held) {
     return 'People kept most holds, so screening holds too much. Raising the screening threshold in the server settings holds less.';
-  if (kept * 5 > held)
+  }
+
+  if (kept * 5 > held) {
     return `People kept ${kept} of ${held} holds. If that keeps up, raise the screening threshold in the server settings a little.`;
+  }
 
   return 'People kept few holds, so the threshold fits.';
 }

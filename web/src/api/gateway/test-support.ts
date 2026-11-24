@@ -256,7 +256,7 @@ beforeEach(() => {
   );
 });
 
-// Loads a test started without waiting still finish after it, so they get an answer here and never reach the network
+// Loads a test started without waiting still finish after it so they get an answer here and never reach the network
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.stubGlobal('fetch', () => Promise.resolve(new Response(null, { status: 404 })));

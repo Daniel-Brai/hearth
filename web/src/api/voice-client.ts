@@ -161,8 +161,7 @@ export class VoiceClient {
       channel
         .join()
         .receive('ok', (reply: JoinReply) => {
-          // Phoenix joins again on its own after the socket drops, and the
-          // server then starts a fresh peer so the old connection goes
+          // Phoenix rejoins after a socket drop and the server starts a fresh peer
           this.startPeer(reply.ice_servers);
           if (first) {
             first = false;
@@ -232,7 +231,7 @@ export class VoiceClient {
     this.channel = null;
   }
 
-  // One failure is enough to tell, so later ones stay quiet until the call connects again
+  // One failure is enough to tell so later ones stay quiet until the call connects again
   private enqueue(step: () => Promise<void>) {
     this.chain = this.chain.then(step).catch((error: unknown) => {
       console.warn('Hearth voice signalling failed.', error);
@@ -336,7 +335,7 @@ export class VoiceClient {
     await this.limitScreen();
   }
 
-  // A candidate meant for a connection that was just replaced is dropped, since the others still connect
+  // A candidate meant for a connection that was just replaced is dropped since the others still connect
   private async addCandidate(candidate: RTCIceCandidateInit | null) {
     try {
       await this.pc?.addIceCandidate(candidate ?? undefined);

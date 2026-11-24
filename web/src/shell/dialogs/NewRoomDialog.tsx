@@ -172,5 +172,3 @@ export function NewRoomDialog() {
     </Dialog>
   );
 }
-
-export type { RoomType };

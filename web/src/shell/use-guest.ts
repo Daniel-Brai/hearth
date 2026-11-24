@@ -6,14 +6,13 @@ import type { AppState } from '@/domain/app-state';
 import { routes } from '@/runtime/routes';
 
 /**
- * Who is looking. `unknown` covers a reload while the session restores and while what the person
- * joined still loads, so it never flashes the guest version. Without the signed in hint crawlers
- * and link previews always get the full public screen
+ * Unknown covers a reload while the session or what the person joined still loads so the guest
+ * version never flashes. Without the signed in hint crawlers always get the public screen
  */
 export type Viewer = 'guest' | 'member' | 'unknown';
 
 export function viewerOf(state: Pick<AppState, 'me' | 'session'>, hint: boolean): Viewer {
-  // Who you are arrives before what you joined so a member waits for both
+  // A member waits for what they joined to load
   if (state.me !== null) return state.session === 'loading' ? 'unknown' : 'member';
 
   const settling = state.session === 'pending' || state.session === 'loading';
@@ -42,7 +41,6 @@ export function useGuest() {
 
 export type Gate = 'open' | 'wall' | 'pending';
 
-/** Whether a screen of this community may show, wait for the viewer, or stop at the wall */
 export function useGate(cid: string | null | undefined): Gate {
   const hint = useSignedInHint();
 

@@ -3,7 +3,6 @@ defmodule Hearth.Moderation.Screener.Hosted do
 
   alias Hearth.Moderation.Screener.Hosted.ApiError
   alias Hearth.Moderation.Screener.Hosted.Assessment
-  alias Hearth.Moderation.Verdict
 
   @app :hearth
   @req_options Application.compile_env(@app, [__MODULE__, :req_options], [])
@@ -18,7 +17,6 @@ defmodule Hearth.Moderation.Screener.Hosted do
   one short sentence for a moderator, or null when it is safe.\
   """
 
-  # Images are sent this size at most, to keep requests small
   @image_side 768
 
   @impl Hearth.Moderation.Screener
@@ -38,8 +36,6 @@ defmodule Hearth.Moderation.Screener.Hosted do
     end
   end
 
-  @spec complete([map()], keyword()) ::
-          {:ok, Verdict.t()} | {:error, :malformed | ApiError.t() | Exception.t()}
   defp complete(content, opts) do
     request = build(url: "/chat/completions", json: body(content, opts[:guidelines]))
 

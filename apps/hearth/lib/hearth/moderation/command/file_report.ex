@@ -6,7 +6,7 @@ defmodule Hearth.Moderation.Command.FileReport do
   alias Hearth.Moderation.Subject
   alias Hearth.Repo
 
-  # The third element says whether the item is new so moderators are told once
+  # The last element is true for a new item so moderators are told once
   @spec execute(User.t(), Subject.t(), map()) ::
           {:ok, Item.t(), boolean()} | {:error, :already_reported | Changeset.t()}
   def execute(%User{} = reporter, %Subject{} = subject, %{} = params) do

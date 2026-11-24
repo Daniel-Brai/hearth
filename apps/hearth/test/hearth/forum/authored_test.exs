@@ -59,13 +59,10 @@ defmodule Hearth.Forum.AuthoredTest do
   end
 
   describe "list_author_posts/3" do
-    test "leaves out other communities and removed", %{
-      author: author,
-      community: community
-    } do
+    test "leaves out other communities and removed", %{author: author, community: community} do
       removed = TestUtils.create_random_post!(author, community)
       {:ok, _post} = Forum.moderate(removed, :removed)
-      _elsewhere = TestUtils.create_random_post!(author, community)
+      _published = TestUtils.create_random_post!(author, community)
 
       assert %Page{data: []} = Forum.list_author_posts(author.id, [])
 
@@ -130,27 +127,24 @@ defmodule Hearth.Forum.AuthoredTest do
     end
   end
 
-  describe "Communities.readable_ids/1" do
-    test "leaves out hidden communities for outsiders", %{
-      owner: owner,
-      community: community
-    } do
+  describe "Communities.list_readable/1" do
+    test "leaves out hidden communities for outsiders", %{owner: owner, community: community} do
       invite = TestUtils.create_random_community!(owner, visibility: :invite_only)
       private = TestUtils.create_random_community!(owner, visibility: :private)
       outsider = TestUtils.register_random_user!()
 
-      ids = Communities.readable_ids(outsider)
+      ids = Communities.list_readable(outsider)
 
       assert community.id in ids
       refute invite.id in ids
       refute private.id in ids
-      assert ids == Communities.readable_ids(nil)
+      assert ids == Communities.list_readable(nil)
     end
 
     test "adds the private communities the reader is in", %{owner: owner} do
       private = TestUtils.create_random_community!(owner, visibility: :private)
 
-      assert private.id in Communities.readable_ids(owner)
+      assert private.id in Communities.list_readable(owner)
     end
   end
 end

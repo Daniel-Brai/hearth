@@ -34,6 +34,19 @@ defmodule Hearth.Notifications.Listener.EventsTest do
     assert %Page{data: []} = Notifications.list_notifications(member)
   end
 
+  test "keeps quiet when the host didn't ask" do
+    event = %EventScheduled{
+      event_id: Common.new_id(),
+      community_id: Common.new_id(),
+      room_id: nil,
+      host_id: Common.new_id(),
+      notify: false
+    }
+
+    assert {:noreply, nil} = Listener.handle_info(event, nil)
+    refute_enqueued(worker: TellMembers)
+  end
+
   test "reminds each interested person" do
     owner = TestUtils.register_random_user!()
     community = TestUtils.create_random_community!(owner, template: "oss")
@@ -66,18 +79,5 @@ defmodule Hearth.Notifications.Listener.EventsTest do
 
     assert {:noreply, nil} = Listener.handle_info(event, nil)
     assert_enqueued(worker: TellMembers, args: %{event_id: event_id})
-  end
-
-  test "keeps quiet when the host didn't ask" do
-    event = %EventScheduled{
-      event_id: Common.new_id(),
-      community_id: Common.new_id(),
-      room_id: nil,
-      host_id: Common.new_id(),
-      notify: false
-    }
-
-    assert {:noreply, nil} = Listener.handle_info(event, nil)
-    refute_enqueued(worker: TellMembers)
   end
 end

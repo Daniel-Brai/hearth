@@ -15,11 +15,14 @@ export function KindsField({
   readonly draft: CommunityDraft;
 }) {
   const [focusId, setFocusId] = useState<string | null>(null);
+
   const uses = useAppState((state) => {
     const counts: Record<string, number> = {};
-    state.posts
-      .filter((p) => p.c === cid)
-      .forEach((p) => (counts[p.kind] = (counts[p.kind] ?? 0) + 1));
+
+    for (const p of state.posts) {
+      if (p.c === cid) counts[p.kind] = (counts[p.kind] ?? 0) + 1;
+    }
+
     return counts;
   });
 

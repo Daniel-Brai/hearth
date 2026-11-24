@@ -58,25 +58,27 @@ defmodule Hearth.IAMTest do
     end
   end
 
-  describe "shared_community_ids/1" do
+  describe "list_shared_communities/1" do
     test "lists the communities a person is in" do
       community = TestUtils.create_random_community!()
       member = TestUtils.join_random_member!(community)
 
-      assert IAM.shared_community_ids([member.id]) == [community.id]
+      assert IAM.list_shared_communities([member.id]) == [community.id]
     end
   end
 
-  describe "community_ids/1" do
+  describe "list_communities/1" do
     test "lists none for someone in no community" do
-      assert [] = IAM.community_ids(TestUtils.register_random_user!())
+      outsider = TestUtils.register_random_user!()
+
+      assert [] = IAM.list_communities(outsider)
     end
 
     test "lists the communities joined" do
       owner = TestUtils.register_random_user!()
       community = TestUtils.create_random_community!(owner)
 
-      assert IAM.community_ids(owner) == [community.id]
+      assert IAM.list_communities(owner) == [community.id]
     end
   end
 
@@ -200,8 +202,9 @@ defmodule Hearth.IAMTest do
 
   describe "get_membership/2" do
     test "fails if not a member", %{community_id: community_id} do
-      assert {:error, :not_found} =
-               IAM.get_membership(TestUtils.register_random_user!(), community_id)
+      outsider = TestUtils.register_random_user!()
+
+      assert {:error, :not_found} = IAM.get_membership(outsider, community_id)
     end
 
     test "owner holds every permission", %{community_id: community_id, roles: roles} do
@@ -258,10 +261,9 @@ defmodule Hearth.IAMTest do
 
   describe "can?/3" do
     test "fails if not a member", %{community_id: community_id} do
-      refute IAM.can?(TestUtils.register_random_user!(), :create, %{
-               type: :post,
-               community_id: community_id
-             })
+      outsider = TestUtils.register_random_user!()
+
+      refute IAM.can?(outsider, :create, %{type: :post, community_id: community_id})
     end
 
     test "fails if permission is unknown", %{community_id: community_id} do
@@ -309,9 +311,9 @@ defmodule Hearth.IAMTest do
     end
 
     test "allows instance admin" do
-      assert [admin: true]
-             |> TestUtils.register_random_user!()
-             |> IAM.can?(:decide, :"community.request")
+      admin = TestUtils.register_random_user!(admin: true)
+
+      assert IAM.can?(admin, :decide, :"community.request")
     end
   end
 end

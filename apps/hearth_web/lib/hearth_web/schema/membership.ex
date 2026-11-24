@@ -3,7 +3,7 @@ defmodule HearthWeb.Schema.Membership do
 
   alias Hearth.IAM
 
-  # The permission names come from this file, so editing it rebuilds the enum.
+  # Editing the permissions file rebuilds the enum
   @external_resource Path.expand("../../../../hearth/priv/permissions.yml", __DIR__)
 
   defschema %{

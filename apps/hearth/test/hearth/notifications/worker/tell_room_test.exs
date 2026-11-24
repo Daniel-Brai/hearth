@@ -51,11 +51,7 @@ defmodule Hearth.Notifications.Worker.TellRoomTest do
       assert %Page{data: []} = Notifications.list_notifications(member)
     end
 
-    test "tells everyone in the room but the sender", %{
-      args: args,
-      owner: owner,
-      member: member
-    } do
+    test "tells everyone in the room but the sender", %{args: args, owner: owner, member: member} do
       assert :ok = perform_job(TellRoom, args)
 
       assert %Page{data: [%Notification{kind: :mention}]} =

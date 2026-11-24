@@ -11,9 +11,7 @@ defmodule Hearth.Media.Command.FailMedia do
       Storage.abort_multipart(media.bucket_key, media.multipart_upload_id)
     end
 
-    prefix = Asset.prefix(media)
-
-    with :ok <- Storage.delete_prefix(prefix),
+    with :ok <- media |> Asset.prefix() |> Storage.delete_prefix(),
          {:ok, media} <- Asset.advance(media, :fail, failure: failure, multipart_upload_id: nil) do
       Media.broadcast_to_pubsub(%MediaFailed{
         media_id: media.id,

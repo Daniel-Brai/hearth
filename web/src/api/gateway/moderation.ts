@@ -96,6 +96,19 @@ const ON_PERSON = new Set<ModLogAction>([
   'moved_to_listeners',
 ]);
 
+function logText(entry: ModerationAction): string {
+  const target = entry.target ? ' @' + entry.target.username : '';
+  const thing = entry.subject_type === 'user' ? '' : ' a ' + entry.subject_type;
+  const level = typeof entry.metadata['level'] === 'string' ? entry.metadata['level'] : null;
+  const toListeners = entry.action === 'moved_to_listeners' ? ' to listeners' : '';
+
+  if (entry.action === 'changed' && level)
+    return `set moderation to ${level === 'reports' ? 'reports only' : level}`;
+  if (ON_PERSON.has(entry.action)) return `${LOG_TEXT[entry.action]}${target}${toListeners}`;
+
+  return `${LOG_TEXT[entry.action]}${thing}${target ? ` by${target}` : ''}`;
+}
+
 // The server decides who may act so a refusal shows as its sentence
 export function createModerationGateway(
   ctx: GatewayContext,
@@ -170,24 +183,11 @@ export function createModerationGateway(
   const toLog = (entry: ModerationAction, cid: string, state: AppState): ModLogEntry => {
     if (entry.actor) state.people[entry.actor.id] ??= toPerson(entry.actor);
 
-    const target = entry.target ? ' @' + entry.target.username : '';
-    const thing = entry.subject_type === 'user' ? '' : ' a ' + entry.subject_type;
-    const level = typeof entry.metadata['level'] === 'string' ? entry.metadata['level'] : null;
-    let text: string;
-
-    if (entry.action === 'changed' && level) {
-      text = `set moderation to ${level === 'reports' ? 'reports only' : level}`;
-    } else if (ON_PERSON.has(entry.action)) {
-      text = `${LOG_TEXT[entry.action]}${target}${entry.action === 'moved_to_listeners' ? ' to listeners' : ''}`;
-    } else {
-      text = `${LOG_TEXT[entry.action]}${thing}${target ? ` by${target}` : ''}`;
-    }
-
     return {
       id: entry.id,
       who: entry.actor?.id ?? '',
       action: entry.action,
-      text,
+      text: logText(entry),
       reason: entry.reason,
       c: cid,
       age: ageOf(entry.inserted_at),
@@ -355,7 +355,7 @@ export function createModerationGateway(
 
       if (answer.status !== 201) return refused(answer);
 
-      // A post you reported leaves Catch up at once, as the server's next answer would say
+      // A post you reported leaves Catch up at once like the server's next answer would say
       if (spec.kind === 'Post')
         ctx.store.set((state) => {
           const post = state.posts.find((p) => p.id === spec.id);

@@ -27,7 +27,7 @@ defmodule HearthWeb.ReplyJSON do
   @spec serialize(map(), map()) :: map()
   def serialize(reply, %{authors: authors, attachments: attachments}) do
     deleted = reply.deleted_at != nil
-    # Removed by a moderator reads as a marker, like a deleted one
+    # Removed reads like deleted
     hidden = deleted or reply.status == :removed
 
     reply

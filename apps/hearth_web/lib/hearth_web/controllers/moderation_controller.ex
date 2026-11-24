@@ -17,7 +17,6 @@ defmodule HearthWeb.ModerationController do
   tags ["Moderation"]
 
   @id [in: :path, schema: %{type: :string, format: :uuid}]
-  @community_id [in: :path, schema: %{type: :string, format: :uuid}]
   @status [in: :query, schema: %{type: :string, enum: ~w[pending kept removed dismissed]}]
 
   @decided [
@@ -33,7 +32,7 @@ defmodule HearthWeb.ModerationController do
     summary: "List a community's moderation queue",
     description: "Needs content.remove in the community",
     security: [%{"bearer" => []}],
-    parameters: [community_id: @community_id, status: @status] ++ Schema.paging(),
+    parameters: [community_id: @id, status: @status] ++ Schema.paging(),
     responses: [
       ok: {Schema.page(Schema.QueueItem), description: "OK"},
       bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
@@ -287,7 +286,7 @@ defmodule HearthWeb.ModerationController do
     summary: "Set a community's moderation level",
     description: "Needs community.update",
     security: [%{"bearer" => []}],
-    parameters: [community_id: @community_id],
+    parameters: [community_id: @id],
     request_body: Schema.LevelBody,
     responses: [
       ok: {Schema.ModerationLevel, description: "OK"},
@@ -347,7 +346,7 @@ defmodule HearthWeb.ModerationController do
 
   operation :log,
     summary: "List a community's public moderation log",
-    parameters: [community_id: @community_id] ++ Schema.paging(),
+    parameters: [community_id: @id] ++ Schema.paging(),
     responses: [
       ok: {Schema.page(Schema.ModerationAction), description: "OK"},
       bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
@@ -373,27 +372,6 @@ defmodule HearthWeb.ModerationController do
       false -> {:error, :not_found}
       error -> error
     end
-  end
-
-  defp details(items) do
-    subjects = Moderation.subjects(items)
-    contents = Map.values(subjects)
-
-    ids =
-      Enum.flat_map(items, &[&1.author_id, &1.reviewed_by_id]) ++
-        Enum.map(contents, & &1.author_id)
-
-    attachments =
-      contents
-      |> Enum.group_by(& &1.type, & &1.content)
-      |> Enum.reduce(%{}, fn {type, list}, acc -> Map.merge(acc, Attachments.load(list, type)) end)
-
-    [
-      subjects: subjects,
-      reports: Moderation.reports(items),
-      people: Authors.people(ids),
-      attachments: attachments
-    ]
   end
 
   operation :report,
@@ -428,5 +406,26 @@ defmodule HearthWeb.ModerationController do
       |> put_status(:created)
       |> render(:report, %{})
     end
+  end
+
+  defp details(items) do
+    subjects = Moderation.subjects(items)
+    contents = Map.values(subjects)
+
+    ids =
+      Enum.flat_map(items, &[&1.author_id, &1.reviewed_by_id]) ++
+        Enum.map(contents, & &1.author_id)
+
+    attachments =
+      contents
+      |> Enum.group_by(& &1.type, & &1.content)
+      |> Enum.reduce(%{}, fn {type, list}, acc -> Map.merge(acc, Attachments.load(list, type)) end)
+
+    [
+      subjects: subjects,
+      reports: Moderation.reports(items),
+      people: Authors.people(ids),
+      attachments: attachments
+    ]
   end
 end

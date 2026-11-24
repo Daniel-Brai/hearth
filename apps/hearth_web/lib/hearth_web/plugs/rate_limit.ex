@@ -3,6 +3,7 @@ defmodule HearthWeb.Plugs.RateLimit do
 
   import Plug.Conn
 
+  alias Hearth.Common
   alias Hearth.RateLimit
   alias HearthWeb.ErrorResponse
   alias HearthWeb.FloodGuard
@@ -55,15 +56,9 @@ defmodule HearthWeb.Plugs.RateLimit do
 
   defp client(%{assigns: %{auth: %{id: id}}}, :user), do: "user:" <> id
 
-  defp client(conn, {:body, field}) do
-    value =
-      case conn.body_params do
-        %{} = params -> params[Atom.to_string(field)]
-        _unfetched -> nil
-      end
-
-    case value do
-      value when is_binary(value) -> "#{field}:" <> (value |> String.trim() |> String.downcase())
+  defp client(%{body_params: params} = conn, {:body, field}) do
+    case params do
+      %{^field => value} when is_binary(value) -> "#{field}:" <> Common.normalize(value)
       _missing -> client(conn, :ip)
     end
   end

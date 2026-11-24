@@ -94,17 +94,12 @@ defmodule Hearth.Forum.Reply do
     end
   end
 
-  # :all sees pending items too and a user id sees their own
-  @type viewer :: nil | :all | T.id()
-
-  # visible_to hides items held for review from everyone but their author
   defp query_from(opts, base) do
-    {viewer, opts} = Keyword.pop(opts, :visible_to, :all)
-    {community_ids, filters} = Keyword.pop(opts, :in_communities)
+    {viewer, rest} = Keyword.pop(opts, :visible_to, :all)
+    {community_ids, filters} = Keyword.pop(rest, :in_communities)
 
-    query = super(filters, base)
-
-    query
+    filters
+    |> super(base)
     |> visible_to(viewer)
     |> in_communities(community_ids)
   end
@@ -138,8 +133,8 @@ defmodule Hearth.Forum.Reply do
     do: where(query, [x], x.status != :pending or x.author_id == ^user_id)
 
   @spec put_status(t(), :published | :pending | :removed) :: {:ok, t()} | {:error, Changeset.t()}
-  def put_status(%__MODULE__{} = item, status) do
-    item
+  def put_status(%__MODULE__{} = reply, status) do
+    reply
     |> change(status: status)
     |> Repo.update()
   end

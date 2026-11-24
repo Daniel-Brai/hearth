@@ -58,9 +58,7 @@ defmodule Hearth.Media.Worker.ProcessVideoTest do
       assert :ok = perform_job(ProcessVideo, %{media_id: id})
       assert_receive %MediaReady{media_id: ^id}
 
-      ready = Asset.get(id: id)
-
-      [video, poster] = ready.variants
+      %Asset{variants: [video, poster]} = Asset.get(id: id)
 
       assert {:ok, %{content_type: "video/mp4"}} = Storage.head(video.key)
       assert {:ok, %{content_type: "image/webp"}} = Storage.head(poster.key)

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
-import { Badge, Button, cn, Dialog, EmptyState, Icon, Keys, Link } from '@/design-system';
+import { Badge, Button, Dialog, EmptyState, Icon, Keys, Link } from '@/design-system';
 import type { AppState } from '@/domain/app-state';
 import { searchWords } from '@/domain/search';
 import {
@@ -12,7 +12,6 @@ import {
   handle,
   isInstanceAdmin,
   isMod,
-  joinedCids,
   pendingRequests,
   person,
   postHref,
@@ -192,6 +191,7 @@ function buildIndex(state: AppState): Item[] {
 
   Object.keys(state.people).forEach((id) => {
     if (id === state.me) return;
+
     add({
       href: routes.profile(person(state, id).username),
       label: displayName(state, id),
@@ -210,6 +210,7 @@ function buildIndex(state: AppState): Item[] {
 
   tags.forEach((key) => {
     const [cid, tag] = key.split('/') as [string, string];
+
     add({
       href: routes.tag(cid, tag),
       label: '#' + tag,
@@ -221,6 +222,88 @@ function buildIndex(state: AppState): Item[] {
   });
 
   return items;
+}
+
+type Found = { readonly query: string; readonly ids: readonly string[] };
+
+function matchingItems(
+  state: AppState,
+  all: readonly Item[],
+  words: readonly string[],
+  query: string,
+  found: Found,
+) {
+  const hay = (i: Item) =>
+    [i.label, i.search, i.group !== 'People' ? i.hint : null]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+  const score = (i: Item) =>
+    (i.label.toLowerCase().startsWith(words[0]!) ? 0 : 1) + (i.group === 'Manage' ? 0 : 0.5);
+
+  const local = all
+    .filter((i) => {
+      const text = hay(i);
+
+      return words.every((w) => text.includes(w));
+    })
+    .sort((a, b) => score(a) - score(b));
+
+  const shown = new Set(local.map((i) => i.href));
+
+  const fromServer = (found.query === query ? found.ids : [])
+    .map((id) => state.posts.find((p) => p.id === id))
+    .filter((p) => p !== undefined)
+    .map((p) => postItem(state, p))
+    .filter((i) => !shown.has(i.href));
+
+  const everything: Item = {
+    href: routes.searchFor(query.trim()),
+    label: `Search posts for “${query.trim()}”`,
+    group: SEARCH_GROUP,
+    icon: icon('search'),
+    hint: null,
+    search: null,
+    count: null,
+    live: false,
+  };
+
+  return [...[...local, ...fromServer].slice(0, 40), everything];
+}
+
+function startingItems(state: AppState, all: readonly Item[], community: string | null) {
+  const byHref = new Map<string, Item>();
+
+  for (const i of all) if (!byHref.has(i.href)) byHref.set(i.href, i);
+
+  const recent = recentJumps()
+    .map((h) => byHref.get(h))
+    .filter((i): i is Item => !!i)
+    .slice(0, 5)
+    .map((i) => ({ ...i, group: 'Recent' }));
+
+  const notRecent = (href: string) => !recent.some((r) => r.href === href);
+  const here: Item[] = [];
+  const c = community ? state.communities[community] : undefined;
+
+  if (community && c?.joined) {
+    const pick = (href: string, label: string) => {
+      const it = byHref.get(href);
+
+      if (it && notRecent(href)) here.push({ ...it, group: 'In ' + c.name, label });
+    };
+
+    pick(routes.community(community), 'Feed');
+    pick(routes.communityEvents(community), 'Events');
+    pick(routes.moderation(community), 'Moderation');
+    pick(routes.roles(community), 'Roles');
+    pick(routes.invite(community), 'Invite people');
+  }
+
+  const go = all.filter((i) => i.group === 'Go to' && notRecent(i.href));
+
+  return [...recent, ...here, ...go].slice(0, 40);
 }
 
 const MANAGE_WORDS = ['mod', 'moder', 'role', 'invit'];
@@ -237,7 +320,7 @@ export function JumpDialog() {
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
   // Posts the server found for a query even ones this browser never loaded
-  const [found, setFound] = useState<{ query: string; ids: string[] }>({ query: '', ids: [] });
+  const [found, setFound] = useState<Found>({ query: '', ids: [] });
   const asking = useRef<number | null>(null);
 
   const askServer = (value: string) => {
@@ -252,84 +335,18 @@ export function JumpDialog() {
   };
 
   const all = useMemo(() => buildIndex(state), [state]);
-  const joined = joinedCids(state);
 
   const items = useMemo(() => {
     const words = query.trim().toLowerCase().replace('@', '').split(' ').filter(Boolean);
 
-    if (words.length) {
-      const hay = (i: Item) =>
-        [i.label, i.search, i.group !== 'People' ? i.hint : null]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-      const score = (i: Item) =>
-        (i.label.toLowerCase().startsWith(words[0]!) ? 0 : 1) + (i.group === 'Manage' ? 0 : 0.5);
-      const local = all
-        .filter((i) => {
-          const text = hay(i);
-          return words.every((w) => text.includes(w));
-        })
-        .sort((a, b) => score(a) - score(b));
+    if (words.length) return matchingItems(state, all, words, query, found);
 
-      const shown = new Set(local.map((i) => i.href));
-
-      const fromServer = (found.query === query ? found.ids : [])
-        .map((id) => state.posts.find((p) => p.id === id))
-        .filter((p) => p !== undefined)
-        .map((p) => postItem(state, p))
-        .filter((i) => !shown.has(i.href));
-
-      const everything: Item = {
-        href: routes.searchFor(query.trim()),
-        label: `Search posts for “${query.trim()}”`,
-        group: SEARCH_GROUP,
-        icon: icon('search'),
-        hint: null,
-        search: null,
-        count: null,
-        live: false,
-      };
-
-      return [...[...local, ...fromServer].slice(0, 40), everything];
-    }
-
-    const items = new Map<string, Item>();
-
-    for (const i of all) if (!items.has(i.href)) items.set(i.href, i);
-
-    const byHref = (h: string) => items.get(h);
-
-    const recent = recentJumps()
-      .map(byHref)
-      .filter((i): i is Item => !!i)
-      .slice(0, 5)
-      .map((i) => ({ ...i, group: 'Recent' }));
-
-    const here: Item[] = [];
-    const c = community ? state.communities[community] : undefined;
-
-    if (community && c?.joined) {
-      const pick = (href: string, label: string) => {
-        const it = byHref(href);
-        if (it && !recent.some((r) => r.href === href))
-          here.push({ ...it, group: 'In ' + c.name, label });
-      };
-
-      pick(routes.community(community), 'Feed');
-      pick(routes.communityEvents(community), 'Events');
-      pick(routes.moderation(community), 'Moderation');
-      pick(routes.roles(community), 'Roles');
-      pick(routes.invite(community), 'Invite people');
-    }
-
-    const go = all.filter((i) => i.group === 'Go to' && !recent.some((r) => r.href === i.href));
-
-    return [...recent, ...here, ...go].slice(0, 40);
+    return startingItems(state, all, community);
   }, [all, query, community, state, found]);
 
   const groups = useMemo(() => {
     const out: { title: string; items: (Item & { index: number })[] }[] = [];
+
     items.forEach((it, i) => {
       let g = out.find((x) => x.title === it.group);
 
@@ -340,6 +357,7 @@ export function JumpDialog() {
 
       g.items.push({ ...it, index: i });
     });
+
     return out;
   }, [items]);
 
@@ -369,8 +387,6 @@ export function JumpDialog() {
     ? 'Moderation, roles and invites only show for communities where your role allows them.'
     : "Try a community, a #room, a #tag, someone's @username, or an action like “moderation elixir”.";
 
-  void joined;
-
   return (
     <Dialog open onClose={close} className="dialog--jump" label="Jump to">
       <div className="jump__field">
@@ -398,7 +414,9 @@ export function JumpDialog() {
               move(-1);
             } else if (e.key === 'Enter') {
               e.preventDefault();
+
               const it = items[index];
+
               if (it) go(it);
             }
           }}
@@ -428,7 +446,7 @@ export function JumpDialog() {
               >
                 <span className="jump__icon">{item.icon}</span>
                 <span className="truncate">{item.label}</span>
-                {item.hint ? <span className={cn('jump__hint')}>{item.hint}</span> : null}
+                {item.hint ? <span className="jump__hint">{item.hint}</span> : null}
                 {item.count ? (
                   <Badge
                     className="jump__count"

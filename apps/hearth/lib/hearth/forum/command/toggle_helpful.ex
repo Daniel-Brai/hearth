@@ -7,12 +7,7 @@ defmodule Hearth.Forum.Command.ToggleHelpful do
 
   @spec execute(User.t(), Post.t() | Reply.t()) :: {:ok, :marked | :unmarked}
   def execute(%User{} = user, subject) do
-    {schema, key} =
-      case subject do
-        %Post{} -> {Post, :post_id}
-        %Reply{} -> {Reply, :reply_id}
-      end
-
+    {schema, key} = target(subject)
     mark = [{:user_id, user.id}, {key, subject.id}]
 
     Repo.transact(fn ->
@@ -29,4 +24,7 @@ defmodule Hearth.Forum.Command.ToggleHelpful do
       end
     end)
   end
+
+  defp target(%Post{}), do: {Post, :post_id}
+  defp target(%Reply{}), do: {Reply, :reply_id}
 end

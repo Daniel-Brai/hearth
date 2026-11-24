@@ -5,6 +5,7 @@ import { Button, ButtonLink, cn, ExternalButtonLink, Icon, Link } from '@/design
 import { evDay, evRel, evState, evWhere } from '@/domain/events';
 import { isInterested } from '@/domain/selectors';
 import type { CommunityEvent } from '@/domain/types';
+import { interestMessage } from '@/pages/events/use-event-actions';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
 
@@ -37,16 +38,11 @@ export function EventMini({
   }));
 
   const phase = evState(event);
-
   const zone = useDisplayZone();
 
   const toggle = () => {
     gateway.events.toggleInterest(event.id);
-
-    if (view.interested) flash('Removed from your events');
-    else if (phase === 'live') flash('Marked as interested');
-    else
-      flash("Interested. We'll remind you an hour before it starts, and again 10 minutes before.");
+    flash(interestMessage(event, view.interested));
   };
 
   return (

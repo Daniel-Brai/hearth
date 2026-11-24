@@ -45,17 +45,15 @@ defmodule Hearth.Voice.Worker.AssembleRecording do
   defp wait_for_tracks(recording) do
     waited = DateTime.diff(DateTime.utc_now(), recording.ended_at, :millisecond)
 
-    case waited > @upload_wait_ms do
-      true ->
-        _failed = FailRecording.execute(recording, "The recording's files were lost.")
-        {:cancel, :no_tracks}
-
-      false ->
-        {:snooze, 5}
+    if waited > @upload_wait_ms do
+      _failed = FailRecording.execute(recording, "The recording's files were lost.")
+      {:cancel, :no_tracks}
+    else
+      {:snooze, 5}
     end
   end
 
-  # dir comes from TempFile.run/1, made from a new id
+  # dir comes from TempFile.run/1 which makes it from a new id
   # sobelow_skip ["Traversal.FileModule"]
   defp assemble(recording, dir) do
     File.mkdir_p!(dir)
@@ -206,10 +204,8 @@ defmodule Hearth.Voice.Worker.AssembleRecording do
     [base | shares] ++ [last]
   end
 
-  # Each stretch of speech is delayed to when it was said, then all are
-  # mixed at their own level. The mix is padded with silence to the
-  # recording's length and cut there, so every stream in the graph ends on
-  # its own. An endless apad left to the output's -t sometimes spun forever
+  # The mix is padded with silence to the recording's length and cut there
+  # An endless apad left to the output's -t sometimes spun forever
   defp audio_filter(audio, first_input, seconds) do
     delayed =
       audio
@@ -227,7 +223,7 @@ defmodule Hearth.Voice.Worker.AssembleRecording do
       "#{labels}amix=inputs=#{length(audio)}:normalize=0:dropout_transition=0," <>
         "apad=whole_dur=#{seconds},atrim=duration=#{seconds}[aout]"
 
-    Enum.reverse([mix | Enum.reverse(delayed)])
+    List.insert_at(delayed, -1, mix)
   end
 
   defp split_speakers(%{audio: audio} = state) do
@@ -250,10 +246,9 @@ defmodule Hearth.Voice.Worker.AssembleRecording do
         {user_id, path, Video.run_ffmpeg(args)}
       end)
 
-    case Enum.all?(speakers, &match?({_user, _path, :ok}, &1)) do
-      true -> {:ok, Map.put(state, :speakers, Enum.map(speakers, fn {u, p, :ok} -> {u, p} end))}
-      false -> cancel_with("A speaker's audio couldn't be saved.", :no_speakers)
-    end
+    if Enum.all?(speakers, &match?({_user, _path, :ok}, &1)),
+      do: {:ok, Map.put(state, :speakers, Enum.map(speakers, fn {u, p, :ok} -> {u, p} end))},
+      else: cancel_with("A speaker's audio couldn't be saved.", :no_speakers)
   end
 
   defp make_poster(state) do
@@ -321,7 +316,7 @@ defmodule Hearth.Voice.Worker.AssembleRecording do
         log_speed(ready)
         {:ok, ready}
 
-      # Moved on while this ran, such as a duplicate run that finished first
+      # Moved on while this ran like a duplicate run that finished first
       {:error, _moved_on} ->
         {:ok, recording}
     end

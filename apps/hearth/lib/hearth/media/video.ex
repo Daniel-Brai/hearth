@@ -19,7 +19,7 @@ defmodule Hearth.Media.Video do
 
   @spec probe(Path.t()) :: {:ok, info()} | {:error, :not_a_video}
   def probe(path) do
-    # Only the JSON and the exit status matter, so nothing is printed
+    # Only the JSON and the exit status matter so nothing is printed
     args = ["-v", "quiet", "-print_format", "json", "-show_streams", "-show_format", path]
 
     Common.span("ffprobe", %{}, fn ->
@@ -53,8 +53,7 @@ defmodule Hearth.Media.Video do
     run_ffmpeg(args)
   end
 
-  # Copies the picture and sound as they are into the same kind of file, leaving out
-  # metadata, chapters and data tracks, where a phone can keep where it was filmed
+  # Copies picture and sound as they are and drops metadata, chapters and data tracks
   @spec clean(Path.t(), Path.t(), String.t()) :: :ok | {:error, :not_converted}
   def clean(input, output, container) when container in @containers do
     run_ffmpeg(
@@ -74,8 +73,8 @@ defmodule Hearth.Media.Video do
     run_ffmpeg(["-v", "error", "-y", "-ss", at, "-i", video, "-frames:v", "1", output])
   end
 
-  # Stretches quieter than -40 dB for half a second or more, in milliseconds
-  # A silence still going at the end has no end
+  # Stretches quieter than -40 dB for half a second or more in milliseconds
+  # One still going at the end has a nil end
   @spec silences(Path.t()) ::
           {:ok, [{non_neg_integer(), nil | non_neg_integer()}]} | {:error, :not_converted}
   def silences(path) do
@@ -113,7 +112,7 @@ defmodule Hearth.Media.Video do
   def run_ffmpeg(args) do
     options = [timeout: @convert_timeout, stderr_to_stdout: true, env: clean_env()]
 
-    # Named by what it writes, so a mix and a poster read apart in a trace
+    # Named by its output so a mix and a poster read apart in a trace
     Common.span("ffmpeg", %{output: args |> List.last() |> Path.basename()}, fn ->
       case MuonTrap.cmd("ffmpeg", args, options) do
         {_output, 0} -> :ok
@@ -122,7 +121,7 @@ defmodule Hearth.Media.Video do
     end)
   end
 
-  # ffmpeg gets only what finding programs and temp files need, not the server's secrets
+  # ffmpeg gets only what it needs to find programs and temp files and none of the secrets
   defp clean_env do
     env = System.get_env()
 

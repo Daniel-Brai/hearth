@@ -24,9 +24,31 @@ defmodule HearthWeb.CommunityChannel do
 
   # Only the community goes out, so a private room's id never reaches people who can't see it
   @impl Phoenix.Channel
-  def handle_info(%Broadcast{event: "RoomAccessChanged"} = broadcast, socket) do
+  # A change about one other member leaves this socket as it is
+  def handle_info(
+        %Broadcast{event: "RoomAccessChanged", payload: %{user_id: user_id}},
+        %Socket{assigns: %{auth: %{id: me}}} = socket
+      )
+      when user_id not in [nil, me],
+      do: {:noreply, socket}
+
+  # A role or room change never changes who belongs, so only the hidden rooms are worked out again
+  def handle_info(
+        %Broadcast{event: "RoomAccessChanged", payload: %{user_id: nil}} = broadcast,
+        socket
+      ) do
     :ok = push(socket, "room_access_changed", %{community_id: broadcast.payload.community_id})
     {:noreply, put_hidden_room_ids(socket)}
+  end
+
+  # This member left or was banned or had their roles changed
+  def handle_info(%Broadcast{event: "RoomAccessChanged"} = broadcast, socket) do
+    %Socket{assigns: %{auth: auth, community_id: id}} = socket
+    :ok = push(socket, "room_access_changed", %{community_id: broadcast.payload.community_id})
+
+    if authorized?(auth, id),
+      do: {:noreply, put_hidden_room_ids(socket)},
+      else: {:stop, :normal, socket}
   end
 
   # A new room may be private, so who can see it is worked out before it goes out
@@ -48,7 +70,7 @@ defmodule HearthWeb.CommunityChannel do
 
   defp put_hidden_room_ids(socket) do
     %Socket{assigns: %{auth: auth, community_id: id}} = socket
-    assign(socket, :hidden_room_ids, Communities.hidden_room_ids(auth, [id]))
+    assign(socket, :hidden_room_ids, Communities.list_hidden_rooms(auth, [id]))
   end
 
   defp push_visible(socket, broadcast) do

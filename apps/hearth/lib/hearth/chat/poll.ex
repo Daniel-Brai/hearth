@@ -10,7 +10,6 @@ defmodule Hearth.Chat.Poll do
   alias Hearth.Common.T
   alias Hearth.Repo
 
-  # A poll set to close by itself runs for at least a minute and at most a week
   @close_window [after: {1, :minute}, before: {7, :day}]
 
   @changeable [:multiple, :closes_at]

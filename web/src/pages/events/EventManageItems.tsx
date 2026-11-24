@@ -16,13 +16,13 @@ export function EventManageItems({
 }) {
   return (
     <>
-      {!event.cancelled ? (
-        <MenuItem icon="pencil" onSelect={() => onEdit(event)}>
-          Edit or reschedule
-        </MenuItem>
-      ) : (
+      {event.cancelled ? (
         <MenuItem icon="refresh" onSelect={() => actions.restore(event)}>
           Put it back on
+        </MenuItem>
+      ) : (
+        <MenuItem icon="pencil" onSelect={() => onEdit(event)}>
+          Edit or reschedule
         </MenuItem>
       )}
       {active ? (

@@ -33,7 +33,7 @@ export type Person = {
 export type { Permission } from './permissions';
 
 export type PostKind = {
-  // The server's name for it, which stays when the kind is renamed. A new kind has none yet
+  // The server's name for it stays when the kind is renamed. A new kind has none yet
   key?: string;
   name: string;
   icon: string;
@@ -76,7 +76,7 @@ export type VoiceRoom = {
   position?: number | undefined;
   live: boolean;
   listeners: number;
-  // Who is in the room, for the faces shown to someone outside it
+  // Who is in the room for the faces shown to someone outside it
   present?: string[];
   topic: string | null;
   host: string;
@@ -85,7 +85,7 @@ export type VoiceRoom = {
   recording?: boolean;
   access?: RoomAccess;
   roleIds?: string[];
-  // Where the next page of the room's recordings starts, missing when there are no more
+  // Where the next page of the room's recordings starts or missing when there are no more
   recordingsAfter?: string | null;
 };
 
@@ -196,7 +196,7 @@ export type Post = {
   editedAt?: string | null | undefined;
 };
 
-// A page's own Open Graph data, with its image loaded straight from that site
+// A page's own Open Graph data with its image loaded straight from that site
 export type LinkPreview = {
   url: string;
   site: string;
@@ -235,7 +235,6 @@ export type Poll = {
   closedAt: string | null;
   voters: number;
   options: { id: string; label: string; votes: number }[];
-  /** The choices the viewer picked */
   mine: string[];
 };
 
@@ -258,7 +257,7 @@ export type Message = {
   answerCounts?: AnswerCounts;
   edited?: boolean;
   previewHidden?: boolean;
-  // Its @all came from someone allowed to ping everyone in the room
+  // The @all came from someone allowed to ping the room
   mentionsAll?: boolean;
   system?: boolean;
   moderated?: boolean;
@@ -568,9 +567,9 @@ export type Instance = {
   voice: boolean;
   recording: boolean;
   maxAttachments: number;
-  // The VAPID key devices subscribe with, null when the server sends no pushes
+  // The VAPID key devices subscribe with or null when the server sends no pushes
   pushKey: string | null;
-  // Null until loaded, and for anyone who isn't an instance admin
+  // Null until loaded and for anyone who isn't an instance admin
   update: InstanceUpdate | null;
   screening: ScreeningSummary | null;
 };

@@ -16,6 +16,8 @@ defmodule HearthWeb.EventController do
 
   @id [in: :path, schema: %{type: :string, format: :uuid}]
 
+  @fields ~w[title description starts_at duration_min timezone repeat place room_id url talk_mode]
+
   operation :index,
     summary: "List upcoming events",
     description: "Without a community it lists every community the person joined",
@@ -32,7 +34,7 @@ defmodule HearthWeb.EventController do
     with {:ok, community_ids} <- community_ids(params["community_id"], auth) do
       events = Events.list_visible_upcoming(auth, community_ids)
 
-      render(conn, :index, events: events, interested: Events.interested_ids(events))
+      render(conn, :index, events: events, interested: Events.list_interested(events))
     end
   end
 
@@ -69,11 +71,10 @@ defmodule HearthWeb.EventController do
     %Conn{assigns: %{auth: auth}} = conn
     %{"community_id" => community_id} = params
 
+    opts = [notify: params["notify"] == true]
+
     with {:ok, community} <- Communities.get_community(id: community_id, archived_at: nil),
-         {:ok, event} <-
-           Events.schedule_event(auth, community, changes(params),
-             notify: params["notify"] == true
-           ) do
+         {:ok, event} <- Events.schedule_event(auth, community, changes(params), opts) do
       conn |> put_status(:created) |> render_event(event)
     end
   end
@@ -209,23 +210,16 @@ defmodule HearthWeb.EventController do
   end
 
   defp community_ids(nil, nil), do: {:ok, []}
-  defp community_ids(nil, auth), do: {:ok, IAM.community_ids(auth)}
+  defp community_ids(nil, auth), do: {:ok, IAM.list_communities(auth)}
 
   defp community_ids(community_id, auth) do
     with {:ok, community} <- find_community(community_id, auth), do: {:ok, [community.id]}
   end
 
-  # Only the fields sent, so the rest stay as they were
-  defp changes(params) do
-    params
-    |> Map.take(
-      ~w[title description starts_at duration_min timezone repeat place room_id url talk_mode]
-    )
-    |> Common.atomize_string_keys()
-  end
+  defp changes(params), do: params |> Map.take(@fields) |> Common.atomize_string_keys()
 
   defp render_event(conn, event),
-    do: render(conn, :show, event: event, interested: Events.interested_ids([event]))
+    do: render(conn, :show, event: event, interested: Events.list_interested([event]))
 
   defp find_community(id, auth) do
     with {:ok, community} <- Communities.get_community(id: id, archived_at: nil),

@@ -49,7 +49,7 @@ defmodule Hearth.Notifications.Listener.Forum do
           [recipient_id]
         )
 
-      (Forum.watcher_ids(post.id) -- [actor.id, recipient_id | mentioned])
+      (Forum.list_watchers(post.id) -- [actor.id, recipient_id | mentioned])
       |> Accounts.list_users()
       |> Enum.filter(&(Communities.readable?(community, &1) and Forum.visible?(&1, post)))
       |> Enum.each(&Notifications.send(&1, notice))

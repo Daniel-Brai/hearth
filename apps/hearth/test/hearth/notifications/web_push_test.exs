@@ -25,7 +25,7 @@ defmodule Hearth.Notifications.WebPushTest do
     assert %JWT{fields: %{"aud" => "https://" <> ^host}} = JWT.peek_payload(token)
   end
 
-  # A real browser's keys, which Hearth keeps flat beside the endpoint
+  # Keys from a real browser in the flat shape Hearth stores beside the endpoint
   @subscription_keys %{
     auth: "tBHItJI5svbpez7KI4CCXg==",
     p256dh:
@@ -81,15 +81,15 @@ defmodule Hearth.Notifications.WebPushTest do
       %{public: public} = keys = WebPush.generate_vapid_keys()
       opts = [vapid_keys: keys]
 
-      # Push services refuse a request without these, while the stub would take anything
+      # Push services refuse a request without these but the stub would take anything
       expect(WebPush, fn %Conn{method: "POST"} = conn ->
         ["vapid t=" <> vapid] = Conn.get_req_header(conn, "authorization")
         [_jwt, ^public] = String.split(vapid, ",k=")
         ["application/octet-stream"] = Conn.get_req_header(conn, "content-type")
         ["86400"] = Conn.get_req_header(conn, "ttl")
 
-        # Req.Test takes content-encoding off as if the body were compressed,
-        # so the aes128gcm header block stands in for it here
+        # Req.Test drops content-encoding as if the body were compressed
+        # The aes128gcm header block stands in for it here
         {:ok, <<_salt::binary-size(16), _size::32, 65, _key::binary-size(65), _rest::binary>>,
          conn} = Conn.read_body(conn)
 

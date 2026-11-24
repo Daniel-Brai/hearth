@@ -86,6 +86,9 @@ export class GatewayContext {
   private readonly kindNames = new Map<string, string>();
   private readonly kindsFor = new Set<string>();
   private readonly watching = new Map<string, () => void>();
+  private readonly askedFor = new Set<string>();
+  // The server renders signed out so its answer has no permissions for whoever signs in
+  private readonly detailFor = new Map<string, string | null>();
 
   // Waits for the session so a first load doesn't read as signed out
   sessionLoaded: Promise<unknown> = Promise.resolve();
@@ -118,8 +121,10 @@ export class GatewayContext {
       this.roomsById.set(room.id, { slug: room.slug, type: room.type });
     }
 
-    if (detail) this.kindsFor.add(community.id);
-    if (detail) this.detailFor.set(community.id, this.store.get().me);
+    if (detail) {
+      this.kindsFor.add(community.id);
+      this.detailFor.set(community.id, this.store.get().me);
+    }
 
     this.indexKinds(slug, detail?.kinds ?? []);
 
@@ -127,14 +132,13 @@ export class GatewayContext {
       const before = state.communities[slug];
       const next = toCommunity(community, detail);
 
-      // A list answer has no kinds or membership so keep those from an earlier detail
+      // A list answer has no kinds or membership
       if (!detail && before) {
         next.kinds = before.kinds;
         next.permissions = before.permissions;
       }
 
-      // A community answer knows nothing of live sessions so a room the voice
-      // gateway saw go live keeps that until its session ends
+      // A community answer knows nothing of live sessions
       const wasById = new Map(before?.voice.map((v) => [v.id, v]));
 
       for (const room of next.voice) {
@@ -170,8 +174,6 @@ export class GatewayContext {
 
     return slug;
   }
-
-  private readonly askedFor = new Set<string>();
 
   rememberMentions(bodies: readonly (string | null)[]) {
     const known = new Set(
@@ -215,13 +217,8 @@ export class GatewayContext {
     );
   }
 
-  // The server renders signed out so its answer has no permissions for whoever signs in
-  private readonly detailFor = new Map<string, string | null>();
-
   hasDetailFor(communityId: string): boolean {
-    return (
-      this.detailFor.has(communityId) && this.detailFor.get(communityId) === this.store.get().me
-    );
+    return this.detailFor.get(communityId) === this.store.get().me;
   }
 
   /** The sidebar list knows every joined community but only its details carry your permissions */

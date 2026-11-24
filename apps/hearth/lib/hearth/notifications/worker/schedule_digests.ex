@@ -7,14 +7,13 @@ defmodule Hearth.Notifications.Worker.ScheduleDigests do
   # Catch up emails arrive at 7 in the morning where each person lives
   @hour 7
 
-  # Each email is its own job so one failure retries alone
   @impl Oban.Worker
   def perform(%Oban.Job{scheduled_at: scheduled_at}) do
-    # The hour the job was meant for so a late start still finds its people
+    # A late start still finds the people for the hour it was meant for
     at = DateTime.truncate(scheduled_at || DateTime.utc_now(), :second)
 
     at
-    |> Accounts.digest_due_ids(@hour)
+    |> Accounts.list_digest_readers(@hour)
     |> Enum.each(&({:ok, _job} = &1 |> SendDigest.job() |> Oban.insert()))
 
     :ok

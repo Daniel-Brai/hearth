@@ -1,5 +1,5 @@
 defmodule HearthWeb.VoiceChannelTest do
-  # Sessions and peers run in their own processes and write to the database.
+  # Sessions and peers run in their own processes and write to the database
   use HearthWeb.ChannelCase, async: false
 
   alias Hearth.Communities
@@ -67,7 +67,7 @@ defmodule HearthWeb.VoiceChannelTest do
       {:ok, _membership} = Communities.set_member_roles(owner, community, member, ["member"])
       room_id = room.id
 
-      assert_push "room_hidden", %{room_id: ^room_id}, 1_000
+      assert_push "room_hidden", %{room_id: ^room_id}
     end
 
     test "joins and gets the first offer", %{owner: owner, member: member, session: session} do
@@ -77,7 +77,7 @@ defmodule HearthWeb.VoiceChannelTest do
                member |> connected_socket() |> subscribe_and_join("voice:#{session.id}")
 
       assert %{me: %{role: :listener}} = reply
-      assert_push "offer", %{sdp: "v=0" <> _sdp, tracks: tracks}, 1_000
+      assert_push "offer", %{sdp: "v=0" <> _sdp, tracks: tracks}
       assert [%{kind: :audio, direction: :receive} = track] = Map.values(tracks)
       assert track.user_id == owner.id
     end
@@ -95,17 +95,13 @@ defmodule HearthWeb.VoiceChannelTest do
       assert_receive %VoiceParticipantChanged{user_id: ^member_id, left: true}
     end
 
-    test "pushes Disconnected on host kick", %{
-      owner: owner,
-      member: member,
-      session: session
-    } do
+    test "pushes Disconnected on host kick", %{owner: owner, member: member, session: session} do
       topic = "voice:#{session.id}"
       {:ok, _reply, _socket} = member |> connected_socket() |> subscribe_and_join(topic)
 
       :ok = Voice.disconnect(owner, session, member.id)
 
-      assert_push "Disconnected", %{reason: :disconnected}, 1_000
+      assert_push "Disconnected", %{reason: :disconnected}
     end
   end
 
@@ -145,7 +141,7 @@ defmodule HearthWeb.VoiceChannelTest do
       ref = Process.monitor(socket.channel_pid)
       :ok = Voice.leave(member, session)
 
-      assert_push "Disconnected", %{reason: :left}, 1_000
+      assert_push "Disconnected", %{reason: :left}
       assert_receive {:DOWN, ^ref, :process, _pid, _reason}
     end
 
@@ -155,11 +151,11 @@ defmodule HearthWeb.VoiceChannelTest do
 
       :ok = push_times(socket, "react", %{"emoji" => ":tada:"}, 7)
 
-      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
-      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
-      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
-      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
-      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}, 1_000
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}
+      assert_broadcast "VoiceReaction", %{emoji: ":tada:"}
       refute_broadcast "VoiceReaction", _payload, 200
     end
 
@@ -171,7 +167,7 @@ defmodule HearthWeb.VoiceChannelTest do
 
       push(socket, "react", %{"emoji" => ":heart:"})
 
-      assert_broadcast "VoiceReaction", %{user_id: ^member_id, emoji: ":heart:"}, 1_000
+      assert_broadcast "VoiceReaction", %{user_id: ^member_id, emoji: ":heart:"}
     end
   end
 
@@ -195,11 +191,7 @@ defmodule HearthWeb.VoiceChannelTest do
       assert_receive {:browser, :listener, {:rtp, ^owner_id, :audio, "hello"}}
     end
 
-    test "drops a server muted speaker's audio", %{
-      owner: owner,
-      member: member,
-      session: session
-    } do
+    test "drops a server muted speaker's audio", %{owner: owner, member: member, session: session} do
       %{id: owner_id} = owner
       {host, _reply} = owner |> connected_socket() |> FakeBrowser.start!(session.id, :host)
 
@@ -217,11 +209,7 @@ defmodule HearthWeb.VoiceChannelTest do
       refute_receive {:browser, :listener, {:rtp, ^owner_id, :audio, "muted"}}, 1_000
     end
 
-    test "asks sharer for keyframe", %{
-      owner: owner,
-      member: member,
-      session: session
-    } do
+    test "asks sharer for keyframe", %{owner: owner, member: member, session: session} do
       %{id: owner_id} = owner
       {host, _reply} = owner |> connected_socket() |> FakeBrowser.start!(session.id, :host)
       assert_receive {:browser, :host, :connected}

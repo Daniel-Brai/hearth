@@ -31,10 +31,10 @@ export function UpdatesPanel() {
 
   const check = async () => {
     setChecking(true);
+
     const r = await gateway.settings.checkForUpdate().finally(() => setChecking(false));
 
-    if (!r.ok) flash(r.error);
-    else flash('Checked for updates');
+    flash(r.ok ? 'Checked for updates' : r.error);
   };
 
   return (

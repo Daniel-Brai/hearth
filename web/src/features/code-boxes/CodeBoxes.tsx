@@ -12,8 +12,6 @@ const digitsOf = (text: string) =>
     .join('')
     .slice(0, LENGTH);
 
-const digitAt = (code: string, i: number): string => code.charAt(i);
-
 export type CodeBoxesProps = {
   readonly id: string;
   readonly label: string;
@@ -56,6 +54,7 @@ export function CodeBoxes({ id, label, code, busy, shake, onChange }: CodeBoxesP
     if (e.key === 'ArrowLeft' && i > 0) {
       e.preventDefault();
       boxes.current[i - 1]?.focus();
+
       return;
     }
 
@@ -69,6 +68,7 @@ export function CodeBoxes({ id, label, code, busy, shake, onChange }: CodeBoxesP
     e.preventDefault();
 
     const digits = digitsOf(e.clipboardData.getData('text'));
+
     update(digits, digits.length);
   };
 
@@ -94,7 +94,7 @@ export function CodeBoxes({ id, label, code, busy, shake, onChange }: CodeBoxesP
           // Autofill puts the whole code in the first box so a cap of 1 would cut it
           maxLength={LENGTH}
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
-          value={digitAt(code, i)}
+          value={code.charAt(i)}
           aria-label={'Digit ' + (i + 1)}
           disabled={busy}
           onChange={(e) => type(e.target.value, i)}

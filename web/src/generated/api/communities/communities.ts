@@ -232,6 +232,11 @@ export type inviteSendInvitationResponse422 = {
   status: 422;
 };
 
+export type inviteSendInvitationResponse429 = {
+  data: TooManyRequestsResponse;
+  status: 429;
+};
+
 export type inviteSendInvitationResponseSuccess = inviteSendInvitationResponse201 & {
   headers: Headers;
 };
@@ -240,6 +245,7 @@ export type inviteSendInvitationResponseError = (
   | inviteSendInvitationResponse403
   | inviteSendInvitationResponse404
   | inviteSendInvitationResponse422
+  | inviteSendInvitationResponse429
 ) & {
   headers: Headers;
 };
@@ -1120,6 +1126,11 @@ export type communityUpdateResponse200 = {
   status: 200;
 };
 
+export type communityUpdateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
 export type communityUpdateResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
@@ -1144,6 +1155,7 @@ export type communityUpdateResponseSuccess = communityUpdateResponse200 & {
   headers: Headers;
 };
 export type communityUpdateResponseError = (
+  | communityUpdateResponse400
   | communityUpdateResponse401
   | communityUpdateResponse403
   | communityUpdateResponse404

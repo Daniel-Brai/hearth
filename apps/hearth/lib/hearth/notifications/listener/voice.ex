@@ -17,7 +17,7 @@ defmodule Hearth.Notifications.Listener.Voice do
     {:ok, nil}
   end
 
-  # A live discussion of a post asks only the people reading it, on the post
+  # A live discussion of a post asks only the people reading it on the post
   @impl GenServer
   def handle_info(%VoiceSessionStarted{post_id: nil} = event, state) do
     {:ok, _job} =

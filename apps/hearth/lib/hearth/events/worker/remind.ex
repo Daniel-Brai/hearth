@@ -15,13 +15,14 @@ defmodule Hearth.Events.Worker.Remind do
   def schedule(%Event{} = event, from \\ DateTime.utc_now()) do
     starts_at = Event.next_start(event, from)
 
-    for minutes <- @before,
-        at = DateTime.add(starts_at, -minutes, :minute),
-        DateTime.after?(at, DateTime.utc_now()) do
+    @before
+    |> Enum.map(&{&1, DateTime.add(starts_at, -&1, :minute)})
+    |> Enum.filter(fn {_minutes, at} -> DateTime.after?(at, DateTime.utc_now()) end)
+    |> Enum.each(fn {minutes, at} ->
       %{event_id: event.id, starts_at: DateTime.to_iso8601(starts_at), minutes: minutes}
       |> new(scheduled_at: at)
       |> Oban.insert!()
-    end
+    end)
 
     :ok
   end

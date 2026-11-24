@@ -6,30 +6,40 @@ defmodule Hearth.Media.LinkFetch do
 
   @hops 3
   @timeout 5_000
+  # A server can drip bytes under the read timeout so the whole fetch has a limit
+  @deadline 10_000
 
   @type fetched :: %{url: String.t(), body: binary(), content_type: String.t()}
 
-  # A page may be cut short since its tags sit in the head, while an image must arrive whole
+  # A page may be cut short since its tags sit in the head while an image must arrive whole
   @spec page(String.t()) :: {:ok, fetched()} | {:error, atom()}
-  def page(url) when is_binary(url),
-    do:
-      follow(
-        url,
-        %{max_bytes: 1_000_000, types: ["text/html", "application/xhtml+xml"], whole: false},
-        @hops
-      )
+  def page(url) when is_binary(url) do
+    limits = %{max_bytes: 1_000_000, types: ["text/html", "application/xhtml+xml"], whole: false}
+    within_deadline(fn -> follow(url, limits, @hops) end)
+  end
 
   @spec image(String.t()) :: {:ok, fetched()} | {:error, atom()}
-  def image(url) when is_binary(url),
-    do: follow(url, %{max_bytes: 5_000_000, types: ["image/"], whole: true}, @hops)
+  def image(url) when is_binary(url) do
+    limits = %{max_bytes: 5_000_000, types: ["image/"], whole: true}
+    within_deadline(fn -> follow(url, limits, @hops) end)
+  end
 
-  # Every hop is checked again, so a public page can't redirect into the private network
+  defp within_deadline(fetch) do
+    task = Task.async(fetch)
+
+    case Task.yield(task, @deadline) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> result
+      _late -> {:error, :timeout}
+    end
+  end
+
+  # Every hop is checked again so a public page can't redirect into the private network
   defp follow(_url, _limits, 0), do: {:error, :too_many_redirects}
 
   defp follow(url, limits, hops) do
     with {:ok, uri} <- web_uri(url),
-         :ok <- public_host(uri.host),
-         {:ok, response} <- fetch(url, limits.max_bytes) do
+         {:ok, ip} <- public_address(uri.host),
+         {:ok, response} <- fetch(uri, ip, limits.max_bytes) do
       answer(response, url, limits, hops)
     end
   end
@@ -67,10 +77,14 @@ defmodule Hearth.Media.LinkFetch do
     end
   end
 
-  defp public_host(host) do
-    case addresses(host) do
-      [] -> {:error, :unresolved}
-      ips -> if Enum.any?(ips, &private?/1), do: {:error, :private_address}, else: :ok
+  defp public_address(host), do: host |> addresses() |> first_public()
+
+  defp first_public([]), do: {:error, :unresolved}
+
+  defp first_public([ip | _ips] = ips) do
+    case Enum.any?(ips, &private?/1) do
+      true -> {:error, :private_address}
+      false -> {:ok, ip}
     end
   end
 
@@ -98,27 +112,38 @@ defmodule Hearth.Media.LinkFetch do
   defp private?({192, 0, 0, _d}), do: true
   defp private?({198, b, _c, _d}) when b in 18..19, do: true
   defp private?({_a, _b, _c, _d}), do: false
+
   defp private?({0, 0, 0, 0, 0, 0, 0, last}) when last in [0, 1], do: true
 
-  defp private?({0, 0, 0, 0, 0, 0xFFFF, high, low}),
-    do: private?({high >>> 8, high &&& 255, low >>> 8, low &&& 255})
+  # IPv6 forms that carry an IPv4 address are judged by it
+  defp private?({0, 0, 0, 0, 0, 0xFFFF, high, low}), do: private?(v4(high, low))
+  defp private?({0, 0, 0, 0, 0, 0, high, low}), do: private?(v4(high, low))
+  defp private?({0x64, 0xFF9B, 0, 0, 0, 0, high, low}), do: private?(v4(high, low))
+  defp private?({0x2002, high, low, _d, _e, _f, _g, _h}), do: private?(v4(high, low))
 
   defp private?({first, _b, _c, _d, _e, _f, _g, _h}) when first in 0xFC00..0xFDFF, do: true
   defp private?({first, _b, _c, _d, _e, _f, _g, _h}) when first in 0xFE80..0xFEBF, do: true
   defp private?({first, _b, _c, _d, _e, _f, _g, _h}) when first >= 0xFF00, do: true
   defp private?({_a, _b, _c, _d, _e, _f, _g, _h}), do: false
 
-  defp fetch(url, max_bytes), do: url |> build(max_bytes) |> Req.get()
+  defp v4(high, low), do: {high >>> 8, high &&& 255, low >>> 8, low &&& 255}
 
-  # The body stops at max_bytes, which for a page still holds the head with its tags
-  defp build(url, max_bytes) do
+  # Connecting to the checked address stops a second lookup from pointing somewhere private
+  defp fetch(uri, ip, max_bytes) do
+    %{uri | host: ip |> :inet.ntoa() |> to_string()}
+    |> URI.to_string()
+    |> build(uri.host, max_bytes)
+    |> Req.get()
+  end
+
+  defp build(url, host, max_bytes) do
     [
       url: url,
       redirect: false,
       retry: false,
       decode_body: false,
       receive_timeout: @timeout,
-      connect_options: [timeout: @timeout],
+      connect_options: [timeout: @timeout, hostname: host],
       headers: [{"user-agent", "HearthBot/1.0 (link previews)"}, {"accept", "text/html, image/*"}],
       into: &collect(&1, &2, max_bytes)
     ]

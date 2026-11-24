@@ -8739,6 +8739,9 @@
           },
           "422": {
             "$ref": "#/components/responses/unprocessable_content"
+          },
+          "429": {
+            "$ref": "#/components/responses/too_many_requests"
           }
         },
         "description": "Each address gets a single use code with the role given for it",
@@ -10109,6 +10112,9 @@
               }
             },
             "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/bad_request"
           },
           "401": {
             "$ref": "#/components/responses/unauthorized"

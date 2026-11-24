@@ -35,7 +35,6 @@ export const displayName = (state: AppState, id: string) => {
   return canSeeName(state, id) ? p.name : '@' + p.username;
 };
 
-/** Content someone wrote names them as You to themselves */
 export const authorName = (state: AppState, id: string) =>
   id === state.me ? 'You' : displayName(state, id);
 

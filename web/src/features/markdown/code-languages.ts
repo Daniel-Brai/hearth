@@ -1,4 +1,4 @@
-/** The languages the code block menu offers. Each id is registered with the highlighter */
+/** Each id must be registered with the highlighter */
 export const CODE_LANGUAGES = [
   { id: 'bash', label: 'Bash' },
   { id: 'c', label: 'C' },

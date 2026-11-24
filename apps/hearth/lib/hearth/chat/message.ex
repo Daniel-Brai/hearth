@@ -122,8 +122,6 @@ defmodule Hearth.Chat.Message do
   defp no_files(:attachment_ids, [_file | _rest]),
     do: [attachment_ids: "can't come with this kind of message"]
 
-  @type viewer :: nil | :all | T.id()
-
   # visible_to hides held items from all but their author unless the viewer may see them all
   defp query_from(opts, base) do
     {viewer, filters} = Keyword.pop(opts, :visible_to, :all)
@@ -158,7 +156,7 @@ defmodule Hearth.Chat.Message do
   @spec hide_preview(t(), boolean()) :: {:ok, t()} | {:error, Changeset.t()}
   def hide_preview(%__MODULE__{} = record, hidden?) do
     record
-    |> Changeset.change(preview_hidden_at: if(hidden?, do: DateTime.utc_now()))
+    |> change(preview_hidden_at: if(hidden?, do: DateTime.utc_now()))
     |> Repo.update()
   end
 

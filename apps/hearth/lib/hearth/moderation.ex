@@ -51,6 +51,11 @@ defmodule Hearth.Moderation do
 
   @type level :: :full | :reports | :none
 
+  @typep decision ::
+           {:ok, Item.t()}
+           | {:error,
+              :forbidden | :reason_required | :invalid_transition | :stale | Changeset.t()}
+
   @spec subscribe_to_pubsub() :: :ok
   def subscribe_to_pubsub, do: PubSub.subscribe(@topic)
 
@@ -97,29 +102,24 @@ defmodule Hearth.Moderation do
           {:ok, Item.t()} | {:error, :not_found | :not_full | Changeset.t()}
   def hold(type, id, %{} = params) when is_binary(id) do
     with {:ok, subject} <- Subject.load(type, id),
-         :ok <- full?(subject),
+         :ok <- full(subject),
          {:ok, item} <- HoldContent.execute(subject, :automatic, params) do
       broadcast(queued(item, nil))
       {:ok, item}
     end
   end
 
-  # Outside full, only images are looked at, and a hold goes to the instance admins
+  # Outside full only images are screened and a hold goes to the instance admins
   @spec screen(Subject.type(), T.id()) ::
           {:ok, :skipped | :passed} | {:ok, Item.t()} | {:error, term()}
   def screen(type, id) when is_binary(id) do
     with true <- Screener.enabled?(),
          {:ok, %Subject{} = subject} <- screenable(type, id),
          {:ok, level} <- place_level(subject),
-         {:ok, %{} = plan} <- screening_plan(level) do
-      case ScreenContent.execute(subject, plan) do
-        {:ok, %Item{} = item} ->
-          broadcast(queued(item, nil))
-          {:ok, item}
-
-        other ->
-          other
-      end
+         {:ok, %{} = plan} <- screening_plan(level),
+         {:ok, %Item{} = item} <- ScreenContent.execute(subject, plan) do
+      broadcast(queued(item, nil))
+      {:ok, item}
     else
       false -> {:ok, :skipped}
       other -> other
@@ -149,8 +149,8 @@ defmodule Hearth.Moderation do
 
   defp screenable(type, id) do
     case Subject.load(type, id) do
-      {:ok, %Subject{content: %{status: :published} = content} = subject} ->
-        if Map.get(content, :deleted_at), do: {:ok, :skipped}, else: {:ok, subject}
+      {:ok, %Subject{content: %{status: :published, deleted_at: nil}} = subject} ->
+        {:ok, subject}
 
       _gone_or_decided ->
         {:ok, :skipped}
@@ -183,7 +183,7 @@ defmodule Hearth.Moderation do
       opts
       |> Keyword.put_new(:status, :pending)
       |> Keyword.put(:community_id, id)
-      |> Keyword.put(:outside_rooms, Communities.hidden_room_ids(user, [id]))
+      |> Keyword.put(:outside_rooms, Communities.list_hidden_rooms(user, [id]))
       |> paginate()
     end
   end
@@ -203,10 +203,10 @@ defmodule Hearth.Moderation do
   def queue_counts(%User{} = user) do
     community_ids =
       user
-      |> IAM.community_ids()
+      |> IAM.list_communities()
       |> Enum.filter(&IAM.can?(user, :remove, %{type: :content, community_id: &1}))
 
-    Item.pending_counts(community_ids, Communities.hidden_room_ids(user, community_ids))
+    Item.pending_counts(community_ids, Communities.list_hidden_rooms(user, community_ids))
   end
 
   @spec get_item(T.id()) :: {:ok, Item.t()} | {:error, :not_found}
@@ -219,10 +219,9 @@ defmodule Hearth.Moderation do
 
   @spec subjects([Item.t()]) :: %{T.id() => Subject.t()}
   def subjects(items) when is_list(items) do
-    for item <- items,
-        {:ok, subject} <- [Subject.load(item.subject_type, item.subject_id)],
-        into: %{},
-        do: {item.id, subject}
+    items
+    |> Map.new(&{&1.id, subject_or_nil(&1)})
+    |> Map.reject(fn {_id, subject} -> is_nil(subject) end)
   end
 
   @spec reports([Item.t()]) :: %{T.id() => [Report.t()]}
@@ -328,18 +327,13 @@ defmodule Hearth.Moderation do
   end
 
   defp decide(user, item, event, reason) do
-    with :ok <- may_decide(user, item),
+    with :ok <- may_moderate(user, item),
          subject = subject_or_nil(item),
          {:ok, decided} <- DecideItem.execute(user, item, subject, event, reason) do
       announce(item, decided, subject)
       {:ok, decided}
     end
   end
-
-  @typep decision ::
-           {:ok, Item.t()}
-           | {:error,
-              :forbidden | :reason_required | :invalid_transition | :stale | Changeset.t()}
 
   defp subject_or_nil(item) do
     case Subject.load(item.subject_type, item.subject_id) do
@@ -357,26 +351,28 @@ defmodule Hearth.Moderation do
   defp announce(_item, _decided, _subject), do: :ok
 
   defp restore_subject(user, subject) do
-    case Item.last_removal(subject.type, subject.content.id) do
-      %Item{} = item ->
-        with {:ok, _item} <- DecideItem.execute(user, item, subject, :undo, nil),
-             do: {:ok, %{subject | content: %{subject.content | status: :published}}}
-
-      nil ->
-        ModerateContent.execute(user, subject, :published, nil)
-    end
+    subject.type
+    |> Item.last_removal(subject.content.id)
+    |> settle(user, subject, :published, nil)
   end
 
   defp remove_subject(user, subject, reason) do
-    case Item.pending(subject.type, subject.content.id) do
-      %Item{} = item ->
-        with {:ok, _item} <- DecideItem.execute(user, item, subject, :remove, reason),
-             do: {:ok, %{subject | content: %{subject.content | status: :removed}}}
-
-      nil ->
-        ModerateContent.execute(user, subject, :removed, reason)
-    end
+    subject.type
+    |> Item.pending(subject.content.id)
+    |> settle(user, subject, :removed, reason)
   end
+
+  # Going through a queued item keeps the queue and the log in step
+  defp settle(nil, user, subject, status, reason),
+    do: ModerateContent.execute(user, subject, status, reason)
+
+  defp settle(%Item{} = item, user, subject, status, reason) do
+    with {:ok, _item} <- DecideItem.execute(user, item, subject, decision(status), reason),
+         do: {:ok, %{subject | content: %{subject.content | status: status}}}
+  end
+
+  defp decision(:published), do: :undo
+  defp decision(:removed), do: :remove
 
   defp paginate(opts) do
     case Item.paginate(opts) do
@@ -395,7 +391,7 @@ defmodule Hearth.Moderation do
     end
   end
 
-  defp full?(subject) do
+  defp full(subject) do
     case place_level(subject) do
       {:ok, :full} -> :ok
       {:ok, _level} -> {:error, :not_full}
@@ -403,13 +399,9 @@ defmodule Hearth.Moderation do
     end
   end
 
+  defp place_level(%Subject{community_id: nil}), do: {:ok, :none}
+
   defp place_level(%Subject{community_id: community_id, room_id: room_id}) do
-    level_at(community_id, room_id)
-  end
-
-  defp level_at(nil, _room_id), do: {:ok, :none}
-
-  defp level_at(community_id, room_id) do
     with {:ok, community} <- Communities.get_community(id: community_id),
          {:ok, room} <- room(room_id) do
       {:ok, level(community, room)}
@@ -423,42 +415,35 @@ defmodule Hearth.Moderation do
   defp may_read(_user, %Subject{content: %{status: :removed}}), do: {:error, :not_found}
 
   defp may_read(user, %Subject{type: :message} = subject) do
-    with {:ok, place} <- message_place(user, subject) do
-      if Chat.can_read?(user, place), do: :ok, else: {:error, :not_found}
-    end
+    with {:ok, place} <- message_place(user, subject), do: readable(Chat.can_read?(user, place))
   end
 
   defp may_read(user, %Subject{community_id: community_id}) do
     with {:ok, community} <- Communities.get_community(id: community_id) do
-      if community.visibility in @open or IAM.member?(user, community.id),
-        do: :ok,
-        else: {:error, :not_found}
+      readable(community.visibility in @open or IAM.member?(user, community.id))
     end
   end
+
+  defp readable(true), do: :ok
+  defp readable(false), do: {:error, :not_found}
 
   defp message_place(user, %Subject{room_id: nil, conversation_id: id}),
     do: Chat.get_conversation(user, id)
 
   defp message_place(_user, %Subject{room_id: id}), do: Communities.get_room(id: id)
 
-  defp may_moderate(%User{is_instance_admin: true}, %Subject{community_id: nil}), do: :ok
-  defp may_moderate(%User{}, %Subject{community_id: nil}), do: {:error, :forbidden}
+  # Takes a subject or a queue item
+  defp may_moderate(%User{is_instance_admin: true}, %{community_id: nil}), do: :ok
+  defp may_moderate(%User{}, %{community_id: nil}), do: {:error, :forbidden}
 
-  defp may_moderate(user, %Subject{community_id: id} = subject) do
-    with :ok <- authorize(user, :remove, :content, id), do: sees_room(user, id, subject.room_id)
-  end
-
-  defp may_decide(%User{is_instance_admin: true}, %Item{community_id: nil}), do: :ok
-  defp may_decide(%User{}, %Item{community_id: nil}), do: {:error, :forbidden}
-
-  defp may_decide(user, %Item{community_id: id} = item) do
-    with :ok <- authorize(user, :remove, :content, id), do: sees_room(user, id, item.room_id)
+  defp may_moderate(user, %{community_id: id, room_id: room_id}) do
+    with :ok <- authorize(user, :remove, :content, id), do: sees_room(user, id, room_id)
   end
 
   defp sees_room(_user, _community_id, nil), do: :ok
 
   defp sees_room(user, community_id, room_id) do
-    case room_id in Communities.hidden_room_ids(user, [community_id]) do
+    case room_id in Communities.list_hidden_rooms(user, [community_id]) do
       true -> {:error, :not_found}
       false -> :ok
     end

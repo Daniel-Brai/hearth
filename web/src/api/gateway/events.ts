@@ -59,7 +59,7 @@ export function createEventsGateway(
       'events',
     );
 
-  // Every community's events need its rooms known, to say where each one is
+  // Every community's events need its rooms known to say where each one is
   const loadAll = async (): Promise<Result> => {
     if (!accessToken()) return ok(undefined);
 
@@ -100,9 +100,7 @@ export function createEventsGateway(
     events: async (cid: string | null) => {
       await ctx.sessionLoaded;
 
-      if (cid === null) return loadAll();
-
-      return loadOne(cid);
+      return cid === null ? loadAll() : loadOne(cid);
     },
   } satisfies Partial<HearthGateway['load']>;
 

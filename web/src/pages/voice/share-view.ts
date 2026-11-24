@@ -1,12 +1,12 @@
-export type ShareLayout = 'none' | 'focus' | 'grid';
+type ShareLayout = 'none' | 'focus' | 'grid';
 
-/** gridFor is the sharer switched back to the grid so a new share opens in focus */
-// The one sharing sees their screen the same way everyone watching does
+/** A share opens in focus until its sharer switches back to the grid */
 export function shareLayout(
   share: { readonly by: string } | null,
   gridFor: string | null,
 ): ShareLayout {
   if (!share) return 'none';
+
   return gridFor === share.by ? 'grid' : 'focus';
 }
 

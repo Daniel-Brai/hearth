@@ -4,6 +4,7 @@ import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import {
   Button,
+  cn,
   Dialog,
   DialogBody,
   DialogClose,
@@ -46,10 +47,11 @@ export function ShortcutsDialog() {
 
   const reset = (id: string) => {
     const next = { ...custom };
+    const binding = bindingFor(id)!;
 
     delete next[id];
     gateway.settings.setKeys(next);
-    flash(`${bindingFor(id)!.label} is back to ${comboText(bindingFor(id)!.key)}`);
+    flash(`${binding.label} is back to ${comboText(binding.key)}`);
   };
 
   const resetAll = () =>
@@ -85,13 +87,11 @@ export function ShortcutsDialog() {
               {g.rows.map((row) => (
                 <div
                   key={row.id ?? row.label}
-                  className={[
+                  className={cn(
                     'shortcut-row',
                     rec?.id === row.id && 'is-recording',
                     row.id && isCustomKey(row.id, custom) && 'is-custom',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
+                  )}
                 >
                   <span>{row.label}</span>
 
@@ -108,11 +108,7 @@ export function ShortcutsDialog() {
                         aria-label={'Change shortcut for ' + row.label}
                       >
                         {rec?.id === row.id ? (
-                          rec.combo ? (
-                            <Keys combo={rec.combo} />
-                          ) : (
-                            <span className="shortcut-key__wait">Press keys…</span>
-                          )
+                          <RecordedKeys combo={rec.combo} />
                         ) : (
                           <Keys combo={keyOf(row.id, custom)} />
                         )}
@@ -154,6 +150,12 @@ export function ShortcutsDialog() {
   );
 }
 
+function RecordedKeys({ combo }: { readonly combo: string | null }) {
+  if (!combo) return <span className="shortcut-key__wait">Press keys…</span>;
+
+  return <Keys combo={combo} />;
+}
+
 function useRecorder(
   rec: Recording | null,
   setRec: (r: Recording | null) => void,
@@ -187,6 +189,7 @@ function useRecorder(
       if (e.key === 'Escape') {
         if (timer !== null) window.clearTimeout(timer);
         setRec(null);
+
         return;
       }
 

@@ -7,6 +7,7 @@ import type { TrailEntry } from '@/runtime/trail';
 import { useUi } from '@/runtime/ui-store';
 
 import { PageMeta } from './PageMeta';
+import { collapseSidebar, wideScreen } from './sidebar-collapse';
 import { useSignedInNow } from './use-signed-in';
 import { useTrail } from './use-trail';
 
@@ -18,7 +19,6 @@ export type PageHeaderProps = {
   readonly actions?: ReactNode | undefined;
   readonly endActions?: ReactNode | undefined;
   readonly back?: boolean | undefined;
-  // Asks before going back, and calls go once it may
   readonly confirmBack?: ((go: () => void) => void) | undefined;
   readonly ruled?: boolean | undefined;
   readonly hideTitle?: boolean | undefined;
@@ -36,7 +36,7 @@ const textParts = (...nodes: ReactNode[]) =>
 
 let firstPage = true;
 
-/** Moves focus to the heading after navigation so screen readers announce it */
+// Focus moves to the heading after navigation so screen readers announce it
 function useHeadingFocus() {
   const { pathname } = useLocation();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -125,32 +125,19 @@ function BackButton({
     confirm(() => void navigate(href));
   };
 
-  if (from) {
-    return (
-      <Link
-        to={from.href}
-        onClick={guard(from.href)}
-        className="btn btn--circle btn--small btn--back"
-        aria-label={'Back to ' + from.label}
-        data-tip={'Back to ' + from.label}
-      >
-        <Icon name="back" />
-        <span className="btn__label">{from.label}</span>
-      </Link>
-    );
-  }
+  const back = from ?? (signedIn ? null : { href: routes.home, label: 'Communities' });
 
-  if (!signedIn) {
+  if (back) {
     return (
       <Link
-        to={routes.home}
-        onClick={guard(routes.home)}
+        to={back.href}
+        onClick={guard(back.href)}
         className="btn btn--circle btn--small btn--back"
-        aria-label="Back to Communities"
-        data-tip="Back to Communities"
+        aria-label={'Back to ' + back.label}
+        data-tip={'Back to ' + back.label}
       >
         <Icon name="back" />
-        <span className="btn__label">Communities</span>
+        <span className="btn__label">{back.label}</span>
       </Link>
     );
   }
@@ -174,10 +161,8 @@ function SidebarToggle() {
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
 
   const open = () => {
-    if (window.matchMedia('(min-width: 100ch)').matches) {
-      document.documentElement.classList.remove('sb-collapsed');
-      localStorage.removeItem('hearth-sidebar');
-    } else setSidebarOpen(true);
+    if (wideScreen()) collapseSidebar(false);
+    else setSidebarOpen(true);
   };
 
   if (!signedIn) return null;

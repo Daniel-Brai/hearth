@@ -31,7 +31,7 @@ export function expiryDate(expires: string): string | null {
   return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-export type LinkUses = { main: string; sub: string; pct: number };
+type LinkUses = { main: string; sub: string; pct: number };
 
 export function linkUses(uses: number, max: string): LinkUses {
   if (max === 'none') return { main: `${uses} joined`, sub: 'No limit', pct: 0 };

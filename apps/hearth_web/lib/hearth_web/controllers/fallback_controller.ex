@@ -4,7 +4,6 @@ defmodule HearthWeb.FallbackController do
   alias Ecto.Changeset
   alias HearthWeb.ErrorJSON
 
-  @statuses ~w[not_found forbidden unauthorized]a
   @templates %{not_found: :"404", forbidden: :"403", unauthorized: :"401"}
 
   def call(conn, {:error, %Changeset{} = changeset}) do
@@ -14,7 +13,7 @@ defmodule HearthWeb.FallbackController do
     |> render(:"422", changeset: changeset)
   end
 
-  def call(conn, {:error, reason}) when reason in @statuses do
+  def call(conn, {:error, reason}) when is_map_key(@templates, reason) do
     conn
     |> put_status(reason)
     |> put_view(json: ErrorJSON)

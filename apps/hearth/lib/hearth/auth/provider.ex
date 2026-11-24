@@ -26,11 +26,8 @@ defmodule Hearth.Auth.Provider do
 
   @spec authorize_url(t(), String.t()) :: {:ok, %{url: String.t(), session_params: map()}}
   def authorize_url(provider, redirect_uri) do
-    config = config(provider, redirect_uri)
-
-    @strategies
-    |> Map.fetch!(provider)
-    |> then(& &1.authorize_url(config))
+    strategy = Map.fetch!(@strategies, provider)
+    provider |> config(redirect_uri) |> strategy.authorize_url()
   end
 
   @spec callback(t(), String.t(), map(), map()) :: {:ok, map()} | {:error, term()}

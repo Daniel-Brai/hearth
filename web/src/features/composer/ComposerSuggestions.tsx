@@ -1,6 +1,5 @@
-import { useAppState } from '@/data/store';
-import { Avatar, Icon } from '@/design-system';
-import { initials, person, photoOf } from '@/domain/selectors';
+import { Icon } from '@/design-system';
+import { PersonAvatar } from '@/shell/people';
 
 import type { Suggestion, SuggestKind } from './composer-text';
 
@@ -46,7 +45,7 @@ export function ComposerSuggestions({
           onMouseEnter={() => onHover(i)}
         >
           <span className="ac__icon">
-            {it.person ? <PersonSuggestionAvatar id={it.person} /> : <Icon name={it.icon} />}
+            {it.person ? <PersonAvatar id={it.person} size="xs" /> : <Icon name={it.icon} />}
           </span>
           <span className="ac__label">
             <span>{it.label}</span>
@@ -57,14 +56,4 @@ export function ComposerSuggestions({
       ))}
     </div>
   );
-}
-
-function PersonSuggestionAvatar({ id }: { readonly id: string }) {
-  const view = useAppState((state) => ({
-    hue: person(state, id).hue,
-    initials: initials(state, id),
-    photo: photoOf(state, id),
-  }));
-
-  return <Avatar size="xs" hue={view.hue} initials={view.initials} photo={view.photo} />;
 }

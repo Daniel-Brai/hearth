@@ -1,12 +1,11 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 
-import { useGateway } from '@/app/gateway-context';
 import { useHydrated } from '@/app/request-context';
 import { useAppState } from '@/data/store';
 import { cn, TooltipLayer } from '@/design-system';
 import { canAny, isInstanceAdmin, person, unreadNotifications } from '@/domain/selectors';
-import { codeBlockClick } from '@/features/markdown/code-block';
+import { useCodeBlocks } from '@/features/markdown/code-block';
 import { setHapticsEnabled } from '@/runtime/haptics';
 import { BINDINGS, comboFromEvent, keyOf } from '@/runtime/keys';
 import { routes } from '@/runtime/routes';
@@ -19,6 +18,7 @@ import { DialogHost } from './dialogs/DialogHost';
 import { useKeyActions } from './key-actions';
 import { NavProgress } from './NavProgress';
 import { Sidebar } from './Sidebar';
+import { collapseSidebar, wideScreen } from './sidebar-collapse';
 import { UpdateBanner } from './UpdateBanner';
 import { useRouteContext } from './use-route-context';
 
@@ -88,17 +88,8 @@ function useNotificationChime() {
   }, [unread]);
 }
 
-function useCodeBlocks() {
-  useEffect(() => {
-    document.addEventListener('click', codeBlockClick);
-
-    return () => document.removeEventListener('click', codeBlockClick);
-  }, []);
-}
-
 function useGlobalKeys() {
   const navigate = useNavigate();
-  const gateway = useGateway();
   const { scope, community } = useRouteContext();
   const keys = useAppState((state) => state.settings.keys);
   const me = useAppState((state) => (state.me ? person(state, state.me).username : null));
@@ -190,20 +181,10 @@ function useGlobalKeys() {
     window.addEventListener('keydown', onKey);
 
     return () => window.removeEventListener('keydown', onKey);
-  }, [navigate, gateway, scope, community, keys, me, canModerate]);
+  }, [navigate, scope, community, keys, me, canModerate]);
 }
 
 function toggleSidebar(open: boolean, setOpen: (o: boolean) => void) {
-  const root = document.documentElement;
-
-  if (window.matchMedia('(min-width: 100ch)').matches) {
-    const collapsed = root.classList.toggle('sb-collapsed');
-
-    if (collapsed) localStorage.setItem('hearth-sidebar', 'collapsed');
-    else localStorage.removeItem('hearth-sidebar');
-
-    return;
-  }
-
-  setOpen(!open);
+  if (wideScreen()) collapseSidebar(!document.documentElement.classList.contains('sb-collapsed'));
+  else setOpen(!open);
 }

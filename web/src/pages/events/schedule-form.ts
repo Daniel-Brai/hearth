@@ -70,8 +70,9 @@ export function resolveWhere(
 
     const href = normalizeUrl(url);
 
-    if (!isValidLink(href))
+    if (!isValidLink(href)) {
       return { problem: { field: 'url', text: "That doesn't look like a link" } };
+    }
 
     return { where: { type: 'link', url: href } };
   }

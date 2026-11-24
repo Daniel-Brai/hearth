@@ -92,6 +92,7 @@ export function useSuggestions({
 
     if (s.disabled) {
       flash(s.reason ?? 'Not available here');
+
       return;
     }
 
@@ -104,6 +105,7 @@ export function useSuggestions({
     const el = textarea.current;
 
     if (!el) return;
+
     placeCaret(el, next, pos);
     if (s.reopen) update(el);
   };
@@ -116,12 +118,14 @@ export function useSuggestions({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setIndex((i) => (i + 1) % count);
+
       return true;
     }
 
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       setIndex((i) => (i - 1 + count) % count);
+
       return true;
     }
 

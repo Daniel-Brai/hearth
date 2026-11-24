@@ -8,7 +8,7 @@ import { community } from './communities';
 
 export const findRoom = (state: AppState, name: string, cid: string | null | undefined) => {
   const c = community(state, cid);
-  return c ? c.rooms.find((r) => r.name.toLowerCase() === String(name).toLowerCase()) : undefined;
+  return c ? c.rooms.find((r) => r.name.toLowerCase() === name.toLowerCase()) : undefined;
 };
 
 export function roomAccess(
@@ -54,24 +54,13 @@ export function soundAccess(state: AppState, key: string) {
   return { ok: false as const, reason: 'Only people an admin picked can play sounds here' };
 }
 
-export function liveRooms(state: AppState) {
-  const out: {
-    key: string;
-    cid: string;
-    id: string;
-    name: string;
-    topic: string | null;
-    listeners: number;
-    community: string;
-    hue: string;
-    letter: string;
-    logo: string | null;
-  }[] = [];
-  Object.entries(state.communities).forEach(([cid, c]) => {
-    if (!c.joined) return;
-    c.voice.forEach((v) => {
-      if (v.live && !(state.live.joined && state.live.key === cid + '/' + v.id))
-        out.push({
+export const liveRooms = (state: AppState) =>
+  Object.entries(state.communities)
+    .filter(([, c]) => c.joined)
+    .flatMap(([cid, c]) =>
+      c.voice
+        .filter((v) => v.live && !(state.live.joined && state.live.key === cid + '/' + v.id))
+        .map((v) => ({
           key: cid + '/' + v.id,
           cid,
           id: v.id,
@@ -82,11 +71,8 @@ export function liveRooms(state: AppState) {
           hue: c.hue,
           letter: c.letter,
           logo: c.logo,
-        });
-    });
-  });
-  return out;
-}
+        })),
+    );
 
 export function liveRoom(state: AppState) {
   if (!state.live.key) return null;
@@ -106,6 +92,5 @@ export function mayTalk(state: AppState): boolean {
   return role !== 'listener' || room?.mode === 'open';
 }
 
-/** The newest poll in a room's chat that still takes votes */
 export const newestOpenPoll = (state: AppState, key: string, now: Date): Message | null =>
   state.chats[key]?.findLast((m) => m.poll !== undefined && pollOpen(m.poll, now)) ?? null;

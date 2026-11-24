@@ -1,6 +1,5 @@
 defmodule Hearth.Repo.Migration do
-  # A migration that waits for a lock gives up after a few seconds instead of
-  # blocking every query on the table behind it
+  # A migration waiting for a lock gives up instead of blocking every query behind it
   # Ecto skips this when a migration sets @disable_ddl_transaction
 
   defmacro __using__(opts) do

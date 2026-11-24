@@ -53,8 +53,8 @@ defmodule Hearth.Chat.ScheduledMessageTest do
 
     test "waits in a room until its time", %{member: member, room: room} do
       params = %{body: Lorem.sentence(), send_at: TestUtils.in_minutes(30)}
-
       room_id = room.id
+
       assert {:ok, %{id: id}} = Chat.schedule_message(member, room, params)
       assert_enqueued(worker: SendScheduled, args: %{scheduled_id: id})
       assert_receive %ScheduledMessageChanged{scheduled_id: ^id}
@@ -131,8 +131,8 @@ defmodule Hearth.Chat.ScheduledMessageTest do
       scheduled = TestUtils.schedule_random_message!(member, room)
       {:ok, _moved} = Chat.reschedule_message(scheduled, TestUtils.in_minutes(60))
       args = %{scheduled_id: scheduled.id, send_at: DateTime.to_iso8601(scheduled.send_at)}
-
       room_id = room.id
+
       assert :ok = perform_job(SendScheduled, args)
       refute_receive %MessageCreated{room_id: ^room_id}
     end

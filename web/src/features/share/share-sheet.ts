@@ -10,6 +10,7 @@ export async function openShareSheet(target: ShareTarget, fallback: () => void) 
   if (typeof navigator.share === 'function' && (!navigator.canShare || navigator.canShare(data))) {
     try {
       await navigator.share(data);
+
       return;
     } catch (error) {
       if (aborted(error)) return;

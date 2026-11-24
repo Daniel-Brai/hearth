@@ -11,7 +11,7 @@ defmodule Hearth.Transcripts.Command.SaveSpeaker do
   # Postgres takes at most 65535 values in one statement
   @batch 1_000
 
-  # A second run replaces what the first wrote, so a retry never doubles lines
+  # A second run replaces what the first wrote so a retry never doubles lines
   @spec execute(Speaker.t(), [Transcriber.segment()]) ::
           {:ok, Speaker.t()} | {:error, Changeset.t()}
   def execute(%Speaker{} = speaker, segments) when is_list(segments) do

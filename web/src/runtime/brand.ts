@@ -1,3 +1,4 @@
+import { escapeHtml } from '@/domain/format';
 import type { Instance } from '@/domain/types';
 
 const TILE = '<rect width="32" height="32" rx="9" fill="INK"/>';
@@ -29,7 +30,7 @@ export function brandFor(instance: Pick<Instance, 'name' | 'logo' | 'icon'>): Br
   return {
     name: instance.name,
     mark: instance.logo
-      ? `<img class="logo__mark" src="${instance.logo}" alt="" decoding="async">`
+      ? `<img class="logo__mark" src="${escapeHtml(instance.logo)}" alt="" decoding="async">`
       : HEARTH.mark,
     icon: instance.icon ?? HEARTH.icon,
   };

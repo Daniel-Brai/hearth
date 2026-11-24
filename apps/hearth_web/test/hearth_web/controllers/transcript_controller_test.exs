@@ -19,9 +19,9 @@ defmodule HearthWeb.TranscriptControllerTest do
 
   describe "show" do
     test "fails signed out", %{conn: conn, session: session} do
-      conn
-      |> get(~p"/api/voice-sessions/#{session.id}/transcript")
-      |> valid_response(401)
+      assert conn
+             |> get(~p"/api/voice-sessions/#{session.id}/transcript")
+             |> valid_response(401)
     end
 
     test "fails for someone outside the community", %{
@@ -44,7 +44,7 @@ defmodule HearthWeb.TranscriptControllerTest do
                |> valid_response(404)
     end
 
-    test "show transcript", %{conn: conn, member: member, session: session} do
+    test "shows the transcript", %{conn: conn, member: member, session: session} do
       response =
         conn
         |> auth_conn(member)
@@ -59,16 +59,10 @@ defmodule HearthWeb.TranscriptControllerTest do
   describe "update_segment" do
     test "fails without text", %{conn: conn, member: member, transcript: transcript} do
       [_welcome, thanks] = transcript.segments
+      path = ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{thanks.id}"
 
-      errors =
-        conn
-        |> auth_conn(member)
-        |> patch(
-          ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{thanks.id}",
-          %{}
-        )
-        |> valid_response(422)
-        |> Map.fetch!("errors")
+      assert %{"errors" => errors} =
+               conn |> auth_conn(member) |> patch(path, %{}) |> valid_response(422)
 
       assert ["The text field is required."] = errors["text"]
     end
@@ -79,27 +73,20 @@ defmodule HearthWeb.TranscriptControllerTest do
       transcript: transcript
     } do
       [welcome, _thanks] = transcript.segments
+      path = ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{welcome.id}"
 
       assert %{"code" => "forbidden"} =
-               conn
-               |> auth_conn(member)
-               |> patch(
-                 ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{welcome.id}",
-                 %{text: "Hi"}
-               )
-               |> valid_response(403)
+               conn |> auth_conn(member) |> patch(path, %{text: "Hi"}) |> valid_response(403)
     end
 
-    test "fix own line", %{conn: conn, member: member, transcript: transcript} do
+    test "fixes my own line", %{conn: conn, member: member, transcript: transcript} do
       [_welcome, thanks] = transcript.segments
+      path = ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{thanks.id}"
 
       assert %{"text" => "Thank you", "edited" => true, "editable" => true} =
                conn
                |> auth_conn(member)
-               |> patch(
-                 ~p"/api/voice-sessions/#{transcript.session_id}/transcript/segments/#{thanks.id}",
-                 %{text: "Thank you"}
-               )
+               |> patch(path, %{text: "Thank you"})
                |> valid_response(200)
     end
   end

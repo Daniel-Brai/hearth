@@ -7,7 +7,7 @@ import { CalendarFeed } from './CalendarFeed';
 
 export type EventsTab = 'upcoming' | 'past';
 
-export type SchedulableCommunity = {
+type SchedulableCommunity = {
   readonly id: string;
   readonly name: string;
   readonly hue: Hue;

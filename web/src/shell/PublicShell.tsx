@@ -4,7 +4,7 @@ import { Outlet } from 'react-router';
 import { useGateway } from '@/app/gateway-context';
 import { useAppState } from '@/data/store';
 import { Button, Link, Toasts, TooltipLayer } from '@/design-system';
-import { codeBlockClick } from '@/features/markdown/code-block';
+import { useCodeBlocks } from '@/features/markdown/code-block';
 import { brandFor } from '@/runtime/brand';
 import { routes } from '@/runtime/routes';
 import { useUi } from '@/runtime/ui-store';
@@ -20,11 +20,7 @@ export function PublicShell() {
   const { signIn } = useGuest();
   const checked = useSessionChecked();
 
-  useEffect(() => {
-    document.addEventListener('click', codeBlockClick);
-
-    return () => document.removeEventListener('click', codeBlockClick);
-  }, []);
+  useCodeBlocks();
 
   return (
     <div id="app" className="public-shell">
@@ -66,7 +62,7 @@ export function PublicShell() {
   );
 }
 
-// The server renders everyone signed out, so Sign in waits for the browser to restore any session
+// The server renders everyone signed out so Sign in waits for the browser to restore any session
 function useSessionChecked(): boolean {
   const gateway = useGateway();
   const [checked, setChecked] = useState(false);

@@ -27,9 +27,9 @@ defmodule Hearth.IAM do
     CreateDefaultRoles.execute(community_id)
   end
 
-  @spec list_roles(T.id()) :: [Role.t()]
-  def list_roles(community_id) when is_binary(community_id) do
-    Role.for_community(community_id)
+  @spec list_roles(T.id(), keyword()) :: [Role.t()]
+  def list_roles(community_id, opts \\ []) when is_binary(community_id) do
+    Role.for_community(community_id, opts)
   end
 
   @spec create_role(T.id(), map()) :: {:ok, Role.t()} | {:error, Changeset.t()}
@@ -73,21 +73,20 @@ defmodule Hearth.IAM do
     :ok
   end
 
-  @spec community_ids(User.t()) :: [T.id()]
-  def community_ids(%User{id: user_id}), do: Membership.community_ids(user_id)
+  @spec list_communities(User.t()) :: [T.id()]
+  def list_communities(%User{id: user_id}), do: Membership.community_ids(user_id)
 
   @spec joined_at(User.t()) :: %{T.id() => DateTime.t()}
   def joined_at(%User{id: user_id}), do: Membership.joined_at(user_id)
 
-  # Everyone who shares a community with the user and which ones, narrowed to one community if given
+  # Narrowed to one community if given
   @spec co_members(User.t(), nil | T.id()) :: %{T.id() => [T.id()]}
   def co_members(%User{id: id} = user, community_id \\ nil) do
-    ids = user |> community_ids() |> Enum.filter(&(community_id in [nil, &1]))
+    ids = user |> list_communities() |> Enum.filter(&(community_id in [nil, &1]))
 
     Membership.co_members(id, ids)
   end
 
-  # For each viewer, the given people who share a community with them
   @spec sharing([T.id()], [T.id()]) :: %{T.id() => [T.id()]}
   def sharing(user_ids, viewer_ids) when is_list(user_ids) and is_list(viewer_ids),
     do: Membership.sharing(user_ids, viewer_ids)
@@ -116,8 +115,8 @@ defmodule Hearth.IAM do
   def member_counts(community_ids, user_ids) when is_list(community_ids) and is_list(user_ids),
     do: Membership.counts(community_ids, user_ids)
 
-  @spec shared_community_ids([T.id()]) :: [T.id()]
-  def shared_community_ids(user_ids) when is_list(user_ids),
+  @spec list_shared_communities([T.id()]) :: [T.id()]
+  def list_shared_communities(user_ids) when is_list(user_ids),
     do: Membership.community_ids_of(user_ids)
 
   @spec member?(User.t(), T.id()) :: boolean()
@@ -142,9 +141,9 @@ defmodule Hearth.IAM do
   @spec set_roles(Membership.t(), [String.t()]) :: {:ok, Membership.t()} | {:error, Changeset.t()}
   def set_roles(%Membership{} = membership, keys) when is_list(keys) do
     roles = Role.with_keys(membership.community_id, keys)
-    result = Membership.set_roles(membership, roles)
 
-    with {:ok, membership} <- result, do: {:ok, with_permissions(membership)}
+    with {:ok, membership} <- Membership.set_roles(membership, roles),
+         do: {:ok, with_permissions(membership)}
   end
 
   @spec holders(T.id(), String.t()) :: [T.id()]
@@ -156,18 +155,14 @@ defmodule Hearth.IAM do
       |> default_roles()
       |> Enum.any?(&(permission in &1.permissions))
 
-    by_default =
-      case granted? do
-        true -> Membership.without_roles(community_id)
-        false -> []
-      end
+    by_default = if granted?, do: Membership.without_roles(community_id), else: []
 
     Enum.uniq(explicit ++ by_default)
   end
 
   # A member with no roles of their own holds the default ones
-  @spec role_ids(User.t(), [T.id()]) :: [T.id()]
-  def role_ids(%User{id: user_id}, community_ids) when is_list(community_ids) do
+  @spec list_held_roles(User.t(), [T.id()]) :: [T.id()]
+  def list_held_roles(%User{id: user_id}, community_ids) when is_list(community_ids) do
     [user_id: user_id, community_id: community_ids, preload: :roles]
     |> Membership.all()
     |> Enum.flat_map(&held_roles/1)
@@ -181,6 +176,22 @@ defmodule Hearth.IAM do
     |> Membership.all()
     |> Enum.filter(&(permission in with_permissions(&1).permissions))
     |> Enum.map(& &1.community_id)
+  end
+
+  # One membership load gives the roles someone holds and where those roles grant a permission
+  @spec held_in(User.t(), [T.id()], String.t()) :: %{role_ids: [T.id()], granting: [T.id()]}
+  def held_in(%User{id: user_id}, community_ids, permission)
+      when is_list(community_ids) and is_binary(permission) do
+    held =
+      [user_id: user_id, community_id: community_ids, preload: :roles]
+      |> Membership.all()
+      |> Enum.map(&with_permissions(%{&1 | roles: held_roles(&1)}))
+
+    %{
+      role_ids: held |> Enum.flat_map(& &1.roles) |> Enum.map(& &1.id),
+      granting:
+        held |> Enum.filter(&(permission in &1.permissions)) |> Enum.map(& &1.community_id)
+    }
   end
 
   @spec permissions_for(User.t(), T.id()) :: [String.t()]

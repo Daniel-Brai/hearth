@@ -11,6 +11,7 @@ defmodule HearthWeb.CommunityController do
   alias Hearth.Communities
   alias Hearth.Forum
   alias Hearth.IAM
+  alias Hearth.Media
   alias HearthWeb.Authors
   alias HearthWeb.Avatars
   alias HearthWeb.CommunityExtras
@@ -87,22 +88,8 @@ defmodule HearthWeb.CommunityController do
       |> Map.take(~w[name tagline description logo_id hue visibility template note categories])
       |> Common.atomize_string_keys()
 
-    case Communities.start_community(auth, attrs) do
-      {:ok, community} ->
-        {:ok, community} = Communities.get_community(id: community.id, preload: :rooms)
-
-        conn
-        |> put_status(:created)
-        |> render(:create, community: CommunityExtras.put_one(community, auth))
-
-      {:requested, request} ->
-        conn
-        |> put_status(:accepted)
-        |> render(:create, request: request, people: Authors.people([request.requester_id]))
-
-      error ->
-        error
-    end
+    with :ok <- check_images(auth, attrs),
+         do: started(conn, auth, Communities.start_community(auth, attrs))
   end
 
   operation :slug,
@@ -137,18 +124,20 @@ defmodule HearthWeb.CommunityController do
   def show(%Conn{assigns: %{auth: auth}} = conn, %{"id" => id}) do
     with {:ok, community} <- find_visible(id, auth) do
       community = CommunityExtras.put_one(community, auth)
-
-      if Communities.readable?(community, auth) do
-        render(conn, :show,
-          community: community,
-          kinds: Forum.list_kinds(community.id),
-          membership: membership(auth, community)
-        )
-      else
-        render(conn, :outline, community: community)
-      end
+      show_community(conn, auth, community, Communities.readable?(community, auth))
     end
   end
+
+  defp show_community(conn, auth, community, true) do
+    render(conn, :show,
+      community: community,
+      kinds: Forum.list_kinds(community.id),
+      membership: membership(auth, community)
+    )
+  end
+
+  defp show_community(conn, _auth, community, false),
+    do: render(conn, :outline, community: community)
 
   operation :update,
     summary: "Change a community",
@@ -158,6 +147,7 @@ defmodule HearthWeb.CommunityController do
     request_body: Schema.UpdateCommunityBody,
     responses: [
       ok: {Schema.Community, description: "OK"},
+      bad_request: %Reference{"$ref": "#/components/responses/bad_request"},
       forbidden: %Reference{"$ref": "#/components/responses/forbidden"},
       not_found: %Reference{"$ref": "#/components/responses/not_found"},
       unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
@@ -192,6 +182,7 @@ defmodule HearthWeb.CommunityController do
       |> Common.atomize_string_keys()
 
     with {:ok, community} <- find_visible(id, auth),
+         :ok <- check_images(auth, changes, community),
          {:ok, community} <- Communities.update_community(auth, community, changes) do
       render(conn, :update, community: CommunityExtras.put_one(community, auth))
     end
@@ -418,4 +409,33 @@ defmodule HearthWeb.CommunityController do
     |> put_resp_header("cache-control", "public, max-age=3600")
     |> render(:templates, templates: Communities.list_templates())
   end
+
+  defp started(conn, auth, {:ok, community}) do
+    {:ok, community} = Communities.get_community(id: community.id, preload: :rooms)
+
+    conn
+    |> put_status(:created)
+    |> render(:create, community: CommunityExtras.put_one(community, auth))
+  end
+
+  defp started(conn, _auth, {:requested, request}) do
+    conn
+    |> put_status(:accepted)
+    |> render(:create, request: request, people: Authors.people([request.requester_id]))
+  end
+
+  defp started(_conn, _auth, error), do: error
+
+  # A logo or banner must be the sender's own upload
+  defp check_images(auth, changes, community \\ nil) do
+    uploaded? =
+      [changes[:logo_id], changes[:banner_id]]
+      |> Enum.reject(&(is_nil(&1) or kept?(&1, community)))
+      |> Enum.all?(&Media.community_image?(auth, &1))
+
+    if uploaded?, do: :ok, else: {:error, :invalid_image}
+  end
+
+  defp kept?(_id, nil), do: false
+  defp kept?(id, community), do: id in [community.logo_id, community.banner_id]
 end

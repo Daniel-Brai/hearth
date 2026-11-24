@@ -7,7 +7,7 @@ defmodule Hearth.Repo.Schema do
   # update/2 passes on only the fields in @changeable
 
   defmacro __using__(opts \\ []) do
-    # Id alone, since a call to Common here would make every schema recompile with any of Common
+    # Id alone since calling Common here would recompile every schema whenever Common changes
     id_options = Id.options()
 
     quote bind_quoted: [opts: opts, id_options: id_options] do
@@ -63,11 +63,7 @@ defmodule Hearth.Repo.Schema do
       def paginate(opts \\ []) when is_list(opts) do
         {flop_opts, filters} = Keyword.split(opts, @pagination_opts)
 
-        limit_key =
-          case flop_opts[:before] do
-            nil -> :first
-            _cursor -> :last
-          end
+        limit_key = if flop_opts[:before], do: :last, else: :first
 
         params =
           flop_opts
@@ -100,6 +96,9 @@ defmodule Hearth.Repo.Schema do
           {:preload, assocs}, query ->
             preload(query, ^assocs)
 
+          {:fields, fields}, query ->
+            only_fields(query, fields)
+
           {key, nil}, query ->
             where(query, [x], is_nil(field(x, ^key)))
 
@@ -110,6 +109,10 @@ defmodule Hearth.Repo.Schema do
             where(query, [x], field(x, ^key) == ^value)
         end)
       end
+
+      # The database returns only these columns, and none given means all of them
+      defp only_fields(query, []), do: query
+      defp only_fields(query, fields), do: select(query, ^fields)
 
       defp join_assocs(query, binding) do
         join(query, :left, [x], assoc in assoc(x, ^binding), as: ^binding)

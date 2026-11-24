@@ -48,7 +48,6 @@ const LEVEL_HINT: Record<ModerationLevel, string> = {
   none: "No checks and no reports. People see it isn't moderated.",
 };
 
-// Everything the form changes, without the ids rows only need while editing
 const snapshotOf = (d: CommunityDraft) =>
   JSON.stringify([
     d.name,
@@ -80,7 +79,6 @@ export function EditCommunityPage() {
   if (!cid || !exists) return <ErrorPage code={404} />;
   if (!allowed) return <ErrorPage code={403} forbidden="editors" />;
 
-  // Keyed by community so opening another starts a fresh form
   return <EditCommunityForm key={cid} cid={cid} />;
 }
 

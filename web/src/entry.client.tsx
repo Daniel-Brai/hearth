@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-// Once per page, outside React, so StrictMode's second effect run in development doesn't repeat them
+// Outside React so StrictMode's second effect run in development never repeats them
 printConsoleBanner();
 rememberZone();
 

@@ -53,11 +53,12 @@ defmodule Hearth.IAM.Role do
     |> foreign_key_constraint(:community_id)
   end
 
-  @spec for_community(T.id()) :: [t()]
-  def for_community(community_id) do
+  @spec for_community(T.id(), keyword()) :: [t()]
+  def for_community(community_id, opts \\ []) do
     __MODULE__
     |> where(community_id: ^community_id)
     |> order_by(:position)
+    |> only_fields(Keyword.get(opts, :fields, []))
     |> Repo.all()
   end
 

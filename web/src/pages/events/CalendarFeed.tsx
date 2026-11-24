@@ -38,7 +38,7 @@ export function CalendarFeed({ cid }: { readonly cid: string }) {
   );
 }
 
-// A webcal link hands the feed to the calendar app, which keeps it up to date
+// A webcal link hands the feed to the calendar app to keep up to date
 function OpenFeedItem({ href }: { readonly href: string }) {
   const menu = useMenu();
 

@@ -109,7 +109,7 @@ export function createInvitesGateway(
       return ok(undefined);
     },
 
-    // Joining one goes through acceptInvite, which finds its community from the link kept here
+    // Joining one goes through acceptInvite and that finds its community from the link kept here
     myInvites: async () => {
       await ctx.sessionLoaded;
 

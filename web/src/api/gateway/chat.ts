@@ -58,11 +58,12 @@ type Outgoing = { text: string; kind: SendMessageBodyKind };
 
 const topicOf = (place: Place): Topic => `${place.kind}:${place.id}`;
 
-// Someone shows as typing until this long after their last word, and ours goes out at most this often
+// Someone shows as typing until this long after their last word
 const TYPING_SHOWN_MS = 5000;
+// Ours goes out at most this often
 const TYPING_EVERY_MS = 3000;
 
-// A thousand messages back at most, so one jump can't load a whole room
+// A thousand messages back at most so one jump can't load a whole room
 const MOST_PAGES_BACK = 20;
 
 function listMessages(place: Place, params: Paging) {
@@ -136,7 +137,7 @@ export function createChatGateway(
     ];
   };
 
-  /** What to send for a command, or null when the command did all its work here */
+  /** What to send for a command or null when the command did all its work here */
   const runCommand = (key: string, text: string): Result<Outgoing | null> => {
     const [, name = '', arg = ''] = /^\/(\S*)\s*([\s\S]*)$/.exec(text) ?? [];
     const cmd = commands(key).find((c) => c.cmd === name.toLowerCase());
@@ -154,22 +155,20 @@ export function createChatGateway(
     if (cmd.cmd === 'shrug')
       return ok({ text: [rest, SHRUG].filter(Boolean).join(' '), kind: 'text' });
 
-    if (cmd.cmd === 'me') {
-      if (!rest) return fail("Say what you're doing, like /me is reviewing the PR.");
-
-      return ok({ text: rest, kind: 'action' });
-    }
+    if (cmd.cmd === 'me')
+      return rest
+        ? ok({ text: rest, kind: 'action' })
+        : fail("Say what you're doing, like /me is reviewing the PR.");
 
     if (cmd.cmd === 'play') {
       const sound = rest.toLowerCase();
 
       if (!sound) return fail('Pick a sound, like /play tada.');
 
-      if (!SOUNDS.includes(sound)) {
-        const examples = SOUNDS.slice(0, 4).join(', ');
-
-        return fail(`“${rest}” isn't a sound. Try ${examples} or another from the list.`);
-      }
+      if (!SOUNDS.includes(sound))
+        return fail(
+          `“${rest}” isn't a sound. Try ${SOUNDS.slice(0, 4).join(', ')} or another from the list.`,
+        );
 
       return ok({ text: sound, kind: 'sound' });
     }
@@ -243,6 +242,9 @@ export function createChatGateway(
     return id ? topicOf({ kind: dm ? 'conversation' : 'room', id }) : null;
   };
 
+  // The cursor past the oldest message loaded, null once the chat's first message is in
+  const older = new Map<string, string | null>();
+
   const fetchMessages = (place: Place, parent: string | null) =>
     call(() => listMessages(place, parent ? { parent_id: parent } : {}));
 
@@ -261,9 +263,6 @@ export function createChatGateway(
 
     return place;
   };
-
-  // The cursor past the oldest message loaded, null once the chat's first message is in
-  const older = new Map<string, string | null>();
 
   const loaded = (key: string, id: string) =>
     ctx.store.get().chats[key]?.some((m) => m.id === id) ?? false;
@@ -352,7 +351,7 @@ export function createChatGateway(
       ctx.watch(topicOf(place.value), (realtime, t) => {
         const stops = [
           realtime.onPush(t, 'MessagePinsChanged', (e) => void loadPins(key, e.room_id)),
-          // A reply isn't in the room's top level, so its parent's answers load too
+          // A reply isn't in the room's top level so its parent's answers load too
           realtime.onPush(t, 'MessageCreated', (e) => {
             setTyping(key, e.author_id, false);
             void fetchInto(key, null);
@@ -365,7 +364,7 @@ export function createChatGateway(
             if (ctx.store.get().settings.sounds && isTune(e.sound)) playTune(e.sound);
           }),
           realtime.onPush(t, 'MessageEdited', (e) => void refresh(key, e.message_id, false)),
-          // Others' votes move the totals, and the viewer's own picks stay as they are
+          // Others' votes move the totals and the viewer's own picks stay as they are
           realtime.onPush(t, 'PollUpdated', (e) =>
             setPoll(key, e.message_id, (poll) => ({
               ...poll,
@@ -377,7 +376,7 @@ export function createChatGateway(
               })),
             })),
           ),
-          // The reactor's own screen changed when they tapped, so only others take the count
+          // The reactor's own screen changed when they tapped so only others take the count
           realtime.onPush(t, 'MessageReacted', (e) => {
             if (e.user_id === ctx.store.get().me) return;
 
@@ -420,7 +419,7 @@ export function createChatGateway(
     });
   };
 
-  // Direct conversations and every unread count, after sign in and when a DM arrives
+  // Loads direct conversations and every unread count after sign in and when a DM arrives
   const loadInbox = async (): Promise<Result> => {
     const [listed, unread] = await Promise.all([
       call(() => conversationIndex()),
@@ -451,7 +450,7 @@ export function createChatGateway(
     for (const room of unread.data.rooms)
       setRoomUnread(room.id, room.community_id, () => room.count);
 
-    // A new message in a room someone isn't reading adds to its count, and reading it clears it
+    // A new message in a room someone isn't reading adds to its count and reading it clears it
     for (const communityId of ctx.communitySlugs.keys())
       ctx.watch(
         `community:${communityId}`,
@@ -503,7 +502,7 @@ export function createChatGateway(
 
       const { text, kind } = command.value;
 
-      // The message itself clears the others' indicator, so the next word starts a new one
+      // The message itself clears the others' indicator so the next word starts a new one
       typingSent.delete(key);
 
       const files = kind === 'text' ? (opts?.files ?? []) : [];
@@ -824,7 +823,7 @@ export function createChatGateway(
       state.scheduled = state.scheduled.filter((x) => x.id !== id);
     });
 
-  // Read after the inbox and rooms load, since each one is filed under the chat it waits in
+  // Read after the inbox and rooms load since each one is filed under the chat it waits in
   const loadScheduled = async () => {
     const answer = await call(() => messageListScheduled());
 

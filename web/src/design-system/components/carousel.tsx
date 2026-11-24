@@ -26,7 +26,7 @@ export function Carousel({
   readonly onOpen?: ((index: number) => void) | undefined;
 }) {
   const track = useRef<HTMLDivElement>(null);
-  /** Leaving a slide makes it inert, which drops focus, so a keyboard user carries on from the new one */
+  /** Leaving a slide makes it inert and drops focus so focus moves on to the new one */
   const refocus = useRef(false);
   const [index, setIndex] = useState(0);
   const last = images.length - 1;
@@ -58,6 +58,7 @@ export function Carousel({
 
   const followScroll = () => {
     const el = track.current;
+
     if (!el || !el.clientWidth) return;
 
     show(Math.max(0, Math.min(last, Math.round(el.scrollLeft / el.clientWidth))));
@@ -87,46 +88,44 @@ export function Carousel({
       style={{ '--carousel-ratio': ratio } as CSSProperties}
     >
       <div className="carousel__track" ref={track} onScroll={followScroll}>
-        {images.map((image, i) => (
-          <div
-            key={image.key}
-            className="carousel__slide"
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`${i + 1} of ${images.length}`}
-            inert={i !== index}
-          >
-            <Img className="carousel__backdrop" src={image.src} alt="" lazy={i !== 0} />
-            {onOpen ? (
-              <button
-                type="button"
-                className="carousel__open"
-                aria-label={'Open ' + image.alt}
-                onClick={() => onOpen(i)}
-              >
-                <Img
-                  className="carousel__image"
-                  src={image.src}
-                  alt={image.alt}
-                  width={image.width}
-                  height={image.height}
-                  blurhash={image.blurhash}
-                  lazy={i !== 0}
-                />
-              </button>
-            ) : (
-              <Img
-                className="carousel__image"
-                src={image.src}
-                alt={image.alt}
-                width={image.width}
-                height={image.height}
-                blurhash={image.blurhash}
-                lazy={i !== 0}
-              />
-            )}
-          </div>
-        ))}
+        {images.map((image, i) => {
+          const shown = (
+            <Img
+              className="carousel__image"
+              src={image.src}
+              alt={image.alt}
+              width={image.width}
+              height={image.height}
+              blurhash={image.blurhash}
+              lazy={i !== 0}
+            />
+          );
+
+          return (
+            <div
+              key={image.key}
+              className="carousel__slide"
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${i + 1} of ${images.length}`}
+              inert={i !== index}
+            >
+              <Img className="carousel__backdrop" src={image.src} alt="" lazy={i !== 0} />
+              {onOpen ? (
+                <button
+                  type="button"
+                  className="carousel__open"
+                  aria-label={'Open ' + image.alt}
+                  onClick={() => onOpen(i)}
+                >
+                  {shown}
+                </button>
+              ) : (
+                shown
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <IconButton

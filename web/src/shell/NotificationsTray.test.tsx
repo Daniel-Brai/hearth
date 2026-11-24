@@ -11,6 +11,7 @@ import { NotificationsTray } from './Bar';
 
 function withRead(count: number, more: boolean) {
   const store = new Store(createSeedState());
+
   store.set((state) => {
     const [first] = state.notifications;
 
@@ -23,6 +24,7 @@ function withRead(count: number, more: boolean) {
     state.directs.forEach((d) => (d.unread = false));
     state.notificationsAfter = more ? 'old-last' : null;
   });
+
   return store;
 }
 

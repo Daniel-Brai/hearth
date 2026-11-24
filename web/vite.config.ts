@@ -28,12 +28,12 @@ const build = { version: pkg.version, commit: gitCommit(), builtAt: new Date().t
 export default defineConfig({
   define: { __HEARTH_BUILD__: JSON.stringify(build) },
   plugins: [
-    // Vitest renders components on its own, without the router's build.
+    // Vitest renders components without the router build
     !process.env.VITEST && reactRouter(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      // There is no index.html to add the script to. Entry.client registers the worker.
+      // Entry.client registers the worker since there is no index.html
       injectRegister: null,
       outDir: 'build/client',
       includeAssets: [
@@ -54,8 +54,8 @@ export default defineConfig({
         id: '/',
         scope: '/',
         start_url: '/',
-        // PNG only, since some desktop installers fail to turn an SVG into an app icon.
-        // Maskable icons fill the square so Android can cut its own shape.
+        // PNG only since some desktop installers fail on SVG
+        // Maskable icons fill the square so Android can cut its own shape
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
@@ -78,12 +78,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Screens are rendered by the server, so navigations go to it and fall back to
-        // the last copy when offline, rather than to one static index.html.
+        // Navigations go to the server and fall back to the last copy offline
         navigateFallback: null,
         importScripts: ['/push-sw.js'],
-        // The emoji data, the emoji picker and the code highlighter load only when used,
-        // so they are cached on first use below instead of downloaded on every first visit.
+        // The emoji data, the picker and the code highlighter are cached on first use
         globIgnores: ['**/native-*.js', '**/module-*.js', '**/highlight-*.js'],
         runtimeCaching: [
           {
@@ -115,14 +113,14 @@ export default defineConfig({
           },
         ],
       },
-      // The manifest is served in development too, so installing from the dev server gets the icons
+      // Installing from the dev server needs the manifest and its icons too
       devOptions: { enabled: true },
     }),
   ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      // The Elixir umbrella's apps, for files the web app checks itself against (permissions.yml).
+      // Lets tests read files like permissions.yml from the Elixir apps
       '@apps': fileURLToPath(new URL('../apps', import.meta.url)),
     },
   },
@@ -130,7 +128,7 @@ export default defineConfig({
     port: 5173,
     host: '127.0.0.1',
     strictPort: true,
-    // Phoenix owns robots, sitemaps, calendar feeds and share cards. In production Caddy, or scripts/serve.mjs, routes them there.
+    // Phoenix owns robots, sitemaps, calendar feeds and share cards
     proxy: Object.fromEntries(
       ['/robots.txt', '/sitemap.xml', '/sitemaps', '/calendars', '/og'].map((path) => [
         path,

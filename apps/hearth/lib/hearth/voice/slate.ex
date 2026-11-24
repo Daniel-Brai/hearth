@@ -1,5 +1,6 @@
 defmodule Hearth.Voice.Slate do
   alias Image.Text
+
   @width 1_280
   @height 720
   @background [15, 20, 25]

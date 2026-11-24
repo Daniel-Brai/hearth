@@ -29,8 +29,8 @@ import type {
 } from './types';
 
 /**
- * Where the browser's session restore stands. The sidebar shows skeleton rows until `ready`,
- * and the server, which restores nothing, always leaves it at `pending`
+ * Where the browser's session restore stands. The sidebar shows skeleton rows until `ready`
+ * and a server render always leaves it at `pending`
  */
 export type SessionPhase = 'pending' | 'out' | 'loading' | 'ready';
 

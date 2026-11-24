@@ -101,9 +101,7 @@ defmodule Hearth.Media.Worker.ProcessImageTest do
       {:ok, _media} = Asset.transition(ready, :ready, status: :processing)
 
       assert :ok = perform_job(ProcessImage, %{media_id: media.id})
-      %Asset{variants: variants} = Asset.get(id: media.id)
-
-      assert length(variants) == 2
+      assert %Asset{variants: [_w320, _w640]} = Asset.get(id: media.id)
     end
   end
 end

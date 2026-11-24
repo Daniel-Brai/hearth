@@ -177,6 +177,29 @@ describe('links', () => {
   });
 });
 
+describe('raw html', () => {
+  const parse = (html: string) => new DOMParser().parseFromString(html, 'text/html');
+
+  it('shows a form as text instead of drawing it', () => {
+    const html = renderMarkdown(
+      '<form action="https://evil.example"><input type="password"><button>Sign in</button></form>',
+      { state, community: null },
+    );
+
+    expect(parse(html).querySelector('form, input, button')).toBeNull();
+    expect(parse(html).body.textContent).toContain('<form');
+  });
+
+  it('shows inline tags as text so a post cannot cover the app', () => {
+    const html = renderMarkdown('Hi <a href="#" style="position:fixed;inset:0">cover</a>', {
+      state,
+      community: null,
+    });
+
+    expect(parse(html).querySelector('[style]')).toBeNull();
+  });
+});
+
 describe('@all', () => {
   const pill = (html: string) =>
     new DOMParser().parseFromString(html, 'text/html').querySelector('.mention');

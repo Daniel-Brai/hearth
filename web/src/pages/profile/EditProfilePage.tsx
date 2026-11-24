@@ -19,16 +19,15 @@ export function EditProfilePage() {
 
   if (!me || !loaded) return null;
 
-  // Keyed by person so switching people starts a fresh form
   return <EditProfileForm key={me} me={me} />;
 }
 
 function EditProfileForm({ me }: { readonly me: string }) {
-  const identity = useAppState((state) => ({
-    initials: initials(state, me),
-    hue: person(state, me).hue,
-    username: person(state, me).username,
-  }));
+  const identity = useAppState((state) => {
+    const { hue, username } = person(state, me);
+
+    return { initials: initials(state, me), hue, username };
+  });
 
   const edit = useEditProfile(me, identity.username);
   const [preview, setPreview] = useState(false);

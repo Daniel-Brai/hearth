@@ -7,6 +7,7 @@ import { useLoad } from '@/data/use-load';
 import {
   Button,
   ButtonLink,
+  cn,
   Icon,
   IconButton,
   Input,
@@ -87,7 +88,9 @@ function RolesView({ cid, name }: { readonly cid: string; readonly name: string 
 
   const role = useAppState((state) => {
     const r = rolesOf(state, cid).find((x) => x.id === roleId);
+
     if (!r) return null;
+
     return {
       id: r.id,
       name: r.name,
@@ -101,6 +104,9 @@ function RolesView({ cid, name }: { readonly cid: string; readonly name: string 
 
   const communities = cids.map((value, i) => ({ value, label: cidNames[i] ?? value }));
   const addOptions = [{ value: NO_PERSON, label: 'Add someone…' }, ...peopleToAdd];
+
+  const shortNameOf = (id: string) =>
+    peopleToAdd.find((p) => p.value === id)?.label.split(' ')[0] ?? 'They';
 
   const create = async () => {
     const label = newRole.trim();
@@ -148,6 +154,7 @@ function RolesView({ cid, name }: { readonly cid: string; readonly name: string 
     if (!role) return;
 
     const r = await gateway.roles.setPermission(cid, role.id, perm, on);
+
     flash(r.ok ? 'Saved' : r.error);
   };
 
@@ -155,11 +162,9 @@ function RolesView({ cid, name }: { readonly cid: string; readonly name: string 
     if (!role) return;
 
     const r = await gateway.roles.removeMember(cid, role.id, id);
+
     if (!r.ok) flash(r.error);
   };
-
-  const shortNameOf = (id: string) =>
-    peopleToAdd.find((p) => p.value === id)?.label.split(' ')[0] ?? 'They';
 
   return (
     <>
@@ -202,7 +207,7 @@ function RolesView({ cid, name }: { readonly cid: string; readonly name: string 
                 key={r.id}
                 type="button"
                 id={`role-${r.id}`}
-                className={r.id === roleId ? 'role-link is-on' : 'role-link'}
+                className={cn('role-link', r.id === roleId && 'is-on')}
                 onClick={() => setPicked(r.id)}
               >
                 <span className="dot" style={{ background: `var(--hue-${r.hue})` }} />

@@ -55,11 +55,11 @@ export function nextPicks(poll: Poll, optionId: string): string[] {
   return picked ? poll.mine.filter((id) => id !== optionId) : [...poll.mine, optionId];
 }
 
-/** Shares of everyone who voted, so several picks each can add up past 100 */
+/** Shares of everyone who voted so several picks each can add up past 100 */
 export const share = (poll: Poll, votes: number) =>
   poll.voters ? Math.round((votes / poll.voters) * 100) : 0;
 
-/** Minutes round up, so a poll with seconds to go never reads as closing in 0 min */
+/** Minutes round up so a poll with seconds to go never reads as closing in 0 min */
 export function closingLabel(poll: Poll, now: Date): string | null {
   if (!pollOpen(poll, now)) return 'Closed';
   if (!poll.closesAt) return null;
@@ -75,7 +75,6 @@ export function closingLabel(poll: Poll, now: Date): string | null {
   return `Closes in ${Math.round(minutes / 1440)} d`;
 }
 
-/** Applies a vote to the totals the way the server counts it */
 export function withVote(poll: Poll, picks: readonly string[]): Poll {
   const before = new Set(poll.mine);
   const after = new Set(picks);

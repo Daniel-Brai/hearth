@@ -66,20 +66,19 @@ defmodule Hearth.Moderation.Command.ScreenContent do
   defp text(%{body: body}), do: String.trim(body || "")
 
   defp record(subject, verdict, held?, duration) do
-    Screening.insert(
-      %Screening{
-        community_id: subject.community_id,
-        subject_type: subject.type,
-        subject_id: subject.content.id,
-        screener: Screener.name(),
-        verdict: verdict.verdict,
-        score: verdict.score,
-        categories: verdict.categories,
-        held: held?,
-        duration_ms: duration
-      },
-      %{}
-    )
+    screening = %Screening{
+      community_id: subject.community_id,
+      subject_type: subject.type,
+      subject_id: subject.content.id,
+      screener: Screener.name(),
+      verdict: verdict.verdict,
+      score: verdict.score,
+      categories: verdict.categories,
+      held: held?,
+      duration_ms: duration
+    }
+
+    Screening.insert(screening, %{})
   end
 
   defp hold(_subject, _queue, _verdict, false), do: {:ok, :passed}

@@ -5,7 +5,6 @@ import { PageMeta } from './PageMeta';
 import { RouteSkeleton } from './RouteSkeleton';
 import { useGuest, type Gate } from './use-guest';
 
-/** The wall for a guest, or the route skeleton while the viewer is still unknown */
 export function GateScreen({ gate }: { readonly gate: Exclude<Gate, 'open'> }) {
   if (gate === 'pending') {
     return (

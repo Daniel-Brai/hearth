@@ -17,9 +17,11 @@ defmodule Hearth.Chat.Worker.ClosePoll do
   # A poll its starter already closed, or one deleted with its message, leaves nothing to do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"poll_id" => id}}) do
-    case Poll.get(id: id, closed_at: nil, preload: :options) do
-      nil -> :ok
-      %Poll{} = poll -> with {:ok, _poll} <- Chat.expire_poll(poll), do: :ok
-    end
+    [id: id, closed_at: nil, preload: :options]
+    |> Poll.get()
+    |> expire()
   end
+
+  defp expire(nil), do: :ok
+  defp expire(%Poll{} = poll), do: with({:ok, _poll} <- Chat.expire_poll(poll), do: :ok)
 end

@@ -46,6 +46,7 @@ export function useEditProfile(me: string, username: string) {
 
   const changeUrl = (l: LinkRow, url: string) => {
     if (!l.auto && l.label.trim()) return setLink(l.id, { url });
+
     setLink(l.id, { url, label: linkKind(url)?.name ?? '', auto: true });
   };
 
@@ -73,6 +74,7 @@ export function useEditProfile(me: string, username: string) {
 
   const pickPhoto = async (file: File | undefined) => {
     if (!file) return;
+
     const r = await resizeImage(file, 320, 320, true);
 
     if (r.ok) set('photo', r.dataUrl);

@@ -43,8 +43,7 @@ defmodule HearthWeb do
       alias HearthWeb.Schema
       alias Oaskit.Spec.Reference
 
-      # Validates and casts each request against its operation, and enforces
-      # the operation's security, before the action runs.
+      # Checks each request against its operation and its security before the action runs
       plug Oaskit.Plugs.ValidateRequest,
         security: HearthWeb.Plugs.Security,
         error_handler: HearthWeb.ValidationErrorHandler

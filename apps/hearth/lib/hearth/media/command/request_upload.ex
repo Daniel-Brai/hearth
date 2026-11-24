@@ -47,11 +47,9 @@ defmodule Hearth.Media.Command.RequestUpload do
     end
   end
 
-  # When two requests with the same key arrive at once, the loser returns the row the other made
+  # Two requests with the same key may arrive at once and the loser returns the row the other made
   defp retried(changeset, uploader_id, key) do
-    taken? = Keyword.has_key?(changeset.errors, :uploader_id)
-
-    with true <- taken?,
+    with true <- Keyword.has_key?(changeset.errors, :uploader_id),
          %Asset{} = media <- existing(uploader_id, key) do
       {:ok, media}
     else

@@ -35,6 +35,7 @@ export function ScheduledPosts({ cid }: { readonly cid: string }) {
 
     if (!hasDraft && !item.files.length) {
       void take();
+
       return;
     }
 

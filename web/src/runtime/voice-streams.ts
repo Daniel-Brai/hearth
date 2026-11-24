@@ -24,11 +24,9 @@ export const subscribeVoiceStreams = (listener: () => void) => {
   };
 };
 
-const subscribe = subscribeVoiceStreams;
-
 export function useVoiceStream<K extends keyof Streams>(key: K): Streams[K] {
   return useSyncExternalStore(
-    subscribe,
+    subscribeVoiceStreams,
     () => streams[key],
     () => null,
   );

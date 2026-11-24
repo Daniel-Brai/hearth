@@ -29,9 +29,7 @@ defmodule Hearth.Media.Worker.ExpireUploadsTest do
       :ok = TestUtils.update_rows!(Asset, [id: media.id], inserted_at: TestUtils.minutes_ago(120))
 
       assert :ok = perform_job(ExpireUploads, %{})
-
       assert %Asset{status: :failed} = Asset.get(id: media.id)
-
       assert {:error, :not_found} = Storage.head(media.bucket_key)
     end
   end

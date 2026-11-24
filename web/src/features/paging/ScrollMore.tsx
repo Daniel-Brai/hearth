@@ -5,10 +5,7 @@ import { Button } from '@/design-system';
 
 import './ScrollMore.css';
 
-/**
- * Sits at the end of a paged list and loads the next page as it scrolls near. Watching starts again
- * after each page so a list that still ends on screen keeps filling until the server has no more
- */
+// Watching starts again after each page so a list that still ends on screen keeps filling
 export function ScrollMore({
   id,
   more,
@@ -25,6 +22,7 @@ export function ScrollMore({
 
     try {
       const r = await more();
+
       setError(r.ok ? null : r.error);
     } finally {
       setLoading(false);

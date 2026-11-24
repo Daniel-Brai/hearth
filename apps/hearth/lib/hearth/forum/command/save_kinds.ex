@@ -8,7 +8,8 @@ defmodule Hearth.Forum.Command.SaveKinds do
 
   @discussion "discussion"
 
-  # A kind is known by its key, which never changes. Kinds left out go and their posts move to Discussion
+  # Kinds match by key since a key never changes
+  # Kinds left out go and their posts move to Discussion
   @spec execute(T.id(), [map()]) ::
           {:ok, [Kind.t()]} | {:error, :keeps_discussion | :no_discussion | Changeset.t()}
   def execute(community_id, kinds) when is_binary(community_id) and is_list(kinds) do
@@ -38,8 +39,12 @@ defmodule Hearth.Forum.Command.SaveKinds do
     ids = Enum.map(removed, & &1.id)
 
     case discussion_id in ids do
-      true -> {:error, :keeps_discussion}
-      false -> with :ok <- Post.move_kinds(ids, discussion_id), do: Kind.delete_ids(ids)
+      true ->
+        {:error, :keeps_discussion}
+
+      false ->
+        :ok = Post.move_kinds(ids, discussion_id)
+        Kind.delete_ids(ids)
     end
   end
 
@@ -53,33 +58,29 @@ defmodule Hearth.Forum.Command.SaveKinds do
   end
 
   defp save(community_id, existing, {params, position}, {:ok, saved, taken}) do
-    params = Map.put(params, :position, position)
+    placed = Map.put(params, :position, position)
 
-    result =
-      case existing[params[:key]] do
-        %Kind{} = kind -> Kind.update(kind, params)
-        nil -> insert(community_id, params, taken)
-      end
-
-    case result do
+    case upsert(existing[params[:key]], community_id, placed, taken) do
       {:ok, kind} -> {:cont, {:ok, [kind | saved], [kind.key | taken]}}
       {:error, changeset} -> {:halt, {:error, changeset}}
     end
   end
 
-  defp insert(community_id, params, taken) do
+  defp upsert(nil, community_id, params, taken) do
     key = params |> Map.get(:label, "") |> Common.slugify() |> free_key(taken)
     Kind.insert(%Kind{community_id: community_id}, Map.put(params, :key, key))
   end
 
-  # A label made only of emoji has no slug, and a taken key gets a number
+  defp upsert(%Kind{} = kind, _community_id, params, _taken), do: Kind.update(kind, params)
+
+  # A label of only emoji has no slug and a taken key gets a number
   defp free_key("", taken), do: free_key("kind", taken)
 
   defp free_key(key, taken) do
-    2
-    |> Stream.iterate(&(&1 + 1))
-    |> Stream.map(&"#{key}-#{&1}")
-    |> then(&Stream.concat([key], &1))
+    numbered = 2 |> Stream.iterate(&(&1 + 1)) |> Stream.map(&"#{key}-#{&1}")
+
+    [key]
+    |> Stream.concat(numbered)
     |> Enum.find(&(&1 not in taken))
   end
 end

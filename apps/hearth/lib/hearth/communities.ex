@@ -33,9 +33,9 @@ defmodule Hearth.Communities do
     exports: exports
 
   alias Ecto.Changeset
+  alias Hearth.Accounts
   alias Hearth.Accounts.User
   alias Hearth.Auth
-  alias Hearth.Common
   alias Hearth.Common.T
   alias Hearth.Communities.Ban
   alias Hearth.Communities.Category
@@ -89,14 +89,16 @@ defmodule Hearth.Communities do
   @spec subscribe_to_pubsub() :: :ok
   def subscribe_to_pubsub, do: PubSub.subscribe(@topic)
 
-  @spec template_ids() :: [String.t()]
-  def template_ids, do: Template.ids()
-
   @spec list_category_slugs() :: [String.t()]
   def list_category_slugs, do: Category.slugs()
 
-  @spec list_templates() :: [Template.t()]
-  def list_templates, do: Template.all()
+  @spec list_templates(keyword()) :: [Template.t() | map()]
+  def list_templates(opts \\ []) do
+    case Keyword.get(opts, :fields, []) do
+      [] -> Template.all()
+      fields -> Enum.map(Template.all(), &Map.take(&1, fields))
+    end
+  end
 
   @spec creation_mode() :: :admins | :request | :anyone
   def creation_mode do
@@ -136,10 +138,13 @@ defmodule Hearth.Communities do
   def start_community(%User{is_instance_admin: true} = user, params), do: create(user, params)
 
   def start_community(%User{} = user, %{} = params) do
-    case creation_mode() do
+    with :anyone <- creation_mode(),
+         :ok <- may_start(user) do
+      create(user, params)
+    else
       :admins -> {:error, :forbidden}
       :request -> request_community(user, params)
-      :anyone -> with :ok <- may_start?(user), do: create(user, params)
+      {:error, _reason} = error -> error
     end
   end
 
@@ -147,15 +152,12 @@ defmodule Hearth.Communities do
           {:ok, [Request.t()]} | {:error, :forbidden}
   def list_requests(%User{} = user, status) do
     case IAM.can?(user, :decide, :"community.request") do
-      true ->
-        {:ok, Request.list(status)}
-
-      false ->
-        {:error, :forbidden}
+      true -> {:ok, Request.list(status)}
+      false -> {:error, :forbidden}
     end
   end
 
-  @spec get_request(Common.T.id()) :: {:ok, Request.t()} | {:error, :not_found}
+  @spec get_request(T.id()) :: {:ok, Request.t()} | {:error, :not_found}
   def get_request(id) when is_binary(id) do
     case Request.get(id: id, preload: :community) do
       nil -> {:error, :not_found}
@@ -185,14 +187,14 @@ defmodule Hearth.Communities do
     end
   end
 
-  @spec slug_for(String.t()) :: Common.T.slug()
+  @spec slug_for(String.t()) :: T.slug()
   def slug_for(name) when is_binary(name), do: Community.free_slug(name)
 
-  @spec readable_ids(nil | User.t()) :: [Common.T.id()]
-  def readable_ids(nil), do: Community.readable_ids([])
+  @spec list_readable(nil | User.t()) :: [T.id()]
+  def list_readable(nil), do: Community.readable_ids([])
 
-  def readable_ids(%User{} = reader),
-    do: reader |> IAM.community_ids() |> Community.readable_ids()
+  def list_readable(%User{} = reader),
+    do: reader |> IAM.list_communities() |> Community.readable_ids()
 
   @spec list_public() :: [Community.t()]
   def list_public, do: Community.public()
@@ -203,7 +205,7 @@ defmodule Hearth.Communities do
   @spec list_joined(User.t()) :: [Community.t()]
   def list_joined(%User{} = user) do
     user
-    |> IAM.community_ids()
+    |> IAM.list_communities()
     |> Community.joined()
   end
 
@@ -226,7 +228,7 @@ defmodule Hearth.Communities do
   def visible?(%Community{}, nil), do: false
 
   # Someone who may not know a community exists hears that what is inside it doesn't exist either
-  @spec refusal(nil | User.t(), Common.T.id()) :: {:error, :forbidden | :not_found}
+  @spec refusal(nil | User.t(), T.id()) :: {:error, :forbidden | :not_found}
   def refusal(user, community_id) when is_binary(community_id) do
     with {:ok, community} <- get_community(id: community_id),
          true <- visible?(community, user) do
@@ -250,7 +252,7 @@ defmodule Hearth.Communities do
   end
 
   @spec join(User.t(), Community.t()) ::
-          {:ok, IAM.Membership.t()} | {:error, :invite_required | :banned | Changeset.t()}
+          {:ok, Membership.t()} | {:error, :invite_required | :banned | Changeset.t()}
   def join(%User{} = user, %Community{visibility: visibility} = community)
       when visibility in @open do
     add_member(user, community, [])
@@ -264,12 +266,14 @@ defmodule Hearth.Communities do
   def leave(%User{} = user, %Community{} = community) do
     :ok = IAM.leave(user, community.id)
     broadcast(%MemberLeft{community_id: community.id, user_id: user.id})
+    lost_access(community, user)
   end
 
   @spec create_role(User.t(), Community.t(), map()) ::
           {:ok, Role.t()} | {:error, :forbidden | Changeset.t()}
   def create_role(%User{} = user, %Community{} = community, %{} = params) do
-    with :ok <- authorize(user, :update, :role, community) do
+    with :ok <- authorize(user, :update, :role, community),
+         :ok <- within_reach(user, community.id, params[:permissions] || []) do
       IAM.create_role(community.id, Map.take(params, @new_role_fields))
     end
   end
@@ -281,6 +285,8 @@ defmodule Hearth.Communities do
 
   def update_role(%User{} = user, %Role{} = role, %{} = params) do
     with :ok <- authorize(user, :update, :role, role),
+         :ok <-
+           within_reach(user, role.community_id, role.permissions ++ (params[:permissions] || [])),
          {:ok, role} <- IAM.update_role(role, Map.take(params, @role_fields)) do
       broadcast(%RoomAccessChanged{community_id: role.community_id})
       {:ok, role}
@@ -291,13 +297,14 @@ defmodule Hearth.Communities do
           {:ok, Role.t()} | {:error, :forbidden | :system_role | :default_role}
   def delete_role(%User{} = user, %Role{} = role) do
     with :ok <- authorize(user, :update, :role, role),
+         :ok <- within_reach(user, role.community_id, role.permissions),
          {:ok, role} <- IAM.delete_role(role) do
       broadcast(%RoomAccessChanged{community_id: role.community_id})
       {:ok, role}
     end
   end
 
-  # Ownership moves only through transfer_ownership/3
+  # Ownership moves only through transfer_ownership/4
   @spec set_member_roles(User.t(), Community.t(), User.t(), [String.t()]) ::
           {:ok, Membership.t()} | {:error, :forbidden | :not_found | Changeset.t()}
   def set_member_roles(%User{} = user, %Community{} = community, %User{} = member, keys)
@@ -305,6 +312,12 @@ defmodule Hearth.Communities do
     with :ok <- authorize(user, :update, :role, community),
          true <- @owner_role not in keys and member.id != community.owner_id,
          {:ok, membership} <- IAM.get_membership(member, community.id),
+         :ok <-
+           within_reach(
+             user,
+             community.id,
+             membership.permissions ++ role_permissions(community.id, keys)
+           ),
          {:ok, membership} <- IAM.set_roles(membership, keys) do
       broadcast(%RoomAccessChanged{community_id: community.id, user_id: member.id})
       {:ok, membership}
@@ -348,20 +361,16 @@ defmodule Hearth.Communities do
 
   def transfer_ownership(%User{}, %Community{}, %User{}, _code), do: {:error, :forbidden}
 
-  # Every room, private or not, for work that isn't shown to a person
-  @spec list_rooms(Community.t()) :: [Room.t()]
-  def list_rooms(%Community{id: id}), do: Room.for_community(id)
-
-  @spec list_rooms([T.id()], :text | :voice) :: [Room.t()]
-  def list_rooms(community_ids, type) when is_list(community_ids) and type in [:text, :voice],
-    do: Room.all(community_id: community_ids, type: type, archived_at: nil)
+  # Every room including private ones for work no person sees
+  @spec list_rooms(Community.t(), keyword()) :: [Room.t()]
+  def list_rooms(%Community{id: id}, opts \\ []), do: Room.for_community(id, opts)
 
   @spec list_visible_rooms(Community.t(), nil | User.t()) :: [Room.t()]
   def list_visible_rooms(%Community{id: id}, nil),
-    do: Room.for_community(id, %{role_ids: [], managed: []})
+    do: Room.visible_in(id, %{role_ids: [], managed: []})
 
   def list_visible_rooms(%Community{id: id}, %User{} = user),
-    do: Room.for_community(id, sight(user, [id]))
+    do: Room.visible_in(id, sight(user, [id]))
 
   @spec list_visible_rooms([T.id()], :text | :voice, User.t()) :: [Room.t()]
   def list_visible_rooms(community_ids, type, %User{} = user)
@@ -387,20 +396,15 @@ defmodule Hearth.Communities do
   def room_hidden?(_viewer, %Room{access: :everyone}), do: false
   def room_hidden?(viewer, %Room{} = room), do: not room_visible?(viewer, room)
 
-  @spec hidden_room_ids(nil | User.t(), [T.id()]) :: [T.id()]
-  def hidden_room_ids(nil, community_ids) when is_list(community_ids),
-    do: for(room <- Room.all(community_id: community_ids, access: :roles), do: room.id)
+  @spec list_hidden_rooms(nil | User.t(), [T.id()]) :: [T.id()]
+  def list_hidden_rooms(nil, community_ids) when is_list(community_ids),
+    do:
+      [community_id: community_ids, access: :roles, fields: [:id]]
+      |> Room.all()
+      |> Enum.map(& &1.id)
 
-  def hidden_room_ids(%User{} = user, community_ids) when is_list(community_ids) do
-    seen =
-      [community_id: community_ids, access: :roles]
-      |> Room.visible(sight(user, community_ids))
-      |> MapSet.new(& &1.id)
-
-    nil
-    |> hidden_room_ids(community_ids)
-    |> Enum.reject(&MapSet.member?(seen, &1))
-  end
+  def list_hidden_rooms(%User{} = user, community_ids) when is_list(community_ids),
+    do: Room.hidden([community_id: community_ids, access: :roles], sight(user, community_ids))
 
   # People who manage rooms can play whenever sounds are on
   @spec can_play?(User.t(), Room.t()) :: boolean()
@@ -408,7 +412,11 @@ defmodule Hearth.Communities do
 
   def can_play?(%User{id: id} = user, %Room{} = room) do
     IAM.can?(user, :update, %{type: :room, community_id: room.community_id}) or
-      RoomSettings.sound_allowed?(room.settings, id, IAM.role_ids(user, [room.community_id]))
+      RoomSettings.sound_allowed?(
+        room.settings,
+        id,
+        IAM.list_held_roles(user, [room.community_id])
+      )
   end
 
   @spec moderation_level(Community.t(), nil | Room.t()) :: :full | :reports | :none
@@ -429,11 +437,12 @@ defmodule Hearth.Communities do
   # A private room the viewer can't see answers not found, so nothing shows that it exists
   @spec view_room(nil | User.t(), keyword()) :: {:ok, Room.t()} | {:error, :not_found}
   def view_room(viewer, opts) when is_list(opts) do
-    with {:ok, room} <- get_room(opts) do
-      case room_hidden?(viewer, room) do
-        true -> {:error, :not_found}
-        false -> {:ok, room}
-      end
+    with {:ok, room} <- get_room(opts),
+         false <- room_hidden?(viewer, room) do
+      {:ok, room}
+    else
+      true -> {:error, :not_found}
+      {:error, :not_found} = error -> error
     end
   end
 
@@ -462,7 +471,6 @@ defmodule Hearth.Communities do
     end
   end
 
-  # Each community needs its visible rooms loaded
   @spec list_room_groups([Community.t()], nil | User.t()) :: %{T.id() => [RoomGroup.t()]}
   def list_room_groups(communities, viewer) when is_list(communities) do
     ids = Enum.map(communities, & &1.id)
@@ -537,7 +545,7 @@ defmodule Hearth.Communities do
   @spec list_bans(Community.t()) :: [Ban.t()]
   def list_bans(%Community{id: id}), do: Ban.in_force(id)
 
-  @spec get_ban(Common.T.id()) :: {:ok, Ban.t()} | {:error, :not_found}
+  @spec get_ban(T.id()) :: {:ok, Ban.t()} | {:error, :not_found}
   def get_ban(id) when is_binary(id) do
     case Ban.get(id: id) do
       nil -> {:error, :not_found}
@@ -586,7 +594,7 @@ defmodule Hearth.Communities do
     role_key = params[:role_key] || "member"
 
     with :ok <- authorize(user, :create, :invite, community),
-         :ok <- may_grant?(user, community, role_key) do
+         :ok <- may_grant(user, community, [role_key]) do
       invite = %Invite{community_id: community.id, created_by_id: user.id}
       Invite.insert(invite, Map.put(params, :role_key, role_key))
     end
@@ -610,7 +618,7 @@ defmodule Hearth.Communities do
   def invite_usable?(%Invite{} = invite), do: Invite.unusable(invite) == nil
 
   @spec accept_invite(User.t(), String.t()) ::
-          {:ok, IAM.Membership.t()}
+          {:ok, Membership.t()}
           | {:error, :not_found | :revoked | :expired | :used_up | :banned | Changeset.t()}
   def accept_invite(%User{} = user, code) when is_binary(code) do
     with {:ok, invite} <- get_invite(code),
@@ -620,7 +628,7 @@ defmodule Hearth.Communities do
       count_use(invite, user)
       {:ok, membership}
     else
-      {:ok, %IAM.Membership{} = membership} -> {:ok, membership}
+      {:ok, %Membership{} = membership} -> {:ok, membership}
       reason when is_atom(reason) -> {:error, reason}
       {:error, _reason} = error -> error
     end
@@ -635,13 +643,13 @@ defmodule Hearth.Communities do
     roles = entries |> Enum.map(& &1.role_key) |> Enum.uniq()
 
     with :ok <- authorize(user, :update, :invite, community),
-         :ok <- Enum.reduce_while(roles, :ok, &grant_or_halt(user, community, &1, &2)),
+         :ok <- may_grant(user, community, roles),
          {:ok, sent} <- EmailInvite.execute(user, community, entries) do
       broadcast(%InvitesEmailed{
         community_id: community.id,
         community_name: community.name,
         inviter_id: user.id,
-        inviter_name: user.display_name || user.username,
+        inviter_name: Accounts.display_name(user),
         note: note,
         invites: Enum.map(sent, &%{email: &1.email, code: &1.invite.code})
       })
@@ -654,12 +662,9 @@ defmodule Hearth.Communities do
           {:ok, %{links: [Invite.t()], emails: [InviteEmail.t()]}} | {:error, :forbidden}
   def list_invites(%User{} = user, %Community{} = community) do
     with :ok <- authorize(user, :create, :invite, community) do
-      emails =
-        case authorize(user, :update, :invite, community) do
-          :ok -> InviteEmail.for_community(community.id)
-          {:error, :forbidden} -> []
-        end
-
+      # Only people who may manage invites see who was emailed
+      manages? = authorize(user, :update, :invite, community) == :ok
+      emails = if manages?, do: InviteEmail.for_community(community.id), else: []
       {:ok, %{links: Invite.links(community.id), emails: emails}}
     end
   end
@@ -670,7 +675,7 @@ defmodule Hearth.Communities do
     role_key = params[:role_key] || invite.role_key
 
     with :ok <- authorize(user, :update, :invite, invite),
-         :ok <- may_grant?(user, %Community{id: invite.community_id}, role_key) do
+         :ok <- may_grant(user, %Community{id: invite.community_id}, [role_key]) do
       Invite.update(invite, params)
     end
   end
@@ -716,6 +721,7 @@ defmodule Hearth.Communities do
         banned_by_id: moderator.id
       })
 
+      lost_access(community, target)
       {:ok, ban}
     else
       false -> {:error, :forbidden}
@@ -723,12 +729,16 @@ defmodule Hearth.Communities do
     end
   end
 
+  # Open channels and voice rooms let go of them
+  defp lost_access(community, user),
+    do: broadcast(%RoomAccessChanged{community_id: community.id, user_id: user.id})
+
   @spec lift_ban(User.t(), Ban.t()) :: {:ok, Ban.t()} | {:error, :forbidden | Changeset.t()}
   def lift_ban(%User{} = moderator, %Ban{} = ban) do
     with :ok <- authorize(moderator, :ban, :member, ban), do: Ban.lift(ban, moderator.id)
   end
 
-  @spec banned?(User.t(), Community.t() | Common.T.id()) :: boolean()
+  @spec banned?(User.t(), Community.t() | T.id()) :: boolean()
   def banned?(%User{} = user, %Community{id: id}), do: banned?(user, id)
 
   def banned?(%User{id: user_id}, community_id) when is_binary(community_id) do
@@ -756,9 +766,8 @@ defmodule Hearth.Communities do
   defp decide(admin, request, :declined), do: Request.decline(request, admin.id)
   defp decide(admin, request, :approved), do: ApproveRequest.execute(admin, request)
 
-  defp may_start?(%User{} = user) do
+  defp may_start(%User{} = user) do
     owned = Community.owned_count(user.id)
-
     age_hours = DateTime.diff(DateTime.utc_now(), user.inserted_at, :hour)
 
     cond do
@@ -769,36 +778,53 @@ defmodule Hearth.Communities do
     end
   end
 
-  defp grant_or_halt(user, community, role_key, :ok) do
-    case may_grant?(user, community, role_key) do
-      :ok -> {:cont, :ok}
-      error -> {:halt, error}
+  # Default roles are free to give and ownership moves only through transfer_ownership/4
+  defp may_grant(user, community, keys) do
+    roles =
+      community.id
+      |> IAM.list_roles(fields: ~w[key is_default permissions]a)
+      |> Enum.filter(&(&1.key in keys))
+
+    defaults = roles |> Enum.filter(& &1.is_default) |> Enum.map(& &1.key)
+
+    case {@owner_role in keys, keys -- defaults} do
+      {true, _others} -> {:error, :forbidden}
+      {false, []} -> :ok
+      {false, _others} -> grant_more(user, community, roles)
     end
   end
 
-  defp may_grant?(user, community, role_key) do
-    default? =
-      community.id
-      |> IAM.list_roles()
-      |> Enum.any?(&(&1.key == role_key and &1.is_default))
+  defp grant_more(user, community, roles) do
+    with :ok <- authorize(user, :update, :role, community),
+         do: within_reach(user, community.id, Enum.flat_map(roles, & &1.permissions))
+  end
 
-    case default? or IAM.can?(user, :update, %{type: :role, community_id: community.id}) do
+  # Nobody hands out a permission they lack. Unknown ones are left to the changeset
+  defp within_reach(user, community_id, permissions) do
+    real = IAM.permissions()
+    held = IAM.permissions_for(user, community_id)
+
+    case Enum.all?(permissions, &(&1 in held or &1 not in real)) do
       true -> :ok
       false -> {:error, :forbidden}
     end
   end
 
-  defp add_member(user, community, keys) do
-    case banned?(user, community) do
-      true -> {:error, :banned}
-      false -> insert_member(user, community, keys)
-    end
+  defp role_permissions(community_id, keys) do
+    community_id
+    |> IAM.list_roles(fields: [:key, :permissions])
+    |> Enum.filter(&(&1.key in keys))
+    |> Enum.flat_map(& &1.permissions)
   end
 
-  defp insert_member(user, community, keys) do
-    with {:ok, membership} <- IAM.join(user, community.id, keys) do
+  defp add_member(user, community, keys) do
+    with false <- banned?(user, community),
+         {:ok, membership} <- IAM.join(user, community.id, keys) do
       broadcast(%MemberJoined{community_id: community.id, user_id: user.id})
       {:ok, membership}
+    else
+      true -> {:error, :banned}
+      {:error, _reason} = error -> error
     end
   end
 
@@ -844,17 +870,21 @@ defmodule Hearth.Communities do
   end
 
   defp sight(user, community_ids) do
-    %{
-      role_ids: IAM.role_ids(user, community_ids),
-      managed: IAM.communities_with(user, "room.update", community_ids)
-    }
+    %{role_ids: role_ids, granting: managed} = IAM.held_in(user, community_ids, "room.update")
+    %{role_ids: role_ids, managed: managed}
   end
 
   # Unknown role ids and roles from another community are dropped, as set_roles does with keys
   defp role_ids_in(community_id, params) do
     case params[:role_ids] do
-      nil -> nil
-      ids -> community_id |> IAM.list_roles() |> Enum.map(& &1.id) |> Enum.filter(&(&1 in ids))
+      nil ->
+        nil
+
+      ids ->
+        community_id
+        |> IAM.list_roles(fields: [:id])
+        |> Enum.map(& &1.id)
+        |> Enum.filter(&(&1 in ids))
     end
   end
 

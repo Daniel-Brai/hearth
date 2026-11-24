@@ -20,13 +20,17 @@ export const timeKey = (d: Date) => format(d, TIME_KEY);
 
 export function parseDay(key: string | null): Date | null {
   if (!key) return null;
+
   const d = parse(key, DAY_KEY, new Date());
+
   return isValid(d) ? d : null;
 }
 
 export function dayLabel(key: string): string | null {
   const d = parseDay(key);
+
   if (!d) return null;
+
   return format(
     d,
     d.getFullYear() === new Date().getFullYear() ? 'EEE, MMM d' : 'EEE, MMM d, yyyy',
@@ -49,6 +53,7 @@ export function calendarDays(month: Date): CalendarDay[] {
 
   return Array.from({ length: 42 }, (_, i) => {
     const d = addDays(start, i);
+
     return { key: dayKey(d), day: d.getDate(), inMonth: d.getMonth() === first.getMonth() };
   });
 }
@@ -64,6 +69,7 @@ export const timeSlots = (): string[] =>
 
 export function timeLabel(t: string): string | null {
   const d = parse(t, TIME_KEY, new Date());
+
   return isValid(d) ? format(d, 'h:mm a') : null;
 }
 
@@ -89,6 +95,7 @@ export function parseTimeText(text: string): string | null {
     const [h, m] = parts;
 
     if (parts.length !== 2 || h === undefined || m === undefined || m.length !== 2) return null;
+
     hours = h;
     minutes = m;
   } else if (core.length > 2) {
@@ -116,5 +123,6 @@ export function parseTimeText(text: string): string | null {
 
 export function combine(day: string, time: string): Date | null {
   const d = parse(`${day} ${time}`, `${DAY_KEY} ${TIME_KEY}`, new Date());
+
   return isValid(d) ? d : null;
 }

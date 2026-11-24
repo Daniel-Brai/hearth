@@ -24,11 +24,7 @@ defmodule Hearth.Notifications.Listener.Moderation do
   @impl GenServer
   def handle_info(%ItemQueued{community_id: nil} = event, state) do
     with {:ok, item} <- Moderation.get_item(event.item_id) do
-      notice =
-        case item.held do
-          true -> Notices.held_for_instance(%{item: item})
-          false -> Notices.direct_message_reported(%{item: item})
-        end
+      notice = instance_notice(item)
 
       Accounts.list_instance_admins()
       |> Enum.reject(&(&1.id in [event.reporter_id, event.author_id]))
@@ -54,4 +50,7 @@ defmodule Hearth.Notifications.Listener.Moderation do
   end
 
   def handle_info(_event, state), do: {:noreply, state}
+
+  defp instance_notice(%{held: true} = item), do: Notices.held_for_instance(%{item: item})
+  defp instance_notice(item), do: Notices.direct_message_reported(%{item: item})
 end

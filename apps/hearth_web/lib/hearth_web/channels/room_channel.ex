@@ -31,14 +31,23 @@ defmodule HearthWeb.RoomChannel do
   def handle_in(_event, _payload, socket), do: {:reply, {:error, %{reason: "unknown"}}, socket}
 
   @impl Phoenix.Channel
+  # A change about one other member leaves this socket as it is
+  def handle_info(
+        %Broadcast{event: "RoomAccessChanged", payload: %{user_id: user_id}},
+        %Socket{assigns: %{auth: %{id: me}}} = socket
+      )
+      when user_id not in [nil, me],
+      do: {:noreply, socket}
+
+  # The room is read again since its own access may be what changed
   def handle_info(%Broadcast{event: "RoomAccessChanged"}, socket) do
     %Socket{assigns: %{auth: auth, room: room}} = socket
 
-    case Communities.view_room(auth, id: room.id) do
-      {:ok, _room} ->
-        {:noreply, socket}
-
-      {:error, :not_found} ->
+    with {:ok, room} <- Communities.get_room(id: room.id),
+         true <- Chat.can_read?(auth, room) do
+      {:noreply, socket}
+    else
+      _denied ->
         :ok = push(socket, "room_hidden", %{room_id: room.id})
         {:stop, :normal, socket}
     end

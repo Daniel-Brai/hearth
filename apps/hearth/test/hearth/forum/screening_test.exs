@@ -20,11 +20,7 @@ defmodule Hearth.Forum.ScreeningTest do
   end
 
   describe "create_post/3" do
-    test "skips screening if not written", %{
-      author: author,
-      full: full,
-      kind: kind
-    } do
+    test "skips screening if not written", %{author: author, full: full, kind: kind} do
       assert {:error, _changeset} =
                Forum.create_post(author, full, %{kind_id: kind.id, title: " "})
 

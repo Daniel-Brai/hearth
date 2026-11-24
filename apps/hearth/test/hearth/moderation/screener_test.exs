@@ -109,15 +109,14 @@ defmodule Hearth.Moderation.ScreenerTest do
 
         [_rules, given] = String.split(system, "This community's own guidelines:\n")
 
-        json(
-          conn,
-          TestUtils.chat_completion(%{
-            "verdict" => "unsafe",
-            "score" => 0.9,
-            "categories" => ["Hate"],
-            "reason" => given
-          })
-        )
+        answer = %{
+          "verdict" => "unsafe",
+          "score" => 0.9,
+          "categories" => ["Hate"],
+          "reason" => given
+        }
+
+        json(conn, TestUtils.chat_completion(answer))
       end)
 
       assert {:ok, %Verdict{verdict: :unsafe, score: 0.9, categories: ["Hate"]} = verdict} =

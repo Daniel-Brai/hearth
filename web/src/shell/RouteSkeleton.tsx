@@ -5,7 +5,6 @@ import { patterns, routes } from '@/runtime/routes';
 
 type Width = 'wide' | 'narrow' | 'read';
 
-/** Each screen's skeleton and the width its content uses so loading doesn't jump */
 const SHAPES: readonly [string, SkeletonKind, Width][] = [
   [routes.home, 'catchup', 'wide'],
   [patterns.chat, 'chat', 'wide'],
