@@ -54,6 +54,7 @@ defmodule HearthWeb.MixProject do
        app: false,
        compile: false,
        depth: 1},
+      {:ecto_doctor, "~> 0.0.1", only: [:dev, :test], runtime: false},
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:gen_stage, "~> 1.3"},
       {:gettext, "~> 1.0"},

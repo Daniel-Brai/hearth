@@ -13,6 +13,7 @@ defmodule Hearth.DataCase do
   end
 
   setup tags do
+    :ok = EctoDoctor.RepeatedQueries.scan_test(tags)
     setup_sandbox(tags)
     :ok
   end

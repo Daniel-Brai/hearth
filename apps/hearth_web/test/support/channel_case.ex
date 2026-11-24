@@ -17,6 +17,7 @@ defmodule HearthWeb.ChannelCase do
   end
 
   setup tags do
+    :ok = EctoDoctor.RepeatedQueries.scan_test(tags)
     DataCase.setup_sandbox(tags)
     :ok
   end

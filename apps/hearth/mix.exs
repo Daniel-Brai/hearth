@@ -47,6 +47,7 @@ defmodule Hearth.MixProject do
       {:bumblebee, "~> 0.8"},
       {:confex, "~> 3.5"},
       {:dns_cluster, "~> 0.2.0"},
+      {:ecto_doctor, "~> 0.0.1", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.14"},
       {:email_checker, "~> 0.2"},
       {:ex_aws, "~> 2.7"},

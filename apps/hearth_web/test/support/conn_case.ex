@@ -23,6 +23,7 @@ defmodule HearthWeb.ConnCase do
   # Every conn is sent as the web app sends it, as JSON with the API version
   # it pins.
   setup tags do
+    :ok = EctoDoctor.RepeatedQueries.scan_test(tags)
     DataCase.setup_sandbox(tags)
 
     conn =
